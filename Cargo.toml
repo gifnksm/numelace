@@ -14,5 +14,7 @@ license = "MIT OR Apache-2.0"
 eframe = "0.33.3"
 proptest = "1.9"
 
+sudoku-core = { path = "crates/sudoku-core" }
+
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
