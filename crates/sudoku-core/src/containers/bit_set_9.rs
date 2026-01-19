@@ -1,27 +1,9 @@
 //! Generic 9-bit set implementation.
 //!
-//! This module provides [`BitSet9`], a generic bitset that can represent
-//! any set of up to 9 elements. The semantics of the elements (their type and
-//! how they map to bit indices 0-8) are determined by the [`Index9Semantics`]
-//! trait (defined in the [`index_9`](crate::index_9) module).
+//! Provides [`BitSet9`], a generic bitset for representing sets of up to 9 elements,
+//! parameterized by [`Index9Semantics`].
 //!
-//! The most common use case is [`DigitCandidates`](crate::digit_candidates::DigitCandidates)
-//! (defined in the [`digit_candidates`](crate::digit_candidates) module),
-//! which represents a set of candidate digits from 1 to 9 for sudoku cells.
-//!
-//! # Examples
-//!
-//! ```
-//! use sudoku_core::DigitCandidates;
-//!
-//! let mut candidates = DigitCandidates::new();
-//! candidates.insert(1);
-//! candidates.insert(5);
-//! candidates.insert(9);
-//!
-//! assert_eq!(candidates.len(), 3);
-//! assert!(candidates.contains(5));
-//! ```
+//! [`Index9Semantics`]: crate::index::Index9Semantics
 
 use std::{
     fmt::{self, Debug},
@@ -31,7 +13,7 @@ use std::{
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, RangeBounds},
 };
 
-use crate::index_9::{Index9, Index9Semantics};
+use crate::index::{Index9, Index9Semantics};
 
 /// A generic set of up to 9 elements, represented as a bitset.
 ///
@@ -41,12 +23,17 @@ use crate::index_9::{Index9, Index9Semantics};
 ///
 /// # Type Parameters
 ///
-/// * `S` - The semantics implementation (from [`index_9`](crate::index_9) module)
+/// * `S` - The semantics implementation (from [`index`] module)
 ///   that defines how values are converted to and from bit indices.
+///
+/// [`index`]: crate::index
 ///
 /// # Examples
 ///
-/// See the [`digit_candidates`](crate::digit_candidates) module for a concrete example using [`DigitCandidates`](crate::digit_candidates::DigitCandidates).
+/// See the [`digit_candidates`] module for a concrete example using [`DigitCandidates`].
+///
+/// [`digit_candidates`]: crate::digit_candidates
+/// [`DigitCandidates`]: crate::digit_candidates::DigitCandidates
 ///
 /// For information on defining custom semantics, see [`Index9Semantics`].
 pub struct BitSet9<S>

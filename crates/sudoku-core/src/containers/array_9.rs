@@ -1,24 +1,9 @@
 //! Semantically-indexed 9-element array.
 //!
-//! This module provides [`Array9`], a 9-element array that uses semantic indexing
-//! via the [`Index9Semantics`] trait. This allows
-//! arrays to be indexed by domain-specific values (like digits 1-9) rather than
-//! raw indices (0-8).
+//! Provides [`Array9`], a 9-element array with type-safe indexing via
+//! [`Index9Semantics`].
 //!
-//! # Examples
-//!
-//! ```
-//! use sudoku_core::array_9::Array9;
-//! use sudoku_core::index_9::DigitSemantics;
-//! use sudoku_core::candidate_board::DigitPositions;
-//!
-//! // Create an array indexed by digits 1-9
-//! let mut digit_array: Array9<DigitPositions, DigitSemantics> =
-//!     Array9::from([DigitPositions::FULL; 9]);
-//!
-//! // Access by digit (1-9), not index (0-8)
-//! let positions = &digit_array[5];  // digit 5
-//! ```
+//! [`Index9Semantics`]: crate::index::Index9Semantics
 
 use std::{
     array,
@@ -29,7 +14,7 @@ use std::{
     slice,
 };
 
-use crate::index_9::Index9Semantics;
+use crate::index::Index9Semantics;
 
 /// A 9-element array with semantic indexing.
 ///
@@ -46,15 +31,15 @@ use crate::index_9::Index9Semantics;
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::array_9::Array9;
-/// use sudoku_core::index_9::DigitSemantics;
+/// use sudoku_core::containers::Array9;
+/// use sudoku_core::index::DigitSemantics;
 ///
 /// // Create an array of integers indexed by digits 1-9
 /// let mut counts: Array9<i32, DigitSemantics> = Array9::from([0; 9]);
 ///
 /// // Use semantic indexing (digit 1-9)
-/// counts[1] = 10;  // digit 1
-/// counts[9] = 20;  // digit 9
+/// counts[1] = 10; // digit 1
+/// counts[9] = 20; // digit 9
 ///
 /// assert_eq!(counts[1], 10);
 /// assert_eq!(counts[9], 20);
@@ -159,8 +144,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use sudoku_core::array_9::Array9;
-    /// use sudoku_core::index_9::DigitSemantics;
+    /// use sudoku_core::containers::Array9;
+    /// use sudoku_core::index::DigitSemantics;
     ///
     /// let array: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     /// let sum: i32 = array.iter().sum();
@@ -175,8 +160,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use sudoku_core::array_9::Array9;
-    /// use sudoku_core::index_9::DigitSemantics;
+    /// use sudoku_core::containers::Array9;
+    /// use sudoku_core::index::DigitSemantics;
     ///
     /// let mut array: Array9<i32, DigitSemantics> = Array9::from([0; 9]);
     /// for elem in array.iter_mut() {
@@ -252,7 +237,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::index_9::{CellIndexSemantics, DigitSemantics};
+    use crate::index::{CellIndexSemantics, DigitSemantics};
 
     #[test]
     fn test_from_array() {

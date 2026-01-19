@@ -1,30 +1,41 @@
-//! Core data structures for sudoku solvers.
+//! Core data structures for sudoku applications.
 //!
-//! This crate provides efficient, specialized data structures for working with
-//! sudoku puzzles, particularly bitsets and candidate tracking.
+//! This crate provides fundamental, efficient data structures for representing and
+//! manipulating sudoku puzzles. These structures are used across solving, generation,
+//! and game management components.
 //!
 //! # Overview
 //!
 //! The crate is organized around two main concepts:
 //!
 //! 1. **Index semantics** - Define how values map to indices in containers
-//!    - [`index_9`]: Index types and semantics for 9-element containers
-//!    - [`index_81`]: Index types and semantics for 81-element containers
+//!    - [`index`]: Index types and semantics for both 9-element and 81-element containers,
+//!      including [`Index9`], [`Index81`], and semantics types like
+//!      [`DigitSemantics`], [`CellIndexSemantics`], and [`PositionSemantics`].
 //!
 //! 2. **Generic containers** - Containers parameterized by semantics
-//!    - [`bit_set_9`]: Generic 9-bit set implementation
-//!    - [`bit_set_81`]: Generic 81-bit set implementation
-//!    - [`array_9`]: Generic 9-element array with semantic indexing
+//!    - [`containers`]: Generic container implementations including [`BitSet9`],
+//!      [`BitSet81`], and [`Array9`]. These are parameterized by index semantics
+//!      to provide type-safe, efficient data structures.
 //!
-//! 3. **Specialized types** - Convenient type aliases with specific semantics
+//! 3. **Specialized types** - Convenient type aliases and higher-level types
 //!    - [`digit_candidates`]: Candidate digits (1-9) for a single cell
 //!    - [`candidate_board`]: Board-wide candidate tracking
 //!    - [`position`]: Board position (x, y) coordinate types
 //!
+//! [`Index9`]: index::Index9
+//! [`Index81`]: index::Index81
+//! [`DigitSemantics`]: index::DigitSemantics
+//! [`CellIndexSemantics`]: index::CellIndexSemantics
+//! [`PositionSemantics`]: index::PositionSemantics
+//! [`BitSet9`]: containers::BitSet9
+//! [`BitSet81`]: containers::BitSet81
+//! [`Array9`]: containers::Array9
+//!
 //! # Examples
 //!
 //! ```
-//! use sudoku_core::{CandidateBoard, Position, DigitCandidates};
+//! use sudoku_core::{CandidateBoard, DigitCandidates, Position};
 //!
 //! // Create a candidate board
 //! let mut board = CandidateBoard::new();
@@ -37,13 +48,10 @@
 //! assert!(!candidates.contains(5)); // 5 removed from same column
 //! ```
 
-pub mod array_9;
-pub mod bit_set_81;
-pub mod bit_set_9;
 pub mod candidate_board;
+pub mod containers;
 pub mod digit_candidates;
-pub mod index_81;
-pub mod index_9;
+pub mod index;
 pub mod position;
 
 // Re-export commonly used types

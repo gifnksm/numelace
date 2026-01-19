@@ -1,30 +1,10 @@
-//! Index types and semantics for 9-element sets.
+//! Index types and semantics for 9-element containers.
 //!
-//! This module provides [`Index9`] and [`Index9Semantics`], which are used to
-//! define how values map to bit indices in generic 9-element containers like
-//! [`BitSet9`](crate::bit_set_9::BitSet9).
+//! Provides [`Index9`] and [`Index9Semantics`] for type-safe indexing into 9-element
+//! containers like [`BitSet9`] and [`Array9`].
 //!
-//! # Examples
-//!
-//! ```
-//! use sudoku_core::index_9::{Index9, Index9Semantics};
-//!
-//! // Define semantics that map digits 1-9 to indices 0-8
-//! struct DigitSemantics;
-//!
-//! impl Index9Semantics for DigitSemantics {
-//!     type Value = u8;
-//!
-//!     fn to_index(value: u8) -> Index9 {
-//!         assert!((1..=9).contains(&value));
-//!         Index9::new(value - 1)
-//!     }
-//!
-//!     fn from_index(index: Index9) -> u8 {
-//!         index.index() + 1
-//!     }
-//! }
-//! ```
+//! [`BitSet9`]: crate::containers::BitSet9
+//! [`Array9`]: crate::containers::Array9
 
 /// A bit index in the range 0-8.
 ///
@@ -63,7 +43,7 @@ impl Index9 {
     /// # Examples
     ///
     /// ```
-    /// # use sudoku_core::index_9::Index9;
+    /// # use sudoku_core::index::Index9;
     /// let indices: Vec<_> = Index9::all().collect();
     /// assert_eq!(indices.len(), 9);
     /// assert_eq!(indices[0].index(), 0);
@@ -76,13 +56,15 @@ impl Index9 {
 
 /// Defines the semantics for mapping values to indices in 9-element containers.
 ///
-/// This trait allows generic containers like [`BitSet9`](crate::bit_set_9::BitSet9)
+/// This trait allows generic containers like [`BitSet9`]
 /// to work with different value types and mappings. Implementors define how user-facing
 /// values are converted to and from internal indices (0-8).
 ///
 /// This trait is used by:
-/// - [`BitSet9`](crate::bit_set_9::BitSet9) - 9-bit sets
+/// - [`BitSet9`] - 9-bit sets
 /// - (Future) `Array9` - 9-element arrays with semantic indexing
+///
+/// [`BitSet9`]: crate::containers::BitSet9
 ///
 /// # Common Implementations
 ///
@@ -92,7 +74,7 @@ impl Index9 {
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::index_9::{Index9, Index9Semantics};
+/// use sudoku_core::index::{Index9, Index9Semantics};
 ///
 /// // A semantics that maps 1-9 to indices 0-8
 /// struct NumberSemantics;
@@ -140,7 +122,7 @@ pub trait Index9Semantics {
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::index_9::{Index9, Index9Semantics, DigitSemantics};
+/// use sudoku_core::index::{DigitSemantics, Index9, Index9Semantics};
 ///
 /// // Digit 1 maps to index 0
 /// let index = DigitSemantics::to_index(1);
@@ -188,7 +170,7 @@ impl Index9Semantics for DigitSemantics {
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::index_9::{Index9, Index9Semantics, CellIndexSemantics};
+/// use sudoku_core::index::{CellIndexSemantics, Index9, Index9Semantics};
 ///
 /// // Direct mapping
 /// let index = CellIndexSemantics::to_index(0);

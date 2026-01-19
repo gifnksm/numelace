@@ -12,8 +12,10 @@
 //!
 //! This module uses semantics implementations defined in the index modules:
 //!
-//! - [`PositionSemantics`] - Maps [`Position`] to indices (from [`index_81`](crate::index_81))
-//! - [`CellIndexSemantics`] - Direct 0-8 mapping (from [`index_9`](crate::index_9))
+//! - [`PositionSemantics`] - Maps [`Position`] to indices (from [`index`])
+//! - [`CellIndexSemantics`] - Direct 0-8 mapping (from [`index`])
+//!
+//! [`index`]: crate::index
 //!
 //! # Examples
 //!
@@ -37,12 +39,10 @@
 //! ```
 
 use crate::{
-    array_9::Array9,
-    bit_set_9::BitSet9,
-    bit_set_81::BitSet81,
+    containers::{Array9, BitSet9, BitSet81},
     digit_candidates::DigitCandidates,
-    index_9::{CellIndexSemantics, DigitSemantics, Index9, Index9Semantics},
-    index_81::PositionSemantics,
+    index::PositionSemantics,
+    index::{CellIndexSemantics, DigitSemantics, Index9, Index9Semantics},
     position::Position,
 };
 
@@ -54,8 +54,8 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::candidate_board::DigitPositions;
 /// use sudoku_core::Position;
+/// use sudoku_core::candidate_board::DigitPositions;
 ///
 /// let mut positions = DigitPositions::FULL; // All 81 positions initially
 /// positions.remove(Position::new(0, 0));

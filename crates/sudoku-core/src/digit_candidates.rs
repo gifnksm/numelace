@@ -3,9 +3,12 @@
 //! This module provides [`DigitCandidates`], a specialized implementation of
 //! [`BitSet9`] for representing sets of digits 1-9.
 //!
-//! The [`DigitSemantics`] type (defined in [`index_9`](crate::index_9))
-//! implements [`Index9Semantics`](crate::index_9::Index9Semantics)
+//! The [`DigitSemantics`] type (defined in [`index`])
+//! implements [`Index9Semantics`]
 //! to map digits 1-9 to internal bit indices 0-8.
+//!
+//! [`index`]: crate::index
+//! [`Index9Semantics`]: crate::index::Index9Semantics
 //!
 //! # Examples
 //!
@@ -26,7 +29,7 @@
 //! assert_eq!(candidates.len(), 2);
 //! ```
 
-use crate::{bit_set_9::BitSet9, index_9::DigitSemantics};
+use crate::{containers::BitSet9, index::DigitSemantics};
 
 /// A set of candidate digits (1-9) for a single cell.
 ///

@@ -1,27 +1,9 @@
 //! Generic 81-bit set implementation for 9x9 board positions.
 //!
-//! This module provides [`BitSet81`], a generic bitset that can represent
-//! any set of up to 81 elements (9x9 grid). The semantics of the elements (their type and
-//! how they map to bit indices 0-80) are determined by the [`Index81Semantics`]
-//! trait (defined in the [`index_81`](crate::index_81) module).
+//! Provides [`BitSet81`], a generic bitset for representing sets of up to 81 elements,
+//! parameterized by [`Index81Semantics`].
 //!
-//! The most common use case is to represent board positions as (x, y) coordinates
-//! where both x and y are in the range 0-8.
-//!
-//! # Examples
-//!
-//! ```
-//! use sudoku_core::candidate_board::DigitPositions;
-//! use sudoku_core::Position;
-//!
-//! let mut positions = DigitPositions::new();
-//! positions.insert(Position::new(0, 0));
-//! positions.insert(Position::new(4, 4));
-//! positions.insert(Position::new(8, 8));
-//!
-//! assert_eq!(positions.len(), 3);
-//! assert!(positions.contains(Position::new(4, 4)));
-//! ```
+//! [`Index81Semantics`]: crate::index::Index81Semantics
 
 use std::{
     fmt::{self, Debug},
@@ -31,7 +13,7 @@ use std::{
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, RangeBounds},
 };
 
-use crate::index_81::{Index81, Index81Semantics};
+use crate::index::{Index81, Index81Semantics};
 
 /// A generic set of up to 81 elements, represented as a bitset.
 ///
@@ -41,13 +23,18 @@ use crate::index_81::{Index81, Index81Semantics};
 ///
 /// # Type Parameters
 ///
-/// * `S` - The semantics implementation (from [`index_81`](crate::index_81) module)
+/// * `S` - The semantics implementation (from [`index`] module)
 ///   that defines how values are converted to and from bit indices.
+///
+/// [`index`]: crate::index
 ///
 /// # Examples
 ///
-/// See [`DigitPositions`](crate::candidate_board::DigitPositions) for a concrete example
-/// using [`Position`](crate::Position) as the element type.
+/// See [`DigitPositions`] for a concrete example
+/// using [`Position`] as the element type.
+///
+/// [`DigitPositions`]: crate::candidate_board::DigitPositions
+/// [`Position`]: crate::Position
 ///
 /// For information on defining custom semantics, see [`Index81Semantics`].
 pub struct BitSet81<S>

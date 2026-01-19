@@ -1,31 +1,9 @@
-//! Index types and semantics for 81-element sets.
+//! Index types and semantics for 81-element containers.
 //!
-//! This module provides [`Index81`] and [`Index81Semantics`], which are used to
-//! define how values map to bit indices in generic 81-element containers like
-//! [`BitSet81`](crate::bit_set_81::BitSet81).
+//! Provides [`Index81`] and [`Index81Semantics`] for type-safe indexing into 81-element
+//! containers like [`BitSet81`], typically used for board positions.
 //!
-//! # Examples
-//!
-//! ```
-//! use sudoku_core::index_81::{Index81, Index81Semantics};
-//! use sudoku_core::Position;
-//!
-//! // Define semantics that map Position to indices
-//! struct PositionSemantics;
-//!
-//! impl Index81Semantics for PositionSemantics {
-//!     type Value = Position;
-//!
-//!     fn to_index(value: Position) -> Index81 {
-//!         Index81::new(value.y() * 9 + value.x())
-//!     }
-//!
-//!     fn from_index(index: Index81) -> Position {
-//!         let i = index.index();
-//!         Position::new(i % 9, i / 9)
-//!     }
-//! }
-//! ```
+//! [`BitSet81`]: crate::containers::BitSet81
 
 /// A bit index in the range 0-80.
 ///
@@ -64,7 +42,7 @@ impl Index81 {
     /// # Examples
     ///
     /// ```
-    /// # use sudoku_core::index_81::Index81;
+    /// # use sudoku_core::index::Index81;
     /// let indices: Vec<_> = Index81::all().collect();
     /// assert_eq!(indices.len(), 81);
     /// assert_eq!(indices[0].index(), 0);
@@ -77,22 +55,26 @@ impl Index81 {
 
 /// Defines the semantics for mapping values to indices in 81-element containers.
 ///
-/// This trait allows generic containers like [`BitSet81`](crate::bit_set_81::BitSet81)
+/// This trait allows generic containers like [`BitSet81`]
 /// to work with different value types and mappings. Implementors define how user-facing
 /// values are converted to and from internal indices (0-80).
 ///
 /// This trait is used by:
-/// - [`BitSet81`](crate::bit_set_81::BitSet81) - 81-bit sets
+/// - [`BitSet81`] - 81-bit sets
 /// - (Future) `Array81` - 81-element arrays with semantic indexing
+///
+/// [`BitSet81`]: crate::containers::BitSet81
 ///
 /// # Common Implementations
 ///
-/// - [`PositionSemantics`] - Maps [`Position`](crate::Position) to row-major indices
+/// - [`PositionSemantics`] - Maps [`Position`] to row-major indices
+///
+/// [`Position`]: crate::Position
 ///
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::index_81::{Index81, Index81Semantics};
+/// use sudoku_core::index::{Index81, Index81Semantics};
 ///
 /// // A semantics that maps (x, y) coordinates to indices
 /// struct PositionSemantics;
@@ -130,16 +112,18 @@ pub trait Index81Semantics {
 /// Semantics for board positions.
 ///
 /// This type implements [`Index81Semantics`] to map
-/// [`Position`](crate::Position) coordinates to row-major indices (index = y * 9 + x).
+/// [`Position`] coordinates to row-major indices (index = y * 9 + x).
 ///
 /// This is the standard semantics for sudoku board positions, where a position
 /// at (x, y) maps to index y * 9 + x (row-major order).
 ///
+/// [`Position`]: crate::Position
+///
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::index_81::{Index81, Index81Semantics, PositionSemantics};
 /// use sudoku_core::Position;
+/// use sudoku_core::index::{Index81, Index81Semantics, PositionSemantics};
 ///
 /// // Position (0, 0) maps to index 0
 /// let index = PositionSemantics::to_index(Position::new(0, 0));
