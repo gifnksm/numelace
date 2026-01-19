@@ -1,0 +1,60 @@
+# Sudoku
+
+A Sudoku application written in Rust, supporting both desktop and web platforms.
+
+## Project Goals
+
+- **Automatic Puzzle Generation**: Generate Sudoku puzzles with configurable difficulty levels
+- **Multiple Solving Strategies**: Implement both algorithmic (backtracking) and human-like solving techniques
+- **Cross-Platform**: Desktop GUI and Web/WASM support using egui/eframe
+
+## Current Status
+
+- ✅ **sudoku-core**: `NumberSet` implementation (efficient bitset for numbers 1-9)
+- 🚧 **In Progress**: Core data structures (Grid, Position, Cell)
+- 📋 **Planned**: Solver algorithms, puzzle generation, GUI
+
+## Project Structure
+
+```text
+crates/
+├── sudoku-core/       # Core data structures
+├── sudoku-solver/     # Solving algorithms (planned)
+├── sudoku-generator/  # Puzzle generation (planned)
+├── sudoku-game/       # Game logic (planned)
+└── sudoku-app/        # GUI application (planned)
+```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architecture documentation.
+
+## Build and Test
+
+```bash
+# Build all crates
+cargo build
+
+# Run tests
+cargo test
+
+# Run clippy
+cargo clippy --all-targets
+
+# Generate documentation
+cargo doc --open
+```
+
+## Run
+
+```bash
+# Desktop application (not yet implemented)
+cargo run -p sudoku-app
+```
+
+## License
+
+Licensed under either of:
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+
+at your option.

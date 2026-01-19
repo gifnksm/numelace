@@ -1,0 +1,18 @@
+[package]
+name = "sudoku-app"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+readme.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "sudoku"
+path = "src/main.rs"
+
+[dependencies]
+eframe.workspace = true
+
+[lints]
+workspace = true
