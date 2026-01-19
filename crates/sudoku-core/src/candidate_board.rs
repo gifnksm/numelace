@@ -2,68 +2,130 @@
 //!
 //! This module provides [`CandidateBoard`], which tracks possible placements
 //! for each digit (1-9) across the entire 9x9 board using bitboards.
+//!
+//! # Type Aliases
+//!
+//! - [`DigitPositions`] - A [`BitSet81`] tracking positions where a digit can be placed
+//! - [`HouseMask`] - A [`BitSet9`] for candidates within a house (row/col/box)
+//!
+//! # Semantics
+//!
+//! This module uses semantics implementations defined in the index modules:
+//!
+//! - [`PositionSemantics`] - Maps [`Position`] to indices (from [`index_81`](crate::index_81))
+//! - [`CellIndexSemantics`] - Direct 0-8 mapping (from [`index_9`](crate::index_9))
+//!
+//! # Examples
+//!
+//! ```
+//! use sudoku_core::{CandidateBoard, Position};
+//!
+//! let mut board = CandidateBoard::new();
+//!
+//! // Place digit 5 at position (4, 4)
+//! board.place(Position::new(4, 4), 5);
+//!
+//! // Check remaining candidates at a position
+//! let candidates = board.get_candidates_at(Position::new(4, 5));
+//! assert!(!candidates.contains(5)); // 5 was removed from the column
+//!
+//! // Check for Hidden Single in a row
+//! let row_mask = board.get_row(4, 3);
+//! if row_mask.len() == 1 {
+//!     println!("Found Hidden Single for digit 3 in row 4");
+//! }
+//! ```
 
 use crate::{
-    bit_set_9::{BitIndex9, BitSet9, BitSet9Semantics},
-    bit_set_81::{BitIndex81, BitSet81, BitSet81Semantics},
-    digit_candidates::{DigitCandidates, DigitSemantics},
+    bit_set_9::BitSet9,
+    bit_set_81::BitSet81,
+    digit_candidates::DigitCandidates,
+    index_9::{CellIndexSemantics, DigitSemantics, Index9, Index9Semantics},
+    index_81::PositionSemantics,
     position::Position,
 };
 
-/// Semantics for board positions.
-///
-/// **Note**: This is an implementation detail of [`DigitPositions`].
-/// Use [`DigitPositions`] directly instead.
-#[derive(Debug)]
-pub struct PositionSemantics;
-
-impl BitSet81Semantics for PositionSemantics {
-    type Value = Position;
-
-    fn to_index(value: Self::Value) -> BitIndex81 {
-        BitIndex81::new(value.y() * 9 + value.x())
-    }
-
-    fn from_index(index: BitIndex81) -> Self::Value {
-        let i = index.index();
-        Self::Value::new(i % 9, i / 9)
-    }
-}
-
-/// Semantics for cell indices (0-8) within a house.
-///
-/// **Note**: This is an implementation detail of [`HouseMask`].
-/// Use [`HouseMask`] directly instead.
-#[derive(Debug)]
-pub struct CellIndexSemantics;
-
-impl BitSet9Semantics for CellIndexSemantics {
-    type Value = u8;
-
-    fn to_index(value: Self::Value) -> BitIndex9 {
-        assert!(value < 9);
-        BitIndex9::new(value)
-    }
-
-    fn from_index(index: BitIndex9) -> Self::Value {
-        index.index()
-    }
-}
-
 /// A set of candidate positions across the board for a single digit.
 ///
-/// Represents "which cells can this digit go in?"
+/// This is a type alias for `BitSet81<PositionSemantics>`, representing
+/// "which cells can this digit go in?" across the entire 9x9 board.
+///
+/// # Examples
+///
+/// ```
+/// use sudoku_core::candidate_board::DigitPositions;
+/// use sudoku_core::Position;
+///
+/// let mut positions = DigitPositions::FULL; // All 81 positions initially
+/// positions.remove(Position::new(0, 0));
+/// positions.remove(Position::new(4, 4));
+///
+/// assert_eq!(positions.len(), 79);
+/// assert!(!positions.contains(Position::new(0, 0)));
+/// ```
 pub type DigitPositions = BitSet81<PositionSemantics>;
 
 /// A bitmask representing candidate positions within a house (row/col/box).
 ///
-/// "House" is a sudoku term for any row, column, or box.
+/// This is a type alias for `BitSet9<CellIndexSemantics>`, where each bit
+/// represents one of the 9 cells in a house. "House" is a sudoku term for
+/// any row, column, or box.
+///
+/// Used by [`CandidateBoard::get_row`], [`CandidateBoard::get_col`], and
+/// [`CandidateBoard::get_box`] to return candidate positions within a specific house.
+///
+/// # Examples
+///
+/// ```
+/// use sudoku_core::candidate_board::HouseMask;
+///
+/// let mut mask = HouseMask::new();
+/// mask.insert(0); // First cell in house
+/// mask.insert(4); // Middle cell
+/// mask.insert(8); // Last cell
+///
+/// assert_eq!(mask.len(), 3);
+///
+/// // Useful for detecting Hidden Singles
+/// if mask.len() == 1 {
+///     println!("Found a Hidden Single!");
+/// }
+/// ```
 pub type HouseMask = BitSet9<CellIndexSemantics>;
 
 /// Candidate bitboard for sudoku solving.
 ///
 /// Manages possible placements for each digit (1-9) across the entire board.
 /// Used for detecting Hidden Singles, Naked Singles, and other solving techniques.
+///
+/// # Structure
+///
+/// Internally stores 9 [`DigitPositions`] (one per digit), each tracking the
+/// 81 board positions where that digit can be placed.
+///
+/// # Examples
+///
+/// ```
+/// use sudoku_core::{CandidateBoard, Position};
+///
+/// let mut board = CandidateBoard::new();
+///
+/// // Initially all positions have all candidates
+/// let pos = Position::new(0, 0);
+/// assert_eq!(board.get_candidates_at(pos).len(), 9);
+///
+/// // Place digit 1 at (0, 0) - removes candidates from row, col, box
+/// board.place(pos, 1);
+///
+/// // Now (0, 0) only has digit 1
+/// let candidates = board.get_candidates_at(pos);
+/// assert_eq!(candidates.len(), 1);
+/// assert!(candidates.contains(1));
+///
+/// // Other cells in the row no longer have digit 1 as candidate
+/// let row_mask = board.get_row(0, 1);
+/// assert_eq!(row_mask.len(), 1); // Only at (0, 0)
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CandidateBoard {
     /// `digits[i]` represents possible positions for digit `(i+1)`
@@ -126,7 +188,7 @@ impl CandidateBoard {
         let mut candidates = DigitCandidates::new();
         for (i, digits) in (0..).zip(&self.digits) {
             if digits.contains(pos) {
-                candidates.insert(DigitSemantics::from_index(BitIndex9::new(i)));
+                candidates.insert(DigitSemantics::from_index(Index9::new(i)));
             }
         }
         candidates

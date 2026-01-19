@@ -1,12 +1,27 @@
 //! Generic 9-bit set implementation.
 //!
-//! This module provides `BitSet9<S>`, a generic bitset that can represent
+//! This module provides [`BitSet9`], a generic bitset that can represent
 //! any set of up to 9 elements. The semantics of the elements (their type and
-//! how they map to bit indices 0-8) are determined by the `BitSet9Semantics` trait.
+//! how they map to bit indices 0-8) are determined by the [`Index9Semantics`]
+//! trait (defined in the [`index_9`](crate::index_9) module).
 //!
 //! The most common use case is [`DigitCandidates`](crate::digit_candidates::DigitCandidates)
 //! (defined in the [`digit_candidates`](crate::digit_candidates) module),
 //! which represents a set of candidate digits from 1 to 9 for sudoku cells.
+//!
+//! # Examples
+//!
+//! ```
+//! use sudoku_core::DigitCandidates;
+//!
+//! let mut candidates = DigitCandidates::new();
+//! candidates.insert(1);
+//! candidates.insert(5);
+//! candidates.insert(9);
+//!
+//! assert_eq!(candidates.len(), 3);
+//! assert!(candidates.contains(5));
+//! ```
 
 use std::{
     fmt::{self, Debug},
@@ -16,122 +31,37 @@ use std::{
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, RangeBounds},
 };
 
-/// A bit index in the range 0-8.
-///
-/// This type represents a valid index into a 9-bit bitset.
-/// It ensures at construction time that the index is within the valid range.
-#[derive(Debug, Clone, Copy)]
-pub struct BitIndex9 {
-    index: u8,
-}
-
-impl BitIndex9 {
-    /// Creates a new bit index.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `index` is not in the range 0-8.
-    #[must_use]
-    pub const fn new(index: u8) -> Self {
-        assert!(index < 9);
-        Self { index }
-    }
-
-    /// Returns the underlying index value (0-8).
-    #[must_use]
-    pub const fn index(self) -> u8 {
-        self.index
-    }
-
-    const fn bit(self) -> u16 {
-        1 << self.index
-    }
-
-    /// Returns an iterator over all 9 valid bit indices (0-8).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use sudoku_core::bit_set_9::BitIndex9;
-    /// let indices: Vec<_> = BitIndex9::all().collect();
-    /// assert_eq!(indices.len(), 9);
-    /// assert_eq!(indices[0].index(), 0);
-    /// assert_eq!(indices[8].index(), 8);
-    /// ```
-    pub fn all() -> impl Iterator<Item = Self> {
-        (0..9).map(BitIndex9::new)
-    }
-}
-
-/// Defines the semantics for mapping values to bit indices in a [`BitSet9`].
-///
-/// This trait allows [`BitSet9`] to be generic over different value types and mappings.
-/// Implementors define how user-facing values are converted to and from internal
-/// bit indices (0-8).
-///
-/// # Examples
-///
-/// ```
-/// use sudoku_core::bit_set_9::{BitIndex9, BitSet9Semantics};
-///
-/// // A semantics that maps 1-9 to indices 0-8
-/// struct NumberSemantics;
-///
-/// impl BitSet9Semantics for NumberSemantics {
-///     type Value = u8;
-///
-///     fn to_index(value: u8) -> BitIndex9 {
-///         assert!((1..=9).contains(&value));
-///         BitIndex9::new(value - 1)
-///     }
-///
-///     fn from_index(index: BitIndex9) -> u8 {
-///         index.index() + 1
-///     }
-/// }
-/// ```
-pub trait BitSet9Semantics {
-    /// The type of values that can be stored in the set.
-    type Value;
-
-    /// Converts a value to a bit index.
-    ///
-    /// # Panics
-    ///
-    /// Should panic if the value cannot be represented as a valid bit index (0-8).
-    fn to_index(value: Self::Value) -> BitIndex9;
-
-    /// Converts a bit index back to a value.
-    fn from_index(index: BitIndex9) -> Self::Value;
-}
+use crate::index_9::{Index9, Index9Semantics};
 
 /// A generic set of up to 9 elements, represented as a bitset.
 ///
 /// This type uses a 16-bit integer where bits 0-8 represent the 9 possible elements.
 /// The specific semantics of the elements are determined by the `S` type parameter,
-/// which must implement `BitSet9Semantics`.
+/// which must implement [`Index9Semantics`].
 ///
 /// # Type Parameters
 ///
-/// * `S` - The semantics implementation that defines how values are converted
-///   to and from bit indices.
+/// * `S` - The semantics implementation (from [`index_9`](crate::index_9) module)
+///   that defines how values are converted to and from bit indices.
 ///
 /// # Examples
 ///
 /// See the [`digit_candidates`](crate::digit_candidates) module for a concrete example using [`DigitCandidates`](crate::digit_candidates::DigitCandidates).
+///
+/// For information on defining custom semantics, see [`Index9Semantics`].
 pub struct BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     bits: u16,
     _marker: PhantomData<S>,
 }
 
-impl<S> Copy for BitSet9<S> where S: BitSet9Semantics {}
+impl<S> Copy for BitSet9<S> where S: Index9Semantics {}
 
 impl<S> Clone for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     fn clone(&self) -> Self {
         *self
@@ -140,18 +70,18 @@ where
 
 impl<S> PartialEq for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     fn eq(&self, other: &Self) -> bool {
         self.bits == other.bits
     }
 }
 
-impl<S> Eq for BitSet9<S> where S: BitSet9Semantics {}
+impl<S> Eq for BitSet9<S> where S: Index9Semantics {}
 
 impl<S> Hash for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bits.hash(state);
@@ -160,7 +90,7 @@ where
 
 impl<S> Default for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     fn default() -> Self {
         Self::new()
@@ -169,7 +99,7 @@ where
 
 impl<S> BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     /// An empty set containing no elements.
     pub const EMPTY: Self = Self::from_bits(0);
@@ -283,20 +213,20 @@ where
         self.union(other).bits == self.bits
     }
 
-    const fn first_index(self) -> Option<BitIndex9> {
+    const fn first_index(self) -> Option<Index9> {
         if self.bits == 0 {
             return None;
         }
         #[expect(clippy::cast_possible_truncation)]
-        Some(BitIndex9::new(self.bits.trailing_zeros() as u8))
+        Some(Index9::new(self.bits.trailing_zeros() as u8))
     }
 
-    const fn last_index(self) -> Option<BitIndex9> {
+    const fn last_index(self) -> Option<Index9> {
         if self.bits == 0 {
             return None;
         }
         #[expect(clippy::cast_possible_truncation)]
-        Some(BitIndex9::new(15 - self.bits.leading_zeros() as u8))
+        Some(Index9::new(15 - self.bits.leading_zeros() as u8))
     }
 
     /// Returns the smallest element in the set, if any.
@@ -383,7 +313,7 @@ where
 
 impl<S> BitAnd for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     type Output = Self;
 
@@ -394,7 +324,7 @@ where
 
 impl<S> BitAndAssign for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     fn bitand_assign(&mut self, rhs: Self) {
         self.bits &= rhs.bits;
@@ -403,7 +333,7 @@ where
 
 impl<S> BitOr for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     type Output = Self;
 
@@ -414,7 +344,7 @@ where
 
 impl<S> BitOrAssign for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     fn bitor_assign(&mut self, rhs: Self) {
         self.bits |= rhs.bits;
@@ -423,7 +353,7 @@ where
 
 impl<S> BitXor for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     type Output = Self;
 
@@ -434,7 +364,7 @@ where
 
 impl<S> BitXorAssign for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     fn bitxor_assign(&mut self, rhs: Self) {
         self.bits ^= rhs.bits;
@@ -443,7 +373,7 @@ where
 
 impl<S> Not for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     type Output = Self;
 
@@ -454,7 +384,7 @@ where
 
 impl<S> Debug for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
     S::Value: Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -464,7 +394,7 @@ where
 
 impl<S> IntoIterator for &BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     type IntoIter = BitSet9Iter<S>;
     type Item = S::Value;
@@ -476,7 +406,7 @@ where
 
 impl<S> IntoIterator for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     type IntoIter = BitSet9Iter<S>;
     type Item = S::Value;
@@ -492,14 +422,14 @@ where
 /// double-ended iteration.
 pub struct BitSet9Iter<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     set: BitSet9<S>,
 }
 
 impl<S> Debug for BitSet9Iter<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
     S::Value: Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -511,7 +441,7 @@ where
 
 impl<S> Iterator for BitSet9Iter<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     type Item = S::Value;
 
@@ -527,19 +457,19 @@ where
 
 impl<S> DoubleEndedIterator for BitSet9Iter<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.set.pop_last()
     }
 }
 
-impl<S> ExactSizeIterator for BitSet9Iter<S> where S: BitSet9Semantics {}
-impl<S> FusedIterator for BitSet9Iter<S> where S: BitSet9Semantics {}
+impl<S> ExactSizeIterator for BitSet9Iter<S> where S: Index9Semantics {}
+impl<S> FusedIterator for BitSet9Iter<S> where S: Index9Semantics {}
 
 impl<S> FromIterator<S::Value> for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     fn from_iter<T>(iter: T) -> Self
     where
@@ -555,7 +485,7 @@ where
 
 impl<S> Extend<S::Value> for BitSet9<S>
 where
-    S: BitSet9Semantics,
+    S: Index9Semantics,
 {
     fn extend<T: IntoIterator<Item = S::Value>>(&mut self, iter: T) {
         for value in iter {
@@ -571,15 +501,15 @@ mod tests {
     #[derive(Debug, Clone, Copy)]
     struct TestSemantics;
 
-    impl BitSet9Semantics for TestSemantics {
+    impl Index9Semantics for TestSemantics {
         type Value = u8;
 
-        fn to_index(value: Self::Value) -> BitIndex9 {
+        fn to_index(value: Self::Value) -> Index9 {
             assert!(value < 9, "Test value must be 0-8, got {value}");
-            BitIndex9::new(value)
+            Index9::new(value)
         }
 
-        fn from_index(index: BitIndex9) -> Self::Value {
+        fn from_index(index: Index9) -> Self::Value {
             index.index()
         }
     }
@@ -598,7 +528,7 @@ mod tests {
 
         #[test]
         fn test_all() {
-            let indices: Vec<_> = BitIndex9::all().collect();
+            let indices: Vec<_> = Index9::all().collect();
             assert_eq!(indices.len(), 9);
             for (i, idx) in (0..).zip(indices) {
                 assert_eq!(idx.index(), i);
@@ -607,7 +537,7 @@ mod tests {
 
         #[test]
         fn test_all_creates_valid_indices() {
-            for idx in BitIndex9::all() {
+            for idx in Index9::all() {
                 assert!(idx.index() < 9);
             }
         }

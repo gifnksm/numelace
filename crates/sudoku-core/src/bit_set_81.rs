@@ -1,11 +1,27 @@
 //! Generic 81-bit set implementation for 9x9 board positions.
 //!
-//! This module provides `BitSet81<S>`, a generic bitset that can represent
+//! This module provides [`BitSet81`], a generic bitset that can represent
 //! any set of up to 81 elements (9x9 grid). The semantics of the elements (their type and
-//! how they map to bit indices 0-80) are determined by the `BitSet81Semantics` trait.
+//! how they map to bit indices 0-80) are determined by the [`Index81Semantics`]
+//! trait (defined in the [`index_81`](crate::index_81) module).
 //!
 //! The most common use case is to represent board positions as (x, y) coordinates
 //! where both x and y are in the range 0-8.
+//!
+//! # Examples
+//!
+//! ```
+//! use sudoku_core::candidate_board::DigitPositions;
+//! use sudoku_core::Position;
+//!
+//! let mut positions = DigitPositions::new();
+//! positions.insert(Position::new(0, 0));
+//! positions.insert(Position::new(4, 4));
+//! positions.insert(Position::new(8, 8));
+//!
+//! assert_eq!(positions.len(), 3);
+//! assert!(positions.contains(Position::new(4, 4)));
+//! ```
 
 use std::{
     fmt::{self, Debug},
@@ -15,120 +31,38 @@ use std::{
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, RangeBounds},
 };
 
-/// A bit index in the range 0-80.
-///
-/// This type represents a valid index into an 81-bit bitset.
-/// It ensures at construction time that the index is within the valid range.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct BitIndex81 {
-    index: u8,
-}
-
-impl BitIndex81 {
-    /// Creates a new bit index.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `index` is not in the range 0-80.
-    #[must_use]
-    pub const fn new(index: u8) -> Self {
-        assert!(index < 81);
-        Self { index }
-    }
-
-    /// Returns the underlying index value (0-80).
-    #[must_use]
-    pub const fn index(self) -> u8 {
-        self.index
-    }
-
-    const fn bit(self) -> u128 {
-        1 << self.index
-    }
-
-    /// Returns an iterator over all 81 valid bit indices (0-80).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use sudoku_core::bit_set_81::BitIndex81;
-    /// let indices: Vec<_> = BitIndex81::all().collect();
-    /// assert_eq!(indices.len(), 81);
-    /// assert_eq!(indices[0].index(), 0);
-    /// assert_eq!(indices[80].index(), 80);
-    /// ```
-    pub fn all() -> impl Iterator<Item = Self> {
-        (0..81).map(BitIndex81::new)
-    }
-}
-
-/// Defines the semantics for mapping values to bit indices in a [`BitSet81`].
-///
-/// This trait allows [`BitSet81`] to be generic over different value types and mappings.
-/// Implementors define how user-facing values are converted to and from internal
-/// bit indices (0-80).
-///
-/// # Examples
-///
-/// ```
-/// use sudoku_core::bit_set_81::{BitIndex81, BitSet81Semantics};
-///
-/// // A semantics that maps (x, y) coordinates to indices
-/// struct PositionSemantics;
-///
-/// impl BitSet81Semantics for PositionSemantics {
-///     type Value = (u8, u8);
-///
-///     fn to_index(value: (u8, u8)) -> BitIndex81 {
-///         let (x, y) = value;
-///         assert!(x < 9 && y < 9);
-///         BitIndex81::new(y * 9 + x)
-///     }
-///
-///     fn from_index(index: BitIndex81) -> (u8, u8) {
-///         let idx = index.index();
-///         (idx % 9, idx / 9)
-///     }
-/// }
-/// ```
-pub trait BitSet81Semantics {
-    /// The type of values that can be stored in the set.
-    type Value;
-
-    /// Converts a value to a bit index.
-    ///
-    /// # Panics
-    ///
-    /// Should panic if the value cannot be represented as a valid bit index (0-80).
-    fn to_index(value: Self::Value) -> BitIndex81;
-
-    /// Converts a bit index back to a value.
-    fn from_index(index: BitIndex81) -> Self::Value;
-}
+use crate::index_81::{Index81, Index81Semantics};
 
 /// A generic set of up to 81 elements, represented as a bitset.
 ///
 /// This type uses a 128-bit integer where bits 0-80 represent the 81 possible elements.
 /// The specific semantics of the elements are determined by the `S` type parameter,
-/// which must implement `BitSet81Semantics`.
+/// which must implement [`Index81Semantics`].
 ///
 /// # Type Parameters
 ///
-/// * `S` - The semantics implementation that defines how values are converted
-///   to and from bit indices.
+/// * `S` - The semantics implementation (from [`index_81`](crate::index_81) module)
+///   that defines how values are converted to and from bit indices.
+///
+/// # Examples
+///
+/// See [`DigitPositions`](crate::candidate_board::DigitPositions) for a concrete example
+/// using [`Position`](crate::Position) as the element type.
+///
+/// For information on defining custom semantics, see [`Index81Semantics`].
 pub struct BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     bits: u128,
     _marker: PhantomData<S>,
 }
 
-impl<S> Copy for BitSet81<S> where S: BitSet81Semantics {}
+impl<S> Copy for BitSet81<S> where S: Index81Semantics {}
 
 impl<S> Clone for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     fn clone(&self) -> Self {
         *self
@@ -137,18 +71,18 @@ where
 
 impl<S> PartialEq for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     fn eq(&self, other: &Self) -> bool {
         self.bits == other.bits
     }
 }
 
-impl<S> Eq for BitSet81<S> where S: BitSet81Semantics {}
+impl<S> Eq for BitSet81<S> where S: Index81Semantics {}
 
 impl<S> Hash for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bits.hash(state);
@@ -157,7 +91,7 @@ where
 
 impl<S> Default for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     fn default() -> Self {
         Self::new()
@@ -166,7 +100,7 @@ where
 
 impl<S> BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     /// An empty set containing no elements.
     pub const EMPTY: Self = Self::from_bits(0);
@@ -268,20 +202,20 @@ where
         (self.bits & other.bits) == other.bits
     }
 
-    const fn first_index(self) -> Option<BitIndex81> {
+    const fn first_index(self) -> Option<Index81> {
         if self.bits == 0 {
             return None;
         }
         #[expect(clippy::cast_possible_truncation)]
-        Some(BitIndex81::new(self.bits.trailing_zeros() as u8))
+        Some(Index81::new(self.bits.trailing_zeros() as u8))
     }
 
-    const fn last_index(self) -> Option<BitIndex81> {
+    const fn last_index(self) -> Option<Index81> {
         if self.bits == 0 {
             return None;
         }
         #[expect(clippy::cast_possible_truncation)]
-        Some(BitIndex81::new(127 - self.bits.leading_zeros() as u8))
+        Some(Index81::new(127 - self.bits.leading_zeros() as u8))
     }
 
     /// Returns the smallest element in the set, or `None` if the set is empty.
@@ -358,7 +292,7 @@ where
 
 impl<S> BitAnd for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     type Output = Self;
 
@@ -369,7 +303,7 @@ where
 
 impl<S> BitAndAssign for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     fn bitand_assign(&mut self, rhs: Self) {
         *self = self.intersection(rhs);
@@ -378,7 +312,7 @@ where
 
 impl<S> BitOr for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     type Output = Self;
 
@@ -389,7 +323,7 @@ where
 
 impl<S> BitOrAssign for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     fn bitor_assign(&mut self, rhs: Self) {
         *self = self.union(rhs);
@@ -398,7 +332,7 @@ where
 
 impl<S> BitXor for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     type Output = Self;
 
@@ -409,7 +343,7 @@ where
 
 impl<S> BitXorAssign for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     fn bitxor_assign(&mut self, rhs: Self) {
         *self = self.symmetric_difference(rhs);
@@ -418,7 +352,7 @@ where
 
 impl<S> Not for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     type Output = Self;
 
@@ -429,7 +363,7 @@ where
 
 impl<S> Debug for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
     S::Value: Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -439,7 +373,7 @@ where
 
 impl<S> IntoIterator for &BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     type IntoIter = BitSet81Iter<S>;
     type Item = S::Value;
@@ -451,7 +385,7 @@ where
 
 impl<S> IntoIterator for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     type IntoIter = BitSet81Iter<S>;
     type Item = S::Value;
@@ -465,14 +399,14 @@ where
 #[derive(Clone)]
 pub struct BitSet81Iter<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     set: BitSet81<S>,
 }
 
 impl<S> Debug for BitSet81Iter<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
     S::Value: Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -484,7 +418,7 @@ where
 
 impl<S> Iterator for BitSet81Iter<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     type Item = S::Value;
 
@@ -500,19 +434,19 @@ where
 
 impl<S> DoubleEndedIterator for BitSet81Iter<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.set.pop_last()
     }
 }
 
-impl<S> ExactSizeIterator for BitSet81Iter<S> where S: BitSet81Semantics {}
-impl<S> FusedIterator for BitSet81Iter<S> where S: BitSet81Semantics {}
+impl<S> ExactSizeIterator for BitSet81Iter<S> where S: Index81Semantics {}
+impl<S> FusedIterator for BitSet81Iter<S> where S: Index81Semantics {}
 
 impl<S> FromIterator<S::Value> for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     fn from_iter<T: IntoIterator<Item = S::Value>>(iter: T) -> Self {
         let mut set = Self::new();
@@ -525,7 +459,7 @@ where
 
 impl<S> Extend<S::Value> for BitSet81<S>
 where
-    S: BitSet81Semantics,
+    S: Index81Semantics,
 {
     fn extend<T: IntoIterator<Item = S::Value>>(&mut self, iter: T) {
         for value in iter {
@@ -541,16 +475,16 @@ mod tests {
     // Test semantics that maps (x, y) coordinates to indices
     struct PositionSemantics;
 
-    impl BitSet81Semantics for PositionSemantics {
+    impl Index81Semantics for PositionSemantics {
         type Value = (u8, u8);
 
-        fn to_index(value: (u8, u8)) -> BitIndex81 {
+        fn to_index(value: (u8, u8)) -> Index81 {
             let (x, y) = value;
             assert!(x < 9 && y < 9);
-            BitIndex81::new(y * 9 + x)
+            Index81::new(y * 9 + x)
         }
 
-        fn from_index(index: BitIndex81) -> (u8, u8) {
+        fn from_index(index: Index81) -> (u8, u8) {
             let idx = index.index();
             (idx % 9, idx / 9)
         }
@@ -571,7 +505,7 @@ mod tests {
 
         #[test]
         fn test_all() {
-            let indices: Vec<_> = BitIndex81::all().collect();
+            let indices: Vec<_> = Index81::all().collect();
             assert_eq!(indices.len(), 81);
             for (i, index) in (0..).zip(indices) {
                 assert_eq!(index.index(), i);
@@ -580,7 +514,7 @@ mod tests {
 
         #[test]
         fn test_all_creates_valid_indices() {
-            for index in BitIndex81::all() {
+            for index in Index81::all() {
                 assert!(index.index() < 81);
             }
         }

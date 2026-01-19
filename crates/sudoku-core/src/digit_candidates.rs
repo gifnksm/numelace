@@ -3,50 +3,30 @@
 //! This module provides [`DigitCandidates`], a specialized implementation of
 //! [`BitSet9`] for representing sets of digits 1-9.
 //!
+//! The [`DigitSemantics`] type (defined in [`index_9`](crate::index_9))
+//! implements [`Index9Semantics`](crate::index_9::Index9Semantics)
+//! to map digits 1-9 to internal bit indices 0-8.
+//!
 //! # Examples
 //!
 //! ```
 //! use sudoku_core::DigitCandidates;
 //!
-//! let mut set = DigitCandidates::new();
-//! set.insert(1);
-//! set.insert(5);
-//! set.insert(9);
+//! let mut candidates = DigitCandidates::new();
+//! candidates.insert(1);
+//! candidates.insert(5);
+//! candidates.insert(9);
 //!
-//! assert_eq!(set.len(), 3);
-//! assert!(set.contains(5));
+//! assert_eq!(candidates.len(), 3);
+//! assert!(candidates.contains(5));
+//! assert!(!candidates.contains(2));
+//!
+//! // Remove a candidate
+//! candidates.remove(5);
+//! assert_eq!(candidates.len(), 2);
 //! ```
 
-use crate::bit_set_9::{BitIndex9, BitSet9, BitSet9Semantics};
-
-/// Semantics for digits 1-9.
-///
-/// This type implements [`BitSet9Semantics`]
-/// to map user-facing values (1-9) to internal bit indices (0-8).
-///
-/// **Note**: This is an implementation detail of [`DigitCandidates`].
-/// You should use [`DigitCandidates`] directly instead of constructing
-/// `BitSet9<DigitSemantics>` manually.
-///
-/// # Panics
-///
-/// The `to_index` method panics if a value outside the range 1-9 is provided.
-#[derive(Debug)]
-pub struct DigitSemantics;
-
-impl BitSet9Semantics for DigitSemantics {
-    type Value = u8;
-    fn to_index(value: Self::Value) -> BitIndex9 {
-        assert!(
-            (1..=9).contains(&value),
-            "Number must be between 1 and 9, got {value}"
-        );
-        BitIndex9::new(value - 1)
-    }
-    fn from_index(index: BitIndex9) -> Self::Value {
-        index.index() + 1
-    }
-}
+use crate::{bit_set_9::BitSet9, index_9::DigitSemantics};
 
 /// A set of candidate digits (1-9) for a single cell.
 ///
@@ -108,20 +88,6 @@ mod tests {
         assert!(set.contains(1));
         assert!(set.contains(9));
         assert_eq!(set.len(), 2);
-    }
-
-    #[test]
-    #[should_panic(expected = "Number must be")]
-    fn test_rejects_zero() {
-        let mut set = DigitCandidates::new();
-        set.insert(0);
-    }
-
-    #[test]
-    #[should_panic(expected = "Number must be")]
-    fn test_rejects_ten() {
-        let mut set = DigitCandidates::new();
-        set.insert(10);
     }
 
     #[test]
