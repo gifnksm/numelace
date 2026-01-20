@@ -37,8 +37,8 @@ sudoku/
 
 - **Basic Types**: `Digit`, `Position` - Type-safe representations of sudoku elements
 - **CandidateGrid**: Candidate tracking optimized for solving algorithms
-- **DigitGrid** (planned): Simple, intuitive cell-centric interface
-- **Generic Containers**: Efficient bitset and array implementations with type-safe indexing
+- **DigitGrid**: Simple, intuitive cell-centric interface with string parsing/formatting
+- **Generic Containers**: Efficient bitset and array implementations (`BitSet9`, `BitSet81`, `Array9`, `Array81`) with type-safe indexing
 
 **Dependencies**: None
 
@@ -46,7 +46,10 @@ sudoku/
 
 - **Two-Grid Architecture**: Separation of concerns between solving and simple data access
   - `CandidateGrid`: Digit-centric interface optimized for constraint propagation and solving algorithms
-  - `DigitGrid` (planned): Cell-centric interface for intuitive "what's in this cell?" queries
+  - `DigitGrid`: Cell-centric interface for intuitive "what's in this cell?" queries
+    - Uses `Array81<Option<Digit>, PositionSemantics>` for type-safe cell storage
+    - Supports string parsing (`FromStr`) and formatting (`Display`)
+    - Provides conversion to/from `CandidateGrid`
   - Allows each type to provide the most natural interface for its use case
 
 - **Type Safety via Semantics**: Generic containers prevent mixing incompatible index types at compile time
@@ -204,16 +207,17 @@ sudoku-app (desktop + web)
 
 **Rationale**:
 
-- Solving algorithms need fast candidate tracking and constraint propagation
-- Data exchange needs simple, serializable formats
+- Solving algorithms need fast candidate tracking and constraint propagation (digit-centric view)
+- Simple data access needs intuitive "what's in this cell?" interface (cell-centric view)
 - Each grid type can be optimized for its specific use case without compromise
 - Clean separation prevents mixing solving logic with I/O concerns
+- `DigitGrid` provides human-friendly string parsing/formatting for puzzle I/O
 
 **Trade-offs**:
 
-- Requires conversion between grid types
+- Requires conversion between grid types (via `From`/`Into` traits)
 - Two types to maintain instead of one
-- Benefits: Better performance, cleaner API, easier to understand and test
+- Benefits: Better performance, cleaner API, easier to understand and test, natural interfaces for each use case
 
 ### Separation of Solver Techniques
 

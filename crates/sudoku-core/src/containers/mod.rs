@@ -12,6 +12,8 @@
 //!   Uses a 128-bit integer internally for efficient bitwise operations.
 //! - [`Array9`] - A 9-element array with type-safe indexing based on semantics.
 //!   Provides O(1) access with compile-time guarantees about valid indices.
+//! - [`Array81`] - An 81-element array with type-safe indexing based on semantics.
+//!   Ideal for representing cell-centric data in a Sudoku grid.
 //!
 //! # Semantics Parameterization
 //!
@@ -79,9 +81,26 @@
 //! let positions = &digit_array[Digit::D5]; // digit 5
 //! assert_eq!(positions.len(), 81); // All positions initially
 //! ```
+//!
+//! ## Using [`Array81`] with [`PositionSemantics`]
+//!
+//! ```
+//! use sudoku_core::{Digit, Position, containers::Array81, index::PositionSemantics};
+//!
+//! // Create an array representing cell values in a Sudoku grid
+//! let mut grid: Array81<Option<Digit>, PositionSemantics> = Array81::from([None; 81]);
+//!
+//! // Set a value at a specific position
+//! let center = Position::new(4, 4);
+//! grid[center] = Some(Digit::D5);
+//!
+//! // Access by position
+//! assert_eq!(grid[center], Some(Digit::D5));
+//! assert_eq!(grid[Position::new(0, 0)], None);
+//! ```
+pub use self::{array_9::*, array_81::*, bit_set_9::*, bit_set_81::*};
 
-pub use self::{array_9::*, bit_set_9::*, bit_set_81::*};
-
+mod array_81;
 mod array_9;
 mod bit_set_81;
 mod bit_set_9;

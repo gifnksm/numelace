@@ -9,7 +9,7 @@
 //! The crate follows a **two-grid architecture** that separates concerns:
 //!
 //! - [`CandidateGrid`] - Digit-centric interface for solving algorithms
-//! - `DigitGrid` - Cell-centric interface for simple data access *(planned)*
+//! - [`DigitGrid`] - Cell-centric interface for simple data access
 //!
 //! This separation allows each type to provide the most natural interface for its use case.
 //!
@@ -31,12 +31,14 @@
 //!   - Automatic constraint propagation and candidate elimination
 //!   - Supports technique detection (Hidden Singles, Naked Singles, etc.)
 //!
-//! ### `DigitGrid` (Simple Cell-Centric Interface) *(planned)*
+//! ### [`DigitGrid`] (Simple Cell-Centric Interface)
 //!
-//! `DigitGrid` will provide an intuitive cell-centric interface:
+//! [`DigitGrid`] provides an intuitive cell-centric interface:
 //!   - Direct "what's in this cell?" queries
-//!   - Simple array-based representation
+//!   - Simple array-based representation using [`Array81`]
 //!   - Natural for human reasoning about puzzle state
+//!   - String parsing and formatting support (`FromStr`, `Display`)
+//!   - Conversion to/from [`CandidateGrid`]
 //!
 //! ## Candidate Type Aliases
 //!
@@ -68,6 +70,7 @@
 //! - [`BitSet9`] - Efficient 9-element bitset (u16-based)
 //! - [`BitSet81`] - Efficient 81-element bitset (u128-based)
 //! - [`Array9`] - 9-element array with semantic indexing
+//! - [`Array81`] - 81-element array with semantic indexing
 //!
 //! [`Index9`]: index::Index9
 //! [`Index81`]: index::Index81
@@ -79,6 +82,7 @@
 //! [`BitSet9`]: containers::BitSet9
 //! [`BitSet81`]: containers::BitSet81
 //! [`Array9`]: containers::Array9
+//! [`Array81`]: containers::Array81
 //!
 //! # Examples
 //!
@@ -117,6 +121,25 @@
 //! assert!(grid.is_consistent());
 //! ```
 //!
+//! ## [`DigitGrid`] - Simple Cell-Centric Interface
+//!
+//! ```
+//! use sudoku_core::{DigitGrid, Digit, Position};
+//!
+//! // Parse a grid from a string (dots represent empty cells)
+//! let grid: DigitGrid = "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
+//!     .parse()
+//!     .unwrap();
+//!
+//! // Access cells directly
+//! assert_eq!(grid[Position::new(0, 0)], Some(Digit::D5));
+//! assert_eq!(grid[Position::new(2, 0)], None);
+//!
+//! // Display the grid (compact or pretty format)
+//! println!("{}", grid);      // 81 characters, no newlines
+//! println!("{:#}", grid);    // 9 lines with newlines
+//! ```
+//!
 //! ## Design Rationale
 //!
 //! ### Why Two Grid Types?
@@ -125,17 +148,19 @@
 //!   - Answers "where can digit X go?" efficiently
 //!   - Optimized for constraint propagation
 //!
-//! - **`DigitGrid`** *(planned)*: Cell-centric interface for simple access
+//! - **[`DigitGrid`]**: Cell-centric interface for simple access
 //!   - Answers "what's in this cell?" naturally
 //!   - Intuitive for human reasoning about puzzle state
+//!   - Easy string parsing and formatting
 //!
 //! Each type provides the most natural interface for its access pattern.
 
 mod candidate_grid;
 pub mod containers;
 mod digit;
+mod digit_grid;
 pub mod index;
 mod position;
 
 // Re-export commonly used types
-pub use self::{candidate_grid::*, digit::*, position::*};
+pub use self::{candidate_grid::*, digit::*, digit_grid::*, position::*};
