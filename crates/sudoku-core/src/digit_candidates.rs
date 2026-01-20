@@ -13,19 +13,19 @@
 //! # Examples
 //!
 //! ```
-//! use sudoku_core::DigitCandidates;
+//! use sudoku_core::{Digit, DigitCandidates};
 //!
 //! let mut candidates = DigitCandidates::new();
-//! candidates.insert(1);
-//! candidates.insert(5);
-//! candidates.insert(9);
+//! candidates.insert(Digit::D1);
+//! candidates.insert(Digit::D5);
+//! candidates.insert(Digit::D9);
 //!
 //! assert_eq!(candidates.len(), 3);
-//! assert!(candidates.contains(5));
-//! assert!(!candidates.contains(2));
+//! assert!(candidates.contains(Digit::D5));
+//! assert!(!candidates.contains(Digit::D2));
 //!
 //! // Remove a candidate
-//! candidates.remove(5);
+//! candidates.remove(Digit::D5);
 //! assert_eq!(candidates.len(), 2);
 //! ```
 
@@ -43,76 +43,84 @@ use crate::{containers::BitSet9, index::DigitSemantics};
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::DigitCandidates;
+/// use sudoku_core::{Digit, DigitCandidates};
 ///
 /// // Create a set with all candidates available
 /// let mut candidates = DigitCandidates::FULL;
 ///
 /// // Remove some numbers
-/// candidates.remove(5);
-/// candidates.remove(7);
+/// candidates.remove(Digit::D5);
+/// candidates.remove(Digit::D7);
 ///
 /// assert_eq!(candidates.len(), 7);
-/// assert!(!candidates.contains(5));
-/// assert!(candidates.contains(1));
+/// assert!(!candidates.contains(Digit::D5));
+/// assert!(candidates.contains(Digit::D1));
 /// ```
 ///
 /// # Set Operations
 ///
 /// ```
-/// use sudoku_core::DigitCandidates;
+/// use sudoku_core::{Digit, DigitCandidates};
 ///
-/// let a = DigitCandidates::from_iter([1, 2, 3]);
-/// let b = DigitCandidates::from_iter([2, 3, 4]);
+/// let a = DigitCandidates::from_iter([Digit::D1, Digit::D2, Digit::D3]);
+/// let b = DigitCandidates::from_iter([Digit::D2, Digit::D3, Digit::D4]);
 ///
 /// // Union
 /// let union = a | b;
-/// assert_eq!(union, DigitCandidates::from_iter([1, 2, 3, 4]));
+/// assert_eq!(
+///     union,
+///     DigitCandidates::from_iter([Digit::D1, Digit::D2, Digit::D3, Digit::D4])
+/// );
 ///
 /// // Intersection
 /// let intersection = a & b;
-/// assert_eq!(intersection, DigitCandidates::from_iter([2, 3]));
+/// assert_eq!(
+///     intersection,
+///     DigitCandidates::from_iter([Digit::D2, Digit::D3])
+/// );
 ///
 /// // Difference
 /// let diff = a.difference(b);
-/// assert_eq!(diff, DigitCandidates::from_iter([1]));
+/// assert_eq!(diff, DigitCandidates::from_iter([Digit::D1]));
 /// ```
 pub type DigitCandidates = BitSet9<DigitSemantics>;
 
 #[cfg(test)]
 mod tests {
+    use crate::digit::Digit::{self, *};
+
     use super::*;
 
     #[test]
     fn test_number_range() {
         let mut set = DigitCandidates::new();
-        set.insert(1);
-        set.insert(9);
-        assert!(set.contains(1));
-        assert!(set.contains(9));
+        set.insert(D1);
+        set.insert(D9);
+        assert!(set.contains(D1));
+        assert!(set.contains(D9));
         assert_eq!(set.len(), 2);
     }
 
     #[test]
     fn test_from_iter() {
-        let set = DigitCandidates::from_iter([1, 5, 9]);
+        let set = DigitCandidates::from_iter([D1, D5, D9]);
         assert_eq!(set.len(), 3);
-        assert!(set.contains(1));
-        assert!(set.contains(5));
-        assert!(set.contains(9));
+        assert!(set.contains(D1));
+        assert!(set.contains(D5));
+        assert!(set.contains(D9));
     }
 
     #[test]
     fn test_iteration_order() {
-        let set = DigitCandidates::from_iter([9, 1, 5, 3]);
+        let set = DigitCandidates::from_iter([D9, D1, D5, D3]);
         let collected: Vec<_> = set.iter().collect();
-        assert_eq!(collected, vec![1, 3, 5, 9]);
+        assert_eq!(collected, vec![D1, D3, D5, D9]);
     }
 
     #[test]
     fn test_operations() {
-        let a = DigitCandidates::from_iter([1, 2, 3]);
-        let b = DigitCandidates::from_iter([2, 3, 4]);
+        let a = DigitCandidates::from_iter([D1, D2, D3]);
+        let b = DigitCandidates::from_iter([D2, D3, D4]);
 
         assert_eq!(a.union(b).len(), 4);
         assert_eq!(a.intersection(b).len(), 2);
@@ -124,7 +132,7 @@ mod tests {
         assert_eq!(DigitCandidates::EMPTY.len(), 0);
         assert_eq!(DigitCandidates::FULL.len(), 9);
 
-        for n in 1..=9 {
+        for n in Digit::ALL {
             assert!(DigitCandidates::FULL.contains(n));
         }
     }

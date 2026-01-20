@@ -31,18 +31,17 @@ use crate::index::Index9Semantics;
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::containers::Array9;
-/// use sudoku_core::index::DigitSemantics;
+/// use sudoku_core::{Digit, containers::Array9, index::DigitSemantics};
 ///
 /// // Create an array of integers indexed by digits 1-9
 /// let mut counts: Array9<i32, DigitSemantics> = Array9::from([0; 9]);
 ///
 /// // Use semantic indexing (digit 1-9)
-/// counts[1] = 10; // digit 1
-/// counts[9] = 20; // digit 9
+/// counts[Digit::D1] = 10; // digit 1
+/// counts[Digit::D9] = 20; // digit 9
 ///
-/// assert_eq!(counts[1], 10);
-/// assert_eq!(counts[9], 20);
+/// assert_eq!(counts[Digit::D1], 10);
+/// assert_eq!(counts[Digit::D9], 20);
 /// ```
 pub struct Array9<T, S>
 where
@@ -160,14 +159,13 @@ where
     /// # Examples
     ///
     /// ```
-    /// use sudoku_core::containers::Array9;
-    /// use sudoku_core::index::DigitSemantics;
+    /// use sudoku_core::{Digit, containers::Array9, index::DigitSemantics};
     ///
     /// let mut array: Array9<i32, DigitSemantics> = Array9::from([0; 9]);
     /// for elem in array.iter_mut() {
     ///     *elem = 42;
     /// }
-    /// assert_eq!(array[1], 42);
+    /// assert_eq!(array[Digit::D1], 42);
     /// ```
     pub fn iter_mut(&mut self) -> slice::IterMut<'_, T> {
         self.array.iter_mut()
@@ -237,24 +235,27 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::index::{CellIndexSemantics, DigitSemantics};
+    use crate::{
+        digit::Digit::{self, *},
+        index::{CellIndexSemantics, DigitSemantics},
+    };
 
     #[test]
     fn test_from_array() {
         let array: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        assert_eq!(array[1], 1);
-        assert_eq!(array[9], 9);
+        assert_eq!(array[D1], 1);
+        assert_eq!(array[D9], 9);
     }
 
     #[test]
     fn test_index_digit_semantics() {
         let array: Array9<i32, DigitSemantics> = Array9::from([10, 20, 30, 40, 50, 60, 70, 80, 90]);
         // Digit 1 maps to index 0 (value 10)
-        assert_eq!(array[1], 10);
+        assert_eq!(array[D1], 10);
         // Digit 5 maps to index 4 (value 50)
-        assert_eq!(array[5], 50);
+        assert_eq!(array[D5], 50);
         // Digit 9 maps to index 8 (value 90)
-        assert_eq!(array[9], 90);
+        assert_eq!(array[D9], 90);
     }
 
     #[test]
@@ -268,13 +269,13 @@ mod tests {
     #[test]
     fn test_index_mut() {
         let mut array: Array9<i32, DigitSemantics> = Array9::from([0; 9]);
-        array[1] = 100;
-        array[5] = 500;
-        array[9] = 900;
+        array[D1] = 100;
+        array[D5] = 500;
+        array[D9] = 900;
 
-        assert_eq!(array[1], 100);
-        assert_eq!(array[5], 500);
-        assert_eq!(array[9], 900);
+        assert_eq!(array[D1], 100);
+        assert_eq!(array[D5], 500);
+        assert_eq!(array[D9], 900);
     }
 
     #[test]
@@ -291,7 +292,7 @@ mod tests {
         for elem in &mut array {
             *elem = 42;
         }
-        for i in 1..=9 {
+        for i in Digit::ALL {
             assert_eq!(array[i], 42);
         }
     }
@@ -313,7 +314,7 @@ mod tests {
     #[test]
     fn test_default() {
         let array: Array9<i32, DigitSemantics> = Array9::default();
-        for i in 1..=9 {
+        for i in Digit::ALL {
             assert_eq!(array[i], 0);
         }
     }
@@ -352,22 +353,8 @@ mod tests {
         for elem in &mut array {
             *elem *= 2;
         }
-        assert_eq!(array[1], 2);
-        assert_eq!(array[5], 10);
-        assert_eq!(array[9], 18);
-    }
-
-    #[test]
-    #[should_panic(expected = "Number must be between 1 and 9")]
-    fn test_digit_semantics_panics_on_zero() {
-        let array: Array9<i32, DigitSemantics> = Array9::from([0; 9]);
-        let _ = array[0]; // Should panic: digit must be 1-9
-    }
-
-    #[test]
-    #[should_panic(expected = "Number must be between 1 and 9")]
-    fn test_digit_semantics_panics_on_ten() {
-        let array: Array9<i32, DigitSemantics> = Array9::from([0; 9]);
-        let _ = array[10]; // Should panic: digit must be 1-9
+        assert_eq!(array[D1], 2);
+        assert_eq!(array[D5], 10);
+        assert_eq!(array[D9], 18);
     }
 }

@@ -32,19 +32,19 @@
 //! ## Using [`BitSet9`] with [`DigitSemantics`]
 //!
 //! ```
-//! use sudoku_core::DigitCandidates;
+//! use sudoku_core::{Digit, DigitCandidates};
 //!
 //! let mut candidates = DigitCandidates::new();
-//! candidates.insert(1);
-//! candidates.insert(5);
-//! candidates.insert(9);
+//! candidates.insert(Digit::D1);
+//! candidates.insert(Digit::D5);
+//! candidates.insert(Digit::D9);
 //!
 //! assert_eq!(candidates.len(), 3);
-//! assert!(candidates.contains(5));
-//! assert!(!candidates.contains(2));
+//! assert!(candidates.contains(Digit::D5));
+//! assert!(!candidates.contains(Digit::D2));
 //!
 //! // Remove a candidate
-//! candidates.remove(5);
+//! candidates.remove(Digit::D5);
 //! assert_eq!(candidates.len(), 2);
 //! ```
 //!
@@ -70,16 +70,14 @@
 //! [`PositionSemantics`]: crate::index::PositionSemantics
 //!
 //! ```
-//! use sudoku_core::candidate_board::DigitPositions;
-//! use sudoku_core::containers::Array9;
-//! use sudoku_core::index::DigitSemantics;
+//! use sudoku_core::{Digit, DigitPositions, containers::Array9, index::DigitSemantics};
 //!
 //! // Create an array indexed by digits 1-9
 //! let mut digit_array: Array9<DigitPositions, DigitSemantics> =
 //!     Array9::from([DigitPositions::FULL; 9]);
 //!
 //! // Access by digit (1-9), not index (0-8)
-//! let positions = &digit_array[5]; // digit 5
+//! let positions = &digit_array[Digit::D5]; // digit 5
 //! assert_eq!(positions.len(), 81); // All positions initially
 //! ```
 

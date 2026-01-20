@@ -24,10 +24,13 @@
 //! ## Using [`Index9`] with [`DigitSemantics`]
 //!
 //! ```
-//! use sudoku_core::index::{DigitSemantics, Index9, Index9Semantics};
+//! use sudoku_core::{
+//!     Digit,
+//!     index::{DigitSemantics, Index9, Index9Semantics},
+//! };
 //!
 //! // Use digit semantics to convert digit 5 to index
-//! let idx = DigitSemantics::to_index(5);
+//! let idx = DigitSemantics::to_index(Digit::D5);
 //! assert_eq!(idx.index(), 4); // digit 5 maps to index 4
 //!
 //! // Iterate over all indices

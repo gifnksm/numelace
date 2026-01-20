@@ -6,6 +6,8 @@
 //! [`BitSet9`]: crate::containers::BitSet9
 //! [`Array9`]: crate::containers::Array9
 
+use crate::digit::Digit;
+
 /// A bit index in the range 0-8.
 ///
 /// This type represents a valid index into a 9-element container (such as a 9-bit bitset
@@ -122,36 +124,35 @@ pub trait Index9Semantics {
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::index::{DigitSemantics, Index9, Index9Semantics};
+/// use sudoku_core::{
+///     Digit,
+///     index::{DigitSemantics, Index9, Index9Semantics},
+/// };
 ///
 /// // Digit 1 maps to index 0
-/// let index = DigitSemantics::to_index(1);
+/// let index = DigitSemantics::to_index(Digit::D1);
 /// assert_eq!(index.index(), 0);
 ///
 /// // Digit 9 maps to index 8
-/// let index = DigitSemantics::to_index(9);
+/// let index = DigitSemantics::to_index(Digit::D9);
 /// assert_eq!(index.index(), 8);
 ///
 /// // Index 0 maps back to digit 1
 /// let digit = DigitSemantics::from_index(Index9::new(0));
-/// assert_eq!(digit, 1);
+/// assert_eq!(digit, Digit::D1);
 /// ```
 #[derive(Debug)]
 pub struct DigitSemantics;
 
 impl Index9Semantics for DigitSemantics {
-    type Value = u8;
+    type Value = Digit;
 
     fn to_index(value: Self::Value) -> Index9 {
-        assert!(
-            (1..=9).contains(&value),
-            "Number must be between 1 and 9, got {value}"
-        );
-        Index9::new(value - 1)
+        Index9::new(value.value() - 1)
     }
 
     fn from_index(index: Index9) -> Self::Value {
-        index.index() + 1
+        Self::Value::from_value(index.index() + 1)
     }
 }
 
@@ -202,43 +203,32 @@ impl Index9Semantics for CellIndexSemantics {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use Digit::*;
 
     mod digit_semantics {
         use super::*;
 
         #[test]
         fn test_digit_to_index() {
-            assert_eq!(DigitSemantics::to_index(1).index(), 0);
-            assert_eq!(DigitSemantics::to_index(5).index(), 4);
-            assert_eq!(DigitSemantics::to_index(9).index(), 8);
+            assert_eq!(DigitSemantics::to_index(D1).index(), 0);
+            assert_eq!(DigitSemantics::to_index(D5).index(), 4);
+            assert_eq!(DigitSemantics::to_index(D9).index(), 8);
         }
 
         #[test]
         fn test_index_to_digit() {
-            assert_eq!(DigitSemantics::from_index(Index9::new(0)), 1);
-            assert_eq!(DigitSemantics::from_index(Index9::new(4)), 5);
-            assert_eq!(DigitSemantics::from_index(Index9::new(8)), 9);
+            assert_eq!(DigitSemantics::from_index(Index9::new(0)), D1);
+            assert_eq!(DigitSemantics::from_index(Index9::new(4)), D5);
+            assert_eq!(DigitSemantics::from_index(Index9::new(8)), D9);
         }
 
         #[test]
         fn test_round_trip() {
-            for digit in 1..=9 {
+            for digit in Digit::ALL {
                 let index = DigitSemantics::to_index(digit);
                 let result = DigitSemantics::from_index(index);
                 assert_eq!(result, digit);
             }
-        }
-
-        #[test]
-        #[should_panic(expected = "Number must be between 1 and 9")]
-        fn test_rejects_zero() {
-            DigitSemantics::to_index(0);
-        }
-
-        #[test]
-        #[should_panic(expected = "Number must be between 1 and 9")]
-        fn test_rejects_ten() {
-            DigitSemantics::to_index(10);
         }
     }
 
