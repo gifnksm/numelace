@@ -64,64 +64,27 @@ For implementation details, see the [crate documentation](../crates/sudoku-core/
 
 ### sudoku-solver
 
-**Status**: Planned
+**Status**: Planned 📋
 
-**Purpose**: Implements various solving algorithms for Sudoku puzzles.
+**Design**: [design/solver-design.md](design/solver-design.md)
 
-**Key Components**:
+**Purpose**: Implements solving algorithms using technique-based approach with backtracking fallback.
 
-```text
-sudoku-solver/
-├── backtrack.rs          # Backtracking algorithm (for generation and validation)
-├── techniques/
-│   ├── mod.rs
-│   ├── basic.rs         # Naked Single, Hidden Single
-│   ├── intermediate.rs  # Locked Candidates, Naked/Hidden Pairs/Triples
-│   └── advanced.rs      # X-Wing, Swordfish, XY-Wing, etc.
-└── solver.rs            # Common Solver trait
-```
+**Key Features**:
 
-**Solving Strategies**:
-
-1. **Backtracking Solver**:
-   - Used for puzzle generation
-   - Validates puzzle uniqueness
-   - Exhaustive solution finding
-
-2. **Human-like Techniques** (by difficulty):
-   - **Basic**: Naked Single, Hidden Single
-   - **Intermediate**: Locked Candidates, Naked/Hidden Pairs, Pointing Pairs
-   - **Advanced**: X-Wing, Swordfish, XY-Wing, XYZ-Wing
-   - **Expert**: Coloring, Chains, Forcing Chains
+- Two-layer architecture: `TechniqueSolver` (techniques only) and `BacktrackSolver` (with backtracking)
+- Human-like solving techniques: Naked Single, Hidden Single, and more advanced techniques
+- Solution enumeration for puzzle generation validation
 
 **Dependencies**: `sudoku-core`
-
-**Design Decisions**:
-
-- Each technique is a separate module for clarity and testability
-- Common `Solver` trait allows pluggable solving strategies
-- Techniques return applied moves for hint generation and difficulty assessment
 
 ---
 
 ### sudoku-generator
 
-**Status**: Planned
+**Status**: Planned 📋
 
-**Purpose**: Generates valid Sudoku puzzles with specified difficulty levels.
-
-**Key Components**:
-
-- Puzzle generation algorithm using backtracking solver
-- Difficulty evaluation based on required solving techniques
-- Solution uniqueness verification
-
-**Generation Algorithm**:
-
-1. Generate a complete valid grid using backtracking
-2. Remove numbers while maintaining unique solution
-3. Evaluate difficulty by attempting to solve with human techniques
-4. Adjust number of clues based on target difficulty
+**Purpose**: Generates valid Sudoku puzzles with specified difficulty levels using backtracking and technique-based difficulty evaluation.
 
 **Dependencies**: `sudoku-core`, `sudoku-solver`
 
@@ -129,18 +92,9 @@ sudoku-solver/
 
 ### sudoku-game
 
-**Status**: Planned
+**Status**: Planned 📋
 
-**Purpose**: Manages game state, user interactions, and game logic.
-
-**Key Components**:
-
-- Game state management (current puzzle, solution, progress)
-- Undo/Redo stack
-- Hint system (suggests next move using solver techniques)
-- Mistake detection and validation
-- Save/load puzzle state
-- Timer and statistics
+**Purpose**: Manages game state, user interactions, and game logic including undo/redo, hints, and validation.
 
 **Dependencies**: `sudoku-core`, `sudoku-solver`, `sudoku-generator`
 

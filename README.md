@@ -18,6 +18,7 @@ A Sudoku application written in Rust, supporting both desktop and web platforms.
   - Generic containers (`BitSet9`, `BitSet81`, `Array9`, `Array81`)
   - Type-safe indexing with semantic index types
 - 📋 **Next**: Solver algorithms, puzzle generation, GUI
+  - Design documents: [docs/design/](docs/design/)
 
 ## Project Structure
 
@@ -30,7 +31,7 @@ crates/
 └── sudoku-app/        # GUI application (planned)
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architecture documentation.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for architecture and implementation plans.
 
 ## Build and Test
 
