@@ -41,8 +41,10 @@
 //! ## Using [`Index81`] with [`PositionSemantics`]
 //!
 //! ```
-//! use sudoku_core::Position;
-//! use sudoku_core::index::{Index81, Index81Semantics, PositionSemantics};
+//! use sudoku_core::{
+//!     Position,
+//!     index::{Index81, Index81Semantics, PositionSemantics},
+//! };
 //!
 //! // Convert a position to an index
 //! let pos = Position::new(4, 4);

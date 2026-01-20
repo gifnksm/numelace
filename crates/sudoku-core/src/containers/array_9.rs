@@ -143,8 +143,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use sudoku_core::containers::Array9;
-    /// use sudoku_core::index::DigitSemantics;
+    /// use sudoku_core::{containers::Array9, index::DigitSemantics};
     ///
     /// let array: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     /// let sum: i32 = array.iter().sum();

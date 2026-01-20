@@ -855,8 +855,10 @@ mod tests {
 
         #[test]
         fn test_hash() {
-            use std::collections::hash_map::DefaultHasher;
-            use std::hash::{Hash, Hasher};
+            use std::{
+                collections::hash_map::DefaultHasher,
+                hash::{Hash, Hasher},
+            };
 
             let set1 = set![(0, 0), (1, 1)];
             let set2 = set![(0, 0), (1, 1)];

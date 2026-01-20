@@ -202,8 +202,9 @@ impl Index9Semantics for CellIndexSemantics {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use Digit::*;
+
+    use super::*;
 
     mod digit_semantics {
         use super::*;

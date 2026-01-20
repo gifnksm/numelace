@@ -122,8 +122,10 @@ pub trait Index81Semantics {
 /// # Examples
 ///
 /// ```
-/// use sudoku_core::Position;
-/// use sudoku_core::index::{Index81, Index81Semantics, PositionSemantics};
+/// use sudoku_core::{
+///     Position,
+///     index::{Index81, Index81Semantics, PositionSemantics},
+/// };
 ///
 /// // Position (0, 0) maps to index 0
 /// let index = PositionSemantics::to_index(Position::new(0, 0));

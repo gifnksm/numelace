@@ -970,8 +970,9 @@ mod tests {
 
     #[cfg(test)]
     mod property_tests {
-        use super::*;
         use proptest::prelude::*;
+
+        use super::*;
 
         // Strategy to generate valid numbers (0-8)
         fn valid_number() -> impl Strategy<Value = u8> {

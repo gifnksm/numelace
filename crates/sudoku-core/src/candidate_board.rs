@@ -284,8 +284,9 @@ impl CandidateBoard {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use Digit::*;
+
+    use super::*;
 
     #[test]
     fn test_new_board_has_all_candidates() {
