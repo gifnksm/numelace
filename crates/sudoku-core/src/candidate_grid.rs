@@ -1,5 +1,7 @@
 //! Candidate grid for sudoku solving.
 
+use std::iter;
+
 use crate::{
     containers::{Array9, BitSet9, BitSet81},
     digit::Digit,
@@ -77,33 +79,81 @@ impl CandidateGrid {
 
     /// Places a digit at a position and updates candidates accordingly.
     ///
-    /// This removes all candidates at the position, removes the digit from
-    /// the same row, column, and box, then marks the position as containing
+    /// This removes all other digit candidates at the position, removes the digit
+    /// from the same row, column, and box, then marks the position as containing
     /// the placed digit.
-    pub fn place(&mut self, pos: Position, digit: Digit) {
-        // remove all digits at pos
-        for digits in &mut self.digits {
-            digits.remove(pos);
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if any candidates were changed, `false` if the operation
+    /// had no effect (e.g., placing the same digit again at an already decided position).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sudoku_core::{CandidateGrid, Position, Digit};
+    ///
+    /// let mut grid = CandidateGrid::new();
+    /// let changed = grid.place(Position::new(0, 0), Digit::D5);
+    /// assert!(changed); // First placement changes the grid
+    ///
+    /// let changed = grid.place(Position::new(0, 0), Digit::D5);
+    /// assert!(!changed); // Placing again has no effect
+    /// ```
+    pub fn place(&mut self, pos: Position, digit: Digit) -> bool {
+        let mut changed = false;
+
+        // remove all digits around the pos
+        for (d, digits) in iter::zip(Digit::ALL, &mut self.digits) {
+            if d != digit {
+                changed |= digits.remove(pos);
+            }
         }
 
         let digits = &mut self.digits[digit];
         for x in 0..9 {
-            digits.remove(Position::new(x, pos.y()));
+            if x != pos.x() {
+                changed |= digits.remove(Position::new(x, pos.y()));
+            }
         }
         for y in 0..9 {
-            digits.remove(Position::new(pos.x(), y));
+            if y != pos.y() {
+                changed |= digits.remove(Position::new(pos.x(), y));
+            }
         }
         let box_index = pos.box_index();
+        let cell_index = pos.box_cell_index();
         for i in 0..9 {
-            digits.remove(Position::from_box(box_index, i));
+            if i != cell_index {
+                changed |= digits.remove(Position::from_box(box_index, i));
+            }
         }
-        digits.insert(pos);
+        changed |= digits.insert(pos);
+        changed
     }
 
     /// Removes a specific digit as a candidate at a position.
-    pub fn remove_candidate(&mut self, pos: Position, digit: Digit) {
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if the candidate was removed, `false` if the digit was
+    /// not a candidate at that position.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sudoku_core::{CandidateGrid, Position, Digit};
+    ///
+    /// let mut grid = CandidateGrid::new();
+    /// let changed = grid.remove_candidate(Position::new(0, 0), Digit::D1);
+    /// assert!(changed); // D1 was a candidate
+    ///
+    /// let changed = grid.remove_candidate(Position::new(0, 0), Digit::D1);
+    /// assert!(!changed); // D1 is already removed
+    /// ```
+    pub fn remove_candidate(&mut self, pos: Position, digit: Digit) -> bool {
         let digits = &mut self.digits[digit];
-        digits.remove(pos);
+        digits.remove(pos)
     }
 
     /// Returns all positions where the specified digit can be placed.
@@ -228,6 +278,32 @@ impl CandidateGrid {
             && self.placed_digits_are_unique(decided_cells)
     }
 
+    /// Returns all positions that have exactly one candidate (decided cells).
+    ///
+    /// A cell is considered "decided" when it has only one possible candidate digit,
+    /// either because it was explicitly placed or because all other candidates were
+    /// eliminated through constraint propagation.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sudoku_core::{CandidateGrid, Position, Digit};
+    ///
+    /// let mut grid = CandidateGrid::new();
+    ///
+    /// // Initially no decided cells
+    /// assert_eq!(grid.decided_cells().len(), 0);
+    ///
+    /// // Place a digit
+    /// grid.place(Position::new(0, 0), Digit::D5);
+    /// assert_eq!(grid.decided_cells().len(), 1);
+    /// ```
+    #[must_use]
+    pub fn decided_cells(&self) -> DigitPositions {
+        let (_empty_cells, decided_cells) = self.classify_cells();
+        decided_cells
+    }
+
     /// Classifies all grid positions by candidate count.
     ///
     /// Returns `(empty_cells, decided_cells)` where:
@@ -316,12 +392,28 @@ mod tests {
         }
 
         // Place digit 5 at center
-        grid.place(pos, D5);
+        let changed = grid.place(pos, D5);
+        assert!(changed, "Placing a digit should return true");
 
         // The position should only have digit 5
         let candidates = grid.get_candidates_at(pos);
         assert_eq!(candidates.len(), 1);
         assert!(candidates.contains(D5));
+    }
+
+    #[test]
+    fn test_place_returns_false_when_no_change() {
+        let mut grid = CandidateGrid::new();
+        let pos = Position::new(0, 0);
+
+        // First placement should return true
+        let changed = grid.place(pos, D1);
+        assert!(changed);
+
+        // Placing again at the same position should return false
+        // (no candidates are removed because it's already decided)
+        let changed = grid.place(pos, D1);
+        assert!(!changed, "Placing same digit again should return false");
     }
 
     #[test]
@@ -419,7 +511,8 @@ mod tests {
         let pos = Position::new(3, 3);
 
         // Initially has all 9 candidates, remove digit 5
-        grid.remove_candidate(pos, D5);
+        let changed = grid.remove_candidate(pos, D5);
+        assert!(changed, "Removing a candidate should return true");
 
         let candidates = grid.get_candidates_at(pos);
         assert_eq!(candidates.len(), 8);
@@ -429,6 +522,63 @@ mod tests {
                 assert!(candidates.contains(digit));
             }
         }
+    }
+
+    #[test]
+    fn test_remove_candidate_returns_false_when_not_present() {
+        let mut grid = CandidateGrid::new();
+        let pos = Position::new(0, 0);
+
+        // Remove D1 first time - should return true
+        let changed = grid.remove_candidate(pos, D1);
+        assert!(changed);
+
+        // Remove D1 again - should return false (already removed)
+        let changed = grid.remove_candidate(pos, D1);
+        assert!(
+            !changed,
+            "Removing already-removed candidate should return false"
+        );
+    }
+
+    #[test]
+    fn test_decided_cells() {
+        let mut grid = CandidateGrid::new();
+
+        // Initially no decided cells
+        let decided = grid.decided_cells();
+        assert_eq!(decided.len(), 0);
+
+        // Place a digit
+        grid.place(Position::new(0, 0), D1);
+        let decided = grid.decided_cells();
+        assert_eq!(decided.len(), 1);
+        assert!(decided.contains(Position::new(0, 0)));
+
+        // Place another digit
+        grid.place(Position::new(5, 5), D5);
+        let decided = grid.decided_cells();
+        assert_eq!(decided.len(), 2);
+        assert!(decided.contains(Position::new(0, 0)));
+        assert!(decided.contains(Position::new(5, 5)));
+    }
+
+    #[test]
+    fn test_decided_cells_after_manual_candidate_removal() {
+        let mut grid = CandidateGrid::new();
+        let pos = Position::new(3, 3);
+
+        // Manually remove all candidates except D7
+        for digit in Digit::ALL {
+            if digit != D7 {
+                grid.remove_candidate(pos, digit);
+            }
+        }
+
+        // Position should be considered decided (only one candidate)
+        let decided = grid.decided_cells();
+        assert_eq!(decided.len(), 1);
+        assert!(decided.contains(pos));
     }
 
     #[test]
