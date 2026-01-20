@@ -238,6 +238,115 @@ impl CandidateBoard {
         }
         mask
     }
+
+    /// Checks if the board is **consistent** (no contradictions).
+    ///
+    /// Returns `true` if:
+    ///
+    /// - Every position has at least one candidate
+    /// - No duplicate definite digits in any row, column, or box
+    ///
+    /// Unlike [`is_solved`], this does NOT require all cells to be decided.
+    /// It can be used during solving to detect contradictions early.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::{CandidateBoard, Position};
+    ///
+    /// let mut board = CandidateBoard::new();
+    /// assert!(board.is_consistent());
+    ///
+    /// board.place(Position::new(0, 0), 5);
+    /// assert!(board.is_consistent()); // Still consistent after placing
+    /// ```
+    ///
+    /// [`is_solved`]: CandidateBoard::is_solved
+    #[must_use]
+    pub fn is_consistent(&self) -> bool {
+        let (empty_cells, decided_cells) = self.classify_cells();
+        empty_cells.is_empty() && self.placed_digits_are_unique(decided_cells)
+    }
+
+    /// Checks if the puzzle is **solved** (complete and consistent).
+    ///
+    /// A board is solved if:
+    ///
+    /// - All 81 positions have exactly one candidate (complete)
+    /// - No position has zero candidates (no contradictions)
+    /// - All definite digits satisfy sudoku uniqueness constraints (no duplicates)
+    ///
+    /// This is equivalent to `is_complete() && is_consistent()`, but more efficient
+    /// as it only computes the cell classification once.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::CandidateBoard;
+    ///
+    /// let board = CandidateBoard::new();
+    /// assert!(!board.is_solved()); // Empty board is not solved
+    /// ```
+    #[must_use]
+    pub fn is_solved(&self) -> bool {
+        let (empty_cells, decided_cells) = self.classify_cells();
+        empty_cells.is_empty()
+            && decided_cells.len() == 81
+            && self.placed_digits_are_unique(decided_cells)
+    }
+
+    /// Classifies all board positions by candidate count.
+    ///
+    /// Returns `(empty_cells, decided_cells)` where:
+    ///
+    /// - `empty_cells`: Positions with zero candidates (contradictions)
+    /// - `decided_cells`: Positions with exactly one candidate (definite digits)
+    ///
+    /// Positions with 2-9 candidates are neither empty nor decided.
+    ///
+    /// This method performs a single pass over all digits to efficiently compute
+    /// both classifications simultaneously using bitwise operations.
+    fn classify_cells(&self) -> (DigitPositions, DigitPositions) {
+        let mut empty_cells = DigitPositions::FULL;
+        let mut decided_cells = DigitPositions::new();
+        for digit in &self.digits {
+            decided_cells &= !*digit;
+            decided_cells |= empty_cells & *digit;
+            empty_cells &= !*digit;
+        }
+        (empty_cells, decided_cells)
+    }
+
+    /// Checks that definite digits have no duplicates in rows, columns, or boxes.
+    ///
+    /// For each position in `decided_cells`, verifies that its digit appears
+    /// exactly once in its respective row, column, and 3×3 box.
+    ///
+    /// # Arguments
+    ///
+    /// * `decided_cells` - Positions where exactly one candidate remains
+    ///
+    /// # Returns
+    ///
+    /// `true` if all definite digits satisfy sudoku uniqueness constraints,
+    /// `false` if any digit appears multiple times in the same row, column, or box.
+    fn placed_digits_are_unique(&self, decided_cells: DigitPositions) -> bool {
+        for digit in 1..=9 {
+            let digit_cells = &self.digits[digit];
+            for pos in *digit_cells & decided_cells {
+                if self.get_row(pos.y(), digit).len() != 1 {
+                    return false;
+                }
+                if self.get_col(pos.x(), digit).len() != 1 {
+                    return false;
+                }
+                if self.get_box(pos.box_index(), digit).len() != 1 {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 #[cfg(test)]
@@ -555,5 +664,124 @@ mod tests {
                 assert_eq!(board.get_candidates_at(Position::new(x, y)).len(), 9);
             }
         }
+    }
+
+    #[test]
+    fn test_is_consistent_empty_board() {
+        let board = CandidateBoard::new();
+        assert!(board.is_consistent());
+    }
+
+    #[test]
+    fn test_is_consistent_after_single_placement() {
+        let mut board = CandidateBoard::new();
+        board.place(Position::new(0, 0), 5);
+        assert!(board.is_consistent());
+    }
+
+    #[test]
+    fn test_is_consistent_after_multiple_placements() {
+        let mut board = CandidateBoard::new();
+        board.place(Position::new(0, 0), 1);
+        board.place(Position::new(0, 1), 2);
+        board.place(Position::new(1, 0), 3);
+        board.place(Position::new(1, 1), 4);
+        assert!(board.is_consistent());
+    }
+
+    #[test]
+    fn test_is_consistent_detects_empty_cell() {
+        let mut board = CandidateBoard::new();
+        // Manually create an empty cell by removing all candidates
+        let pos = Position::new(4, 4);
+        for digit in 1..=9 {
+            board.remove_candidate(pos, digit);
+        }
+        assert!(!board.is_consistent());
+    }
+
+    #[test]
+    fn test_is_solved_empty_board() {
+        let board = CandidateBoard::new();
+        assert!(!board.is_solved());
+    }
+
+    #[test]
+    fn test_is_solved_partially_filled() {
+        let mut board = CandidateBoard::new();
+        board.place(Position::new(0, 0), 1);
+        board.place(Position::new(0, 1), 2);
+        board.place(Position::new(0, 2), 3);
+        assert!(!board.is_solved()); // Not all cells decided
+    }
+
+    #[test]
+    fn test_classify_cells_empty_board() {
+        let board = CandidateBoard::new();
+        let (empty, decided) = board.classify_cells();
+
+        // No empty cells
+        assert_eq!(empty.len(), 0);
+        // No decided cells
+        assert_eq!(decided.len(), 0);
+    }
+
+    #[test]
+    fn test_classify_cells_after_placement() {
+        let mut board = CandidateBoard::new();
+        board.place(Position::new(0, 0), 5);
+
+        let (empty, decided) = board.classify_cells();
+
+        // No empty cells
+        assert_eq!(empty.len(), 0);
+        // One decided cell
+        assert_eq!(decided.len(), 1);
+        assert!(decided.contains(Position::new(0, 0)));
+    }
+
+    #[test]
+    fn test_classify_cells_with_empty_position() {
+        let mut board = CandidateBoard::new();
+        let pos = Position::new(4, 4);
+
+        // Remove all candidates to create an empty cell
+        for digit in 1..=9 {
+            board.remove_candidate(pos, digit);
+        }
+
+        let (empty, _decided) = board.classify_cells();
+
+        // One empty cell
+        assert_eq!(empty.len(), 1);
+        assert!(empty.contains(pos));
+    }
+
+    #[test]
+    fn test_placed_digits_are_unique_empty_board() {
+        let board = CandidateBoard::new();
+        let decided = DigitPositions::new();
+        assert!(board.placed_digits_are_unique(decided));
+    }
+
+    #[test]
+    fn test_placed_digits_are_unique_single_digit() {
+        let mut board = CandidateBoard::new();
+        board.place(Position::new(0, 0), 5);
+
+        let (_, decided) = board.classify_cells();
+        assert!(board.placed_digits_are_unique(decided));
+    }
+
+    #[test]
+    fn test_placed_digits_are_unique_valid_placements() {
+        let mut board = CandidateBoard::new();
+        // Place different digits in same row (valid)
+        board.place(Position::new(0, 0), 1);
+        board.place(Position::new(1, 0), 2);
+        board.place(Position::new(2, 0), 3);
+
+        let (_, decided) = board.classify_cells();
+        assert!(board.placed_digits_are_unique(decided));
     }
 }
