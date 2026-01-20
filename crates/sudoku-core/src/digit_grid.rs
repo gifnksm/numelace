@@ -7,7 +7,7 @@ use std::{
 
 use crate::{CandidateGrid, Digit, Position, containers::Array81, index::PositionSemantics};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DigitGrid {
     cells: Array81<Option<Digit>, PositionSemantics>,
 }

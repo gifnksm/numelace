@@ -29,7 +29,7 @@ sudoku/
 
 ### sudoku-core
 
-**Status**: In Development
+**Status**: Completed ✅
 
 **Purpose**: Provides fundamental data structures and types for representing Sudoku puzzles.
 
@@ -53,6 +53,10 @@ sudoku/
   - Allows each type to provide the most natural interface for its use case
 
 - **Type Safety via Semantics**: Generic containers prevent mixing incompatible index types at compile time
+
+- **Conversion Design**: One-way conversion from `DigitGrid` to `CandidateGrid` via `From` trait
+  - `CandidateGrid` → `DigitGrid` is intentionally not provided as `From` to avoid lossy conversions
+  - For extracting decided cells, use explicit methods when needed in higher-level crates
 
 For implementation details, see the [crate documentation](../crates/sudoku-core/src/lib.rs).
 
