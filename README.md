@@ -22,7 +22,13 @@ A Sudoku application written in Rust, supporting both desktop and web platforms.
   - `BacktrackSolver`: Technique-based solving with backtracking fallback
   - Extensible technique system
   - Solution enumeration for puzzle validation
-- 📋 **Next**: Puzzle generation, GUI
+- ✅ **sudoku-generator**: Puzzle generation **completed**
+  - `PuzzleGenerator`: Generates puzzles with unique solutions using removal method
+  - Reproducible generation via `PuzzleSeed`
+  - Hybrid solution generation (random + backtracking with solver assistance)
+  - Verification using `TechniqueSolver` ensures unique, human-solvable puzzles
+  - Comprehensive testing (unit tests, property tests, doctests)
+- 📋 **Next**: Game logic, GUI
 
 ## Project Structure
 
@@ -30,7 +36,7 @@ A Sudoku application written in Rust, supporting both desktop and web platforms.
 crates/
 ├── sudoku-core/       # Core data structures (CandidateGrid, DigitGrid, Digit, Position)
 ├── sudoku-solver/     # Solving algorithms (technique-based + backtracking)
-├── sudoku-generator/  # Puzzle generation (planned)
+├── sudoku-generator/  # Puzzle generation
 ├── sudoku-game/       # Game logic (planned)
 └── sudoku-app/        # GUI application (planned)
 ```

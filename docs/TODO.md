@@ -2,7 +2,17 @@
 
 This file tracks tasks that must be done to achieve the project goals.
 
-**Workflow**: For each component, create a design document first. Based on the design, add specific implementation tasks to this TODO. On completion, delete the design document and preserve only essential design decisions in crate documentation or ARCHITECTURE.md.
+**Workflow**: For each component:
+
+1. Create a design document first
+2. Based on the design, add specific implementation tasks to this TODO
+3. Implement the component
+4. On completion:
+   - Delete the design document
+   - Preserve essential design decisions in crate documentation or ARCHITECTURE.md
+   - Update status in README.md (Current Status section)
+   - Update status in ARCHITECTURE.md (Crate Descriptions section and status markers)
+   - Mark all tasks as completed in this TODO
 
 ---
 
@@ -10,19 +20,24 @@ This file tracks tasks that must be done to achieve the project goals.
 
 - [x] Create design document at `docs/design/sudoku-generator.md`
   - Consider aspects such as: generation algorithm, API design, difficulty evaluation, etc.
-- [ ] Add specific implementation tasks to this TODO based on design decisions
-  - [ ] Create `crates/sudoku-generator` crate
-  - [ ] Implement `PuzzleGenerator` struct with `TechniqueSolver` dependency
-  - [ ] Implement complete grid generation using random placement + backtracking
-  - [ ] Implement cell removal algorithm with shuffled positions
-  - [ ] Implement solvability verification using `TechniqueSolver`
-  - [ ] Add `rand` and `rand_pcg` dependencies
-  - [ ] Write unit tests for generation logic
-  - [ ] Write property-based tests using `proptest`
-  - [ ] Update workspace `Cargo.toml` to include new crate
-- [ ] On completion: Delete design document. Preserve only essential design decisions (if any) in crate documentation or ARCHITECTURE.md
+- [x] Add specific implementation tasks to this TODO based on design decisions
+  - [x] Create `crates/sudoku-generator` crate
+  - [x] Implement `PuzzleGenerator` struct with `TechniqueSolver` dependency
+  - [x] Implement complete grid generation using random placement + backtracking
+  - [x] Implement cell removal algorithm with shuffled positions
+  - [x] Implement solvability verification using `TechniqueSolver`
+  - [x] Add `rand` and `rand_pcg` dependencies
+  - [x] Write unit tests for generation logic
+  - [x] Write property-based tests using `proptest`
+  - [x] Update workspace `Cargo.toml` to include new crate
+- [x] On completion:
+  - [x] Delete design document
+  - [x] Preserve essential design decisions in crate documentation and ARCHITECTURE.md
+  - [x] Update README.md status (Current Status section)
+  - [x] Update ARCHITECTURE.md status (Crate Descriptions section)
+  - [x] Mark all tasks as completed in this TODO
 
-**Note**: This is marked as "Planned" in ARCHITECTURE.md and README.md
+**Status**: ✅ Completed. Design decisions preserved in ARCHITECTURE.md and crate documentation.
 
 ---
 
@@ -31,7 +46,12 @@ This file tracks tasks that must be done to achieve the project goals.
 - [ ] Create design document at `docs/design/sudoku-game.md`
   - Consider aspects such as: game state structure, operation APIs, undo/redo mechanism, save/load format, interaction with other components, etc.
 - [ ] Add specific implementation tasks to this TODO based on design decisions
-- [ ] On completion: Delete design document. Preserve only essential design decisions (if any) in crate documentation or ARCHITECTURE.md
+- [ ] On completion:
+  - [ ] Delete design document
+  - [ ] Preserve essential design decisions in crate documentation and ARCHITECTURE.md
+  - [ ] Update README.md status (Current Status section)
+  - [ ] Update ARCHITECTURE.md status (Crate Descriptions section)
+  - [ ] Mark all tasks as completed in this TODO
 
 **Note**: This is marked as "Planned" in ARCHITECTURE.md and README.md
 
@@ -42,6 +62,11 @@ This file tracks tasks that must be done to achieve the project goals.
 - [ ] Create design document at `docs/design/sudoku-app.md`
   - Consider aspects such as: UI layout, user interaction flow, egui/eframe integration, desktop/WASM build configuration, state management, etc.
 - [ ] Add specific implementation tasks to this TODO based on design decisions
-- [ ] On completion: Delete design document. Preserve only essential design decisions (if any) in crate documentation or ARCHITECTURE.md
+- [ ] On completion:
+  - [ ] Delete design document
+  - [ ] Preserve essential design decisions in crate documentation and ARCHITECTURE.md
+  - [ ] Update README.md status (Current Status section)
+  - [ ] Update ARCHITECTURE.md status (Crate Descriptions section)
+  - [ ] Mark all tasks as completed in this TODO
 
 **Note**: This is marked as "Planned" in ARCHITECTURE.md and README.md. Desktop GUI support using egui/eframe is explicitly mentioned in project goals.

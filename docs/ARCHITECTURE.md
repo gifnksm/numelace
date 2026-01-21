@@ -18,9 +18,9 @@ sudoku/
 ├── crates/
 │   ├── sudoku-core/          # Core data structures and types
 │   ├── sudoku-solver/        # Solving algorithms
-│   ├── sudoku-generator/     # Puzzle generation (planned)
+│   ├── sudoku-generator/     # Puzzle generation
 │   ├── sudoku-game/          # Game logic and state management (planned)
-│   └── sudoku-app/           # GUI application (desktop + web)
+│   └── sudoku-app/           # GUI application (desktop + web) (planned)
 └── docs/
     └── ARCHITECTURE.md       # This file
 ```
@@ -102,11 +102,59 @@ For detailed API documentation, see the [crate documentation](../crates/sudoku-s
 
 ### sudoku-generator
 
-**Status**: Planned 📋
+**Status**: Completed ✅
 
-**Purpose**: Generates valid Sudoku puzzles with specified difficulty levels.
+**Purpose**: Generates valid Sudoku puzzles with unique solutions.
 
-**Dependencies**: `sudoku-core`, `sudoku-solver`
+**Key Components**:
+
+- **`PuzzleGenerator`**: Main generator using removal method
+  - Two-phase generation: complete solution → cell removal
+  - Reproducible generation via `PuzzleSeed` ([u8; 32])
+  - Uses `TechniqueSolver` for solvability verification
+
+- **`GeneratedPuzzle`**: Contains problem, solution, and seed
+  - Problem: puzzle with cells removed (to be solved)
+  - Solution: complete valid grid
+  - Seed: allows exact puzzle reproduction
+
+- **Generation Algorithm**:
+  1. Generate complete solution using hybrid approach (random first row + backtracking with solver assistance)
+  2. Remove cells in shuffled order, verifying solvability after each removal
+  3. Keep maximum removed cells while maintaining unique solution
+
+**Dependencies**: `sudoku-core`, `sudoku-solver`, `rand`, `rand_pcg`
+
+**Design Decisions**:
+
+- **Removal Method**: Generates complete grid first, then removes cells
+  - Simpler than construction methods
+  - Leverages existing `sudoku-solver` infrastructure
+  - Naturally produces valid puzzles with unique solutions
+
+- **TechniqueSolver Verification**: Critical design property
+  - `TechniqueSolver` uses only logical deduction
+  - If puzzle has multiple solutions, solver gets stuck (ambiguous cells)
+  - Successful solve proves unique solution
+  - This provides both uniqueness guarantee AND difficulty control (human-solvable)
+
+- **Hybrid Solution Generation**: Optimized for performance
+  - Step 1: Fill first row with shuffled digits
+  - Step 2: Fill remaining cells in top-left box
+  - Step 3: Backtracking with MRV heuristic and solver assistance
+  - Solver fills logically determined cells, reducing backtracking
+
+- **Type Safety**: `PuzzleSeed` wrapper type instead of raw `[u8; 32]`
+  - Prevents seed/data confusion
+  - Provides hex `Display` implementation
+  - Implements `From<[u8; 32]>` and `Distribution` traits
+
+**Testing**: Property-based tests (proptest) + comprehensive unit tests
+
+- Verifies solvability, reproducibility, and solution subset properties
+- 11 unit tests + 3 property tests + 6 doctests
+
+For detailed API documentation, see the [crate documentation](../crates/sudoku-generator/src/lib.rs).
 
 ---
 
@@ -137,11 +185,11 @@ sudoku-core
     ↓
 sudoku-solver
     ↓
-sudoku-generator
+sudoku-generator (completed)
     ↓
-sudoku-game
+sudoku-game (planned)
     ↓
-sudoku-app (desktop + web)
+sudoku-app (desktop + web) (planned)
 ```
 
 **Principles**:
@@ -191,6 +239,23 @@ sudoku-app (desktop + web)
 - Each crate has comprehensive unit tests
 - Property-based testing for core data structures (proptest)
 - Edge case coverage for all public APIs
+
+### Removal Method for Puzzle Generation
+
+**Decision**: Use removal method (generate complete solution, then remove cells) instead of construction methods.
+
+**Rationale**:
+
+- Simpler to implement and understand
+- Leverages existing `TechniqueSolver` for verification
+- Naturally produces valid puzzles with guaranteed unique solutions
+- `TechniqueSolver`'s property (stuck on ambiguous puzzles) provides both uniqueness and difficulty control
+
+**Trade-offs**:
+
+- May not produce puzzles with specific difficulty levels (depends on available techniques)
+- Cannot control symmetry or aesthetic patterns in initial implementation
+- Benefits: Simple, reliable, produces human-solvable puzzles, builds on existing infrastructure
 
 ---
 
