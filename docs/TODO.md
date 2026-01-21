@@ -2,17 +2,31 @@
 
 This file tracks tasks that must be done to achieve the project goals.
 
-**Workflow**: For each component:
+**Workflow**: For initial component development (applies to sudoku-generator, sudoku-game, sudoku-app):
 
-1. Create a design document first
-2. Based on the design, add specific implementation tasks to this TODO
-3. Implement the component
-4. On completion:
+1. **Planning Phase**:
+   - Create a design document at `docs/design/COMPONENT.md`
+   - Based on the design, add specific implementation tasks to this TODO
+   - Commit: `docs: add design for COMPONENT`
+
+2. **Implementation Phase**:
+   - Implement code and tests
+   - Keep focus on code (do not update TODO.md during implementation)
+   - Commit as needed: `feat(COMPONENT): implement FEATURE` (multiple commits OK)
+
+3. **Completion Phase** (after all tests pass):
+   - Mark all tasks as completed in this TODO
    - Delete the design document
-   - Preserve essential design decisions in crate documentation or ARCHITECTURE.md
+   - Preserve essential design decisions in crate documentation and ARCHITECTURE.md
    - Update status in README.md (Current Status section)
    - Update status in ARCHITECTURE.md (Crate Descriptions section and status markers)
-   - Mark all tasks as completed in this TODO
+   - Commit all documentation updates together: `docs: complete COMPONENT and update project documentation`
+
+4. **Next Component** (optional):
+   - Remove completed section from this TODO to keep it clean
+   - Commit: `docs: archive completed COMPONENT tasks`
+
+**Note**: Once all core components are implemented, this TODO will transition to tracking features, improvements, and bugs rather than component-by-component development. The workflow may be adapted at that time.
 
 ---
 
