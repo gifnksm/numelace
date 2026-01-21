@@ -216,6 +216,21 @@ where
         Some(Index9::new(15 - self.bits.leading_zeros() as u8))
     }
 
+    fn nth_index(self, n: usize) -> Option<Index9> {
+        let mut count = 0;
+        let start = self.first_index()?.index();
+        for i in start..9 {
+            let idx = Index9::new(i);
+            if self.bits & idx.bit() != 0 {
+                if count == n {
+                    return Some(idx);
+                }
+                count += 1;
+            }
+        }
+        None
+    }
+
     /// Returns the smallest element in the set, if any.
     #[must_use]
     #[inline]
@@ -230,6 +245,15 @@ where
         self.last_index().map(S::from_index)
     }
 
+    /// Returns the n-th smallest element in the set (0-indexed), if any.
+    ///
+    /// This operation has O(n) time complexity.
+    #[must_use]
+    #[inline]
+    pub fn nth(self, n: usize) -> Option<S::Value> {
+        self.nth_index(n).map(S::from_index)
+    }
+
     /// Removes and returns the smallest element in the set, if any.
     #[inline]
     pub fn pop_first(&mut self) -> Option<S::Value> {
@@ -242,6 +266,16 @@ where
     #[inline]
     pub fn pop_last(&mut self) -> Option<S::Value> {
         let i = self.last_index()?;
+        self.bits &= !i.bit();
+        Some(S::from_index(i))
+    }
+
+    /// Removes and returns the n-th smallest element in the set (0-indexed), if any.
+    ///
+    /// This operation has O(n) time complexity.
+    #[inline]
+    pub fn pop_nth(&mut self, n: usize) -> Option<S::Value> {
+        let i = self.nth_index(n)?;
         self.bits &= !i.bit();
         Some(S::from_index(i))
     }
@@ -796,6 +830,26 @@ mod tests {
             assert_eq!(set.range(..4), set![0, 2]);
             assert_eq!(set.range(6..), set![6, 8]);
             assert_eq!(set.range(..), set);
+        }
+
+        #[test]
+        fn test_nth() {
+            let set = set![0, 2, 4, 6];
+            assert_eq!(set.nth(0), Some(0));
+            assert_eq!(set.nth(1), Some(2));
+            assert_eq!(set.nth(3), Some(6));
+            assert_eq!(set.nth(4), None);
+            assert_eq!(TestSet::EMPTY.nth(0), None);
+        }
+
+        #[test]
+        fn test_pop_nth() {
+            let mut set = set![1, 3, 5, 7];
+            assert_eq!(set.pop_nth(2), Some(5));
+            assert_eq!(set, set![1, 3, 7]);
+            assert_eq!(set.pop_nth(0), Some(1));
+            assert_eq!(set, set![3, 7]);
+            assert_eq!(set.pop_nth(10), None);
         }
     }
 

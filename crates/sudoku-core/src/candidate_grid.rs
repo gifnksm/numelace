@@ -3,6 +3,7 @@
 use std::iter;
 
 use crate::{
+    DigitGrid,
     containers::{Array9, BitSet9, BitSet81},
     digit::Digit,
     index::{CellIndexSemantics, DigitSemantics, Index9, Index9Semantics, PositionSemantics},
@@ -243,6 +244,41 @@ impl CandidateGrid {
         Self {
             digit_positions: Array9::from([DigitPositions::FULL; 9]),
         }
+    }
+
+    /// Converts the candidate grid to a digit grid containing only decided cells.
+    ///
+    /// A cell is considered "decided" when it has exactly one candidate remaining.
+    /// Only these decided cells are populated in the returned grid; all other cells
+    /// remain empty (`None`).
+    ///
+    /// This is useful for extracting the current solved state of the puzzle from
+    /// the candidate grid.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::{CandidateGrid, Digit, Position};
+    ///
+    /// let mut grid = CandidateGrid::new();
+    /// grid.place(Position::new(0, 0), Digit::D1);
+    /// grid.place(Position::new(1, 0), Digit::D2);
+    ///
+    /// let digit_grid = grid.to_digit_grid();
+    /// assert_eq!(digit_grid.get(Position::new(0, 0)), Some(Digit::D1));
+    /// assert_eq!(digit_grid.get(Position::new(1, 0)), Some(Digit::D2));
+    /// assert_eq!(digit_grid.get(Position::new(2, 0)), None); // Not decided yet
+    /// ```
+    #[must_use]
+    pub fn to_digit_grid(&self) -> DigitGrid {
+        let mut grid = DigitGrid::new();
+        let [_empty_cells, decided_cells] = self.classify_cells();
+        for pos in decided_cells {
+            #[expect(clippy::missing_panics_doc)]
+            let digit = self.candidates_at(pos).first().unwrap();
+            grid.set(pos, Some(digit));
+        }
+        grid
     }
 
     /// Places a digit at a position and updates candidates accordingly.
@@ -1489,5 +1525,114 @@ mod tests {
         assert_eq!(c7.len(), 0); // No cells with 7 candidates
         assert_eq!(c8.len(), 0); // No cells with 8 candidates
         assert_eq!(c9.len(), 81); // All 81 cells have 9 candidates
+    }
+
+    #[test]
+    fn test_to_digit_grid_empty() {
+        let grid = CandidateGrid::new();
+        let digit_grid = grid.to_digit_grid();
+
+        // Empty candidate grid should produce empty digit grid
+        for y in 0..9 {
+            for x in 0..9 {
+                assert_eq!(digit_grid.get(Position::new(x, y)), None);
+            }
+        }
+    }
+
+    #[test]
+    fn test_to_digit_grid_single_placement() {
+        let mut grid = CandidateGrid::new();
+        grid.place(Position::new(0, 0), D1);
+
+        let digit_grid = grid.to_digit_grid();
+
+        // Only the placed digit should appear in the digit grid
+        assert_eq!(digit_grid.get(Position::new(0, 0)), Some(D1));
+
+        // All other cells should be empty
+        for y in 0..9 {
+            for x in 0..9 {
+                if x != 0 || y != 0 {
+                    assert_eq!(digit_grid.get(Position::new(x, y)), None);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_to_digit_grid_multiple_placements() {
+        let mut grid = CandidateGrid::new();
+        grid.place(Position::new(0, 0), D1);
+        grid.place(Position::new(1, 0), D2);
+        grid.place(Position::new(2, 1), D3);
+        grid.place(Position::new(4, 4), D5);
+
+        let digit_grid = grid.to_digit_grid();
+
+        // Check all placed digits appear
+        assert_eq!(digit_grid.get(Position::new(0, 0)), Some(D1));
+        assert_eq!(digit_grid.get(Position::new(1, 0)), Some(D2));
+        assert_eq!(digit_grid.get(Position::new(2, 1)), Some(D3));
+        assert_eq!(digit_grid.get(Position::new(4, 4)), Some(D5));
+
+        // Check some unplaced cells are empty
+        assert_eq!(digit_grid.get(Position::new(3, 0)), None);
+        assert_eq!(digit_grid.get(Position::new(8, 8)), None);
+    }
+
+    #[test]
+    fn test_to_digit_grid_with_undecided_cells() {
+        let mut grid = CandidateGrid::new();
+        // Place some digits
+        grid.place(Position::new(0, 0), D1);
+
+        // Manually remove some candidates to create cells with multiple candidates
+        // but don't reduce to a single candidate
+        grid.remove_candidate(Position::new(1, 1), D1);
+        grid.remove_candidate(Position::new(1, 1), D2);
+        // Position (1, 1) now has 7 candidates, not decided
+
+        let digit_grid = grid.to_digit_grid();
+
+        // Only the fully decided cell should appear
+        assert_eq!(digit_grid.get(Position::new(0, 0)), Some(D1));
+        // The cell with multiple candidates should be empty in digit grid
+        assert_eq!(digit_grid.get(Position::new(1, 1)), None);
+    }
+
+    #[test]
+    fn test_to_digit_grid_roundtrip_compatibility() {
+        use std::str::FromStr;
+
+        // Start with a digit grid with some placements
+        let digit_grid_str = "\
+            1........\n\
+            .2.......\n\
+            ..3......\n\
+            ...4.....\n\
+            ....5....\n\
+            .....6...\n\
+            ......7..\n\
+            .......8.\n\
+            ........9";
+        let original_digit_grid = DigitGrid::from_str(digit_grid_str).unwrap();
+
+        // Convert to candidate grid
+        let candidate_grid = CandidateGrid::from(original_digit_grid);
+
+        // Convert back to digit grid
+        let result_digit_grid = candidate_grid.to_digit_grid();
+
+        // Should match the original
+        assert_eq!(result_digit_grid.get(Position::new(0, 0)), Some(D1));
+        assert_eq!(result_digit_grid.get(Position::new(1, 1)), Some(D2));
+        assert_eq!(result_digit_grid.get(Position::new(2, 2)), Some(D3));
+        assert_eq!(result_digit_grid.get(Position::new(3, 3)), Some(D4));
+        assert_eq!(result_digit_grid.get(Position::new(4, 4)), Some(D5));
+        assert_eq!(result_digit_grid.get(Position::new(5, 5)), Some(D6));
+        assert_eq!(result_digit_grid.get(Position::new(6, 6)), Some(D7));
+        assert_eq!(result_digit_grid.get(Position::new(7, 7)), Some(D8));
+        assert_eq!(result_digit_grid.get(Position::new(8, 8)), Some(D9));
     }
 }
