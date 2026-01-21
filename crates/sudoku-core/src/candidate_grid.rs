@@ -247,7 +247,7 @@ impl CandidateGrid {
     /// [`is_solved`]: CandidateGrid::is_solved
     #[must_use]
     pub fn is_consistent(&self) -> bool {
-        let (empty_cells, decided_cells) = self.classify_cells();
+        let [empty_cells, decided_cells] = self.classify_cells();
         empty_cells.is_empty() && self.placed_digits_are_unique(decided_cells)
     }
 
@@ -272,7 +272,7 @@ impl CandidateGrid {
     /// ```
     #[must_use]
     pub fn is_solved(&self) -> bool {
-        let (empty_cells, decided_cells) = self.classify_cells();
+        let [empty_cells, decided_cells] = self.classify_cells();
         empty_cells.is_empty()
             && decided_cells.len() == 81
             && self.placed_digits_are_unique(decided_cells)
@@ -300,30 +300,66 @@ impl CandidateGrid {
     /// ```
     #[must_use]
     pub fn decided_cells(&self) -> DigitPositions {
-        let (_empty_cells, decided_cells) = self.classify_cells();
+        let [_empty_cells, decided_cells] = self.classify_cells();
         decided_cells
     }
 
     /// Classifies all grid positions by candidate count.
+    /// Classifies all cells by their candidate count.
     ///
-    /// Returns `(empty_cells, decided_cells)` where:
+    /// Returns an array of length `N` where the element at index `i` contains
+    /// the positions of all cells that have exactly `i` candidates.
     ///
-    /// - `empty_cells`: Positions with zero candidates (contradictions)
-    /// - `decided_cells`: Positions with exactly one candidate (definite digits)
+    /// # Type Parameters
     ///
-    /// Positions with 2-9 candidates are neither empty nor decided.
+    /// * `N` - Number of candidate counts to track (typically 2 for basic solving,
+    ///   or up to 10 for advanced analysis)
+    ///
+    /// # Returns
+    ///
+    /// An array `[cells_0, cells_1, ..., cells_N-1]` where:
+    ///
+    /// - `cells[0]`: Positions with zero candidates (contradictions)
+    /// - `cells[1]`: Positions with exactly one candidate (decided cells)
+    /// - `cells[2]`: Positions with exactly two candidates
+    /// - ...
+    /// - `cells[i]`: Positions with exactly `i` candidates
+    ///
+    /// Positions with `N` or more candidates are not included in any element.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::{CandidateGrid, Digit, Position};
+    ///
+    /// let mut grid = CandidateGrid::new();
+    /// grid.place(Position::new(0, 0), Digit::D1);
+    ///
+    /// // Get empty and decided cells only
+    /// let [empty_cells, decided_cells] = grid.classify_cells();
+    /// assert_eq!(empty_cells.len(), 0);
+    /// assert_eq!(decided_cells.len(), 1);
+    ///
+    /// // Get more detailed classification
+    /// let [empty, one, two, three] = grid.classify_cells();
+    /// // empty: 0 candidates, one: 1 candidate, two: 2 candidates, three: 3 candidates
+    /// ```
     ///
     /// This method performs a single pass over all digits to efficiently compute
-    /// both classifications simultaneously using bitwise operations.
-    fn classify_cells(&self) -> (DigitPositions, DigitPositions) {
-        let mut empty_cells = DigitPositions::FULL;
-        let mut decided_cells = DigitPositions::new();
-        for digit in &self.digits {
-            decided_cells &= !*digit;
-            decided_cells |= empty_cells & *digit;
-            empty_cells &= !*digit;
+    /// all classifications simultaneously using bitwise operations.
+    #[must_use]
+    pub fn classify_cells<const N: usize>(&self) -> [DigitPositions; N] {
+        let mut cells = [DigitPositions::EMPTY; N];
+        cells[0] = DigitPositions::FULL;
+        for (n, digit_pos) in iter::zip(1.., self.digits.iter().copied()) {
+            let end = usize::min(n + 1, N);
+            for i in (1..end).rev() {
+                cells[i] &= !digit_pos;
+                cells[i] |= cells[i - 1] & digit_pos;
+            }
+            cells[0] &= !digit_pos;
         }
-        (empty_cells, decided_cells)
+        cells
     }
 
     /// Checks that definite digits have no duplicates in rows, columns, or boxes.
@@ -841,7 +877,7 @@ mod tests {
     #[test]
     fn test_classify_cells_empty_grid() {
         let grid = CandidateGrid::new();
-        let (empty, decided) = grid.classify_cells();
+        let [empty, decided] = grid.classify_cells();
 
         // No empty cells
         assert_eq!(empty.len(), 0);
@@ -854,7 +890,7 @@ mod tests {
         let mut grid = CandidateGrid::new();
         grid.place(Position::new(0, 0), D5);
 
-        let (empty, decided) = grid.classify_cells();
+        let [empty, decided] = grid.classify_cells();
 
         // No empty cells
         assert_eq!(empty.len(), 0);
@@ -873,7 +909,7 @@ mod tests {
             grid.remove_candidate(pos, digit);
         }
 
-        let (empty, _decided) = grid.classify_cells();
+        let [empty] = grid.classify_cells();
 
         // One empty cell
         assert_eq!(empty.len(), 1);
@@ -892,7 +928,7 @@ mod tests {
         let mut grid = CandidateGrid::new();
         grid.place(Position::new(0, 0), D1);
 
-        let (_, decided_cells) = grid.classify_cells();
+        let [_, decided_cells] = grid.classify_cells();
         assert!(grid.placed_digits_are_unique(decided_cells));
     }
 
@@ -904,7 +940,119 @@ mod tests {
         grid.place(Position::new(2, 2), D3);
         grid.place(Position::new(3, 3), D4);
 
-        let (_, decided_cells) = grid.classify_cells();
+        let [_, decided_cells] = grid.classify_cells();
         assert!(grid.placed_digits_are_unique(decided_cells));
+    }
+
+    #[test]
+    fn test_classify_cells_with_n3_multiple_candidates() {
+        let mut grid = CandidateGrid::new();
+
+        // Create a cell with exactly 2 candidates
+        let pos_two = Position::new(0, 0);
+        for digit in [D3, D4, D5, D6, D7, D8, D9] {
+            grid.remove_candidate(pos_two, digit);
+        }
+        // pos_two now has candidates: D1, D2 (2 candidates)
+
+        // Create a cell with exactly 1 candidate
+        let pos_one = Position::new(1, 1);
+        for digit in [D2, D3, D4, D5, D6, D7, D8, D9] {
+            grid.remove_candidate(pos_one, digit);
+        }
+        // pos_one now has candidate: D1 (1 candidate)
+
+        let [empty, one_candidate, two_candidates] = grid.classify_cells();
+
+        assert_eq!(empty.len(), 0);
+        assert_eq!(one_candidate.len(), 1);
+        assert!(one_candidate.contains(pos_one));
+        assert_eq!(two_candidates.len(), 1);
+        assert!(two_candidates.contains(pos_two));
+    }
+
+    #[test]
+    fn test_classify_cells_with_n4_various_counts() {
+        let mut grid = CandidateGrid::new();
+
+        // Cell with 1 candidate
+        let pos_one = Position::new(0, 0);
+        for digit in [D2, D3, D4, D5, D6, D7, D8, D9] {
+            grid.remove_candidate(pos_one, digit);
+        }
+
+        // Cell with 2 candidates
+        let pos_two = Position::new(1, 1);
+        for digit in [D3, D4, D5, D6, D7, D8, D9] {
+            grid.remove_candidate(pos_two, digit);
+        }
+
+        // Cell with 3 candidates
+        let pos_three = Position::new(2, 2);
+        for digit in [D4, D5, D6, D7, D8, D9] {
+            grid.remove_candidate(pos_three, digit);
+        }
+
+        let [empty, one, two, three] = grid.classify_cells();
+
+        assert_eq!(empty.len(), 0);
+        assert_eq!(one.len(), 1);
+        assert!(one.contains(pos_one));
+        assert_eq!(two.len(), 1);
+        assert!(two.contains(pos_two));
+        assert_eq!(three.len(), 1);
+        assert!(three.contains(pos_three));
+    }
+
+    #[test]
+    fn test_classify_cells_with_large_n() {
+        let mut grid = CandidateGrid::new();
+
+        // Place one digit to create a decided cell
+        grid.place(Position::new(0, 0), D1);
+
+        // Request more classifications than possible (max 9 candidates)
+        let [
+            _empty,
+            one,
+            _two,
+            _three,
+            _four,
+            _five,
+            _six,
+            _seven,
+            _eight,
+            nine,
+            ten,
+        ]: [DigitPositions; 11] = grid.classify_cells();
+
+        // Should have one decided cell
+        assert_eq!(one.len(), 1);
+
+        // Positions with 10 or more candidates don't exist in sudoku
+        assert_eq!(ten.len(), 0);
+
+        // Most cells should have fewer than 9 candidates due to the placement
+        // (cells in same row/col/box will have 8 or fewer)
+        assert!(nine.len() < 81);
+    }
+
+    #[test]
+    fn test_classify_cells_n10_full_range() {
+        let grid = CandidateGrid::new();
+
+        // In an empty grid, all 81 cells have 9 candidates
+        let [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9]: [DigitPositions; 10] = grid.classify_cells();
+
+        assert_eq!(c0.len(), 0); // No empty cells
+        assert_eq!(c1.len(), 0); // No decided cells
+        assert_eq!(c2.len(), 0); // No cells with 2 candidates
+        assert_eq!(c3.len(), 0); // No cells with 3 candidates
+        assert_eq!(c4.len(), 0); // No cells with 4 candidates
+        assert_eq!(c5.len(), 0); // No cells with 5 candidates
+        assert_eq!(c6.len(), 0); // No cells with 6 candidates
+        assert_eq!(c7.len(), 0); // No cells with 7 candidates
+        assert_eq!(c8.len(), 0); // No cells with 8 candidates
+        assert_eq!(c9.len(), 81); // All 81 cells have 9 candidates
     }
 }
