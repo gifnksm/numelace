@@ -7,6 +7,7 @@ use crate::{SolverError, technique::Technique};
 pub struct NakedSingle;
 
 impl NakedSingle {
+    #[must_use]
     pub const fn new() -> Self {
         NakedSingle
     }

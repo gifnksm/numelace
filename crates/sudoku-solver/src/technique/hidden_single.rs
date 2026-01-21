@@ -7,6 +7,7 @@ use crate::{SolverError, technique::Technique};
 pub struct HiddenSingle;
 
 impl HiddenSingle {
+    #[must_use]
     pub const fn new() -> Self {
         HiddenSingle
     }
