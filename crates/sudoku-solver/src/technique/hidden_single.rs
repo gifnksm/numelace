@@ -1,8 +1,7 @@
 use sudoku_core::{CandidateGrid, Digit, Position};
 
-use crate::{SolverError, technique::Technique};
-
 use super::BoxedTechnique;
+use crate::{SolverError, technique::Technique};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct HiddenSingle;
@@ -59,9 +58,8 @@ impl Technique for HiddenSingle {
 mod tests {
     use sudoku_core::{CandidateGrid, Digit, Position};
 
-    use crate::testing::TechniqueTester;
-
     use super::*;
+    use crate::testing::TechniqueTester;
 
     #[test]
     fn test_hidden_single_in_row() {

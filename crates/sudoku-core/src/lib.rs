@@ -124,20 +124,21 @@
 //! ## [`DigitGrid`] - Simple Cell-Centric Interface
 //!
 //! ```
-//! use sudoku_core::{DigitGrid, Digit, Position};
+//! use sudoku_core::{Digit, DigitGrid, Position};
 //!
 //! // Parse a grid from a string (dots represent empty cells)
-//! let grid: DigitGrid = "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
-//!     .parse()
-//!     .unwrap();
+//! let grid: DigitGrid =
+//!     "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
+//!         .parse()
+//!         .unwrap();
 //!
 //! // Access cells directly
 //! assert_eq!(grid[Position::new(0, 0)], Some(Digit::D5));
 //! assert_eq!(grid[Position::new(2, 0)], None);
 //!
 //! // Display the grid (compact or pretty format)
-//! println!("{}", grid);      // 81 characters, no newlines
-//! println!("{:#}", grid);    // 9 lines with newlines
+//! println!("{}", grid); // 81 characters, no newlines
+//! println!("{:#}", grid); // 9 lines with newlines
 //! ```
 //!
 //! ## Design Rationale

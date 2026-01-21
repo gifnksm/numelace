@@ -1,8 +1,7 @@
 use sudoku_core::{CandidateGrid, Digit};
 
-use crate::{SolverError, technique::Technique};
-
 use super::BoxedTechnique;
+use crate::{SolverError, technique::Technique};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct NakedSingle;
@@ -41,9 +40,8 @@ impl Technique for NakedSingle {
 mod tests {
     use sudoku_core::{CandidateGrid, Digit, Position};
 
-    use crate::testing::TechniqueTester;
-
     use super::*;
+    use crate::testing::TechniqueTester;
 
     #[test]
     fn test_places_naked_single() {

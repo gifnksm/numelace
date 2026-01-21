@@ -91,7 +91,7 @@ impl CandidateGrid {
     /// # Example
     ///
     /// ```
-    /// use sudoku_core::{CandidateGrid, Position, Digit};
+    /// use sudoku_core::{CandidateGrid, Digit, Position};
     ///
     /// let mut grid = CandidateGrid::new();
     /// let changed = grid.place(Position::new(0, 0), Digit::D5);
@@ -142,7 +142,7 @@ impl CandidateGrid {
     /// # Example
     ///
     /// ```
-    /// use sudoku_core::{CandidateGrid, Position, Digit};
+    /// use sudoku_core::{CandidateGrid, Digit, Position};
     ///
     /// let mut grid = CandidateGrid::new();
     /// let changed = grid.remove_candidate(Position::new(0, 0), Digit::D1);
@@ -287,7 +287,7 @@ impl CandidateGrid {
     /// # Example
     ///
     /// ```
-    /// use sudoku_core::{CandidateGrid, Position, Digit};
+    /// use sudoku_core::{CandidateGrid, Digit, Position};
     ///
     /// let mut grid = CandidateGrid::new();
     ///

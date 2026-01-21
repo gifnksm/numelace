@@ -79,7 +79,8 @@ impl TechniqueTester {
     ///
     /// ```
     /// # use sudoku_solver::testing::TechniqueTester;
-    /// let tester = TechniqueTester::from_str("
+    /// let tester = TechniqueTester::from_str(
+    ///     "
     ///     53_ _7_ ___
     ///     6__ 195 ___
     ///     _98 ___ _6_
@@ -89,7 +90,8 @@ impl TechniqueTester {
     ///     _6_ ___ 28_
     ///     ___ 419 __5
     ///     ___ _8_ _79
-    /// ");
+    /// ",
+    /// );
     /// ```
     #[track_caller]
     pub fn from_str(s: &str) -> Self {
