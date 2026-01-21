@@ -7,6 +7,30 @@ use std::{
 
 use crate::{CandidateGrid, Digit, Position, containers::Array81, index::PositionSemantics};
 
+/// A simple cell-centric grid for storing Sudoku digits.
+///
+/// `DigitGrid` provides an intuitive interface for storing and accessing digits
+/// in a Sudoku puzzle. Each cell can either contain a digit (1-9) or be empty.
+///
+/// # Examples
+///
+/// ```
+/// use sudoku_core::{DigitGrid, Digit, Position};
+///
+/// let mut grid = DigitGrid::new();
+/// grid.set(Position::new(0, 0), Some(Digit::D5));
+/// assert_eq!(grid.get(Position::new(0, 0)), Some(Digit::D5));
+/// ```
+///
+/// # String Parsing
+///
+/// `DigitGrid` supports parsing from strings for easy puzzle input:
+///
+/// ```
+/// use sudoku_core::DigitGrid;
+///
+/// let grid: DigitGrid = "123456789........................................................................".parse().unwrap();
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DigitGrid {
     cells: Array81<Option<Digit>, PositionSemantics>,
@@ -19,11 +43,15 @@ impl Default for DigitGrid {
 }
 
 impl DigitGrid {
+    /// Creates a new empty grid with all cells set to `None`.
     #[must_use]
     pub fn new() -> Self {
         Self::from_array([None; 81])
     }
 
+    /// Creates a grid from an array of 81 cells.
+    ///
+    /// Cells are ordered row by row, left to right, top to bottom.
     #[must_use]
     pub fn from_array(cells: [Option<Digit>; 81]) -> Self {
         Self {
@@ -31,28 +59,40 @@ impl DigitGrid {
         }
     }
 
+    /// Returns the digit at the given position, or `None` if the cell is empty.
     #[must_use]
     pub fn get(&self, pos: Position) -> Option<Digit> {
         self.cells[pos]
     }
 
+    /// Sets the digit at the given position.
+    ///
+    /// Use `None` to clear the cell.
     pub fn set(&mut self, pos: Position, digit: Option<Digit>) {
         self.cells[pos] = digit;
     }
 
+    /// Clears the cell at the given position (sets it to `None`).
     pub fn clear(&mut self, pos: Position) {
         self.cells[pos] = None;
     }
 
+    /// Returns `true` if the cell at the given position is empty.
     #[must_use]
     pub fn is_empty(&self, pos: Position) -> bool {
         self.cells[pos].is_none()
     }
 
+    /// Returns an iterator over all cells in the grid.
+    ///
+    /// Cells are iterated in row-major order (left to right, top to bottom).
     pub fn iter(&self) -> slice::Iter<'_, Option<Digit>> {
         self.cells.iter()
     }
 
+    /// Returns a mutable iterator over all cells in the grid.
+    ///
+    /// Cells are iterated in row-major order (left to right, top to bottom).
     pub fn iter_mut(&mut self) -> slice::IterMut<'_, Option<Digit>> {
         self.cells.iter_mut()
     }

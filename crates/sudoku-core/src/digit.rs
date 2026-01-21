@@ -28,14 +28,23 @@ use std::fmt::{self, Display};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum Digit {
+    /// The digit 1.
     D1 = 1,
+    /// The digit 2.
     D2 = 2,
+    /// The digit 3.
     D3 = 3,
+    /// The digit 4.
     D4 = 4,
+    /// The digit 5.
     D5 = 5,
+    /// The digit 6.
     D6 = 6,
+    /// The digit 7.
     D7 = 7,
+    /// The digit 8.
     D8 = 8,
+    /// The digit 9.
     D9 = 9,
 }
 

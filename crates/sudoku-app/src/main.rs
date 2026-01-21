@@ -1,3 +1,7 @@
+//! Sudoku desktop application using egui/eframe.
+//!
+//! This is the main entry point for the desktop Sudoku application.
+
 use eframe::{NativeOptions, egui};
 
 use crate::app::SudokuApp;
