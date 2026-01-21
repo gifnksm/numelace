@@ -2791,6 +2791,7 @@ dependencies = [
 name = "sudoku-generator"
 version = "0.1.0"
 dependencies = [
+ "proptest",
  "rand",
  "rand_pcg",
  "sudoku-core",

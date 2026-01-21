@@ -1,3 +1,16 @@
+//! Example demonstrating basic Sudoku puzzle generation.
+//!
+//! This example shows how to:
+//! - Create a `PuzzleGenerator` with a `TechniqueSolver`
+//! - Generate a random puzzle
+//! - Display the puzzle, solution, and seed
+//!
+//! # Usage
+//!
+//! ```sh
+//! cargo run --example generate_puzzle
+//! ```
+
 use sudoku_generator::PuzzleGenerator;
 use sudoku_solver::TechniqueSolver;
 
@@ -6,5 +19,13 @@ fn main() {
     let generator = PuzzleGenerator::new(&solver);
 
     let puzzle = generator.generate();
-    println!("{puzzle:?}");
+    println!("Seed:");
+    println!("  {}", puzzle.seed);
+    println!();
+    println!("Problem:");
+    println!("{:#}", puzzle.problem);
+    println!();
+    println!("Solution:");
+    println!("{:#}", puzzle.solution);
+    println!();
 }

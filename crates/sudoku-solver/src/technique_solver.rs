@@ -334,7 +334,7 @@ impl TechniqueSolver {
                 return Ok(true);
             }
         }
-        Ok(false)
+        Ok(grid.is_solved())
     }
 }
 
