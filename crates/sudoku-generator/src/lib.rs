@@ -351,16 +351,10 @@ pub struct GeneratedPuzzle {
 mod tests {
     use super::*;
 
-    fn create_test_generator() -> PuzzleGenerator<'static> {
-        // Use a leaked solver to get a 'static reference
-        // This is acceptable in tests
-        let solver = Box::leak(Box::new(TechniqueSolver::with_all_techniques()));
-        PuzzleGenerator::new(solver)
-    }
-
     #[test]
     fn test_generated_solution_is_complete() {
-        let generator = create_test_generator();
+        let solver = TechniqueSolver::with_all_techniques();
+        let generator = PuzzleGenerator::new(&solver);
         let mut rng = Pcg64::from_seed([1u8; 32]);
         let solution = generator.generate_solution(&mut rng);
 
@@ -375,7 +369,8 @@ mod tests {
 
     #[test]
     fn test_generated_solution_satisfies_sudoku_constraints() {
-        let generator = create_test_generator();
+        let solver = TechniqueSolver::with_all_techniques();
+        let generator = PuzzleGenerator::new(&solver);
         let mut rng = Pcg64::from_seed([2u8; 32]);
         let solution = generator.generate_solution(&mut rng);
 
@@ -427,7 +422,8 @@ mod tests {
 
     #[test]
     fn test_same_seed_produces_same_solution() {
-        let generator = create_test_generator();
+        let solver = TechniqueSolver::with_all_techniques();
+        let generator = PuzzleGenerator::new(&solver);
         let seed = [42u8; 32];
 
         let mut rng1 = Pcg64::from_seed(seed);
@@ -442,7 +438,8 @@ mod tests {
 
     #[test]
     fn test_different_seeds_produce_different_solutions() {
-        let generator = create_test_generator();
+        let solver = TechniqueSolver::with_all_techniques();
+        let generator = PuzzleGenerator::new(&solver);
 
         let mut rng1 = Pcg64::from_seed([1u8; 32]);
         let solution1 = generator.generate_solution(&mut rng1);
@@ -456,7 +453,8 @@ mod tests {
 
     #[test]
     fn test_generated_solution_can_be_verified_by_candidate_grid() {
-        let generator = create_test_generator();
+        let solver = TechniqueSolver::with_all_techniques();
+        let generator = PuzzleGenerator::new(&solver);
         let mut rng = Pcg64::from_seed([5u8; 32]);
         let solution = generator.generate_solution(&mut rng);
 
@@ -474,7 +472,8 @@ mod tests {
 
     #[test]
     fn test_removed_puzzle_solves_to_original_solution() {
-        let generator = create_test_generator();
+        let solver = TechniqueSolver::with_all_techniques();
+        let generator = PuzzleGenerator::new(&solver);
         let mut rng = Pcg64::from_seed([42u8; 32]);
 
         // Generate a complete solution
@@ -500,7 +499,8 @@ mod tests {
 
     #[test]
     fn test_remove_cells_removes_at_least_some_cells() {
-        let generator = create_test_generator();
+        let solver = TechniqueSolver::with_all_techniques();
+        let generator = PuzzleGenerator::new(&solver);
         let mut rng = Pcg64::from_seed([100u8; 32]);
 
         let solution = generator.generate_solution(&mut rng);
@@ -518,7 +518,8 @@ mod tests {
 
     #[test]
     fn test_remove_cells_problem_is_subset_of_solution() {
-        let generator = create_test_generator();
+        let solver = TechniqueSolver::with_all_techniques();
+        let generator = PuzzleGenerator::new(&solver);
         let mut rng = Pcg64::from_seed([7u8; 32]);
 
         let solution = generator.generate_solution(&mut rng);
@@ -545,7 +546,8 @@ mod tests {
 
             #[test]
             fn generated_puzzle_is_solvable(seed: [u8; 32]) {
-                let generator = create_test_generator();
+                let solver = TechniqueSolver::with_all_techniques();
+                let generator = PuzzleGenerator::new(&solver);
                 let puzzle = generator.generate_with_seed(PuzzleSeed(seed));
 
                 let mut test_grid = CandidateGrid::from_digit_grid(&puzzle.problem);
@@ -557,7 +559,8 @@ mod tests {
 
             #[test]
             fn same_seed_produces_same_puzzle(seed: [u8; 32]) {
-                let generator = create_test_generator();
+                let solver = TechniqueSolver::with_all_techniques();
+                let generator = PuzzleGenerator::new(&solver);
                 let puzzle1 = generator.generate_with_seed(PuzzleSeed(seed));
                 let puzzle2 = generator.generate_with_seed(PuzzleSeed(seed));
 
@@ -567,7 +570,8 @@ mod tests {
 
             #[test]
             fn problem_is_subset_of_solution(seed: [u8; 32]) {
-                let generator = create_test_generator();
+                let solver = TechniqueSolver::with_all_techniques();
+                let generator = PuzzleGenerator::new(&solver);
                 let puzzle = generator.generate_with_seed(PuzzleSeed(seed));
 
                 for pos in Position::ALL {
