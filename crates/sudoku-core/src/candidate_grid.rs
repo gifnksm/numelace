@@ -370,10 +370,12 @@ impl CandidateGrid {
     pub fn to_digit_grid(&self) -> DigitGrid {
         let mut grid = DigitGrid::new();
         let [_empty_cells, decided_cells] = self.classify_cells();
-        for pos in decided_cells {
-            #[expect(clippy::missing_panics_doc)]
-            let digit = self.candidates_at(pos).first().unwrap();
-            grid.set(pos, Some(digit));
+        // For each digit, find cells where it's the only candidate and place it
+        for digit in Digit::ALL {
+            let digit_cells = &self.digit_positions[digit];
+            for pos in *digit_cells & decided_cells {
+                grid.set(pos, Some(digit));
+            }
         }
         grid
     }
