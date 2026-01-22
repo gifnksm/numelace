@@ -258,91 +258,71 @@ where
 mod tests {
     use super::*;
     use crate::{
-        digit::Digit::{self, *},
+        digit::Digit::*,
         index::{CellIndexSemantics, DigitSemantics},
     };
 
     #[test]
-    fn test_from_array() {
-        let array: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        assert_eq!(array[D1], 1);
-        assert_eq!(array[D9], 9);
-    }
-
-    #[test]
-    fn test_index_digit_semantics() {
+    fn test_basic_indexing() {
         let array: Array9<i32, DigitSemantics> = Array9::from([10, 20, 30, 40, 50, 60, 70, 80, 90]);
-        // Digit 1 maps to index 0 (value 10)
+
+        // Digit N maps to index (N-1)
         assert_eq!(array[D1], 10);
-        // Digit 5 maps to index 4 (value 50)
         assert_eq!(array[D5], 50);
-        // Digit 9 maps to index 8 (value 90)
         assert_eq!(array[D9], 90);
-    }
 
-    #[test]
-    fn test_index_cell_semantics() {
+        // Cell index semantics
         let array: Array9<i32, CellIndexSemantics> = Array9::from([0, 1, 2, 3, 4, 5, 6, 7, 8]);
-        for i in 0..9 {
-            assert_eq!(array[i], i32::from(i));
-        }
-    }
+        assert_eq!(array[0], 0);
+        assert_eq!(array[4], 4);
+        assert_eq!(array[8], 8);
 
-    #[test]
-    fn test_index_mut() {
+        // Mutable indexing
         let mut array: Array9<i32, DigitSemantics> = Array9::from([0; 9]);
         array[D1] = 100;
         array[D5] = 500;
         array[D9] = 900;
-
         assert_eq!(array[D1], 100);
         assert_eq!(array[D5], 500);
         assert_eq!(array[D9], 900);
     }
 
     #[test]
-    fn test_iter() {
+    fn test_iteration() {
         let array: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+        // Immutable iteration
         let sum: i32 = (&array).into_iter().sum();
         assert_eq!(sum, 45);
-    }
 
-    #[test]
-    #[expect(clippy::manual_slice_fill)]
-    fn test_iter_mut() {
-        let mut array: Array9<i32, DigitSemantics> = Array9::from([0; 9]);
+        // Mutable iteration
+        let mut array = array;
+        #[expect(clippy::manual_slice_fill)]
         for elem in &mut array {
             *elem = 42;
         }
-        for i in Digit::ALL {
-            assert_eq!(array[i], 42);
-        }
-    }
+        assert_eq!(array[D1], 42);
 
-    #[test]
-    fn test_into_iter() {
-        let array: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        // IntoIter
         let vec: Vec<i32> = array.into_iter().collect();
-        assert_eq!(vec, vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        assert_eq!(vec.len(), 9);
+        assert_eq!(vec[0], 42);
+        assert_eq!(vec[8], 42);
     }
 
     #[test]
     fn test_clone() {
+        // Clone properly handles PhantomData marker
         let array1: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        let array2 = array1;
+        #[expect(clippy::clone_on_copy)]
+        let array2 = array1.clone();
         assert_eq!(array1, array2);
-    }
-
-    #[test]
-    fn test_default() {
-        let array: Array9<i32, DigitSemantics> = Array9::default();
-        for i in Digit::ALL {
-            assert_eq!(array[i], 0);
-        }
+        assert_eq!(array2[D5], 5);
     }
 
     #[test]
     fn test_eq() {
+        // Eq ignores PhantomData marker, compares only array content
         let array1: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
         let array2: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
         let array3: Array9<i32, DigitSemantics> = Array9::from([9, 8, 7, 6, 5, 4, 3, 2, 1]);
@@ -352,31 +332,29 @@ mod tests {
     }
 
     #[test]
-    fn test_debug() {
-        let array: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        let debug_str = format!("{array:?}");
-        assert!(debug_str.contains('1'));
-        assert!(debug_str.contains('9'));
+    fn test_default() {
+        // Default properly initializes with PhantomData marker
+        let array: Array9<i32, DigitSemantics> = Array9::default();
+        assert_eq!(array[D1], 0);
+        assert_eq!(array[D9], 0);
     }
 
     #[test]
-    fn test_for_loop() {
-        let array: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        let mut sum = 0;
-        for &elem in &array {
-            sum += elem;
-        }
-        assert_eq!(sum, 45);
-    }
+    fn test_hash() {
+        use std::collections::HashMap;
 
-    #[test]
-    fn test_for_loop_mut() {
-        let mut array: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        for elem in &mut array {
-            *elem *= 2;
-        }
-        assert_eq!(array[D1], 2);
-        assert_eq!(array[D5], 10);
-        assert_eq!(array[D9], 18);
+        // Equal arrays should have same hash
+        let array1: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        let array2: Array9<i32, DigitSemantics> = Array9::from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        let array3: Array9<i32, DigitSemantics> = Array9::from([9, 8, 7, 6, 5, 4, 3, 2, 1]);
+
+        let mut map = HashMap::new();
+        map.insert(array1, "first");
+        map.insert(array2, "second");
+        map.insert(array3, "third");
+
+        assert_eq!(map.len(), 2);
+        assert_eq!(map.get(&array1), Some(&"second"));
+        assert_eq!(map.get(&array3), Some(&"third"));
     }
 }

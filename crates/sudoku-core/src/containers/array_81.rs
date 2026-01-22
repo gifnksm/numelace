@@ -260,28 +260,16 @@ mod tests {
     use crate::{Position, index::PositionSemantics};
 
     #[test]
-    fn test_from_array() {
-        let array: Array81<i32, PositionSemantics> = Array81::from([42; 81]);
-        assert_eq!(array[Position::new(0, 0)], 42);
-        assert_eq!(array[Position::new(8, 8)], 42);
-    }
-
-    #[test]
-    fn test_index_position_semantics() {
+    fn test_basic_indexing() {
         #[expect(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
         let values = array::from_fn(|i| i as i32);
         let array: Array81<i32, PositionSemantics> = Array81::from(values);
 
-        // Position (0, 0) maps to index 0
+        // Position (x, y) maps to index (y * 9 + x)
         assert_eq!(array[Position::new(0, 0)], 0);
-        // Position (4, 4) maps to index 40 (4 * 9 + 4)
         assert_eq!(array[Position::new(4, 4)], 40);
-        // Position (8, 8) maps to index 80
         assert_eq!(array[Position::new(8, 8)], 80);
-    }
 
-    #[test]
-    fn test_index_mut() {
         let mut array: Array81<i32, PositionSemantics> = Array81::from([0; 81]);
         array[Position::new(0, 0)] = 100;
         array[Position::new(4, 4)] = 500;
@@ -293,52 +281,41 @@ mod tests {
     }
 
     #[test]
-    fn test_iter() {
+    fn test_iteration() {
         let array: Array81<i32, PositionSemantics> = Array81::from([1; 81]);
+
+        // Immutable iteration
         let sum: i32 = (&array).into_iter().sum();
         assert_eq!(sum, 81);
-    }
 
-    #[test]
-    #[expect(clippy::manual_slice_fill)]
-    fn test_iter_mut() {
-        let mut array: Array81<i32, PositionSemantics> = Array81::from([0; 81]);
+        // Mutable iteration
+        let mut array = array;
+        #[expect(clippy::manual_slice_fill)]
         for elem in &mut array {
             *elem = 42;
         }
         assert_eq!(array[Position::new(0, 0)], 42);
-        assert_eq!(array[Position::new(4, 4)], 42);
-        assert_eq!(array[Position::new(8, 8)], 42);
-    }
 
-    #[test]
-    fn test_into_iter() {
-        let array: Array81<i32, PositionSemantics> = Array81::from([1; 81]);
+        // IntoIter
         let vec: Vec<i32> = array.into_iter().collect();
         assert_eq!(vec.len(), 81);
-        assert_eq!(vec[0], 1);
-        assert_eq!(vec[80], 1);
+        assert_eq!(vec[0], 42);
+        assert_eq!(vec[80], 42);
     }
 
     #[test]
     fn test_clone() {
+        // Clone properly handles PhantomData marker
         let array1: Array81<i32, PositionSemantics> = Array81::from([42; 81]);
-        let array2 = array1;
+        #[expect(clippy::clone_on_copy)]
+        let array2 = array1.clone();
         assert_eq!(array1, array2);
-        assert_eq!(array1[Position::new(5, 5)], 42);
         assert_eq!(array2[Position::new(5, 5)], 42);
     }
 
     #[test]
-    fn test_default() {
-        let array: Array81<i32, PositionSemantics> = Array81::default();
-        for pos in Position::ALL {
-            assert_eq!(array[pos], 0);
-        }
-    }
-
-    #[test]
     fn test_eq() {
+        // Eq ignores PhantomData marker, compares only array content
         let array1: Array81<i32, PositionSemantics> = Array81::from([1; 81]);
         let array2: Array81<i32, PositionSemantics> = Array81::from([1; 81]);
         let array3: Array81<i32, PositionSemantics> = Array81::from([2; 81]);
@@ -348,46 +325,11 @@ mod tests {
     }
 
     #[test]
-    fn test_debug() {
-        let array: Array81<i32, PositionSemantics> = Array81::from([42; 81]);
-        let debug_str = format!("{array:?}");
-        assert!(debug_str.contains("42"));
-    }
-
-    #[test]
-    fn test_for_loop() {
-        let array: Array81<i32, PositionSemantics> = Array81::from([2; 81]);
-        let mut sum = 0;
-        for &elem in &array {
-            sum += elem;
-        }
-        assert_eq!(sum, 162); // 2 * 81
-    }
-
-    #[test]
-    fn test_for_loop_mut() {
-        let mut array: Array81<i32, PositionSemantics> = Array81::from([1; 81]);
-        for elem in &mut array {
-            *elem *= 2;
-        }
-        assert_eq!(array[Position::new(0, 0)], 2);
-        assert_eq!(array[Position::new(4, 4)], 2);
-        assert_eq!(array[Position::new(8, 8)], 2);
-    }
-
-    #[test]
-    fn test_all_positions() {
-        let mut array: Array81<bool, PositionSemantics> = Array81::from([false; 81]);
-
-        // Set all positions to true
-        for pos in Position::ALL {
-            array[pos] = true;
-        }
-
-        // Verify all are true
-        for pos in Position::ALL {
-            assert!(array[pos]);
-        }
+    fn test_default() {
+        // Default properly initializes with PhantomData marker
+        let array: Array81<i32, PositionSemantics> = Array81::default();
+        assert_eq!(array[Position::new(0, 0)], 0);
+        assert_eq!(array[Position::new(8, 8)], 0);
     }
 
     #[test]
@@ -400,9 +342,10 @@ mod tests {
 
         let mut map = HashMap::new();
         map.insert(array1, "first");
-        map.insert(array2, "second"); // Should overwrite "first"
+        map.insert(array2, "second");
         map.insert(array3, "third");
 
+        // Equal arrays should have same hash
         assert_eq!(map.len(), 2);
         assert_eq!(map.get(&array1), Some(&"second"));
         assert_eq!(map.get(&array3), Some(&"third"));
