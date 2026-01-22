@@ -24,7 +24,7 @@
 | ACTION-4 | 中     | -                  | [ ]        | ドキュメント整備とコード改善           | 問題1-3, 問題3-1, 懸念1, 懸念3      |
 | ACTION-5 | 低     | -                  | [✓]        | Box::leak 修正                         | 問題2-2                             |
 | ACTION-6 | 中     | -                  | [✓]        | check_consistency API への置き換え     | 問題4-2                             |
-| ACTION-7 | 低     | -                  | [ ]        | BacktrackSolver のテスト調査           | 問題5-2                             |
+| ACTION-7 | 低     | -                  | [✓]        | BacktrackSolver のテスト調査           | 問題5-2                             |
 
 ---
 
@@ -328,7 +328,7 @@
 
 - **優先度**: 低
 - **依存**: なし
-- **ステータス**: [ ]
+- **ステータス**: [✓]
 - **作業量**: 小
 - **対応元**: 問題5-2
 
@@ -340,11 +340,39 @@
 
 3. 不足していれば、テストを追加
 
+### 調査結果
+
+既存の `test_multiple_solutions` テストが存在していたが、以下の点で不十分：
+
+- 解が異なることを検証していない
+- バックトラックが実際に発生しているかを検証していない
+- 統計情報（backtrack_count など）の検証が不足
+
+### 追加したテスト
+
+1. **`test_multiple_solutions`** を拡張
+   - 2つの解が実際に異なることを検証
+
+2. **`test_multiple_solutions_with_partial_grid`**
+   - 部分的に埋まったグリッドから複数解を生成
+   - 全ての解が有効で異なることを検証
+   - 元の配置が保持されることを確認
+
+3. **`test_backtracking_occurs`**
+   - バックトラックが必要な状況でassumptionsが記録されることを検証
+
+4. **`test_backtrack_count_increments`**
+   - 複数解の探索中にバックトラックカウントが追跡されることを確認
+
+5. **`test_solution_is_complete`**
+   - 解が完全（全81セル）であることを検証
+
 ### チェックリスト
 
-- [ ] テストコードの調査
-- [ ] カバレッジの確認
-- [ ] 必要に応じてテスト追加
+- [x] テストコードの調査
+- [x] カバレッジの確認
+- [x] 必要に応じてテスト追加
+- [x] 全テストが通ることを確認
 
 ---
 
@@ -377,6 +405,17 @@
 ## 対応履歴
 
 <!-- アクションが完了したら、ここに記録 -->
+
+- **2026-01-21**: ACTION-7 完了
+  - `BacktrackSolver` のテストカバレッジを調査
+  - 既存の `test_multiple_solutions` を拡張し、解の差異を検証
+  - 5つの新しいテストケースを追加：
+    - `test_multiple_solutions_with_partial_grid`: 部分グリッドからの複数解生成
+    - `test_backtracking_occurs`: バックトラック発生の検証
+    - `test_backtrack_count_increments`: バックトラックカウントの追跡確認
+    - `test_solution_is_complete`: 解の完全性検証
+  - バックトラックの正当性とstatistics収集が適切に動作することを確認
+  - 全テスト（14個）が通過することを確認
 
 - **2026-01-21**: ACTION-5 完了
   - `crates/sudoku-generator/src/lib.rs` のテストコードから `Box::leak` を削除
