@@ -41,7 +41,7 @@ crates/
 └── sudoku-app/        # GUI application (planned)
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for architecture and implementation plans, and [docs/TODO.md](docs/TODO.md) for current tasks.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for architecture and implementation plans, [docs/TESTING.md](docs/TESTING.md) for testing guidelines, and [docs/TODO.md](docs/TODO.md) for current tasks.
 
 ## Build and Test
 

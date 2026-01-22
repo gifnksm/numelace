@@ -22,7 +22,8 @@ sudoku/
 │   ├── sudoku-game/          # Game logic and state management (planned)
 │   └── sudoku-app/           # GUI application (desktop + web) (planned)
 └── docs/
-    └── ARCHITECTURE.md       # This file
+    ├── ARCHITECTURE.md       # This file
+    └── TESTING.md            # Testing guidelines
 ```
 
 ## Crate Descriptions
