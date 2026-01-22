@@ -136,11 +136,11 @@ impl BacktrackSolver {
         Self::new(TechniqueSolver::new(techniques))
     }
 
-    /// Creates a pure backtracking solver with no techniques.
+    /// Creates a backtracking solver without techniques.
     ///
     /// This solver relies entirely on backtracking to find solutions.
     #[must_use]
-    pub fn pure_backtrack() -> Self {
+    pub fn without_techniques() -> Self {
         Self::new(TechniqueSolver::new(vec![]))
     }
 
@@ -317,8 +317,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_pure_backtrack_solver() {
-        let solver = BacktrackSolver::pure_backtrack();
+    fn test_without_techniques_solver() {
+        let solver = BacktrackSolver::without_techniques();
         let grid = CandidateGrid::new();
 
         // Should be able to solve even without techniques
@@ -331,8 +331,8 @@ mod tests {
         let solver = BacktrackSolver::with_all_techniques();
         let mut grid = CandidateGrid::new();
 
-        // Create a naked single without propagating constraints
-        grid.place_no_propagation(Position::new(4, 4), Digit::D5);
+        // Create a naked single
+        grid.place(Position::new(4, 4), Digit::D5);
 
         let result = solver.solve(grid);
         assert!(result.is_ok());
@@ -397,7 +397,7 @@ mod tests {
 
     #[test]
     fn test_multiple_solutions() {
-        let solver = BacktrackSolver::pure_backtrack();
+        let solver = BacktrackSolver::without_techniques();
         let grid = CandidateGrid::new();
 
         // Empty grid has multiple solutions - verify we can get at least 2
@@ -412,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_multiple_solutions_with_partial_grid() {
-        let solver = BacktrackSolver::pure_backtrack();
+        let solver = BacktrackSolver::without_techniques();
         let mut grid = CandidateGrid::new();
 
         // Place a few digits to create a partial puzzle with multiple solutions
@@ -444,7 +444,7 @@ mod tests {
 
     #[test]
     fn test_backtracking_occurs() {
-        let solver = BacktrackSolver::pure_backtrack();
+        let solver = BacktrackSolver::without_techniques();
         let mut grid = CandidateGrid::new();
 
         // Create a scenario that requires backtracking
@@ -466,7 +466,7 @@ mod tests {
 
     #[test]
     fn test_backtrack_count_increments() {
-        let solver = BacktrackSolver::pure_backtrack();
+        let solver = BacktrackSolver::without_techniques();
         let mut grid = CandidateGrid::new();
 
         // Create a more constrained puzzle
@@ -494,7 +494,7 @@ mod tests {
 
     #[test]
     fn test_solution_is_complete() {
-        let solver = BacktrackSolver::pure_backtrack();
+        let solver = BacktrackSolver::without_techniques();
         let mut grid = CandidateGrid::new();
 
         // Start with a partial grid

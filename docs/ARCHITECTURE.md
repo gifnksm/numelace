@@ -50,7 +50,7 @@ sudoku/
 
 - **Two-Grid Architecture**: Separation of concerns between solving and simple data access
   - See [Two-Grid Architecture](#two-grid-architecture) section below for detailed analysis
-  - `CandidateGrid`: Digit-centric interface optimized for constraint propagation
+  - `CandidateGrid`: Digit-centric interface optimized for solving algorithms
   - `DigitGrid`: Cell-centric interface for intuitive data access
 
 - **Pure Data Structure Philosophy**: Core provides data structures only, no solving logic
@@ -240,7 +240,7 @@ A single data structure optimized for one pattern performs poorly on the other.
 **Solution**:
 
 - **`CandidateGrid`**: Digit-centric representation (`digit_positions[D5]` = bitset of possible positions)
-  - O(1) digit queries, fast constraint propagation via bitwise operations
+  - O(1) digit queries, efficient candidate tracking via bitwise operations
   - Optimized for solving techniques (hidden singles, naked pairs, etc.)
 - **`DigitGrid`**: Cell-centric representation (`cells[Position]` = `Option<Digit>`)
   - O(1) cell access, natural string parsing/formatting
@@ -269,7 +269,7 @@ A single data structure optimized for one pattern performs poorly on the other.
 
 **Design Principle**: "Core provides mechanisms, Solver provides policies"
 
-- **Mechanism** (Core): How to place a digit and update candidates
+- **Mechanism** (Core): How to place a digit at a specific cell
 - **Policy** (Solver): When to place (e.g., when only one candidate remains)
 
 **Benefits**:

@@ -212,17 +212,13 @@ pub type HouseMask = BitSet9<CellIndexSemantics>;
 /// let pos = Position::new(0, 0);
 /// assert_eq!(grid.candidates_at(pos).len(), 9);
 ///
-/// // Place digit 1 at (0, 0) - removes candidates from row, col, box
+/// // Place digit 1 at (0, 0)
 /// grid.place(pos, Digit::D1);
 ///
 /// // Now (0, 0) only has digit 1
 /// let candidates = grid.candidates_at(pos);
 /// assert_eq!(candidates.len(), 1);
 /// assert!(candidates.contains(Digit::D1));
-///
-/// // Other cells in the row no longer have digit 1 as candidate
-/// let row_mask = grid.row_mask(0, Digit::D1);
-/// assert_eq!(row_mask.len(), 1); // Only at (0, 0)
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CandidateGrid {
@@ -231,11 +227,10 @@ pub struct CandidateGrid {
 }
 
 impl CandidateGrid {
-    /// Creates a `CandidateGrid` from a `DigitGrid` with constraint propagation.
+    /// Creates a `CandidateGrid` from a `DigitGrid`.
     ///
-    /// Places digits from the grid using [`place`](Self::place), which removes
-    /// candidates from related cells according to sudoku rules. This is the
-    /// standard way to create a candidate grid from placed digits.
+    /// Each digit in the input grid is placed into the corresponding position,
+    /// removing other candidates from that cell.
     ///
     /// # Example
     ///
@@ -246,9 +241,14 @@ impl CandidateGrid {
     /// let digit_grid = DigitGrid::from_str("5________ _________ _________ _________ _________ _________ _________ _________ _________").unwrap();
     /// let grid = CandidateGrid::from_digit_grid(&digit_grid);
     ///
-    /// // D5 is not a candidate in the same row as (0, 0)
+    /// // D5 is placed at (0, 0)
+    /// let candidates = grid.candidates_at(Position::new(0, 0));
+    /// assert_eq!(candidates.len(), 1);
+    /// assert!(candidates.contains(Digit::D5));
+    ///
+    /// // D5 is still a candidate in the same row
     /// let candidates = grid.candidates_at(Position::new(1, 0));
-    /// assert!(!candidates.contains(Digit::D5));
+    /// assert!(candidates.contains(Digit::D5));
     /// ```
     #[must_use]
     pub fn from_digit_grid(digit_grid: &crate::DigitGrid) -> Self {
@@ -256,43 +256,6 @@ impl CandidateGrid {
         for pos in Position::ALL {
             if let Some(digit) = digit_grid.get(pos) {
                 grid.place(pos, digit);
-            }
-        }
-        grid
-    }
-
-    /// Creates a `CandidateGrid` from a `DigitGrid` without constraint propagation.
-    ///
-    /// Places digits from the grid using [`place_no_propagation`](Self::place_no_propagation),
-    /// which does not remove candidates from related cells. This results in a grid with
-    /// redundant candidates, useful for testing scenarios.
-    ///
-    /// For normal use cases with full constraint propagation, use
-    /// [`from_digit_grid`](Self::from_digit_grid) instead.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use sudoku_core::{CandidateGrid, DigitGrid, Digit, Position};
-    /// use std::str::FromStr;
-    ///
-    /// let digit_grid = DigitGrid::from_str("5________ _________ _________ _________ _________ _________ _________ _________ _________").unwrap();
-    /// let grid = CandidateGrid::from_digit_grid_no_propagation(&digit_grid);
-    ///
-    /// // D5 is placed at (0, 0)
-    /// let candidates = grid.candidates_at(Position::new(0, 0));
-    /// assert!(candidates.contains(Digit::D5));
-    ///
-    /// // But D5 is still a candidate in the same row (redundant)
-    /// let candidates = grid.candidates_at(Position::new(1, 0));
-    /// assert!(candidates.contains(Digit::D5));
-    /// ```
-    #[must_use]
-    pub fn from_digit_grid_no_propagation(digit_grid: &crate::DigitGrid) -> Self {
-        let mut grid = Self::new();
-        for pos in Position::ALL {
-            if let Some(digit) = digit_grid.get(pos) {
-                grid.place_no_propagation(pos, digit);
             }
         }
         grid
@@ -341,8 +304,8 @@ impl Default for CandidateGrid {
 pub enum ConsistencyError {
     /// A cell has no remaining candidates.
     ///
-    /// This occurs when constraint propagation or manual candidate removal results in
-    /// a cell with no possible digits, making the puzzle unsolvable.
+    /// This occurs when candidate removal results in a cell with no possible digits,
+    /// making the puzzle unsolvable.
     #[display("candidate grid has cells with no candidates")]
     NoCandidates,
     /// Multiple cells in the same constraint region have the same decided digit.
@@ -399,11 +362,10 @@ impl CandidateGrid {
         grid
     }
 
-    /// Places a digit at a position and updates candidates accordingly.
+    /// Places a digit at a position by removing all other candidates from that position.
     ///
-    /// This removes all other digit candidates at the position, removes the digit
-    /// from the same row, column, and box, then marks the position as containing
-    /// the placed digit.
+    /// This only affects the placed cell itself - other cells in the same row, column,
+    /// or box are not modified.
     ///
     /// # Returns
     ///
@@ -422,80 +384,11 @@ impl CandidateGrid {
     /// let changed = grid.place(Position::new(0, 0), Digit::D5);
     /// assert!(!changed); // Placing again has no effect
     /// ```
-    ///
-    /// For placing a digit without constraint propagation, see
-    /// [`place_no_propagation`](Self::place_no_propagation).
     pub fn place(&mut self, pos: Position, digit: Digit) -> bool {
         let mut changed = false;
-
-        // remove all digits around the pos
         for (d, digits) in iter::zip(Digit::ALL, &mut self.digit_positions) {
-            if d != digit {
-                changed |= digits.remove(pos);
-            }
+            changed |= digits.set(pos, d == digit);
         }
-
-        let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.y()]
-            | DigitPositions::COLUMN_POSITIONS[pos.x()]
-            | DigitPositions::BOX_POSITIONS[pos.box_index()];
-        affected_pos.remove(pos);
-
-        let digit_pos = &mut self.digit_positions[digit];
-        if !(*digit_pos & affected_pos).is_empty() {
-            changed = true;
-            *digit_pos &= !affected_pos;
-        }
-
-        changed |= digit_pos.insert(pos);
-        changed
-    }
-
-    /// Places a digit at a position without propagating constraints.
-    ///
-    /// This only updates the specified position to have the given digit as its
-    /// sole candidate. It does NOT remove candidates from other cells in the
-    /// same row, column, or box, resulting in a grid with redundant candidates.
-    ///
-    /// This is primarily useful for constructing specific test scenarios where
-    /// you want to control exactly which candidates remain.
-    ///
-    /// For normal placement with full constraint propagation, use
-    /// [`place`](Self::place) instead.
-    ///
-    /// # Returns
-    ///
-    /// Returns `true` if the grid was modified, `false` if the operation
-    /// had no effect.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use sudoku_core::{CandidateGrid, Digit, Position};
-    ///
-    /// let mut grid = CandidateGrid::new();
-    /// grid.place_no_propagation(Position::new(0, 0), Digit::D5);
-    ///
-    /// // D5 is placed at (0, 0)
-    /// let candidates = grid.candidates_at(Position::new(0, 0));
-    /// assert_eq!(candidates.len(), 1);
-    /// assert!(candidates.contains(Digit::D5));
-    ///
-    /// // But D5 is still a candidate in the same row (redundant)
-    /// let candidates = grid.candidates_at(Position::new(1, 0));
-    /// assert!(candidates.contains(Digit::D5));
-    /// ```
-    pub fn place_no_propagation(&mut self, pos: Position, digit: Digit) -> bool {
-        let mut changed = false;
-
-        // Remove all other digits from this position
-        for (d, digits) in iter::zip(Digit::ALL, &mut self.digit_positions) {
-            if d != digit {
-                changed |= digits.remove(pos);
-            }
-        }
-
-        // Ensure digit is at position
-        changed |= self.digit_positions[digit].insert(pos);
         changed
     }
 
@@ -520,6 +413,36 @@ impl CandidateGrid {
     /// ```
     pub fn remove_candidate(&mut self, pos: Position, digit: Digit) -> bool {
         self.digit_positions[digit].remove(pos)
+    }
+
+    /// Removes a candidate digit from all positions specified by a mask.
+    ///
+    /// This is the batch version of [`remove_candidate`](Self::remove_candidate),
+    /// allowing you to remove the same digit from multiple positions at once.
+    ///
+    /// Returns `true` if any candidate was removed, `false` if the digit was
+    /// not a candidate at any of the masked positions.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sudoku_core::{CandidateGrid, Digit, DigitPositions, Position};
+    ///
+    /// let mut grid = CandidateGrid::new();
+    ///
+    /// // Remove D5 from all positions in row 0
+    /// let row_mask = DigitPositions::ROW_POSITIONS[0];
+    /// let changed = grid.remove_candidate_with_mask(row_mask, Digit::D5);
+    /// assert!(changed); // D5 was removed from 9 positions
+    ///
+    /// // Try removing again - nothing changes
+    /// let changed = grid.remove_candidate_with_mask(row_mask, Digit::D5);
+    /// assert!(!changed); // D5 is already removed from all positions
+    /// ```
+    pub fn remove_candidate_with_mask(&mut self, mask: DigitPositions, digit: Digit) -> bool {
+        let before = self.digit_positions[digit];
+        self.digit_positions[digit] &= !mask;
+        before != self.digit_positions[digit]
     }
 
     /// Returns the set of all positions where the specified digit can be placed.
@@ -643,7 +566,7 @@ impl CandidateGrid {
     ///
     /// A cell is considered "decided" when it has only one possible candidate digit,
     /// either because it was explicitly placed or because all other candidates were
-    /// eliminated through constraint propagation.
+    /// eliminated.
     ///
     /// # Example
     ///
@@ -807,13 +730,8 @@ mod tests {
     fn test_place_digit() {
         let mut grid = CandidateGrid::new();
 
-        // Manually set up some candidates
-        let pos = Position::new(4, 4); // center
-        for digit in &mut grid.digit_positions {
-            digit.insert(pos);
-        }
-
         // Place digit 5 at center
+        let pos = Position::new(4, 4);
         let changed = grid.place(pos, D5);
         assert!(changed, "Placing a digit should return true");
 
@@ -833,78 +751,8 @@ mod tests {
         assert!(changed);
 
         // Placing again at the same position should return false
-        // (no candidates are removed because it's already decided)
         let changed = grid.place(pos, D1);
         assert!(!changed, "Placing same digit again should return false");
-    }
-
-    #[test]
-    fn test_place_removes_row_candidates() {
-        let mut grid = CandidateGrid::new();
-
-        // Set digit 5 as candidate for entire row 0
-        for pos in Position::ROWS[0] {
-            grid.digit_positions[D4].insert(pos);
-        }
-
-        // Place digit 5 at (0, 0)
-        grid.place(Position::new(0, 0), D5);
-
-        // Digit 5 should be removed from rest of row 0
-        for x in 1..9 {
-            let row_mask = grid.row_mask(0, D5);
-            assert!(
-                !row_mask.contains(x),
-                "Position ({x}, 0) should not have digit 5"
-            );
-        }
-
-        // But (5, 3) should still have it
-        assert!(grid.candidates_at(Position::new(5, 3)).contains(D3));
-    }
-
-    #[test]
-    fn test_place_removes_column_candidates() {
-        let mut grid = CandidateGrid::new();
-
-        // Set digit 3 as candidate for entire column 5
-        for pos in Position::COLUMNS[5] {
-            grid.digit_positions[D2].insert(pos);
-        }
-
-        // Place digit 3 at (5, 3)
-        grid.place(Position::new(5, 3), D3);
-
-        // Digit 3 should be removed from rest of column 5
-        for pos in Position::COLUMNS[5] {
-            if pos.y() == 3 {
-                continue;
-            }
-            let col_mask = grid.col_mask(5, D3);
-            assert!(
-                !col_mask.contains(pos.y()),
-                "Position (5, {}) should not have digit 3",
-                pos.y()
-            );
-        }
-    }
-
-    #[test]
-    fn test_place_removes_box_candidates() {
-        let mut grid = CandidateGrid::new();
-
-        // Set digit 7 as candidate for entire box 4 (center box)
-        for pos in Position::BOXES[4] {
-            grid.digit_positions[D6].insert(pos);
-        }
-
-        // Place digit 7 at center of center box
-        grid.place(Position::new(4, 4), D7);
-
-        // Digit 7 should only be at (4, 4) in box 4
-        let box_mask = grid.box_mask(4, D7);
-        assert_eq!(box_mask.len(), 1, "Only one position should remain in box");
-        assert!(box_mask.contains(4), "Center cell should remain");
     }
 
     #[test]
@@ -965,6 +813,126 @@ mod tests {
     }
 
     #[test]
+    fn test_remove_candidate_with_mask() {
+        let mut grid = CandidateGrid::new();
+
+        // Remove D5 from all positions in row 0
+        let row_mask = DigitPositions::ROW_POSITIONS[0];
+        let changed = grid.remove_candidate_with_mask(row_mask, D5);
+        assert!(changed, "Removing candidates should return true");
+
+        // Verify D5 is removed from all positions in row 0
+        for x in 0..9 {
+            let pos = Position::new(x, 0);
+            let candidates = grid.candidates_at(pos);
+            assert!(!candidates.contains(D5), "D5 should be removed from row 0");
+            assert_eq!(candidates.len(), 8, "Should have 8 candidates left");
+        }
+
+        // Verify D5 still exists in other rows
+        let pos_other_row = Position::new(0, 1);
+        let candidates = grid.candidates_at(pos_other_row);
+        assert!(candidates.contains(D5), "D5 should still exist in row 1");
+    }
+
+    #[test]
+    fn test_remove_candidate_with_mask_returns_false_when_not_present() {
+        let mut grid = CandidateGrid::new();
+        let row_mask = DigitPositions::ROW_POSITIONS[2];
+
+        // Remove D3 first time - should return true
+        let changed = grid.remove_candidate_with_mask(row_mask, D3);
+        assert!(changed);
+
+        // Remove D3 again - should return false (already removed)
+        let changed = grid.remove_candidate_with_mask(row_mask, D3);
+        assert!(
+            !changed,
+            "Removing already-removed candidates should return false"
+        );
+    }
+
+    #[test]
+    fn test_remove_candidate_with_mask_column() {
+        let mut grid = CandidateGrid::new();
+
+        // Remove D7 from all positions in column 5
+        let col_mask = DigitPositions::COLUMN_POSITIONS[5];
+        let changed = grid.remove_candidate_with_mask(col_mask, D7);
+        assert!(changed);
+
+        // Verify D7 is removed from all positions in column 5
+        for y in 0..9 {
+            let pos = Position::new(5, y);
+            let candidates = grid.candidates_at(pos);
+            assert!(
+                !candidates.contains(D7),
+                "D7 should be removed from column 5"
+            );
+        }
+    }
+
+    #[test]
+    fn test_remove_candidate_with_mask_box() {
+        let mut grid = CandidateGrid::new();
+
+        // Remove D9 from all positions in box 4 (center box)
+        let box_mask = DigitPositions::BOX_POSITIONS[4];
+        let changed = grid.remove_candidate_with_mask(box_mask, D9);
+        assert!(changed);
+
+        // Verify D9 is removed from all 9 positions in box 4
+        for pos in Position::BOXES[4] {
+            let candidates = grid.candidates_at(pos);
+            assert!(!candidates.contains(D9), "D9 should be removed from box 4");
+        }
+
+        // Verify D9 still exists in other boxes
+        let pos_other_box = Position::new(0, 0); // Box 0
+        let candidates = grid.candidates_at(pos_other_box);
+        assert!(candidates.contains(D9), "D9 should still exist in box 0");
+    }
+
+    #[test]
+    fn test_remove_candidate_with_mask_empty_mask() {
+        let mut grid = CandidateGrid::new();
+
+        // Remove with empty mask - should return false
+        let empty_mask = DigitPositions::EMPTY;
+        let changed = grid.remove_candidate_with_mask(empty_mask, D1);
+        assert!(!changed, "Removing with empty mask should return false");
+
+        // Verify all positions still have D1
+        for pos in Position::ALL {
+            let candidates = grid.candidates_at(pos);
+            assert!(candidates.contains(D1), "D1 should still be present");
+        }
+    }
+
+    #[test]
+    fn test_remove_candidate_with_mask_custom_positions() {
+        let mut grid = CandidateGrid::new();
+
+        // Create custom mask with specific positions
+        let mut custom_mask = DigitPositions::EMPTY;
+        custom_mask.insert(Position::new(0, 0));
+        custom_mask.insert(Position::new(4, 4));
+        custom_mask.insert(Position::new(8, 8));
+
+        let changed = grid.remove_candidate_with_mask(custom_mask, D2);
+        assert!(changed);
+
+        // Verify D2 is removed only from masked positions
+        assert!(!grid.candidates_at(Position::new(0, 0)).contains(D2));
+        assert!(!grid.candidates_at(Position::new(4, 4)).contains(D2));
+        assert!(!grid.candidates_at(Position::new(8, 8)).contains(D2));
+
+        // Verify D2 still exists at other positions
+        assert!(grid.candidates_at(Position::new(0, 1)).contains(D2));
+        assert!(grid.candidates_at(Position::new(4, 5)).contains(D2));
+    }
+
+    #[test]
     fn test_decided_cells() {
         let mut grid = CandidateGrid::new();
 
@@ -991,8 +959,8 @@ mod tests {
         let mut grid = CandidateGrid::new();
         let pos = Position::new(3, 3);
 
-        // Set single candidate at position without propagating constraints
-        grid.place_no_propagation(pos, D7);
+        // Set single candidate at position
+        grid.place(pos, D7);
 
         // Position should be considered decided (only one candidate)
         let decided = grid.decided_cells();
@@ -1024,20 +992,17 @@ mod tests {
         // D5 should be at the placed position
         assert!(positions.contains(pos));
 
-        // D5 should be removed from same row, column, and box
-        assert!(!positions.contains(Position::new(0, 4))); // Same row
-        assert!(!positions.contains(Position::new(4, 0))); // Same column
-        assert!(!positions.contains(Position::new(3, 3))); // Same box
+        // D5 is still a candidate in same row, column, and box
+        assert!(positions.contains(Position::new(0, 4))); // Same row
+        assert!(positions.contains(Position::new(4, 0))); // Same column
+        assert!(positions.contains(Position::new(3, 3))); // Same box
 
-        // But D5 can still be placed in other rows/columns/boxes
+        // D5 can still be placed in other rows/columns/boxes
         assert!(positions.contains(Position::new(0, 0))); // Different row, column, and box
 
         // Other digits should be removed from the placed cell
         let positions_d1 = grid.digit_positions(D1);
         assert!(!positions_d1.contains(pos)); // Cell itself removed
-        assert!(positions_d1.contains(Position::new(0, 4))); // Same row is OK
-        assert!(positions_d1.contains(Position::new(4, 0))); // Same column is OK
-        assert!(positions_d1.contains(Position::new(3, 3))); // Same box is OK
     }
 
     #[test]
@@ -1236,9 +1201,9 @@ mod tests {
     #[test]
     fn test_check_consistency_with_duplicate() {
         let mut grid = CandidateGrid::new();
-        // Place the same digit twice in the same row using place_no_propagation
-        grid.place_no_propagation(Position::new(0, 0), D5);
-        grid.place_no_propagation(Position::new(0, 1), D5);
+        // Place the same digit twice in the same row
+        grid.place(Position::new(0, 0), D5);
+        grid.place(Position::new(0, 1), D5);
         assert!(grid.check_consistency().is_err());
     }
 
@@ -1293,12 +1258,12 @@ mod tests {
     }
 
     #[test]
-    fn test_place_no_propagation() {
+    fn test_place() {
         let mut grid = CandidateGrid::new();
         let pos = Position::new(4, 4);
 
-        // Place digit 5 at center without propagation
-        let changed = grid.place_no_propagation(pos, D5);
+        // Place digit 5 at center
+        let changed = grid.place(pos, D5);
         assert!(changed, "Placing should change the grid");
 
         // The position should only have digit 5
@@ -1306,7 +1271,7 @@ mod tests {
         assert_eq!(candidates.len(), 1);
         assert!(candidates.contains(D5));
 
-        // But D5 should still be a candidate in the same row (redundant)
+        // D5 should still be a candidate in the same row
         let candidates = grid.candidates_at(Position::new(0, 4));
         assert_eq!(candidates.len(), 9, "All candidates should remain");
         assert!(candidates.contains(D5));
@@ -1329,12 +1294,12 @@ mod tests {
     }
 
     #[test]
-    fn test_place_no_propagation_removes_other_digits_at_position() {
+    fn test_place_removes_other_digits_at_position() {
         let mut grid = CandidateGrid::new();
         let pos = Position::new(2, 2);
 
-        // Place digit 7 without propagation
-        grid.place_no_propagation(pos, D7);
+        // Place digit 7
+        grid.place(pos, D7);
 
         // Only D7 should be at the position
         let candidates = grid.candidates_at(pos);
@@ -1347,28 +1312,6 @@ mod tests {
                 assert!(!candidates.contains(digit));
             }
         }
-    }
-
-    #[test]
-    fn test_place_vs_place_no_propagation() {
-        let mut grid_propagated = CandidateGrid::new();
-        let mut grid_not_propagated = CandidateGrid::new();
-        let pos = Position::new(0, 0);
-
-        grid_propagated.place(pos, D3);
-        grid_not_propagated.place_no_propagation(pos, D3);
-
-        // Both should have D3 at (0, 0)
-        assert_eq!(grid_propagated.candidates_at(pos).len(), 1);
-        assert_eq!(grid_not_propagated.candidates_at(pos).len(), 1);
-
-        // With propagation, D3 is removed from same row
-        let candidates = grid_propagated.candidates_at(Position::new(1, 0));
-        assert!(!candidates.contains(D3));
-
-        // Without propagation, D3 remains in same row
-        let candidates = grid_not_propagated.candidates_at(Position::new(1, 0));
-        assert!(candidates.contains(D3));
     }
 
     #[test]
@@ -1386,83 +1329,17 @@ mod tests {
         assert_eq!(candidates.len(), 1);
         assert!(candidates.contains(D5));
 
-        // D5 is NOT a candidate in the same row (propagated)
-        let candidates = grid.candidates_at(Position::new(1, 0));
-        assert!(!candidates.contains(D5));
-
-        // D5 is NOT a candidate in the same column (propagated)
-        let candidates = grid.candidates_at(Position::new(0, 1));
-        assert!(!candidates.contains(D5));
-
-        // D5 is NOT a candidate in the same box (propagated)
-        let candidates = grid.candidates_at(Position::new(1, 1));
-        assert!(!candidates.contains(D5));
-    }
-
-    #[test]
-    fn test_from_digit_grid_no_propagation() {
-        use std::str::FromStr;
-        let digit_grid = crate::DigitGrid::from_str(
-            "5________ _________ _________ _________ _________ _________ _________ _________ _________",
-        )
-        .unwrap();
-
-        let grid = CandidateGrid::from_digit_grid_no_propagation(&digit_grid);
-
-        // D5 is placed at (0, 0)
-        let candidates = grid.candidates_at(Position::new(0, 0));
-        assert_eq!(candidates.len(), 1);
-        assert!(candidates.contains(D5));
-
-        // D5 is still a candidate in the same row (not propagated)
+        // D5 is still a candidate in the same row
         let candidates = grid.candidates_at(Position::new(1, 0));
         assert!(candidates.contains(D5));
 
-        // D5 is still a candidate in the same column (not propagated)
+        // D5 is still a candidate in the same column
         let candidates = grid.candidates_at(Position::new(0, 1));
         assert!(candidates.contains(D5));
 
-        // D5 is still a candidate in the same box (not propagated)
+        // D5 is still a candidate in the same box
         let candidates = grid.candidates_at(Position::new(1, 1));
         assert!(candidates.contains(D5));
-    }
-
-    #[test]
-    fn test_from_digit_grid_with_multiple_digits() {
-        use std::str::FromStr;
-        let digit_grid = crate::DigitGrid::from_str(
-            "53_______ 6________ _________ _________ _________ _________ _________ _________ _________",
-        )
-        .unwrap();
-
-        let grid = CandidateGrid::from_digit_grid(&digit_grid);
-
-        // D5 is placed at (0, 0)
-        let candidates = grid.candidates_at(Position::new(0, 0));
-        assert_eq!(candidates.len(), 1);
-        assert!(candidates.contains(D5));
-
-        // D3 is placed at (1, 0)
-        let candidates = grid.candidates_at(Position::new(1, 0));
-        assert_eq!(candidates.len(), 1);
-        assert!(candidates.contains(D3));
-
-        // D6 is placed at (0, 1)
-        let candidates = grid.candidates_at(Position::new(0, 1));
-        assert_eq!(candidates.len(), 1);
-        assert!(candidates.contains(D6));
-
-        // At (2, 0): D5 and D3 removed (same row), D6 removed (same box)
-        let candidates = grid.candidates_at(Position::new(2, 0));
-        assert!(!candidates.contains(D5));
-        assert!(!candidates.contains(D3));
-        assert!(!candidates.contains(D6));
-
-        // At (3, 0): D5 and D3 removed (same row), but D6 remains (different box)
-        let candidates = grid.candidates_at(Position::new(3, 0));
-        assert!(!candidates.contains(D5));
-        assert!(!candidates.contains(D3));
-        assert!(candidates.contains(D6));
     }
 
     #[test]

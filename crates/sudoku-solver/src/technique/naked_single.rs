@@ -1,12 +1,18 @@
-use sudoku_core::{CandidateGrid, Digit};
+use sudoku_core::{CandidateGrid, Digit, DigitPositions};
 
 use super::BoxedTechnique;
 use crate::{SolverError, technique::Technique};
 
-/// A technique that finds cells with only one remaining candidate.
+/// A technique that finds cells with only one remaining candidate and propagates constraints.
 ///
 /// When a cell has only one possible digit (a "naked single"), that digit
-/// must be placed in that cell. This is the simplest Sudoku solving technique.
+/// is placed in that cell, and then constraint propagation is performed by removing
+/// that digit from all cells in the same row, column, and box. This combines the
+/// simplest Sudoku solving technique with the fundamental constraint propagation mechanism.
+///
+/// This technique is fundamental to the solver's architecture: it handles all constraint
+/// propagation for the system. Other techniques only identify and place digits; the
+/// subsequent constraint propagation is performed when control returns to this technique.
 ///
 /// # Examples
 ///
@@ -46,9 +52,12 @@ impl Technique for NakedSingle {
 
         let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
-            let decided_cells = grid.digit_positions(digit) & decided_cells;
-            for pos in decided_cells {
-                changed |= grid.place(pos, digit);
+            for pos in grid.digit_positions(digit) & decided_cells {
+                let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.y()]
+                    | DigitPositions::COLUMN_POSITIONS[pos.x()]
+                    | DigitPositions::BOX_POSITIONS[pos.box_index()];
+                affected_pos.remove(pos);
+                changed |= grid.remove_candidate_with_mask(affected_pos, digit);
             }
         }
 
@@ -69,8 +78,8 @@ mod tests {
         // from all cells in the same row, column, and box
         let mut grid = CandidateGrid::new();
 
-        // Make (0, 0) have only D5 as candidate without propagating constraints
-        grid.place_no_propagation(Position::new(0, 0), Digit::D5);
+        // Make (0, 0) have only D5 as candidate
+        grid.place(Position::new(0, 0), Digit::D5);
 
         TechniqueTester::new(grid)
             .apply_once(&NakedSingle::new())
@@ -87,11 +96,11 @@ mod tests {
         // Multiple naked singles in different regions are all placed
         let mut grid = CandidateGrid::new();
 
-        // Create naked single at (0, 0) with D3 without propagating
-        grid.place_no_propagation(Position::new(0, 0), Digit::D3);
+        // Create naked single at (0, 0) with D3
+        grid.place(Position::new(0, 0), Digit::D3);
 
-        // Create naked single at (5, 5) with D7 without propagating
-        grid.place_no_propagation(Position::new(5, 5), Digit::D7);
+        // Create naked single at (5, 5) with D7
+        grid.place(Position::new(5, 5), Digit::D7);
 
         TechniqueTester::new(grid)
             .apply_once(&NakedSingle::new())
@@ -114,7 +123,7 @@ mod tests {
 
     #[test]
     fn test_real_puzzle() {
-        // Test with an actual puzzle to verify it works with constraint propagation
+        // Test with an actual puzzle
         TechniqueTester::from_str(
             "
             53_ _7_ ___
@@ -129,8 +138,7 @@ mod tests {
         ",
         )
         .apply_until_stuck(&NakedSingle::new())
-        // After constraint propagation from the initial digits,
-        // naked singles should be found and placed.
+        // Naked singles should be found and placed.
         // Verify at least one placement occurred by checking candidate removal.
         .assert_removed_includes(Position::new(1, 1), [Digit::D4]);
     }

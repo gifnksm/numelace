@@ -316,6 +316,21 @@ where
         old != self.bits
     }
 
+    /// Sets the presence of a value in the set.
+    ///
+    /// If `present` is `true`, the value is added to the set;
+    /// if `false`, the value is removed from the set.
+    ///
+    /// Returns `true` if the set was modified.
+    #[inline]
+    pub fn set(&mut self, value: S::Value, present: bool) -> bool {
+        if present {
+            self.insert(value)
+        } else {
+            self.remove(value)
+        }
+    }
+
     /// Returns an iterator over the elements of the set in ascending order.
     #[must_use]
     #[inline]

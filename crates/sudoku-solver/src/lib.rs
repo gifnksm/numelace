@@ -189,7 +189,7 @@
 //! The solver returns [`SolverError::Contradiction`] when it detects an invalid state:
 //!
 //! - A cell with no remaining candidates
-//! - Contradictory placements during constraint propagation
+//! - Contradictory placements
 //!
 //! This typically indicates the input puzzle is invalid or unsolvable.
 //!

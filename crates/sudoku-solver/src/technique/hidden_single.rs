@@ -97,10 +97,8 @@ mod tests {
 
         TechniqueTester::new(grid)
             .apply_once(&HiddenSingle::new())
-            // D5 should be placed at (3, 0), removing D5 from:
-            .assert_removed_exact(Position::new(3, 1), [Digit::D5]) // same column
-            .assert_removed_exact(Position::new(3, 8), [Digit::D5]) // same column, far cell
-            .assert_removed_exact(Position::new(4, 1), [Digit::D5]); // same box
+            // D5 should be placed at (3, 0)
+            .assert_placed(Position::new(3, 0), Digit::D5);
     }
 
     #[test]
@@ -117,10 +115,8 @@ mod tests {
 
         TechniqueTester::new(grid)
             .apply_once(&HiddenSingle::new())
-            // D7 should be placed at (5, 4), removing D7 from:
-            .assert_removed_exact(Position::new(4, 4), [Digit::D7]) // same row
-            .assert_removed_exact(Position::new(0, 4), [Digit::D7]) // same row, far cell
-            .assert_removed_exact(Position::new(3, 3), [Digit::D7]); // same box
+            // D7 should be placed at (5, 4)
+            .assert_placed(Position::new(5, 4), Digit::D7);
     }
 
     #[test]
@@ -138,10 +134,8 @@ mod tests {
 
         TechniqueTester::new(grid)
             .apply_once(&HiddenSingle::new())
-            // D9 should be placed at (4, 4), removing D9 from:
-            .assert_removed_exact(Position::new(4, 0), [Digit::D9]) // same column, different box
-            .assert_removed_exact(Position::new(0, 4), [Digit::D9]) // same row, different box
-            .assert_removed_exact(Position::new(4, 8), [Digit::D9]); // same column, different box
+            // D9 should be placed at (4, 4)
+            .assert_placed(Position::new(4, 4), Digit::D9);
     }
 
     #[test]
@@ -166,9 +160,9 @@ mod tests {
         TechniqueTester::new(grid)
             .apply_once(&HiddenSingle::new())
             // D3 placed at (2, 0)
-            .assert_removed_exact(Position::new(2, 1), [Digit::D3]) // same column
+            .assert_placed(Position::new(2, 0), Digit::D3)
             // D8 placed at (7, 6)
-            .assert_removed_exact(Position::new(6, 6), [Digit::D8]); // same row
+            .assert_placed(Position::new(7, 6), Digit::D8);
     }
 
     #[test]

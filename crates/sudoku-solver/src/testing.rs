@@ -33,7 +33,7 @@
 
 use std::str::FromStr as _;
 
-use sudoku_core::{CandidateGrid, Digit, DigitSet, DigitGrid, Position};
+use sudoku_core::{CandidateGrid, Digit, DigitGrid, DigitSet, Position};
 
 use crate::technique::Technique;
 
@@ -97,46 +97,6 @@ impl TechniqueTester {
     pub fn from_str(s: &str) -> Self {
         let grid = DigitGrid::from_str(s).unwrap();
         Self::new(grid.into())
-    }
-
-    /// Creates a new tester from a grid string without constraint propagation.
-    ///
-    /// This is similar to [`from_str`](Self::from_str), but uses
-    /// [`CandidateGrid::from_digit_grid_no_propagation`] instead of the `From` trait,
-    /// leaving redundant candidates in place.
-    ///
-    /// This is useful when you want to test a technique's behavior with
-    /// specific candidate patterns that wouldn't naturally occur after
-    /// full constraint propagation.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the string cannot be parsed as a valid grid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use sudoku_solver::testing::TechniqueTester;
-    /// # use sudoku_core::{Position, Digit};
-    /// let tester = TechniqueTester::from_str_no_propagation(
-    ///     "
-    ///     5__ ___ ___
-    ///     ___ ___ ___
-    ///     ___ ___ ___
-    ///     ___ ___ ___
-    ///     ___ ___ ___
-    ///     ___ ___ ___
-    ///     ___ ___ ___
-    ///     ___ ___ ___
-    ///     ___ ___ ___
-    /// ",
-    /// );
-    /// // D5 is still a candidate in the same row as the placed digit
-    /// ```
-    #[track_caller]
-    pub fn from_str_no_propagation(s: &str) -> Self {
-        let grid = DigitGrid::from_str(s).unwrap();
-        Self::new(CandidateGrid::from_digit_grid_no_propagation(&grid))
     }
 
     /// Applies the technique once and returns self for chaining.
@@ -527,91 +487,5 @@ mod tests {
             .assert_placed(Position::new(0, 0), Digit::D1)
             .apply_once(&NoOpTechnique)
             .assert_no_change(Position::new(5, 5));
-    }
-
-    #[test]
-    fn test_from_str_no_propagation() {
-        let tester = TechniqueTester::from_str_no_propagation(
-            "
-            5__ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-        ",
-        );
-
-        // D5 should still be a candidate in the same row (not propagated)
-        let candidates = tester.initial.candidates_at(Position::new(1, 0));
-        assert!(
-            candidates.contains(Digit::D5),
-            "D5 should still be a candidate without propagation"
-        );
-
-        // But it should be placed at (0, 0)
-        let candidates = tester.initial.candidates_at(Position::new(0, 0));
-        assert_eq!(candidates.len(), 1);
-        assert!(candidates.contains(Digit::D5));
-    }
-
-    #[test]
-    fn test_from_str_vs_from_str_no_propagation() {
-        let with_propagation = TechniqueTester::from_str(
-            "
-            5__ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-        ",
-        );
-
-        let without_propagation = TechniqueTester::from_str_no_propagation(
-            "
-            5__ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-            ___ ___ ___
-        ",
-        );
-
-        // Both should have D5 placed at (0, 0)
-        assert_eq!(
-            with_propagation
-                .initial
-                .candidates_at(Position::new(0, 0))
-                .len(),
-            1
-        );
-        assert_eq!(
-            without_propagation
-                .initial
-                .candidates_at(Position::new(0, 0))
-                .len(),
-            1
-        );
-
-        // With propagation, D5 is removed from same row
-        let candidates_with = with_propagation.initial.candidates_at(Position::new(1, 0));
-        assert!(!candidates_with.contains(Digit::D5));
-
-        // Without propagation, D5 remains in same row
-        let candidates_without = without_propagation
-            .initial
-            .candidates_at(Position::new(1, 0));
-        assert!(candidates_without.contains(Digit::D5));
     }
 }

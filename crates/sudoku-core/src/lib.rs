@@ -24,12 +24,12 @@
 //!
 //! ## Grid Types
 //!
-//! ### [`CandidateGrid`] (Solving & Constraint Propagation)
+//! ### [`CandidateGrid`] (Candidate Tracking)
 //!
-//! [`CandidateGrid`] is a candidate tracking grid for solving algorithms:
-//!   - Digit-centric representation (tracks where each digit can be placed)
-//!   - Automatic constraint propagation and candidate elimination
-//!   - Supports technique detection (Hidden Singles, Naked Singles, etc.)
+//! [`CandidateGrid`] tracks which digits can be placed at each position:
+//!   - Digit-centric representation optimized for "where can digit X go?" queries
+//!   - Provides operations for placing digits and removing candidates
+//!   - Used by solving algorithms to implement techniques
 //!
 //! ### [`DigitGrid`] (Simple Cell-Centric Interface)
 //!
@@ -194,23 +194,25 @@
 //! assert_eq!(candidates.len(), 7);
 //! ```
 //!
-//! ## [`CandidateGrid`] - Solving and Constraint Propagation
+//! ## [`CandidateGrid`] - Candidate Tracking
 //!
 //! ```
-//! use sudoku_core::{CandidateGrid, Digit, DigitSet, Position};
+//! use sudoku_core::{CandidateGrid, Digit, Position};
 //!
 //! // Create a candidate grid with all positions having all candidates
 //! let mut grid = CandidateGrid::new();
 //!
-//! // Place a digit - automatically updates candidates in row, column, and box
-//! grid.place(Position::new(4, 4), Digit::D5);
+//! // Place a digit at a position
+//! grid.place(Position::new(0, 0), Digit::D5);
 //!
-//! // Check remaining candidates at a position
-//! let candidates: DigitSet = grid.candidates_at(Position::new(4, 5));
-//! assert!(!candidates.contains(Digit::D5)); // D5 removed from same column
+//! // Query: where can D5 go? (digit-centric)
+//! let positions = grid.digit_positions(Digit::D5);
+//! assert!(positions.contains(Position::new(0, 0)));
+//! assert!(positions.contains(Position::new(1, 1))); // Still available elsewhere
 //!
-//! // Check if the puzzle is consistent (no contradictions)
-//! assert!(grid.check_consistency().is_ok());
+//! // Query: what can go here? (cell-centric)
+//! let candidates = grid.candidates_at(Position::new(0, 0));
+//! assert_eq!(candidates.len(), 1); // Only D5 at placed cell
 //! ```
 //!
 //! ## [`DigitGrid`] - Simple Cell-Centric Interface
@@ -237,9 +239,9 @@
 //!
 //! ### Why Two Grid Types?
 //!
-//! - **[`CandidateGrid`]**: Digit-centric interface for solving
+//! - **[`CandidateGrid`]**: Digit-centric interface
 //!   - Answers "where can digit X go?" efficiently
-//!   - Optimized for constraint propagation
+//!   - Provides primitives for implementing solving techniques
 //!
 //! - **[`DigitGrid`]**: Cell-centric interface for simple access
 //!   - Answers "what's in this cell?" naturally
