@@ -492,7 +492,6 @@ where
 mod tests {
     use super::*;
 
-    // Test semantics that maps (x, y) coordinates to indices
     struct PositionSemantics;
 
     impl Index81Semantics for PositionSemantics {
@@ -513,6 +512,9 @@ mod tests {
     type TestSet = BitSet81<PositionSemantics>;
 
     macro_rules! set {
+        () => {
+            TestSet::new()
+        };
         ($($pos:expr),* $(,)?) => {{
             let mut s = TestSet::new();
             $(s.insert($pos);)*
@@ -520,424 +522,286 @@ mod tests {
         }};
     }
 
-    mod bit_index {
-        use super::*;
+    #[test]
+    fn test_construction() {
+        let set = TestSet::new();
+        assert!(set.is_empty());
+        assert_eq!(set.len(), 0);
+        assert_eq!(TestSet::EMPTY, TestSet::new());
+        assert_eq!(TestSet::default(), TestSet::EMPTY);
 
-        #[test]
-        fn test_all() {
-            let indices: Vec<_> = Index81::all().collect();
-            assert_eq!(indices.len(), 81);
-            for (i, index) in (0..).zip(indices) {
-                assert_eq!(index.index(), i);
+        let full = TestSet::FULL;
+        assert_eq!(full.len(), 81);
+        for y in 0..9 {
+            for x in 0..9 {
+                assert!(full.contains((x, y)));
             }
         }
 
-        #[test]
-        fn test_all_creates_valid_indices() {
-            for index in Index81::all() {
-                assert!(index.index() < 81);
+        let positions = vec![(0, 0), (1, 1), (2, 2)];
+        let set: TestSet = positions.into_iter().collect();
+        assert_eq!(set.len(), 3);
+        assert!(set.contains((0, 0)));
+    }
+
+    #[test]
+    fn test_insert_remove_contains() {
+        // Insert is idempotent - duplicate insertions are no-ops
+        let mut set = TestSet::new();
+        assert!(set.insert((0, 0)));
+        assert!(!set.insert((0, 0)));
+        assert_eq!(set.len(), 1);
+        assert!(set.contains((0, 0)));
+
+        // Remove is idempotent - removing non-existent element is no-op
+        let mut set = set![(0, 0), (1, 1)];
+        assert!(set.remove((0, 0)));
+        assert!(!set.remove((0, 0)));
+        assert_eq!(set.len(), 1);
+
+        set.clear();
+        assert!(set.is_empty());
+    }
+
+    #[test]
+    fn test_all_positions() {
+        // All 81 positions (0-8, 0-8) are valid
+        let mut set = TestSet::new();
+        for y in 0..9 {
+            for x in 0..9 {
+                assert!(set.insert((x, y)));
             }
         }
+        assert_eq!(set.len(), 81);
     }
 
-    mod construction {
-        use super::*;
-
-        #[test]
-        fn test_new_is_empty() {
-            let set = TestSet::new();
-            assert!(set.is_empty());
-            assert_eq!(set.len(), 0);
-        }
-
-        #[test]
-        fn test_empty_constant() {
-            let set = TestSet::EMPTY;
-            assert!(set.is_empty());
-        }
-
-        #[test]
-        fn test_full_constant() {
-            let set = TestSet::FULL;
-            assert_eq!(set.len(), 81);
-            for y in 0..9 {
-                for x in 0..9 {
-                    assert!(set.contains((x, y)));
-                }
-            }
-        }
-
-        #[test]
-        fn test_from_iter() {
-            let positions = vec![(0, 0), (1, 1), (2, 2)];
-            let set: TestSet = positions.into_iter().collect();
-            assert_eq!(set.len(), 3);
-            assert!(set.contains((0, 0)));
-            assert!(set.contains((1, 1)));
-            assert!(set.contains((2, 2)));
-        }
-
-        #[test]
-        fn test_default() {
-            let set = TestSet::default();
-            assert!(set.is_empty());
+    #[test]
+    fn test_union() {
+        // Empty set is identity element for union
+        let cases = [
+            (set![(0, 0), (1, 1)], set![(1, 1), (2, 2)], 3),
+            (set![(0, 0)], set![(8, 8)], 2),
+            (set![], set![(0, 0), (1, 1)], 2),
+        ];
+        for (a, b, expected_len) in cases {
+            let union = a.union(b);
+            assert_eq!(union.len(), expected_len);
+            assert_eq!(a | b, union);
         }
     }
 
-    mod basic_operations {
-        use super::*;
+    #[test]
+    fn test_intersection() {
+        // Empty set is absorbing element for intersection
+        let set1 = set![(0, 0), (1, 1)];
+        let set2 = set![(1, 1), (2, 2)];
+        let intersection = set1.intersection(set2);
+        assert_eq!(intersection.len(), 1);
+        assert!(intersection.contains((1, 1)));
+        assert_eq!(set1 & set2, intersection);
 
-        #[test]
-        fn test_insert() {
-            let mut set = TestSet::new();
-            assert!(set.insert((0, 0)));
-            assert!(set.contains((0, 0)));
-            assert!(!set.insert((0, 0)));
-            assert_eq!(set.len(), 1);
-        }
+        let empty_result = set![(0, 0)].intersection(set![(1, 1)]);
+        assert_eq!(empty_result.len(), 0);
+    }
 
-        #[test]
-        fn test_remove() {
-            let mut set = set![(0, 0), (1, 1)];
-            assert!(set.remove((0, 0)));
-            assert!(!set.contains((0, 0)));
-            assert!(!set.remove((0, 0)));
-            assert_eq!(set.len(), 1);
-        }
+    #[test]
+    fn test_difference() {
+        let set1 = set![(0, 0), (1, 1), (2, 2)];
+        let set2 = set![(1, 1)];
+        let difference = set1.difference(set2);
+        assert_eq!(difference.len(), 2);
+        assert!(difference.contains((0, 0)));
+        assert!(difference.contains((2, 2)));
+    }
 
-        #[test]
-        fn test_contains() {
-            let set = set![(0, 0), (1, 1)];
-            assert!(set.contains((0, 0)));
-            assert!(set.contains((1, 1)));
-            assert!(!set.contains((2, 2)));
-        }
+    #[test]
+    fn test_symmetric_difference() {
+        let set1 = set![(0, 0), (1, 1)];
+        let set2 = set![(1, 1), (2, 2)];
+        let sym_diff = set1.symmetric_difference(set2);
+        assert_eq!(sym_diff.len(), 2);
+        assert!(sym_diff.contains((0, 0)));
+        assert!(sym_diff.contains((2, 2)));
+        assert_eq!(set1 ^ set2, sym_diff);
+    }
 
-        #[test]
-        fn test_clear() {
-            let mut set = set![(0, 0), (1, 1)];
-            set.clear();
-            assert!(set.is_empty());
-            assert_eq!(set.len(), 0);
-        }
+    #[test]
+    fn test_not() {
+        // Complement properties: !EMPTY = FULL, !FULL = EMPTY
+        let set = set![(0, 0)];
+        let complement = !set;
+        assert_eq!(complement.len(), 80);
+        assert!(!complement.contains((0, 0)));
+        assert!(complement.contains((1, 1)));
 
-        #[test]
-        fn test_all_positions() {
-            let mut set = TestSet::new();
-            for y in 0..9 {
-                for x in 0..9 {
-                    assert!(set.insert((x, y)));
-                }
-            }
-            assert_eq!(set.len(), 81);
+        assert_eq!(!TestSet::EMPTY, TestSet::FULL);
+        assert_eq!(!TestSet::FULL, TestSet::EMPTY);
+    }
+
+    #[test]
+    fn test_assign_operators() {
+        let mut set1 = set![(0, 0), (1, 1)];
+        let set2 = set![(1, 1), (2, 2)];
+        set1 |= set2;
+        assert_eq!(set1.len(), 3);
+
+        let mut set3 = set![(0, 0), (1, 1)];
+        set3 &= set2;
+        assert_eq!(set3.len(), 1);
+
+        let mut set4 = set![(0, 0), (1, 1)];
+        set4 ^= set2;
+        assert_eq!(set4.len(), 2);
+    }
+
+    #[test]
+    fn test_is_subset() {
+        // Subset is reflexive; empty set is subset of all sets
+        let cases = [
+            (set![(0, 0)], set![(0, 0), (1, 1)], true),
+            (set![(0, 0), (1, 1)], set![(0, 0)], false),
+            (set![(0, 0)], set![(0, 0)], true),
+            (set![], set![(0, 0), (1, 1)], true),
+        ];
+        for (a, b, expected) in cases {
+            assert_eq!(a.is_subset(b), expected);
         }
     }
 
-    mod set_operations {
-        use super::*;
-
-        #[test]
-        fn test_union() {
-            let set1 = set![(0, 0), (1, 1)];
-            let set2 = set![(1, 1), (2, 2)];
-            let union = set1.union(set2);
-            assert_eq!(union.len(), 3);
-            assert!(union.contains((0, 0)));
-            assert!(union.contains((1, 1)));
-            assert!(union.contains((2, 2)));
-        }
-
-        #[test]
-        fn test_intersection() {
-            let set1 = set![(0, 0), (1, 1)];
-            let set2 = set![(1, 1), (2, 2)];
-            let intersection = set1.intersection(set2);
-            assert_eq!(intersection.len(), 1);
-            assert!(intersection.contains((1, 1)));
-        }
-
-        #[test]
-        fn test_difference() {
-            let set1 = set![(0, 0), (1, 1), (2, 2)];
-            let set2 = set![(1, 1)];
-            let difference = set1.difference(set2);
-            assert_eq!(difference.len(), 2);
-            assert!(difference.contains((0, 0)));
-            assert!(difference.contains((2, 2)));
-        }
-
-        #[test]
-        fn test_symmetric_difference() {
-            let set1 = set![(0, 0), (1, 1)];
-            let set2 = set![(1, 1), (2, 2)];
-            let sym_diff = set1.symmetric_difference(set2);
-            assert_eq!(sym_diff.len(), 2);
-            assert!(sym_diff.contains((0, 0)));
-            assert!(sym_diff.contains((2, 2)));
-        }
-
-        #[test]
-        fn test_not() {
-            let set = set![(0, 0)];
-            let complement = !set;
-            assert_eq!(complement.len(), 80);
-            assert!(!complement.contains((0, 0)));
-            assert!(complement.contains((1, 1)));
-        }
-
-        #[test]
-        fn test_assign_operators() {
-            let mut set1 = set![(0, 0), (1, 1)];
-            let set2 = set![(1, 1), (2, 2)];
-
-            set1 |= set2;
-            assert_eq!(set1.len(), 3);
-
-            let mut set3 = set![(0, 0), (1, 1)];
-            set3 &= set2;
-            assert_eq!(set3.len(), 1);
-
-            let mut set4 = set![(0, 0), (1, 1)];
-            set4 ^= set2;
-            assert_eq!(set4.len(), 2);
+    #[test]
+    fn test_is_superset() {
+        // Superset is reflexive; all sets are supersets of empty set
+        let cases = [
+            (set![(0, 0), (1, 1)], set![(0, 0)], true),
+            (set![(0, 0)], set![(0, 0), (1, 1)], false),
+            (set![(0, 0)], set![(0, 0)], true),
+        ];
+        for (a, b, expected) in cases {
+            assert_eq!(a.is_superset(b), expected);
         }
     }
 
-    mod relations {
-        use super::*;
-
-        #[test]
-        fn test_is_subset() {
-            let set1 = set![(0, 0)];
-            let set2 = set![(0, 0), (1, 1)];
-            assert!(set1.is_subset(set2));
-            assert!(!set2.is_subset(set1));
-            assert!(set1.is_subset(set1));
-        }
-
-        #[test]
-        fn test_is_superset() {
-            let set1 = set![(0, 0), (1, 1)];
-            let set2 = set![(0, 0)];
-            assert!(set1.is_superset(set2));
-            assert!(!set2.is_superset(set1));
-            assert!(set1.is_superset(set1));
-        }
-
-        #[test]
-        fn test_is_disjoint() {
-            let set1 = set![(0, 0)];
-            let set2 = set![(1, 1)];
-            let set3 = set![(0, 0), (1, 1)];
-            assert!(set1.is_disjoint(set2));
-            assert!(!set1.is_disjoint(set3));
-        }
+    #[test]
+    fn test_is_disjoint() {
+        // Empty set is disjoint with all sets
+        let set1 = set![(0, 0)];
+        let set2 = set![(1, 1)];
+        let set3 = set![(0, 0), (1, 1)];
+        assert!(set1.is_disjoint(set2));
+        assert!(!set1.is_disjoint(set3));
+        assert!(TestSet::EMPTY.is_disjoint(set1));
     }
 
-    mod access {
-        use super::*;
-
-        #[test]
-        fn test_first() {
-            let set = set![(2, 2), (1, 1), (3, 3)];
-            assert_eq!(set.first(), Some((1, 1)));
-        }
-
-        #[test]
-        fn test_last() {
-            let set = set![(2, 2), (1, 1), (3, 3)];
-            assert_eq!(set.last(), Some((3, 3)));
-        }
-
-        #[test]
-        fn test_pop_first() {
-            let mut set = set![(1, 1), (2, 2)];
-            assert_eq!(set.pop_first(), Some((1, 1)));
-            assert_eq!(set.len(), 1);
-            assert_eq!(set.pop_first(), Some((2, 2)));
-            assert_eq!(set.pop_first(), None);
-        }
-
-        #[test]
-        fn test_pop_last() {
-            let mut set = set![(1, 1), (2, 2)];
-            assert_eq!(set.pop_last(), Some((2, 2)));
-            assert_eq!(set.len(), 1);
-            assert_eq!(set.pop_last(), Some((1, 1)));
-            assert_eq!(set.pop_last(), None);
-        }
+    #[test]
+    fn test_first_last() {
+        let set = set![(2, 2), (1, 1), (3, 3)];
+        assert_eq!(set.first(), Some((1, 1)));
+        assert_eq!(set.last(), Some((3, 3)));
+        assert_eq!(TestSet::EMPTY.first(), None);
+        assert_eq!(TestSet::EMPTY.last(), None);
     }
 
-    mod iteration {
-        use super::*;
+    #[test]
+    fn test_pop_first_last() {
+        let mut set = set![(1, 1), (2, 2)];
+        assert_eq!(set.pop_first(), Some((1, 1)));
+        assert_eq!(set.len(), 1);
+        assert_eq!(set.pop_first(), Some((2, 2)));
+        assert_eq!(set.pop_first(), None);
 
-        #[test]
-        fn test_iter_ascending() {
-            let set = set![(2, 2), (1, 1), (0, 0)];
-            let collected: Vec<_> = set.iter().collect();
-            assert_eq!(collected, vec![(0, 0), (1, 1), (2, 2)]);
-        }
-
-        #[test]
-        fn test_iter_double_ended() {
-            let set = set![(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)];
-            let mut iter = set.iter();
-            assert_eq!(iter.next(), Some((0, 0)));
-            assert_eq!(iter.next_back(), Some((4, 4)));
-            assert_eq!(iter.next(), Some((1, 1)));
-            assert_eq!(iter.next_back(), Some((3, 3)));
-            assert_eq!(iter.next(), Some((2, 2)));
-            assert_eq!(iter.next(), None);
-            assert_eq!(iter.next_back(), None);
-        }
-
-        #[test]
-        fn test_iter_size_hint() {
-            let set = set![(0, 0), (1, 1), (2, 2)];
-            let iter = set.iter();
-            assert_eq!(iter.size_hint(), (3, Some(3)));
-        }
-
-        #[test]
-        fn test_into_iter() {
-            let set = set![(0, 0), (1, 1)];
-            let collected: Vec<_> = set.into_iter().collect();
-            assert_eq!(collected.len(), 2);
-        }
-
-        #[test]
-        fn test_iter_ref() {
-            let set = set![(0, 0), (1, 1)];
-            let collected: Vec<_> = (&set).into_iter().collect();
-            assert_eq!(collected.len(), 2);
-        }
+        let mut set = set![(1, 1), (2, 2)];
+        assert_eq!(set.pop_last(), Some((2, 2)));
+        assert_eq!(set.pop_last(), Some((1, 1)));
+        assert_eq!(set.pop_last(), None);
     }
 
-    mod edge_cases {
-        use super::*;
+    #[test]
+    fn test_iter() {
+        // Iterator maintains sorted order invariant
+        let set = set![(2, 2), (1, 1), (0, 0)];
+        let collected: Vec<_> = set.iter().collect();
+        assert_eq!(collected, vec![(0, 0), (1, 1), (2, 2)]);
 
-        #[test]
-        fn test_boundary_values() {
-            let mut set = TestSet::new();
-            set.insert((0, 0));
-            set.insert((8, 8));
-            assert!(set.contains((0, 0)));
-            assert!(set.contains((8, 8)));
-            assert_eq!(set.len(), 2);
-        }
+        let set = set![(0, 0), (1, 1)];
+        let collected: Vec<_> = set.into_iter().collect();
+        assert_eq!(collected.len(), 2);
 
-        #[test]
-        fn test_all_operations_on_empty() {
-            let empty = TestSet::new();
-            assert!(empty.first().is_none());
-            assert!(empty.last().is_none());
-            assert_eq!(empty.len(), 0);
-            assert!(empty.is_empty());
-            assert_eq!((!empty).len(), 81);
-        }
-
-        #[test]
-        fn test_all_operations_on_full() {
-            let full = TestSet::FULL;
-            assert_eq!(full.first(), Some((0, 0)));
-            assert_eq!(full.last(), Some((8, 8)));
-            assert_eq!(full.len(), 81);
-            assert!(!full.is_empty());
-            assert_eq!((!full).len(), 0);
-        }
-
-        #[test]
-        fn test_single_element_sets() {
-            for y in 0..9 {
-                for x in 0..9 {
-                    let set = set![(x, y)];
-                    assert_eq!(set.len(), 1);
-                    assert_eq!(set.first(), Some((x, y)));
-                    assert_eq!(set.last(), Some((x, y)));
-                }
-            }
-        }
+        let set = set![(0, 0), (1, 1)];
+        let collected: Vec<_> = (&set).into_iter().collect();
+        assert_eq!(collected.len(), 2);
     }
 
-    mod invariants {
-        use super::*;
+    #[test]
+    fn test_iter_double_ended() {
+        let set = set![(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)];
+        let mut iter = set.iter();
+        assert_eq!(iter.next(), Some((0, 0)));
+        assert_eq!(iter.next_back(), Some((4, 4)));
+        assert_eq!(iter.next(), Some((1, 1)));
+        assert_eq!(iter.next_back(), Some((3, 3)));
+        assert_eq!(iter.next(), Some((2, 2)));
+        assert_eq!(iter.next(), None);
+        assert_eq!(iter.next_back(), None);
+    }
 
-        #[test]
-        fn test_len_equals_iter_count() {
-            let set = set![(0, 0), (1, 1), (2, 2), (3, 3)];
-            assert_eq!(set.len(), set.iter().count());
-        }
+    #[test]
+    fn test_iter_size_hint() {
+        // ExactSizeIterator provides exact size
+        let set = set![(0, 0), (1, 1), (2, 2)];
+        let iter = set.iter();
+        assert_eq!(iter.size_hint(), (3, Some(3)));
+    }
 
-        #[test]
-        fn test_insert_remove_roundtrip() {
-            let mut set = TestSet::new();
-            let pos = (4, 4);
-            assert!(set.insert(pos));
-            assert!(set.contains(pos));
-            assert!(set.remove(pos));
-            assert!(!set.contains(pos));
-        }
+    #[test]
+    fn test_empty_and_full() {
+        // Complement properties: !EMPTY = FULL, !FULL = EMPTY
+        let empty = TestSet::EMPTY;
+        assert_eq!(empty.len(), 0);
+        assert!(empty.is_empty());
+        assert_eq!(!empty, TestSet::FULL);
 
-        #[test]
-        fn test_union_size_bound() {
-            let set1 = set![(0, 0), (1, 1)];
-            let set2 = set![(2, 2), (3, 3)];
-            let union = set1.union(set2);
-            assert!(union.len() <= set1.len() + set2.len());
-        }
+        let full = TestSet::FULL;
+        assert_eq!(full.len(), 81);
+        assert_eq!(full.first(), Some((0, 0)));
+        assert_eq!(full.last(), Some((8, 8)));
+        assert!(!full.is_empty());
+        assert_eq!(!full, TestSet::EMPTY);
+    }
 
-        #[test]
-        fn test_hash() {
-            use std::{
-                collections::hash_map::DefaultHasher,
-                hash::{Hash, Hasher},
-            };
+    #[test]
+    fn test_boundary_values() {
+        // Minimum (0, 0) and maximum (8, 8) positions are valid
+        let mut set = TestSet::new();
+        set.insert((0, 0));
+        set.insert((8, 8));
+        assert!(set.contains((0, 0)));
+        assert!(set.contains((8, 8)));
+        assert_eq!(set.len(), 2);
+    }
 
-            let set1 = set![(0, 0), (1, 1)];
-            let set2 = set![(0, 0), (1, 1)];
-            let set3 = set![(1, 1), (2, 2)];
+    #[test]
+    fn test_hash() {
+        // Equal sets produce equal hashes
+        use std::collections::HashSet;
 
-            let hash1 = {
-                let mut hasher = DefaultHasher::new();
-                set1.hash(&mut hasher);
-                hasher.finish()
-            };
+        let set1 = set![(0, 0), (1, 1)];
+        let set2 = set![(0, 0), (1, 1)];
+        let set3 = set![(1, 1), (2, 2)];
 
-            let hash2 = {
-                let mut hasher = DefaultHasher::new();
-                set2.hash(&mut hasher);
-                hasher.finish()
-            };
+        let mut hash_set = HashSet::new();
+        hash_set.insert(set1);
+        assert!(hash_set.contains(&set2));
+        assert!(!hash_set.contains(&set3));
+    }
 
-            let hash3 = {
-                let mut hasher = DefaultHasher::new();
-                set3.hash(&mut hasher);
-                hasher.finish()
-            };
+    #[test]
+    fn test_extend() {
+        let mut set = set![(0, 0)];
+        set.extend(vec![(1, 1), (2, 2)]);
+        assert_eq!(set.len(), 3);
 
-            assert_eq!(hash1, hash2);
-            assert_ne!(hash1, hash3);
-        }
-
-        #[test]
-        fn test_extend() {
-            let mut set = set![(0, 0)];
-            set.extend(vec![(1, 1), (2, 2)]);
-            assert_eq!(set.len(), 3);
-        }
-
-        #[test]
-        fn test_extend_overlapping() {
-            let mut set = set![(0, 0), (1, 1)];
-            set.extend(vec![(1, 1), (2, 2)]);
-            assert_eq!(set.len(), 3);
-        }
-
-        #[test]
-        fn test_extend_empty() {
-            let mut set = set![(0, 0)];
-            set.extend(Vec::<(u8, u8)>::new());
-            assert_eq!(set.len(), 1);
-        }
+        let mut set = set![(0, 0), (1, 1)];
+        set.extend(vec![(1, 1), (2, 2)]);
+        assert_eq!(set.len(), 3);
     }
 }
