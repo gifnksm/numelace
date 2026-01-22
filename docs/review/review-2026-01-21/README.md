@@ -47,18 +47,17 @@
 | ------ | ---- | ------------------------------------------------------------------ |
 | 高     | 2    | ACTION-1 (Core の Pure Data Structure 化), ACTION-2 (ベンチマーク) |
 | 中     | 1    | ACTION-3 (双方向マッピング)                                        |
-| 低     | 1    | ACTION-7 (テスト調査)                                              |
 
 ### 次のステップ
 
 **Phase 1** として、以下のアクションから着手できます（並行作業可能）：
 
+- ACTION-1: Core の Pure Data Structure 化（テスト追加含む）
 - ACTION-2: ベンチマークの追加
-- ACTION-7: BacktrackSolver のテスト調査
 
-**Phase 2** の最優先タスク：
+**Phase 2** (ACTION-1, ACTION-2 完了後):
 
-- ACTION-1: Core の Pure Data Structure 化（ブロッカー）
+- ACTION-3: 双方向マッピングの実装（パフォーマンス最適化）
 
 **完了済み**:
 
@@ -68,5 +67,6 @@
   - ARCHITECTURE.md の拡充（Semantics Pattern, Two-grid, Core vs Solver）
 - ✅ ACTION-5: Box::leak 修正（テストコードの品質改善）
 - ✅ ACTION-6: check_consistency API への置き換え（エラーハンドリング改善）
+- ✅ ACTION-7: BacktrackSolver のテスト調査（テストカバレッジ確認）
 
 詳細は [`action.md`](./action.md) を参照してください。

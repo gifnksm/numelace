@@ -387,66 +387,64 @@
 
 ## 推奨作業順序
 
-### Phase 1: すぐできる改善（並行作業可能）
+### Phase 1: 高優先度タスク（並行作業可能）
 
-以下は互いに依存せず、どれから着手しても構いません：
-
-- ACTION-4: ドキュメント整備とコード改善
-- ACTION-5: Box::leak 修正
-- ACTION-6: check_consistency API への置き換え
-- ACTION-7: BacktrackSolver のテスト調査
-- ACTION-2: ベンチマークの追加（ACTION-3 の判断材料）
-
-### Phase 2: Pure Data Structure 化（ブロッカー）
+以下は互いに依存せず、並行して作業できます：
 
 - **ACTION-1**: Core を Pure Data Structure 化
   - 問題3-2（NakedSingle の実装変更）を含む
   - 問題5-1（テストコードの修正）を含む
-  - 完了後、ACTION-3 の実装が容易になる
+- **ACTION-2**: ベンチマークの追加（ACTION-3 の判断材料）
 
-### Phase 3: ベンチマーク結果に基づく判断
+### Phase 2: ベンチマーク結果に基づく判断
+
+ACTION-1 と ACTION-2 の完了後：
 
 - ACTION-2 のベンチマーク結果を評価
 - 必要であれば **ACTION-3** (双方向マッピング) を実装
+
+### 完了済み
+
+- ✅ ACTION-4: ドキュメント整備とコード改善
+- ✅ ACTION-5: Box::leak 修正
+- ✅ ACTION-6: check_consistency API への置き換え
+- ✅ ACTION-7: BacktrackSolver のテスト調査
 
 ---
 
 ## 対応履歴
 
-<!-- アクションが完了したら、ここに記録 -->
-
-- **2026-01-21**: ACTION-4 部分完了（1-(a) DigitGrid のドキュメント整備）
-  - クレートレベルに「Semantics Pattern: Type-Safe Indexing」セクションを追加
-  - 3つの主要な目的を明確化：型安全性、実装の共通化、効率的なデータ構造
-  - すべての関連型（9ファイル、13の型/トレイト/エイリアス）からクレートレベルへリンク
-  - 用語の統一：Array は "indexing"、BitSet は "set operations"
-  - すべてのリンク文を統一："See the [crate-level documentation](...) for details."
-  - コミット: `7f7ea41` - docs(core): Add comprehensive Semantics Pattern documentation
-
-- **2026-01-21**: ACTION-7 完了
-  - `BacktrackSolver` のテストカバレッジを調査
-  - 既存の `test_multiple_solutions` を拡張し、解の差異を検証
-  - 5つの新しいテストケースを追加：
-    - `test_multiple_solutions_with_partial_grid`: 部分グリッドからの複数解生成
-    - `test_backtracking_occurs`: バックトラック発生の検証
-    - `test_backtrack_count_increments`: バックトラックカウントの追跡確認
-    - `test_solution_is_complete`: 解の完全性検証
-  - バックトラックの正当性とstatistics収集が適切に動作することを確認
-  - 全テスト（14個）が通過することを確認
-
-- **2026-01-21**: ACTION-5 完了
+- **2026-01-22**: ACTION-5 完了（Box::leak 修正）
   - `crates/sudoku-generator/src/lib.rs` のテストコードから `Box::leak` を削除
   - `create_test_generator()` ヘルパー関数を削除し、各テスト関数内で `TechniqueSolver` を直接作成
   - 通常のライフタイム管理に修正
-  - lint、コンパイル、テスト通過確認済み
+  - コミット: `e8ef0d5` - test(generator): remove Box::leak from test helper
 
-- **2026-01-21**: ACTION-6 完了
+- **2026-01-22**: ACTION-6 完了（check_consistency API への置き換え）
   - `sudoku-core` に `ConsistencyError` を追加（`derive_more` 使用）
   - `CandidateGrid::check_consistency() -> Result<(), ConsistencyError>` を実装
   - `CandidateGrid::is_solved()` を `Result<bool, ConsistencyError>` に変更
   - `sudoku-solver` に `From<ConsistencyError> for SolverError` を実装
   - `is_consistent()` の呼び出しを `check_consistency()?` に置き換え
-  - 冗長な `is_solved()` チェックを削除
-  - `is_consistent()` を完全に削除
   - テストとドキュメントを追加
-  - レイヤー間の依存関係を適切に保ちつつ、エラーハンドリングを改善
+  - コミット: `b1e563c` - refactor(core,solver): replace is_consistent with check_consistency API
+
+- **2026-01-22**: ACTION-7 完了（BacktrackSolver のテスト調査）
+  - `BacktrackSolver` のテストカバレッジを調査
+  - 既存の `test_multiple_solutions` を拡張し、解の差異を検証
+  - 5つの新しいテストケースを追加
+  - バックトラックの正当性とstatistics収集が適切に動作することを確認
+  - 全テスト（14個）が通過することを確認
+  - コミット: `6b8f87a` - Complete ACTION-7: Add comprehensive tests for BacktrackSolver
+
+- **2026-01-22**: ACTION-4 部分完了（1-(a) DigitGrid のドキュメント整備）
+  - クレートレベルに「Semantics Pattern: Type-Safe Indexing」セクションを追加
+  - すべての関連型（9ファイル、13の型/トレイト/エイリアス）からリンク
+  - 3つの主要な目的を明確化：型安全性、実装の共通化、効率的なデータ構造
+  - コミット: `7f7ea41` - docs(core): Add comprehensive Semantics Pattern documentation
+
+- **2026-01-22**: ACTION-4 完了（ドキュメント整備とコード改善）
+  - classify_cells のコメント修正（bitwise DP アルゴリズム説明）
+  - `#[inline]` 属性の付与（7ファイル）
+  - ARCHITECTURE.md の拡充（Semantics Pattern, Two-grid, Core vs Solver）
+  - コミット: `30164eb` - feat(review): Complete ACTION-4
