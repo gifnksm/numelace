@@ -153,16 +153,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_from_value_valid() {
+    fn test_basic_operations() {
+        // from_value and value() round-trip for boundary values
         assert_eq!(Digit::from_value(1), Digit::D1);
-        assert_eq!(Digit::from_value(2), Digit::D2);
-        assert_eq!(Digit::from_value(3), Digit::D3);
-        assert_eq!(Digit::from_value(4), Digit::D4);
-        assert_eq!(Digit::from_value(5), Digit::D5);
-        assert_eq!(Digit::from_value(6), Digit::D6);
-        assert_eq!(Digit::from_value(7), Digit::D7);
-        assert_eq!(Digit::from_value(8), Digit::D8);
         assert_eq!(Digit::from_value(9), Digit::D9);
+        assert_eq!(Digit::D1.value(), 1);
+        assert_eq!(Digit::D9.value(), 9);
+
+        // ALL constant contains all 9 digits in order
+        assert_eq!(Digit::ALL.len(), 9);
+        assert_eq!(Digit::ALL[0], Digit::D1);
+        assert_eq!(Digit::ALL[8], Digit::D9);
+
+        // from_value/value round-trip for all digits
+        for digit in Digit::ALL {
+            let value = digit.value();
+            assert_eq!(Digit::from_value(value), digit);
+        }
+
+        // Display trait
+        assert_eq!(format!("{}", Digit::D1), "1");
+        assert_eq!(format!("{}", Digit::D9), "9");
+
+        // From<Digit> for u8
+        let value: u8 = Digit::D5.into();
+        assert_eq!(value, 5);
     }
 
     #[test]
@@ -175,65 +190,5 @@ mod tests {
     #[should_panic(expected = "Invalid digit value: 10")]
     fn test_from_value_ten_panics() {
         let _ = Digit::from_value(10);
-    }
-
-    #[test]
-    fn test_value() {
-        assert_eq!(Digit::D1.value(), 1);
-        assert_eq!(Digit::D2.value(), 2);
-        assert_eq!(Digit::D3.value(), 3);
-        assert_eq!(Digit::D4.value(), 4);
-        assert_eq!(Digit::D5.value(), 5);
-        assert_eq!(Digit::D6.value(), 6);
-        assert_eq!(Digit::D7.value(), 7);
-        assert_eq!(Digit::D8.value(), 8);
-        assert_eq!(Digit::D9.value(), 9);
-    }
-
-    #[test]
-    fn test_all_constant() {
-        assert_eq!(Digit::ALL.len(), 9);
-        assert_eq!(Digit::ALL[0], Digit::D1);
-        assert_eq!(Digit::ALL[1], Digit::D2);
-        assert_eq!(Digit::ALL[2], Digit::D3);
-        assert_eq!(Digit::ALL[3], Digit::D4);
-        assert_eq!(Digit::ALL[4], Digit::D5);
-        assert_eq!(Digit::ALL[5], Digit::D6);
-        assert_eq!(Digit::ALL[6], Digit::D7);
-        assert_eq!(Digit::ALL[7], Digit::D8);
-        assert_eq!(Digit::ALL[8], Digit::D9);
-    }
-
-    #[test]
-    fn test_all_iteration() {
-        let mut count = 0;
-        for (i, digit) in Digit::ALL.iter().enumerate() {
-            assert_eq!(digit.value() as usize, i + 1);
-            count += 1;
-        }
-        assert_eq!(count, 9);
-    }
-
-    #[test]
-    fn test_round_trip() {
-        for digit in Digit::ALL {
-            let value = digit.value();
-            let reconstructed = Digit::from_value(value);
-            assert_eq!(digit, reconstructed);
-        }
-    }
-
-    #[test]
-    fn test_display() {
-        assert_eq!(format!("{}", Digit::D1), "1");
-        assert_eq!(format!("{}", Digit::D5), "5");
-        assert_eq!(format!("{}", Digit::D9), "9");
-    }
-
-    #[test]
-    fn test_from_digit_to_u8() {
-        let digit = Digit::D5;
-        let value: u8 = digit.into();
-        assert_eq!(value, 5);
     }
 }

@@ -221,63 +221,40 @@ mod tests {
 
     use super::*;
 
-    mod digit_semantics {
-        use super::*;
+    #[test]
+    fn test_digit_semantics() {
+        // Boundary values: D1 maps to 0, D9 maps to 8
+        assert_eq!(DigitSemantics::to_index(D1).index(), 0);
+        assert_eq!(DigitSemantics::to_index(D9).index(), 8);
+        assert_eq!(DigitSemantics::from_index(Index9::new(0)), D1);
+        assert_eq!(DigitSemantics::from_index(Index9::new(8)), D9);
 
-        #[test]
-        fn test_digit_to_index() {
-            assert_eq!(DigitSemantics::to_index(D1).index(), 0);
-            assert_eq!(DigitSemantics::to_index(D5).index(), 4);
-            assert_eq!(DigitSemantics::to_index(D9).index(), 8);
-        }
-
-        #[test]
-        fn test_index_to_digit() {
-            assert_eq!(DigitSemantics::from_index(Index9::new(0)), D1);
-            assert_eq!(DigitSemantics::from_index(Index9::new(4)), D5);
-            assert_eq!(DigitSemantics::from_index(Index9::new(8)), D9);
-        }
-
-        #[test]
-        fn test_round_trip() {
-            for digit in Digit::ALL {
-                let index = DigitSemantics::to_index(digit);
-                let result = DigitSemantics::from_index(index);
-                assert_eq!(result, digit);
-            }
+        // Round-trip for all digits
+        for digit in Digit::ALL {
+            let index = DigitSemantics::to_index(digit);
+            let result = DigitSemantics::from_index(index);
+            assert_eq!(result, digit);
         }
     }
 
-    mod cell_index_semantics {
-        use super::*;
-
-        #[test]
-        fn test_identity_mapping() {
-            for i in 0..9 {
-                assert_eq!(CellIndexSemantics::to_index(i).index(), i);
-                assert_eq!(CellIndexSemantics::from_index(Index9::new(i)), i);
-            }
+    #[test]
+    fn test_cell_index_semantics() {
+        // Identity mapping for all values 0-8
+        for i in 0..9 {
+            assert_eq!(CellIndexSemantics::to_index(i).index(), i);
+            assert_eq!(CellIndexSemantics::from_index(Index9::new(i)), i);
         }
+    }
 
-        #[test]
-        fn test_round_trip() {
-            for value in 0..9 {
-                let index = CellIndexSemantics::to_index(value);
-                let result = CellIndexSemantics::from_index(index);
-                assert_eq!(result, value);
-            }
-        }
+    #[test]
+    #[should_panic(expected = "Cell index must be 0-8")]
+    fn test_cell_index_rejects_nine() {
+        CellIndexSemantics::to_index(9);
+    }
 
-        #[test]
-        #[should_panic(expected = "Cell index must be 0-8")]
-        fn test_rejects_nine() {
-            CellIndexSemantics::to_index(9);
-        }
-
-        #[test]
-        #[should_panic(expected = "Cell index must be 0-8")]
-        fn test_rejects_larger() {
-            CellIndexSemantics::to_index(10);
-        }
+    #[test]
+    #[should_panic(expected = "Cell index must be 0-8")]
+    fn test_cell_index_rejects_larger() {
+        CellIndexSemantics::to_index(10);
     }
 }

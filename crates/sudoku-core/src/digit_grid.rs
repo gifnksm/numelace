@@ -207,17 +207,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_from_str_empty_grid() {
-        let s = ".................................................................................";
-        let grid: DigitGrid = s.parse().unwrap();
-
-        for pos in Position::ALL {
-            assert_eq!(grid.get(pos), None);
-        }
-    }
-
-    #[test]
-    fn test_from_str_with_digits() {
+    fn test_from_str_basic() {
+        // Parse digits and empty cells
         let s = format!("123456789{}", ".".repeat(72));
         let grid: DigitGrid = s.parse().unwrap();
 
@@ -225,10 +216,8 @@ mod tests {
         assert_eq!(grid.get(Position::new(1, 0)), Some(Digit::D2));
         assert_eq!(grid.get(Position::new(8, 0)), Some(Digit::D9));
         assert_eq!(grid.get(Position::new(0, 1)), None);
-    }
 
-    #[test]
-    fn test_from_str_with_newlines() {
+        // Whitespace is ignored
         let s = "123456789\n\
                  .........\n\
                  .........\n\
@@ -239,29 +228,16 @@ mod tests {
                  .........\n\
                  .........";
         let grid: DigitGrid = s.parse().unwrap();
-
         assert_eq!(grid.get(Position::new(0, 0)), Some(Digit::D1));
         assert_eq!(grid.get(Position::new(8, 0)), Some(Digit::D9));
-        assert_eq!(grid.get(Position::new(0, 1)), None);
-    }
 
-    #[test]
-    fn test_from_str_with_zeros() {
-        let s = format!("000000000{}", "0".repeat(72));
-        let grid: DigitGrid = s.parse().unwrap();
-
-        for pos in Position::ALL {
-            assert_eq!(grid.get(pos), None);
-        }
-    }
-
-    #[test]
-    fn test_from_str_with_underscores() {
-        let s = format!("_________{}", "_".repeat(72));
-        let grid: DigitGrid = s.parse().unwrap();
-
-        for pos in Position::ALL {
-            assert_eq!(grid.get(pos), None);
+        // Empty cell representations: '.', '0', '_'
+        for empty_char in ['.', '0', '_'] {
+            let s = empty_char.to_string().repeat(81);
+            let grid: DigitGrid = s.parse().unwrap();
+            for pos in Position::ALL {
+                assert_eq!(grid.get(pos), None);
+            }
         }
     }
 
@@ -287,29 +263,18 @@ mod tests {
     fn test_display_roundtrip() {
         let original = format!("123456789{}", ".".repeat(72));
         let grid: DigitGrid = original.parse().unwrap();
+
+        // Normal format roundtrip
         let s = grid.to_string();
         let reparsed: DigitGrid = s.parse().unwrap();
-
         for pos in Position::ALL {
             assert_eq!(grid.get(pos), reparsed.get(pos));
         }
-    }
 
-    #[test]
-    fn test_display_alternate_roundtrip() {
-        let original = format!("123456789{}", ".".repeat(72));
-        let grid: DigitGrid = original.parse().unwrap();
-
-        // Format with alternate (pretty) format
+        // Alternate (pretty) format roundtrip
         let displayed = format!("{grid:#}");
-
-        // Should have 9 lines with newlines
         assert_eq!(displayed.lines().count(), 9);
-
-        // Parse it back - whitespace should be ignored
-        let s = format!("{grid:#}");
-        let reparsed: DigitGrid = s.parse().unwrap();
-
+        let reparsed: DigitGrid = displayed.parse().unwrap();
         for pos in Position::ALL {
             assert_eq!(grid.get(pos), reparsed.get(pos));
         }

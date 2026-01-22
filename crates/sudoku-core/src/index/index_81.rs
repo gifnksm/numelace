@@ -176,74 +176,42 @@ mod tests {
     use super::*;
     use crate::Position;
 
-    mod position_semantics {
-        use super::*;
+    #[test]
+    fn test_position_semantics() {
+        // Boundary values: corners and center
+        assert_eq!(PositionSemantics::to_index(Position::new(0, 0)).index(), 0);
+        assert_eq!(PositionSemantics::to_index(Position::new(8, 0)).index(), 8);
+        assert_eq!(PositionSemantics::to_index(Position::new(0, 8)).index(), 72);
+        assert_eq!(PositionSemantics::to_index(Position::new(8, 8)).index(), 80);
+        assert_eq!(PositionSemantics::to_index(Position::new(4, 4)).index(), 40);
 
-        #[test]
-        fn test_corners() {
-            let index = PositionSemantics::to_index(Position::new(0, 0));
-            assert_eq!(index.index(), 0);
+        assert_eq!(
+            PositionSemantics::from_index(Index81::new(0)),
+            Position::new(0, 0)
+        );
+        assert_eq!(
+            PositionSemantics::from_index(Index81::new(80)),
+            Position::new(8, 8)
+        );
+        assert_eq!(
+            PositionSemantics::from_index(Index81::new(40)),
+            Position::new(4, 4)
+        );
 
-            let index = PositionSemantics::to_index(Position::new(8, 0));
-            assert_eq!(index.index(), 8);
-
-            let index = PositionSemantics::to_index(Position::new(0, 8));
-            assert_eq!(index.index(), 72);
-
-            let index = PositionSemantics::to_index(Position::new(8, 8));
-            assert_eq!(index.index(), 80);
+        // Row-major order: y * 9 + x
+        for x in 0..9 {
+            assert_eq!(PositionSemantics::to_index(Position::new(x, 0)).index(), x);
+            assert_eq!(
+                PositionSemantics::to_index(Position::new(x, 1)).index(),
+                9 + x
+            );
         }
 
-        #[test]
-        fn test_center() {
-            let index = PositionSemantics::to_index(Position::new(4, 4));
-            assert_eq!(index.index(), 40);
-        }
-
-        #[test]
-        fn test_row_major_order() {
-            // First row
-            for x in 0..9 {
-                let index = PositionSemantics::to_index(Position::new(x, 0));
-                assert_eq!(index.index(), x);
-            }
-
-            // Second row
-            for x in 0..9 {
-                let index = PositionSemantics::to_index(Position::new(x, 1));
-                assert_eq!(index.index(), 9 + x);
-            }
-        }
-
-        #[test]
-        fn test_from_index() {
-            let pos = PositionSemantics::from_index(Index81::new(0));
-            assert_eq!(pos, Position::new(0, 0));
-
-            let pos = PositionSemantics::from_index(Index81::new(80));
-            assert_eq!(pos, Position::new(8, 8));
-
-            let pos = PositionSemantics::from_index(Index81::new(40));
-            assert_eq!(pos, Position::new(4, 4));
-        }
-
-        #[test]
-        fn test_round_trip_all_positions() {
-            for pos in Position::ALL {
-                let index = PositionSemantics::to_index(pos);
-                let result = PositionSemantics::from_index(index);
-                assert_eq!(result, pos);
-            }
-        }
-
-        #[test]
-        fn test_all_indices() {
-            for i in 0..81 {
-                let index = Index81::new(i);
-                let pos = PositionSemantics::from_index(index);
-                let result = PositionSemantics::to_index(pos);
-                assert_eq!(result.index(), i);
-            }
+        // Round-trip for all positions
+        for pos in Position::ALL {
+            let index = PositionSemantics::to_index(pos);
+            let result = PositionSemantics::from_index(index);
+            assert_eq!(result, pos);
         }
     }
 }
