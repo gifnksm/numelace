@@ -38,13 +38,13 @@ This file tracks tasks that must be done to achieve the project goals.
   - Game state management, basic operations, completion detection
   - See design document for detailed requirements
 - [x] Write unit tests and doctests
-- [ ] On completion:
-  - [ ] Preserve essential design decisions in crate documentation and ARCHITECTURE.md
-  - [ ] Move future enhancement ideas to ARCHITECTURE.md
-  - [ ] Delete design document
-  - [ ] Update README.md status (Current Status section)
-  - [ ] Update ARCHITECTURE.md status (Crate Descriptions section)
-  - [ ] Mark all tasks as completed in this TODO
+- [x] On completion:
+  - [x] Preserve essential design decisions in crate documentation and ARCHITECTURE.md
+  - [x] Move future enhancement ideas to ARCHITECTURE.md
+  - [x] Delete design document
+  - [x] Update README.md status (Current Status section)
+  - [x] Update ARCHITECTURE.md status (Crate Descriptions section)
+  - [x] Mark all tasks as completed in this TODO
 
 **Note**: After completion, move to `sudoku-app` for basic GUI implementation.
 

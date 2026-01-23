@@ -10,27 +10,23 @@ A Sudoku application written in Rust, supporting both desktop and web platforms.
 
 ## Current Status
 
-- ✅ **sudoku-core**: Core data structures **completed**
-  - `Digit`: Type-safe representation of numbers 1-9
-  - `Position`: Board coordinates with box calculation utilities
-  - `CandidateGrid`: Candidate tracking grid for solving algorithms (digit-centric)
-  - `DigitGrid`: Simple cell-centric grid with string parsing/formatting
-  - Generic containers (`BitSet9`, `BitSet81`, `Array9`, `Array81`)
-  - Type-safe indexing with semantic index types
-- ✅ **sudoku-solver**: Solving algorithms **completed**
-  - `TechniqueSolver`: Human-like solving techniques
-  - `BacktrackSolver`: Technique-based solving with backtracking fallback
-  - Extensible technique system
-  - Solution enumeration for puzzle validation
-- ✅ **sudoku-generator**: Puzzle generation **completed**
-  - `PuzzleGenerator`: Generates puzzles with unique solutions using removal method
-  - Reproducible generation via `PuzzleSeed`
-  - Hybrid solution generation (random + backtracking with solver assistance)
-  - Verification using `TechniqueSolver` ensures unique, human-solvable puzzles
-  - Comprehensive testing (unit tests, property tests, doctests)
-- 🚧 **sudoku-game**: Game logic **in progress**
-  - Design document completed
-  - Implementation of minimum viable game logic in progress
+- ✅ **sudoku-core**: Core data structures **implemented**
+  - Type-safe grid containers and indexing (CandidateGrid, DigitGrid)
+  - Basic types (Digit, Position) with semantic indexing
+
+- ⚙️ **sudoku-solver**: Solver framework **implemented** (techniques: minimal)
+  - Technique-based solver and backtracking solver
+  - Current: basic techniques (Naked/Hidden Single)
+  - TODO: Naked/Hidden Pairs, Pointing Pairs, Box/Line Reduction, X-Wing, etc.
+
+- ✅ **sudoku-generator**: Puzzle generation **implemented**
+  - Removal method with unique solution guarantee
+  - Reproducible generation via seeds
+
+- ⚙️ **sudoku-game**: Game logic **minimally implemented**
+  - Game session management with basic operations
+  - TODO: candidate marks, undo/redo, hints, save/load
+
 - 📋 **Next**: GUI implementation
 
 ## Project Structure
@@ -46,7 +42,7 @@ crates/
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for architecture and implementation plans, [docs/TESTING.md](docs/TESTING.md) for testing guidelines, and [docs/TODO.md](docs/TODO.md) for current tasks.
 
-## Build and Test
+## Build and Run
 
 ```bash
 # Build all crates
@@ -57,29 +53,9 @@ cargo build --release
 
 # Run tests
 cargo test
-
-# Run benchmarks
-cargo bench
-
-# Run specific benchmark
-cargo bench --bench backtrack
-cargo bench --bench solver
-cargo bench --bench generator
-
-# Run clippy
-cargo clippy --all-targets
-
-# Check markdown files
-npx markdownlint .
-
-# Generate documentation (project crates only, faster)
-cargo doc --no-deps
-
-# Generate and open documentation
-cargo doc --no-deps --open
 ```
 
-## Run
+For development commands (clippy, benchmarks, documentation generation, etc.), see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```bash
 # Desktop application (not yet implemented)

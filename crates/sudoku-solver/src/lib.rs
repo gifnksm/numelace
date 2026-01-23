@@ -1,9 +1,14 @@
 //! Sudoku solver with technique-based solving and backtracking.
 //!
+//! # Overview
+//!
 //! This crate provides two complementary solvers:
 //!
 //! - [`TechniqueSolver`]: Applies human-like solving techniques only
 //! - [`BacktrackSolver`]: Combines techniques with backtracking for complete solving
+//!
+//! The solver uses a two-layer architecture that separates technique-only solving from
+//! backtracking, allowing for difficulty evaluation and flexible solving strategies.
 //!
 //! # Architecture
 //!
@@ -32,6 +37,29 @@
 //! - **Progress made** → Reset to first technique
 //! - **No progress** → Try next technique
 //! - **All techniques exhausted** → Stuck (or solved)
+//!
+//! ## Design Rationale
+//!
+//! ### Why Technique-Based Architecture?
+//!
+//! Each solving technique is implemented as a separate type that implements the
+//! [`Technique`](technique::Technique) trait. This design provides several benefits:
+//!
+//! - **Extensibility**: New techniques can be added without modifying existing code.
+//!   Simply implement the `Technique` trait and add it to the technique list.
+//!
+//! - **Clear Testing Boundaries**: Each technique can be tested independently with
+//!   focused unit tests, making it easier to verify correctness and maintain quality.
+//!
+//! - **Difficulty Evaluation**: Puzzle difficulty can be evaluated based on which
+//!   techniques are required to solve it. More advanced techniques indicate harder puzzles.
+//!
+//! - **Hint System**: The technique-based design enables a hint system that can explain
+//!   which specific technique should be applied next, helping users learn solving strategies.
+//!
+//! The modular design separates concerns: each technique focuses on a single solving
+//! strategy, while the solver orchestrates technique application and manages the overall
+//! solving process.
 //!
 //! # Examples
 //!
@@ -136,14 +164,16 @@
 //! # Ok::<(), sudoku_solver::SolverError>(())
 //! ```
 //!
-//! # Available Techniques
+//! # Advanced Topics
+//!
+//! ## Available Techniques
 //!
 //! Currently implemented techniques (in order of difficulty):
 //!
 //! - [`NakedSingle`](technique::NakedSingle): A cell with only one candidate
 //! - [`HiddenSingle`](technique::HiddenSingle): A digit that can only go in one cell in a house
 //!
-//! # Adding New Techniques
+//! ## Adding New Techniques
 //!
 //! To add a new technique:
 //!
@@ -177,14 +207,14 @@
 //!
 //! 3. Add comprehensive tests in the technique's module
 //!
-//! # Performance Characteristics
+//! ## Performance Characteristics
 //!
 //! - **[`TechniqueSolver`]**: O(n × t) where n is puzzle complexity and t is number of techniques
 //! - **[`BacktrackSolver`]**: Worst case O(9^m) where m is number of empty cells
 //!   - In practice, much faster due to technique-based pruning
 //!   - Grid cloning cost: 144 bytes per assumption (acceptable)
 //!
-//! # Error Handling
+//! ## Error Handling
 //!
 //! The solver returns [`SolverError::Inconsistent`] when it detects an invalid state:
 //!
@@ -192,7 +222,7 @@
 //! - Contradictory placements
 //!
 //! This typically indicates the input puzzle is invalid or unsolvable.
-//!
+
 pub use self::{backtrack_solver::*, error::*, technique_solver::*};
 
 pub mod backtrack;

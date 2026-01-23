@@ -4,78 +4,20 @@
 //! manipulating sudoku puzzles. These structures are used across solving, generation,
 //! and game management components.
 //!
-//! # Architecture Overview
+//! # Overview
 //!
-//! The crate follows a **two-grid architecture** that separates concerns:
+//! This crate provides fundamental types and data structures:
 //!
-//! - [`CandidateGrid`] - Digit-centric interface for solving algorithms
-//! - [`DigitGrid`] - Cell-centric interface for simple data access
+//! - **Basic Types**: [`Digit`] (1-9), [`Position`] (grid coordinates)
+//! - **Grid Types**: [`CandidateGrid`] (digit-centric), [`DigitGrid`] (cell-centric)
+//! - **Type Aliases**: [`DigitSet`], [`DigitPositions`], [`HouseMask`]
+//! - **Generic Infrastructure**: [`BitSet9`], [`BitSet81`], [`Array9`], [`Array81`]
 //!
-//! This separation allows each type to provide the most natural interface for its use case.
-//!
-//! # Core Types
-//!
-//! ## Basic Sudoku Types
-//!
-//! - [`Digit`] - Type-safe representation of sudoku digits 1-9
-//! - [`Position`] - Grid position with (x, y) coordinates in the range 0-8
-//!   - Provides box calculation utilities (`box_index()`, `box_cell_index()`)
-//!   - Supports conversion between linear and box-relative coordinates
-//!
-//! ## Grid Types
-//!
-//! ### [`CandidateGrid`] (Candidate Tracking)
-//!
-//! [`CandidateGrid`] tracks which digits can be placed at each position:
-//!   - Digit-centric representation optimized for "where can digit X go?" queries
-//!   - Provides operations for placing digits and removing candidates
-//!   - Used by solving algorithms to implement techniques
-//!
-//! ### [`DigitGrid`] (Simple Cell-Centric Interface)
-//!
-//! [`DigitGrid`] provides an intuitive cell-centric interface:
-//!   - Direct "what's in this cell?" queries
-//!   - Simple array-based representation using [`Array81`]
-//!   - Natural for human reasoning about puzzle state
-//!   - String parsing and formatting support (`FromStr`, `Display`)
-//!   - Conversion to/from [`CandidateGrid`]
-//!
-//! ## Candidate Type Aliases
-//!
-//! - [`DigitSet`] - A set of sudoku digits (1-9).
-//!   A specialized [`BitSet9`] using [`DigitSemantics`].
-//!
-//! - [`DigitPositions`] - A set of grid positions.
-//!   A specialized [`BitSet81`] using [`PositionSemantics`].
-//!
-//! - [`HouseMask`] - A set of cell indices (0-8) within a house (row, column, or box).
-//!   A specialized [`BitSet9`] using [`CellIndexSemantics`].
-//!
-//! # Generic Infrastructure
-//!
-//! ## Index Types and Semantics
-//!
-//! The [`index`] module provides index types and semantics for type-safe container access:
-//!
-//! - [`Index9`] and [`Index81`] - Index types for 9-element and 81-element containers
-//! - [`Index9Semantics`] and [`Index81Semantics`] - Traits defining index semantics
-//! - [`DigitSemantics`], [`CellIndexSemantics`], [`PositionSemantics`] - Concrete semantics implementations
-//!
-//! This ensures compile-time safety by preventing accidental mixing of incompatible index types.
-//!
-//! ## Generic Containers
-//!
-//! The [`containers`] module provides generic containers parameterized by semantics:
-//!
-//! - [`BitSet9`] - Efficient 9-element bitset (u16-based)
-//! - [`BitSet81`] - Efficient 81-element bitset (u128-based)
-//! - [`Array9`] - 9-element array with semantic indexing
-//! - [`Array81`] - 81-element array with semantic indexing
+//! The crate uses index types ([`Index9`], [`Index81`]) with semantics ([`DigitSemantics`],
+//! [`PositionSemantics`], [`CellIndexSemantics`]) to ensure compile-time type safety.
 //!
 //! [`Index9`]: index::Index9
 //! [`Index81`]: index::Index81
-//! [`Index9Semantics`]: index::Index9Semantics
-//! [`Index81Semantics`]: index::Index81Semantics
 //! [`DigitSemantics`]: index::DigitSemantics
 //! [`CellIndexSemantics`]: index::CellIndexSemantics
 //! [`PositionSemantics`]: index::PositionSemantics
@@ -84,7 +26,28 @@
 //! [`Array9`]: containers::Array9
 //! [`Array81`]: containers::Array81
 //!
-//! # Semantics Pattern: Type-Safe Indexing
+//! # Architecture
+//!
+//! ## Two-Grid Architecture
+//!
+//! The crate follows a **two-grid architecture** that separates concerns:
+//!
+//! - **[`CandidateGrid`]**: Digit-centric interface for solving algorithms
+//!   - Optimized for "where can digit X go?" queries
+//!   - Provides operations for placing digits and removing candidates
+//!   - Used by solving algorithms to implement techniques
+//!
+//! - **[`DigitGrid`]**: Cell-centric interface for simple data access
+//!   - Optimized for "what's in this cell?" queries
+//!   - Simple array-based representation
+//!   - Natural for human reasoning about puzzle state
+//!   - String parsing and formatting support (`FromStr`, `Display`)
+//!
+//! **Conversion**:
+//! - `DigitGrid` → `CandidateGrid` via `From` trait (one-way, lossless)
+//! - `CandidateGrid` → `DigitGrid` via `to_digit_grid()` method (lossy: only decided cells)
+//!
+//! ## Semantics Pattern: Type-Safe Indexing
 //!
 //! This crate employs a **Semantics Pattern** throughout its container types to achieve
 //! three key goals:
@@ -176,6 +139,27 @@
 //!
 //! The type safety benefit far outweighs any theoretical overhead.
 //!
+//! ## Design Rationale
+//!
+//! ### Why Two Grid Types?
+//!
+//! Sudoku has two fundamentally different access patterns:
+//! - **Solving**: "Where can digit X go?" (digit-centric, needs fast candidate tracking)
+//! - **Display/I/O**: "What's in cell (x,y)?" (cell-centric, needs simple access)
+//!
+//! A single data structure optimized for one pattern performs poorly on the other.
+//! The two-grid architecture allows each type to provide the most natural and efficient
+//! interface for its specific use case.
+//!
+//! ### Why Semantics Pattern?
+//!
+//! In sudoku code, digits (1-9), positions (x,y), and cell indices (0-8) are all integers.
+//! Using raw arrays allows accidental misuse. The Semantics Pattern provides:
+//! - Compile-time type safety (prevents mixing incompatible index types)
+//! - Generic implementations shared across all semantics (no code duplication)
+//! - Self-documenting code (type signature reveals purpose)
+//! - Zero runtime cost ([`PhantomData`], inlined arithmetic)
+//!
 //! # Examples
 //!
 //! ## Basic Usage
@@ -194,7 +178,7 @@
 //! assert_eq!(candidates.len(), 7);
 //! ```
 //!
-//! ## [`CandidateGrid`] - Candidate Tracking
+//! ## Working with [`CandidateGrid`]
 //!
 //! ```
 //! use sudoku_core::{CandidateGrid, Digit, Position};
@@ -215,7 +199,7 @@
 //! assert_eq!(candidates.len(), 1); // Only D5 at placed cell
 //! ```
 //!
-//! ## [`DigitGrid`] - Simple Cell-Centric Interface
+//! ## Working with [`DigitGrid`]
 //!
 //! ```
 //! use sudoku_core::{Digit, DigitGrid, Position};
@@ -235,19 +219,7 @@
 //! println!("{:#}", grid); // 9 lines with newlines
 //! ```
 //!
-//! ## Design Rationale
-//!
-//! ### Why Two Grid Types?
-//!
-//! - **[`CandidateGrid`]**: Digit-centric interface
-//!   - Answers "where can digit X go?" efficiently
-//!   - Provides primitives for implementing solving techniques
-//!
-//! - **[`DigitGrid`]**: Cell-centric interface for simple access
-//!   - Answers "what's in this cell?" naturally
-//!   - Intuitive for human reasoning about puzzle state
-//!   - Easy string parsing and formatting
-//!
+
 //! Each type provides the most natural interface for its access pattern.
 
 mod candidate_grid;

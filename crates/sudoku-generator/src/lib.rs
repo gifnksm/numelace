@@ -1,8 +1,15 @@
 //! Sudoku puzzle generator that creates puzzles with unique solutions.
 //!
+//! # Overview
+//!
 //! This crate provides functionality to generate valid Sudoku puzzles using the
 //! removal method: it first generates a complete solution grid, then removes cells
 //! one by one while ensuring the puzzle remains solvable using only logical deduction.
+//!
+//! All generated puzzles are guaranteed to:
+//! - Have exactly one solution
+//! - Be solvable using only logical deduction (no guessing required)
+//! - Be valid according to standard Sudoku rules
 //!
 //! # Algorithm
 //!
@@ -16,14 +23,48 @@
 //!    `sudoku-solver` crate, which ensures the puzzle can be solved using only human-like
 //!    logical deduction techniques.
 //!
-//! # Key Property
+//! ## Design Rationale
 //!
-//! All generated puzzles are guaranteed to:
-//! - Have exactly one solution
-//! - Be solvable using only logical deduction (no guessing required)
-//! - Be valid according to standard Sudoku rules
+//! ### Why Removal Method?
+//!
+//! The removal method was chosen over construction methods for several reasons:
+//!
+//! - **Simplicity**: The algorithm is straightforward to implement and understand.
+//!   Generate a complete grid, then remove cells while checking solvability.
+//!
+//! - **Leverages Existing Infrastructure**: Uses the existing [`TechniqueSolver`] for
+//!   verification, avoiding the need to implement separate solvability checking logic.
+//!
+//! - **Natural Guarantees**: The method naturally produces valid puzzles with unique solutions.
+//!   If removal causes multiple solutions, that cell is kept.
+//!
+//! - **Built-in Difficulty Control**: The [`TechniqueSolver`]'s behavior provides both
+//!   uniqueness guarantee and difficulty control. If a puzzle has multiple solutions,
+//!   the solver gets stuck (ambiguous state), preventing the removal. This ensures
+//!   generated puzzles are solvable using only the available logical techniques.
+//!
+//! ### Trade-offs
+//!
+//! While the removal method is simple and reliable, it has some limitations:
+//!
+//! - **Difficulty Level Control**: The solver's technique set defines a broad class of
+//!   solvable puzzles, not a specific difficulty level. A solver with more techniques
+//!   can generate a wider range of puzzles (from easy to hard), while a solver with
+//!   fewer techniques can only generate puzzles solvable with basic logic. Targeting
+//!   specific difficulty levels requires additional mechanisms to filter out puzzles
+//!   that are too easy (e.g., rejecting puzzles that don't require advanced techniques).
+//!
+//! - **Aesthetic Patterns**: The initial implementation doesn't control symmetry or
+//!   aesthetic patterns in the generated puzzles. This could be added as a future
+//!   enhancement by constraining which cells are removed.
+//!
+//! Despite these limitations, the removal method provides a solid foundation: it's
+//! simple, reliable, and produces human-solvable puzzles that can be solved using
+//! only logical deduction.
 //!
 //! # Examples
+//!
+//! ## Basic Usage
 //!
 //! ```
 //! use sudoku_generator::PuzzleGenerator;
@@ -43,7 +84,7 @@
 //! println!("Seed: {}", puzzle.seed);
 //! ```
 //!
-//! # Reproducibility
+//! ## Reproducibility
 //!
 //! The generator supports reproducible generation via seeds:
 //!

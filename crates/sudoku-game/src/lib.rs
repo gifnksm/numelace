@@ -11,7 +11,20 @@
 //! - Player-filled cells (editable by the player)
 //! - Empty cells (not yet filled)
 //!
-//! # Example
+//! # Design
+//!
+//! ## Design Decisions
+//!
+//! - **Permissive validation**: Allows rule-violating inputs (e.g., duplicate digits).
+//!   Players can experiment freely, and mistakes are discovered organically.
+//! - **Completion detection**: A game is considered solved when all cells are filled
+//!   and there are no rule violations (accepts any valid solution).
+//! - **Cell state tracking**: Uses [`CellState`] enum to distinguish between given,
+//!   filled, and empty cells at the type level.
+//!
+//! # Examples
+//!
+//! ## Basic Usage
 //!
 //! ```
 //! use sudoku_game::{Game, CellState};
@@ -41,14 +54,6 @@
 //! }
 //! ```
 //!
-//! # Design Decisions
-//!
-//! - **Permissive validation**: Allows rule-violating inputs (e.g., duplicate digits).
-//!   Players can experiment freely, and mistakes are discovered organically.
-//! - **Completion detection**: A game is considered solved when all cells are filled
-//!   and there are no rule violations (accepts any valid solution).
-//! - **Cell state tracking**: Uses [`CellState`] enum to distinguish between given,
-//!   filled, and empty cells at the type level.
 
 use sudoku_core::{CandidateGrid, Digit, Position, containers::Array81, index::PositionSemantics};
 use sudoku_generator::GeneratedPuzzle;
