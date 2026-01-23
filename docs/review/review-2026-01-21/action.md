@@ -112,7 +112,7 @@
 
 - **優先度**: 高
 - **依存**: なし
-- **ステータス**: [ ]
+- **ステータス**: [進行中] 1/4 完了
 - **作業量**: 中
 - **対応元**: 問題1-1
 
@@ -343,13 +343,16 @@ ACTION-3 判断用のベンチマークを実装：
 
 ### チェックリスト
 
-#### 1. リファクタリング
+#### 1. リファクタリング ✅ **完了** (2026-01-24)
 
-- [ ] `sudoku-solver/src/backtrack.rs` を新規作成
-- [ ] `backtrack::find_best_assumption` を実装
-- [ ] `sudoku-solver/src/lib.rs` で公開
-- [ ] `sudoku-generator` の既存コードを書き換え
-- [ ] `sudoku-solver/src/backtrack_solver.rs` の既存コードを書き換え
+- [x] `sudoku-solver/src/backtrack.rs` を新規作成
+- [x] `backtrack::find_best_assumption` を実装
+- [x] `sudoku-solver/src/lib.rs` で公開
+- [x] `sudoku-generator` の既存コードを書き換え
+- [x] `sudoku-solver/src/backtrack_solver.rs` の既存コードを書き換え
+- [x] モジュールドキュメントを追加（MRV ヒューリスティックの説明）
+- [x] 5つのテストケースを実装（正常系、パニック系、検証系）
+- [x] `Position::ALL` イテレーションパターンを統一（`DigitGrid::fmt` 修正）
 
 #### 2. テクニックセットの固定
 
@@ -743,3 +746,15 @@ ACTION-2 の完了後：
     - 将来テクニックが追加されても、ベンチマーク結果の意味が変わらないようにする
     - `TechniqueSolver::with_fundamental_techniques()` と `BacktrackSolver::with_fundamental_techniques()` を追加
   - コミット: [442113d](https://github.com/gifnksm/sudoku/commit/442113d) - docs: Complete ACTION-2 design decisions
+
+- ACTION-2 リファクタリング完了
+  - **新規モジュール**: `sudoku-solver/src/backtrack.rs` (214行)
+    - `find_best_assumption` 関数を実装
+    - MRV (Minimum Remaining Values) ヒューリスティック
+    - 包括的なモジュール・関数ドキュメント
+    - 5つのテストケース（正常系2、パニック系2、検証系1）
+  - **コード削減**: 39行（generator: 34行、backtrack_solver: 5行）
+  - **公開API**: `pub mod backtrack` として `sudoku-solver` から公開
+  - **ドキュメント更新**: `generator` のドキュメントに `backtrack` モジュールの使用を明記
+  - **既存コード改善**: `DigitGrid::fmt` の `Position::ALL` イテレーションパターンを修正
+  - コミット: [4efefd8](https://github.com/gifnksm/sudoku/commit/4efefd8) - refactor: extract find_best_assumption to backtrack module (ACTION-2)
