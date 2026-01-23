@@ -186,7 +186,7 @@
 //!
 //! # Error Handling
 //!
-//! The solver returns [`SolverError::Contradiction`] when it detects an invalid state:
+//! The solver returns [`SolverError::Inconsistent`] when it detects an invalid state:
 //!
 //! - A cell with no remaining candidates
 //! - Contradictory placements

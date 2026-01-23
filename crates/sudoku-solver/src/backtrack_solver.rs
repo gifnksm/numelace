@@ -151,7 +151,7 @@ impl BacktrackSolver {
     ///
     /// # Errors
     ///
-    /// Returns [`SolverError::Contradiction`] if the initial grid is inconsistent
+    /// Returns [`SolverError::Inconsistent`] if the initial grid is inconsistent
     /// (has cells with no candidates or contradictory placements).
     ///
     /// # Examples

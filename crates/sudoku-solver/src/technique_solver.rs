@@ -196,7 +196,7 @@ impl TechniqueSolver {
     ///
     /// # Errors
     ///
-    /// Returns [`SolverError::Contradiction`] if the grid becomes inconsistent
+    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent
     /// after applying a technique.
     ///
     /// # Examples
@@ -252,7 +252,7 @@ impl TechniqueSolver {
     ///
     /// # Errors
     ///
-    /// Returns [`SolverError::Contradiction`] if the grid becomes inconsistent
+    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent
     /// during solving.
     ///
     /// # Examples
@@ -303,7 +303,7 @@ impl TechniqueSolver {
     ///
     /// # Errors
     ///
-    /// Returns [`SolverError::Contradiction`] if the grid becomes inconsistent
+    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent
     /// during solving.
     ///
     /// # Examples
