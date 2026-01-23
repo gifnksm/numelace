@@ -37,15 +37,27 @@ These patterns add maintenance cost without sufficient value:
    fn test_clone() { ... }  // Unnecessary
    ```
 
-2. **Obvious implementations** - Simple mathematical properties
+2. **Obvious implementations** - Dedicated tests for self-evident properties
 
    ```rust
-   // ❌ Don't test: Simple bit operations are self-evident
+   // ❌ Don't create dedicated test functions for obvious properties
    #[test]
    fn test_union_is_commutative() {
        assert_eq!(a | b, b | a);
    }
+   
+   // ✅ Do verify key properties inline within table-driven tests
+   #[test]
+   fn test_union() {
+       let cases = [(set![0, 1], set![1, 2], set![0, 1, 2])];
+       for (a, b, expected) in cases {
+           assert_eq!(a.union(&b), expected);
+           assert_eq!(b.union(&a), expected);  // Commutativity (1 line)
+       }
+   }
    ```
+
+   **Rationale**: While properties may seem obvious, implementation bugs (e.g., using `&` instead of `|`) can occur. Verifying key properties inline adds minimal cost (1-2 lines) while catching real bugs and enabling safe refactoring.
 
 3. **Self-evident invariants** - Obvious relationships
 
@@ -57,16 +69,28 @@ These patterns add maintenance cost without sufficient value:
    }
    ```
 
-4. **Trivial delegation** - One-line function calls
+4. **Trivial delegation** - Delegation without consistency verification
 
    ```rust
-   // ❌ Don't test: Implementation is obviously correct
+   // ❌ Don't test delegation implementation itself
    impl BitSet {
        pub fn union(&self, other: &Self) -> Self {
            self | other  // Just delegates to operator
        }
    }
+   
+   // ✅ Do verify method-operator consistency in existing tests
+   #[test]
+   fn test_union() {
+       let cases = [(set![0, 1], set![1, 2], set![0, 1, 2])];
+       for (a, b, expected) in cases {
+           assert_eq!(a.union(&b), expected);
+           assert_eq!(a | b, expected);  // Consistency (1 line)
+       }
+   }
    ```
+
+   **Rationale**: While delegation itself is trivial, consistency between methods and operators is part of the public API contract. This catches refactoring errors where one implementation changes independently.
 
 5. **Exhaustive enumeration** - Testing every individual case
 
@@ -151,9 +175,13 @@ These patterns add maintenance cost without sufficient value:
        ];
        for (a, b, expected) in cases {
            assert_eq!(a.union(&b), expected);
+           assert_eq!(b.union(&a), expected);  // Commutativity
+           assert_eq!(a | b, expected);        // Operator consistency
        }
    }
    ```
+
+   **Tip**: Inline property checks (commutativity, consistency) add 1-2 lines but catch implementation bugs and enable safe refactoring with minimal maintenance cost.
 
 2. **Loop-based validation** - Test all cases without enumeration
 
@@ -216,7 +244,7 @@ Integration tests verify that components work correctly together:
 
 ## Project Testing Philosophy
 
-1. **Trust the compiler and type system** - Don't test what Rust guarantees
+1. **Trust the compiler for derived traits** - Don't test what Rust guarantees (e.g., derived `Clone`, `Debug`), but do test manual implementations
 2. **Test human-written logic** - Focus on manual implementations and complex computations
 3. **Optimize for maintenance** - Tests should be easy to understand and update
 4. **Enable confident refactoring** - Tests should catch real regressions, not implementation details
