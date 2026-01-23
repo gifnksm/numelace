@@ -13,3 +13,14 @@ sudoku-core.workspace = true
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "backtrack"
+harness = false
+
+[[bench]]
+name = "solver"
+harness = false

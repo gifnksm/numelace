@@ -65,7 +65,7 @@
 //! assert_eq!(puzzle1.solution, puzzle2.solution);
 //! ```
 
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use rand::{
     Rng, SeedableRng,
@@ -289,6 +289,25 @@ impl Display for PuzzleSeed {
     }
 }
 
+impl FromStr for PuzzleSeed {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() != 64 {
+            return Err("seed string must be 64 hexadecimal characters".to_string());
+        }
+        let mut bytes = [0u8; 32];
+        for (i, byte) in bytes.iter_mut().enumerate() {
+            let byte_str = &s
+                .get(i * 2..i * 2 + 2)
+                .ok_or_else(|| "seed string must be 64 hexadecimal characters".to_owned())?;
+            *byte = u8::from_str_radix(byte_str, 16)
+                .map_err(|_| format!("invalid hexadecimal byte: {byte_str}"))?;
+        }
+        Ok(PuzzleSeed(bytes))
+    }
+}
+
 impl Distribution<PuzzleSeed> for StandardUniform {
     fn sample<R>(&self, rng: &mut R) -> PuzzleSeed
     where
@@ -508,6 +527,59 @@ mod tests {
                     "Problem cell at {pos:?} should match solution"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn test_puzzle_seed_from_str_valid() {
+        // Test various valid hex cases (lowercase, uppercase, mixed)
+        let cases = [
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+            "0123456789AbCdEf0123456789aBcDeF0123456789ABCDEF0123456789abcdef",
+        ];
+
+        for seed_str in cases {
+            let seed = PuzzleSeed::from_str(seed_str).unwrap();
+            assert_eq!(seed.0[0], 0x01);
+            assert_eq!(seed.0[1], 0x23);
+            assert_eq!(seed.0[31], 0xef);
+        }
+    }
+
+    #[test]
+    fn test_puzzle_seed_from_str_roundtrip() {
+        let original = PuzzleSeed([
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            25, 26, 27, 28, 29, 30, 31, 32,
+        ]);
+        let seed_str = original.to_string();
+        let parsed = PuzzleSeed::from_str(&seed_str).unwrap();
+
+        assert_eq!(parsed.0, original.0);
+    }
+
+    #[test]
+    fn test_puzzle_seed_from_str_errors() {
+        let cases = [
+            ("abc", "seed string must be 64 hexadecimal characters"),
+            (
+                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef00",
+                "seed string must be 64 hexadecimal characters",
+            ),
+            (
+                "xyz4567890abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                "invalid hexadecimal byte",
+            ),
+            (
+                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeg",
+                "invalid hexadecimal byte",
+            ),
+        ];
+
+        for (input, expected_err) in cases {
+            let result = PuzzleSeed::from_str(input);
+            assert!(result.unwrap_err().contains(expected_err));
         }
     }
 

@@ -11,6 +11,7 @@ repository = "https://github.com/gifnksm/sudoku"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
+criterion = "0.8.1"
 derive_more = "2.1.1"
 eframe = "0.33.3"
 proptest = "1.9"
