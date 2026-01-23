@@ -354,12 +354,12 @@ ACTION-3 判断用のベンチマークを実装：
 - [x] 5つのテストケースを実装（正常系、パニック系、検証系）
 - [x] `Position::ALL` イテレーションパターンを統一（`DigitGrid::fmt` 修正）
 
-#### 2. テクニックセットの固定
+#### 2. テクニックセットの固定 ✅ **完了** (2026-01-24)
 
-- [ ] `technique::fundamental_techniques()` を実装
-- [ ] `technique::all_techniques()` を更新
-- [ ] `TechniqueSolver::with_fundamental_techniques()` を追加
-- [ ] `BacktrackSolver::with_fundamental_techniques()` を追加
+- [x] `technique::fundamental_techniques()` を実装
+- [x] `technique::all_techniques()` を更新（`fundamental_techniques()` を呼び出すように変更）
+- [x] `TechniqueSolver::with_fundamental_techniques()` を追加
+- [x] `BacktrackSolver::with_fundamental_techniques()` を追加
 
 #### 3. ベンチマーク環境のセットアップ
 
@@ -747,7 +747,7 @@ ACTION-2 の完了後：
     - `TechniqueSolver::with_fundamental_techniques()` と `BacktrackSolver::with_fundamental_techniques()` を追加
   - コミット: [442113d](https://github.com/gifnksm/sudoku/commit/442113d) - docs: Complete ACTION-2 design decisions
 
-- ACTION-2 リファクタリング完了
+- ACTION-2 タスク1完了（リファクタリング）
   - **新規モジュール**: `sudoku-solver/src/backtrack.rs` (214行)
     - `find_best_assumption` 関数を実装
     - MRV (Minimum Remaining Values) ヒューリスティック
@@ -758,3 +758,16 @@ ACTION-2 の完了後：
   - **ドキュメント更新**: `generator` のドキュメントに `backtrack` モジュールの使用を明記
   - **既存コード改善**: `DigitGrid::fmt` の `Position::ALL` イテレーションパターンを修正
   - コミット: [4efefd8](https://github.com/gifnksm/sudoku/commit/4efefd8) - refactor: extract find_best_assumption to backtrack module (ACTION-2)
+
+- ACTION-2 タスク2完了（テクニックセットの固定）
+  - **新規関数**: `technique::fundamental_techniques()` (Naked Single, Hidden Single)
+    - TechniqueSolver の基礎となる最も基本的なテクニック
+    - ベンチマークの安定したベースラインとして機能
+    - 包括的なドキュメントコメント（TechniqueSolver のコンテキストで説明）
+  - **`all_techniques()` の更新**: `fundamental_techniques()` をベースとする構造に変更（将来の拡張性を考慮）
+  - **新規コンストラクタ**:
+    - `TechniqueSolver::with_fundamental_techniques()`: fundamental techniques を使用する TechniqueSolver
+    - `BacktrackSolver::with_fundamental_techniques()`: fundamental techniques を使用する BacktrackSolver
+    - ベンチマーク用の標準構成として提供
+  - **テスト**: 全テスト通過（ユニットテスト + ドキュメントテスト）、警告なし
+  - コミット: [ef1eec0](https://github.com/gifnksm/sudoku/commit/ef1eec0) - feat: add fundamental_techniques() and with_fundamental_techniques() (ACTION-2)
