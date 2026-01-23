@@ -55,6 +55,14 @@ cargo build --release
 # Run tests
 cargo test
 
+# Run benchmarks
+cargo bench
+
+# Run specific benchmark
+cargo bench --bench backtrack
+cargo bench --bench solver
+cargo bench --bench generator
+
 # Run clippy
 cargo clippy --all-targets
 

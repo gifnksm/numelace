@@ -19,8 +19,8 @@
 | ID       | 優先度 | 依存               | ステータス | 概要                                   | 対応元                           |
 | -------- | ------ | ------------------ | ---------- | -------------------------------------- | -------------------------------- |
 | ACTION-1 | 高     | -                  | [✓]        | Pure Data Structure 化（テスト追加含） | 問題2-1, 問題3-2, 問題5-1, 懸念2 |
-| ACTION-2 | 高     | -                  | [ ]        | ベンチマークの追加                     | 問題1-1                          |
-| ACTION-3 | 中     | ACTION-1, ACTION-2 | [ ]        | 双方向マッピングの実装                 | 問題1-1                          |
+| ACTION-2 | 高     | -                  | [✓]        | ベンチマークの追加                     | 問題1-1                          |
+| ACTION-3 | 中     | ACTION-1, ACTION-2 | [✓]        | 双方向マッピングの実装（実施不要）     | 問題1-1                          |
 | ACTION-4 | 中     | -                  | [✓]        | ドキュメント整備とコード改善           | 問題1-3, 問題3-1, 懸念1, 懸念3   |
 | ACTION-5 | 低     | -                  | [✓]        | Box::leak 修正                         | 問題2-2                          |
 | ACTION-6 | 中     | -                  | [✓]        | check_consistency API への置き換え     | 問題4-2                          |
@@ -343,7 +343,7 @@ ACTION-3 判断用のベンチマークを実装：
 
 ### チェックリスト
 
-#### 1. リファクタリング ✅ **完了** (2026-01-24)
+#### 1. リファクタリング ✅ **完了** (2026-01-23)
 
 - [x] `sudoku-solver/src/backtrack.rs` を新規作成
 - [x] `backtrack::find_best_assumption` を実装
@@ -354,36 +354,82 @@ ACTION-3 判断用のベンチマークを実装：
 - [x] 5つのテストケースを実装（正常系、パニック系、検証系）
 - [x] `Position::ALL` イテレーションパターンを統一（`DigitGrid::fmt` 修正）
 
-#### 2. テクニックセットの固定 ✅ **完了** (2026-01-24)
+#### 2. テクニックセットの固定 ✅ **完了** (2026-01-23)
 
 - [x] `technique::fundamental_techniques()` を実装
 - [x] `technique::all_techniques()` を更新（`fundamental_techniques()` を呼び出すように変更）
 - [x] `TechniqueSolver::with_fundamental_techniques()` を追加
 - [x] `BacktrackSolver::with_fundamental_techniques()` を追加
 
-#### 3. ベンチマーク環境のセットアップ
+#### 3. ベンチマーク環境のセットアップ ✅ **完了** (2026-01-23, commit 745d274)
 
-- [ ] Criterion.rs を依存関係に追加
-- [ ] テストデータを準備（パズル生成 + seed 記録）
-- [ ] 各クレートに `benches/` ディレクトリを作成
+- [x] Criterion.rs を依存関係に追加
+- [x] テストデータを準備（パズル生成 + seed 記録）
+- [x] 各クレートに `benches/` ディレクトリを作成
 
-#### 4. ベンチマーク実装
+#### 4. ベンチマーク実装 ✅ **完了** (2026-01-23, commit 745d274)
 
-- [ ] `sudoku-solver/benches/backtrack.rs` を実装
-  - [ ] `find_best_assumption` 単体（盤面の埋まり具合別）
-- [ ] `sudoku-solver/benches/solver.rs` を実装
-  - [ ] エンドツーエンド（パズル解決）
-  - [ ] バックトラック回数の記録
-- [ ] `sudoku-generator/benches/generator.rs` を実装
-  - [ ] エンドツーエンド（パズル生成）
+- [x] `sudoku-solver/benches/backtrack.rs` を実装
+  - [x] `find_best_assumption` 単体（盤面の埋まり具合別）
+- [x] `sudoku-solver/benches/solver.rs` を実装
+  - [x] エンドツーエンド（パズル解決）
+  - [x] バックトラック回数の記録 → **不要と判断**（ベンチマークで測定すべき指標ではない）
+- [x] `sudoku-generator/benches/generator.rs` を実装
+  - [x] エンドツーエンド（パズル生成）
+- [x] `PuzzleSeed::from_str()` を実装（ベンチマークデータ読み込み用）
+  - [x] TESTING.md ガイドラインに従ったテストを追加
 
-#### 5. 測定・分析
+#### 5. 測定・分析 ✅ **完了** (2026-01-23)
 
-- [ ] ベースライン測定を実行
-- [ ] 結果を記録（docs/ または action.md に追記）
-- [ ] 必要に応じてプロファイリング（flamegraph など）
-- [ ] ベンチマーク結果を分析
-- [ ] ACTION-3 の要否を判断（10% 改善基準）
+- [x] ベースライン測定を実行
+- [x] 結果を記録（以下参照）
+- [x] ベンチマーク結果を分析
+- [x] ACTION-3 の要否を判断（10% 改善基準）
+
+##### ベンチマーク結果 (2026-01-23, commit 745d274)
+
+**`find_best_assumption` 単体** (`backtrack.rs`):
+
+- `empty_0`: 50.2 ns
+- `sparse_23`: 49.2 ns
+- `mid_40`: 49.6 ns
+- `dense_60`: 49.5 ns
+
+→ 盤面の埋まり具合に関わらずほぼ一定（約50ns）。非常に高速。
+
+**TechniqueSolver** (`solver.rs`):
+
+- `sparse_23`: 52.8 µs
+- `mid_40`: 15.1 µs
+- `dense_60`: 6.8 µs
+- `solution_81`: 6.1 µs
+
+**BacktrackSolver** (`solver.rs`):
+
+- `empty_0`: 2.93 ms (100解探索)
+- `ultra_sparse_15`: 3.12 ms (100解探索)
+- `sparse_23`: 52.9 µs (唯一解)
+- `mid_40`: 15.2 µs (唯一解)
+- `dense_60`: 6.8 µs (唯一解)
+- `solution_81`: 6.2 µs (完成済み)
+
+→ 唯一解パズルでは TechniqueSolver と BacktrackSolver の性能差はほぼなし。
+→ 複数解探索（100個）で約3ms。sparse_23 (52.9µs) の約60倍程度で、妥当な性能。
+
+**PuzzleGenerator** (`generator.rs`):
+
+- `seed_0`: 1.91 ms
+- `seed_1`: 2.09 ms
+- `seed_2`: 2.15 ms
+
+→ seedによって約10%の変動。パズル生成はソルバーの約40倍の時間。
+
+##### 結論
+
+- `find_best_assumption` は約50ns と非常に高速
+- 盤面状態による性能差はほぼなし（最大1ns程度の誤差範囲）
+- 双方向マッピング最適化で10%以上の改善は期待できない
+- **ACTION-3（双方向マッピングの実装）は不要と判断**
 
 ---
 
@@ -391,15 +437,29 @@ ACTION-3 判断用のベンチマークを実装：
 
 - **優先度**: 中
 - **依存**: ACTION-1（Pure Data Structure 化完了後）, ACTION-2（ベンチマーク結果で判断）
-- **ステータス**: [ ]
+- **ステータス**: [✓] **完了（実施不要と判断）** (2026-01-23)
 - **作業量**: 中
 - **対応元**: 問題1-1
 
-### 前提条件
+### 判断理由
 
-- ACTION-2 のベンチマーク結果で、双方向マッピングが必要と判断された場合のみ実施
+ACTION-2 のベンチマーク結果により、以下の理由で実施不要と判断：
 
-### 作業内容
+1. **`find_best_assumption` は十分高速**:
+   - 実行時間は約50ns と非常に高速
+   - 盤面状態による性能差はほぼなし（誤差範囲内）
+
+2. **最適化の効果が期待できない**:
+   - 双方向マッピングで10%以上の改善は困難
+   - メモリ使用量の増加とコード複雑性の増加に見合わない
+
+3. **全体のボトルネックではない**:
+   - ソルバー全体の実行時間は数十µs〜数ms
+   - 50ns の最適化は全体への影響が小さい
+
+詳細な測定結果は ACTION-2 のベンチマーク結果を参照。
+
+### 作業内容（実施しない）
 
 1. `CandidateGrid` に `cell_candidates` フィールドを追加
 
@@ -630,20 +690,13 @@ ACTION-3 判断用のベンチマークを実装：
 
 ## 推奨作業順序
 
-### Phase 1: 高優先度タスク（ACTION-1 完了後）
-
-- **ACTION-2**: ベンチマークの追加（ACTION-3 の判断材料）
-
-### Phase 2: ベンチマーク結果に基づく判断
-
-ACTION-2 の完了後：
-
-- ACTION-2 のベンチマーク結果を評価
-- 必要であれば **ACTION-3** (双方向マッピング) を実装
+すべてのアクションが完了しました。
 
 ### 完了済み
 
 - ✅ ACTION-1: Pure Data Structure 化（2026-01-23）
+- ✅ ACTION-2: ベンチマークの追加（2026-01-23）
+- ✅ ACTION-3: 双方向マッピングの実装（2026-01-23、実施不要と判断）
 - ✅ ACTION-4: ドキュメント整備とコード改善（2026-01-22）
 - ✅ ACTION-5: Box::leak 修正（2026-01-22）
 - ✅ ACTION-6: check_consistency API への置き換え（2026-01-22）
@@ -771,3 +824,32 @@ ACTION-2 の完了後：
     - ベンチマーク用の標準構成として提供
   - **テスト**: 全テスト通過（ユニットテスト + ドキュメントテスト）、警告なし
   - コミット: [ef1eec0](https://github.com/gifnksm/sudoku/commit/ef1eec0) - feat: add fundamental_techniques() and with_fundamental_techniques() (ACTION-2)
+
+- ACTION-2 タスク3/4完了（ベンチマーク環境のセットアップとベンチマーク実装）
+  - **Criterion.rs の追加**: `workspace.dependencies` と各クレートの `dev-dependencies` に追加
+  - **`PuzzleSeed::from_str()` の実装**: ベンチマークでseed文字列からパズルを生成するために実装
+    - 64文字の16進数文字列をパース
+    - TESTING.md ガイドラインに従った3つの統合テスト（有効ケース、ラウンドトリップ、エラーケース）
+  - **ベンチマーク実装**:
+    - `sudoku-solver/benches/backtrack.rs`: `find_best_assumption` 単体（empty/sparse/mid/dense の4パターン）
+    - `sudoku-solver/benches/solver.rs`: TechniqueSolver と BacktrackSolver のエンドツーエンド
+    - `sudoku-generator/benches/generator.rs`: PuzzleGenerator のエンドツーエンド（3つの固定seed）
+  - **テストデータ**: 固定seedから生成した複数の難易度のパズルを使用
+  - 各ベンチマークファイルに包括的なドキュメントコメントを追加
+  - コミット: [745d274](https://github.com/gifnksm/sudoku/commit/745d274) - feat: add benchmarks for solver and generator
+
+- ACTION-2 タスク5完了（測定・分析）とACTION-3決定
+  - **ベンチマーク結果**:
+    - `find_best_assumption`: 約50ns（盤面状態による差はほぼなし）
+    - TechniqueSolver: sparse(52.8µs) → dense(6.8µs)
+    - BacktrackSolver: 唯一解パズルはTechniqueSolverとほぼ同等、複数解探索(100個)で約3ms
+    - PuzzleGenerator: 約2ms（seedにより1.9-2.2ms）
+  - **分析結果**:
+    - `find_best_assumption` は非常に高速で、双方向マッピング最適化の効果は期待できない
+    - 盤面状態による性能差はほぼなし（誤差範囲内）
+    - 全体のボトルネックではない（ソルバー全体は数十µs〜数ms）
+  - **ACTION-3 の判断**: **実施不要**
+    - 理由: 10%以上の改善は期待できず、メモリ増加とコード複雑化に見合わない
+    - ACTION-3 のステータスを [不要] に更新
+  - action.md に詳細な測定結果と分析を記録
+  - コミット: [未コミット] - docs(review): Complete ACTION-2 and decide ACTION-3 is not needed

@@ -39,7 +39,7 @@
 
 #### 問題 1-1: `CandidateGrid` の digit-centric 表現の非対称性
 
-- **ステータス**: [✓] 対応方針決定
+- **ステータス**: [✓] 完了（実施不要と判断）
 - **指摘内容**: `CandidateGrid` は digit → positions のマッピングを持つが、position → candidates のクエリ（`candidates_at`）がO(9) の線形走査になる
 - **確認結果**:
   - 事実確認:
@@ -64,7 +64,9 @@
   - digit-centric設計の意図:
     - Hidden Single検出の高速化（`row_mask`, `col_mask`, `box_mask`がO(1)）
     - メモリ効率（単方向マッピングのみ）
-  - パフォーマンス測定: 未実施（ベンチマーク追加が必要）
+  - パフォーマンス測定: 完了（2026-01-23）
+    - `find_best_assumption`: 約50ns（盤面状態による差はほぼなし）
+    - 双方向マッピングでの改善効果は10%未満と判断
 - **対応方針**:
   1. **前提作業**: `find_best_assumption` の共通化
      - **決定**: `sudoku-solver/src/backtrack.rs` に新規モジュールを作成し、`pub mod backtrack` として公開
@@ -81,6 +83,16 @@
   5. 必要と判断された場合、双方向マッピング（`cell_candidates: Array81<DigitSet, PositionSemantics>`）を実装
   6. `place`/`remove_candidate`で同期を取る（propagation がない方が実装が簡単）
   7. ベンチマークで効果測定
+- **実施結果**（2026-01-23）:
+  - ACTION-2 完了: ベンチマークを追加し、パフォーマンス測定を実施（commit 745d274）
+  - ベンチマーク結果:
+    - `find_best_assumption`: 約50ns（empty: 50.2ns, sparse: 49.2ns, mid: 49.6ns, dense: 49.5ns）
+    - 盤面の埋まり具合による性能差はほぼなし（誤差範囲内）
+    - ソルバー全体の実行時間: sparse 52.9µs、mid 15.2µs、dense 6.8µs
+  - **ACTION-3 の判断**: **実施不要**
+    - 理由: `find_best_assumption` は約50ns と非常に高速で、双方向マッピング最適化で10%以上の改善は期待できない
+    - メモリ増加（+91バイト）とコード複雑化（双方向同期）に見合わない
+    - 全体のボトルネックではない（50ns の最適化は全体への影響が小さい）
 - **優先度**: 高（初期段階なので破壊的変更の影響が小さい。パズル生成の性能に効く）
 - **依存関係**: 問題 2-1 (完了済み) - Pure Data Structure 化により実装が簡単になる
 - **関連Issue/PR**:
@@ -89,6 +101,7 @@
   - 実装コスト: メモリ +91バイト、コード複雑度増加（双方向同期）、メンテナンス負担増
   - 呼び出し頻度が想定より低い（`find_best_assumption` のみ）ため、改善効果は限定的な可能性
   - 検討事項の決定完了（2026-01-22）: 詳細は [ACTION-2](./action.md#action-2-ベンチマークの追加) 参照
+  - ベンチマーク測定完了（2026-01-23）: ACTION-2 完了、ACTION-3 は実施不要と判断
 
 **→ 対応: [ACTION-2](./action.md#action-2-ベンチマークの追加), [ACTION-3](./action.md#action-3-双方向マッピングの実装)**
 
