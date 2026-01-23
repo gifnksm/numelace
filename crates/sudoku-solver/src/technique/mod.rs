@@ -16,8 +16,42 @@ mod naked_single;
 /// Returns all available techniques.
 ///
 /// Techniques are ordered from easiest to hardest.
+/// This list may grow as new techniques are implemented.
 #[must_use]
 pub fn all_techniques() -> Vec<BoxedTechnique> {
+    fundamental_techniques()
+    // Future: add more advanced techniques here
+}
+
+/// Returns the fundamental techniques.
+///
+/// These are the most basic logical techniques for solving Sudoku puzzles:
+/// - **Naked Single**: A cell with only one remaining candidate
+/// - **Hidden Single**: A digit that can only go in one cell within a house
+///
+/// These techniques form the foundation of technique-based solving and are
+/// essential for [`TechniqueSolver`](crate::TechniqueSolver). While more
+/// advanced techniques can provide additional solving power, these Singles
+/// techniques represent the core logical deductions that human solvers
+/// typically apply first.
+///
+/// This set remains stable over time, serving as a consistent baseline for
+/// benchmarking even as more advanced techniques are added to [`all_techniques`].
+///
+/// # Examples
+///
+/// ```
+/// use sudoku_solver::technique;
+///
+/// let techniques = technique::fundamental_techniques();
+/// assert_eq!(techniques.len(), 2);
+/// ```
+///
+/// # See Also
+///
+/// - [`all_techniques`] - Includes all available techniques (may grow over time)
+#[must_use]
+pub fn fundamental_techniques() -> Vec<BoxedTechnique> {
     vec![Box::new(NakedSingle::new()), Box::new(HiddenSingle::new())]
 }
 
