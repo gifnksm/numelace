@@ -852,4 +852,4 @@ ACTION-2 のベンチマーク結果により、以下の理由で実施不要�
     - 理由: 10%以上の改善は期待できず、メモリ増加とコード複雑化に見合わない
     - ACTION-3 のステータスを [不要] に更新
   - action.md に詳細な測定結果と分析を記録
-  - コミット: [未コミット] - docs(review): Complete ACTION-2 and decide ACTION-3 is not needed
+  - コミット: [7f7a182](https://github.com/gifnksm/sudoku/commit/7f7a182) - docs(review): Complete ACTION-2 and decide ACTION-3 is not needed
