@@ -199,7 +199,7 @@ impl TechniqueSolver {
     /// # See Also
     ///
     /// - [`with_all_techniques`](Self::with_all_techniques) - Use all available techniques
-    /// - [`with_techniques`](Self::with_techniques) - Use a custom set of techniques
+    /// - [`new`](Self::new) - Use a custom set of techniques
     #[must_use]
     pub fn with_fundamental_techniques() -> Self {
         let techniques = technique::fundamental_techniques();

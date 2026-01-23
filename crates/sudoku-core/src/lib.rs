@@ -158,7 +158,7 @@
 //! - Compile-time type safety (prevents mixing incompatible index types)
 //! - Generic implementations shared across all semantics (no code duplication)
 //! - Self-documenting code (type signature reveals purpose)
-//! - Zero runtime cost ([`PhantomData`], inlined arithmetic)
+//! - Zero runtime cost ([`PhantomData`](std::marker::PhantomData), inlined arithmetic)
 //!
 //! # Examples
 //!
