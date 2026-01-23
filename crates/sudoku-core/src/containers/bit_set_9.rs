@@ -629,8 +629,13 @@ mod tests {
         ];
         for (a, b, expected) in cases {
             assert_eq!(a.union(b), expected);
+            assert_eq!(b.union(a), expected); // Commutativity
             assert_eq!(a | b, expected);
         }
+
+        // Associativity
+        let (a, b, c) = (set![0, 1], set![2, 3], set![4, 5]);
+        assert_eq!((a | b) | c, a | (b | c));
     }
 
     #[test]
@@ -644,8 +649,13 @@ mod tests {
         ];
         for (a, b, expected) in cases {
             assert_eq!(a.intersection(b), expected);
+            assert_eq!(b.intersection(a), expected); // Commutativity
             assert_eq!(a & b, expected);
         }
+
+        // Associativity
+        let (a, b, c) = (set![0, 1, 2, 3], set![1, 2, 3, 4], set![2, 3, 4, 5]);
+        assert_eq!((a & b) & c, a & (b & c));
     }
 
     #[test]
@@ -669,6 +679,7 @@ mod tests {
         ];
         for (a, b, expected) in cases {
             assert_eq!(a.symmetric_difference(b), expected);
+            assert_eq!(b.symmetric_difference(a), expected); // Commutativity
             assert_eq!(a ^ b, expected);
         }
     }
@@ -680,6 +691,9 @@ mod tests {
         assert_eq!(!set, set![1, 3, 5, 7]);
         assert_eq!(!TestSet::EMPTY, TestSet::FULL);
         assert_eq!(!TestSet::FULL, TestSet::EMPTY);
+
+        // Double negation
+        assert_eq!(!!set, set);
     }
 
     #[test]

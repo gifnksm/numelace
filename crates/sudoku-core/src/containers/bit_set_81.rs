@@ -586,8 +586,17 @@ mod tests {
         for (a, b, expected_len) in cases {
             let union = a.union(b);
             assert_eq!(union.len(), expected_len);
+            assert_eq!(b.union(a), union); // Commutativity
             assert_eq!(a | b, union);
         }
+
+        // Associativity
+        let (a, b, c) = (
+            set![(0, 0), (1, 1)],
+            set![(2, 2), (3, 3)],
+            set![(4, 4), (5, 5)],
+        );
+        assert_eq!((a | b) | c, a | (b | c));
     }
 
     #[test]
@@ -598,10 +607,19 @@ mod tests {
         let intersection = set1.intersection(set2);
         assert_eq!(intersection.len(), 1);
         assert!(intersection.contains((1, 1)));
+        assert_eq!(set2.intersection(set1), intersection); // Commutativity
         assert_eq!(set1 & set2, intersection);
 
         let empty_result = set![(0, 0)].intersection(set![(1, 1)]);
         assert_eq!(empty_result.len(), 0);
+
+        // Associativity
+        let (a, b, c) = (
+            set![(0, 0), (1, 1), (2, 2)],
+            set![(1, 1), (2, 2), (3, 3)],
+            set![(2, 2), (3, 3), (4, 4)],
+        );
+        assert_eq!((a & b) & c, a & (b & c));
     }
 
     #[test]
@@ -622,6 +640,7 @@ mod tests {
         assert_eq!(sym_diff.len(), 2);
         assert!(sym_diff.contains((0, 0)));
         assert!(sym_diff.contains((2, 2)));
+        assert_eq!(set2.symmetric_difference(set1), sym_diff); // Commutativity
         assert_eq!(set1 ^ set2, sym_diff);
     }
 
@@ -636,6 +655,9 @@ mod tests {
 
         assert_eq!(!TestSet::EMPTY, TestSet::FULL);
         assert_eq!(!TestSet::FULL, TestSet::EMPTY);
+
+        // Double negation
+        assert_eq!(!!set, set);
     }
 
     #[test]
