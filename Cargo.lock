@@ -3052,6 +3052,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sudoku-game"
+version = "0.1.0"
+dependencies = [
+ "derive_more",
+ "sudoku-core",
+ "sudoku-generator",
+ "sudoku-solver",
+]
+
+[[package]]
 name = "sudoku-generator"
 version = "0.1.0"
 dependencies = [

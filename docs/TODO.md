@@ -34,10 +34,10 @@ This file tracks tasks that must be done to achieve the project goals.
 ## sudoku-game: Game Logic
 
 - [x] Create design document at `docs/design/sudoku-game.md`
-- [ ] Create `crates/sudoku-game` crate and implement minimum viable game logic
+- [x] Create `crates/sudoku-game` crate and implement minimum viable game logic
   - Game state management, basic operations, completion detection
   - See design document for detailed requirements
-- [ ] Write unit tests and doctests
+- [x] Write unit tests and doctests
 - [ ] On completion:
   - [ ] Preserve essential design decisions in crate documentation and ARCHITECTURE.md
   - [ ] Move future enhancement ideas to ARCHITECTURE.md
