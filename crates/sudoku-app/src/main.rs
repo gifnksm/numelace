@@ -10,6 +10,7 @@ use eframe::{
 use crate::app::SudokuApp;
 
 mod app;
+mod ui;
 
 fn main() -> eframe::Result<()> {
     let options = NativeOptions {
