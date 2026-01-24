@@ -13,10 +13,11 @@ use std::sync::Arc;
 use eframe::{
     App, CreationContext, Frame,
     egui::{
-        Button, CentralPanel, Context, Grid, InputState, Key, RichText, Stroke, StrokeKind, Ui,
-        Vec2,
+        self, Align2, Button, CentralPanel, Context, FontId, Grid, InputState, Key, RichText,
+        Stroke, StrokeKind, Ui, Vec2,
     },
 };
+use egui_extras::{Size, StripBuilder};
 use sudoku_core::{Digit, Position};
 use sudoku_game::{CellState, Game};
 use sudoku_generator::PuzzleGenerator;
@@ -55,6 +56,18 @@ impl SudokuApp {
         self.selected_cell = None;
     }
 
+    fn set_digit(&mut self, digit: Digit) {
+        if let Some(pos) = self.selected_cell {
+            let _ = self.game.set_digit(pos, digit);
+        }
+    }
+
+    fn remove_digit(&mut self) {
+        if let Some(pos) = self.selected_cell {
+            let _ = self.game.remove_digit(pos);
+        }
+    }
+
     fn handle_input(&mut self, i: &InputState) {
         const DEFAULT_POSITION: Position = Position::new(0, 0);
         if (i.modifiers.ctrl || i.modifiers.command) && i.key_pressed(Key::N) {
@@ -87,27 +100,26 @@ impl SudokuApp {
         if i.key_pressed(Key::Escape) {
             self.selected_cell = None;
         }
-        if let Some(pos) = self.selected_cell {
-            let pairs = [
-                (Key::Delete, None),
-                (Key::Backspace, None),
-                (Key::Num1, Some(Digit::D1)),
-                (Key::Num2, Some(Digit::D2)),
-                (Key::Num3, Some(Digit::D3)),
-                (Key::Num4, Some(Digit::D4)),
-                (Key::Num5, Some(Digit::D5)),
-                (Key::Num6, Some(Digit::D6)),
-                (Key::Num7, Some(Digit::D7)),
-                (Key::Num8, Some(Digit::D8)),
-                (Key::Num9, Some(Digit::D9)),
-            ];
-            for (key, digit) in pairs {
-                if i.key_pressed(key) {
-                    if let Some(digit) = digit {
-                        let _ = self.game.set_digit(pos, digit);
-                    } else {
-                        let _ = self.game.clear_cell(pos);
-                    }
+
+        let pairs = [
+            (Key::Delete, None),
+            (Key::Backspace, None),
+            (Key::Num1, Some(Digit::D1)),
+            (Key::Num2, Some(Digit::D2)),
+            (Key::Num3, Some(Digit::D3)),
+            (Key::Num4, Some(Digit::D4)),
+            (Key::Num5, Some(Digit::D5)),
+            (Key::Num6, Some(Digit::D6)),
+            (Key::Num7, Some(Digit::D7)),
+            (Key::Num8, Some(Digit::D8)),
+            (Key::Num9, Some(Digit::D9)),
+        ];
+        for (key, digit) in pairs {
+            if i.key_pressed(key) {
+                if let Some(digit) = digit {
+                    self.set_digit(digit);
+                } else {
+                    self.remove_digit();
                 }
             }
         }
@@ -125,18 +137,33 @@ impl App for SudokuApp {
         ctx.input(|i| self.handle_input(i));
 
         CentralPanel::default().show(ctx, |ui| {
-            let avail = ui.available_size();
-            let board_size = f32::min((avail.x - 100.0).max(100.0), avail.y);
-            ui.horizontal_top(|ui| {
-                self.draw_grid(ui, board_size);
-                self.draw_sidebar(ui);
-            });
+            StripBuilder::new(ui)
+                .size(Size::relative(0.75))
+                .size(Size::relative(0.25))
+                .horizontal(|mut strip| {
+                    strip.cell(|ui| {
+                        StripBuilder::new(ui)
+                            .size(Size::relative(9.0 / (9.0 + 2.0)))
+                            .size(Size::relative(2.0 / (9.0 + 2.0)))
+                            .vertical(|mut strip| {
+                                strip.cell(|ui| {
+                                    self.draw_grid(ui);
+                                });
+                                strip.cell(|ui| {
+                                    self.draw_keypad(ui);
+                                });
+                            });
+                    });
+                    strip.cell(|ui| {
+                        self.draw_sidebar(ui);
+                    });
+                });
         });
     }
 }
 
 impl SudokuApp {
-    fn draw_grid(&mut self, ui: &mut Ui, board_size: f32) {
+    fn draw_grid(&mut self, ui: &mut Ui) {
         let style = Arc::clone(ui.style());
         let visuals = &style.visuals;
         let border_color = visuals.widgets.inactive.fg_stroke.color;
@@ -149,6 +176,8 @@ impl SudokuApp {
         let thin_border = Stroke::new(1.0, border_color);
         let thick_border = Stroke::new(3.0, border_color);
         let selected_border = Stroke::new(6.0, border_color);
+
+        let board_size = ui.available_size().min_elem();
         let cell_size = board_size / 9.0;
         let selected_digit = self
             .selected_cell
@@ -228,6 +257,82 @@ impl SudokuApp {
                             thick_border,
                             StrokeKind::Inside,
                         );
+                    }
+                    ui.end_row();
+                }
+            });
+    }
+
+    fn draw_keypad(&mut self, ui: &mut Ui) {
+        #[allow(clippy::enum_glob_use)]
+        use Digit::*;
+        enum ButtonType {
+            Digit(Digit),
+            RemoveDigit,
+        }
+        fn d(d: Digit) -> ButtonType {
+            ButtonType::Digit(d)
+        }
+        fn r() -> ButtonType {
+            ButtonType::RemoveDigit
+        }
+
+        let style = Arc::clone(ui.style());
+        let visuals = &style.visuals;
+        let digit_count_color = visuals.text_color();
+
+        let layout = [
+            [d(D1), d(D2), d(D3), d(D4), d(D5)],
+            [d(D6), d(D7), d(D8), d(D9), r()],
+        ];
+
+        let x_padding = 5.0;
+        let y_padding = 5.0;
+        let avail = ui.available_size();
+        let button_size = f32::min(
+            (avail.x - 4.0 * x_padding) / 5.0,
+            (avail.y - y_padding) / 2.0,
+        );
+        let counts = self.game.decided_digit_count();
+
+        let button_enabled = self
+            .selected_cell
+            .is_some_and(|pos| !self.game.cell(pos).is_given());
+
+        Grid::new(ui.id().with("keypad_grid"))
+            .spacing((x_padding, y_padding))
+            .show(ui, |ui| {
+                for row in &layout {
+                    for button_type in row {
+                        match button_type {
+                            ButtonType::Digit(digit) => {
+                                let text = RichText::new(digit.as_str()).size(button_size * 0.8);
+                                let button = Button::new(text).min_size(Vec2::splat(button_size));
+                                let button = ui
+                                    .add_enabled(button_enabled, button)
+                                    .on_hover_text("Set digit");
+                                if button.clicked() {
+                                    self.set_digit(*digit);
+                                }
+                                ui.painter().text(
+                                    button.rect.right_top() + egui::vec2(-4.0, 2.0),
+                                    Align2::RIGHT_TOP,
+                                    counts[*digit].to_string(),
+                                    FontId::proportional(button_size * 0.25),
+                                    digit_count_color,
+                                );
+                            }
+                            ButtonType::RemoveDigit => {
+                                let text = RichText::new("X").size(button_size * 0.8);
+                                let button = Button::new(text).min_size(Vec2::splat(button_size));
+                                let button = ui
+                                    .add_enabled(button_enabled, button)
+                                    .on_hover_text("Remove digit");
+                                if button.clicked() {
+                                    self.remove_digit();
+                                }
+                            }
+                        }
                     }
                     ui.end_row();
                 }

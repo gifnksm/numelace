@@ -55,7 +55,11 @@
 //! ```
 //!
 
-use sudoku_core::{CandidateGrid, Digit, Position, containers::Array81, index::PositionSemantics};
+use sudoku_core::{
+    CandidateGrid, Digit, Position,
+    containers::{Array9, Array81},
+    index::{DigitSemantics, PositionSemantics},
+};
 use sudoku_generator::GeneratedPuzzle;
 
 /// Errors that can occur during game operations.
@@ -272,16 +276,31 @@ impl Game {
     /// game.set_digit(empty_pos, Digit::D5).unwrap();
     ///
     /// // Clear it
-    /// game.clear_cell(empty_pos).unwrap();
+    /// game.remove_digit(empty_pos).unwrap();
     /// assert!(game.cell(empty_pos).is_empty());
     /// ```
-    pub fn clear_cell(&mut self, pos: Position) -> Result<(), GameError> {
+    pub fn remove_digit(&mut self, pos: Position) -> Result<(), GameError> {
         match &mut self.grid[pos] {
             CellState::Given(_) => return Err(GameError::CannotModifyGivenCell),
             cell @ CellState::Filled(_) => *cell = CellState::Empty,
             CellState::Empty => {}
         }
         Ok(())
+    }
+
+    /// Returns the count of each decided digit (given or filled) on the board.
+    ///
+    /// The returned array is indexed by [`Digit`] and includes both given and
+    /// player-filled cells.
+    #[must_use]
+    pub fn decided_digit_count(&self) -> Array9<usize, DigitSemantics> {
+        let mut counts = Array9::from_array([0; 9]);
+        for pos in Position::ALL {
+            if let Some(digit) = self.cell(pos).as_digit() {
+                counts[digit] += 1;
+            }
+        }
+        counts
     }
 }
 
@@ -440,7 +459,7 @@ mod tests {
 
         // Cannot clear given cell
         assert!(matches!(
-            game.clear_cell(given_pos),
+            game.remove_digit(given_pos),
             Err(GameError::CannotModifyGivenCell)
         ));
     }
@@ -462,12 +481,43 @@ mod tests {
         game.set_digit(empty_pos, Digit::D5).unwrap();
         assert!(game.cell(empty_pos).is_filled());
 
-        game.clear_cell(empty_pos).unwrap();
+        game.remove_digit(empty_pos).unwrap();
         assert!(game.cell(empty_pos).is_empty());
 
         // Clear empty cell is no-op
-        assert!(game.clear_cell(empty_pos).is_ok());
+        assert!(game.remove_digit(empty_pos).is_ok());
         assert!(game.cell(empty_pos).is_empty());
+    }
+
+    #[test]
+    fn test_decided_digit_count_counts_given_and_filled() {
+        use sudoku_solver::TechniqueSolver;
+        let solver = TechniqueSolver::with_all_techniques();
+        let generator = PuzzleGenerator::new(&solver);
+        let puzzle = generator.generate();
+        let mut game = Game::new(puzzle);
+
+        let empty_positions: Vec<Position> = Position::ALL
+            .iter()
+            .copied()
+            .filter(|&pos| game.cell(pos).is_empty())
+            .collect();
+
+        let first = empty_positions
+            .first()
+            .copied()
+            .expect("puzzle has empty cells");
+        let second = empty_positions
+            .get(1)
+            .copied()
+            .expect("puzzle has at least two empty cells");
+
+        let d5_before = game.decided_digit_count()[Digit::D5];
+        game.set_digit(first, Digit::D5).unwrap();
+        game.set_digit(second, Digit::D5).unwrap();
+
+        let counts = game.decided_digit_count();
+        assert_eq!(counts[Digit::D5], d5_before + 2);
     }
 
     #[test]

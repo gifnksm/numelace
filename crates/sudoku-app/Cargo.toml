@@ -13,6 +13,7 @@ path = "src/main.rs"
 
 [dependencies]
 eframe.workspace = true
+egui_extras.workspace = true
 sudoku-core.workspace = true
 sudoku-game.workspace = true
 sudoku-generator.workspace = true
