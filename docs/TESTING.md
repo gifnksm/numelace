@@ -1,5 +1,11 @@
 # Testing Guidelines
 
+## TL;DR
+
+- Test human-written logic and tricky edge cases.
+- Avoid over-testing obvious behavior or derived traits.
+- Keep tests small, fast, and focused.
+
 ## Purpose
 
 This document provides guidelines for writing effective tests in this project, with a focus on avoiding over-testing and maintaining high-quality test coverage. It captures lessons learned from actual test reduction efforts and Rust-specific considerations.

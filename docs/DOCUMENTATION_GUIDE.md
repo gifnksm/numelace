@@ -2,6 +2,12 @@
 
 This guide explains how to write and structure documentation for this project.
 
+## TL;DR
+
+- Start with Overview, then Design/Architecture, then Examples.
+- Keep doc comments in complete sentences with runnable examples.
+- Link to related items using `[ItemName]`.
+
 ## Crate-level Documentation (lib.rs)
 
 ### Standard Structure
