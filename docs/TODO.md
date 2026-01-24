@@ -54,16 +54,16 @@ This file tracks tasks that must be done to achieve the project goals.
 
 - [x] Create design document at `docs/design/sudoku-app.md`
   - Consider aspects such as: UI layout, user interaction flow, egui/eframe integration, desktop/WASM build configuration, state management, etc.
-- [ ] Add specific implementation tasks to this TODO based on design decisions
-  - [ ] Update `crates/sudoku-app/Cargo.toml` dependencies to include `sudoku-game`, `sudoku-generator`, and `sudoku-solver`
-  - [ ] Add app state: `Game`, selected cell, and optional status message
-  - [ ] Implement new game creation (create solver, generator, puzzle, and `Game`)
-  - [ ] Render 9x9 board with clear 3x3 boundaries
-  - [ ] Implement cell selection (mouse click)
-  - [ ] Implement keyboard input: digits 1-9, Backspace/Delete, arrow navigation, optional `Esc` to clear selection
-  - [ ] Show status text for in-progress vs solved state
-  - [ ] Add window sizing: initial size, resizable, and minimum size constraints
-  - [ ] Extract input handling into small methods for testability (optional)
+- [x] Add specific implementation tasks to this TODO based on design decisions
+  - [x] Update `crates/sudoku-app/Cargo.toml` dependencies to include `sudoku-game`, `sudoku-generator`, and `sudoku-solver`
+  - [x] Add app state: `Game`, selected cell, and optional status message
+  - [x] Implement new game creation (create solver, generator, puzzle, and `Game`)
+  - [x] Render 9x9 board with clear 3x3 boundaries
+  - [x] Implement cell selection (mouse click)
+  - [x] Implement keyboard input: digits 1-9, Backspace/Delete, arrow navigation, optional `Esc` to clear selection
+  - [x] Show status text for in-progress vs solved state
+  - [x] Add window sizing: initial size, resizable, and minimum size constraints
+  - [x] Extract input handling into small methods for testability (optional)
 - [ ] On completion:
   - [ ] Preserve essential design decisions in crate documentation and ARCHITECTURE.md
   - [ ] Move future enhancement ideas to ARCHITECTURE.md

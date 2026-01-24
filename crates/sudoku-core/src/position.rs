@@ -151,6 +151,120 @@ impl Position {
         Self { x, y }
     }
 
+    /// Returns a new position with the given column (x), preserving the row (y).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `x` is greater than or equal to 9.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::Position;
+    ///
+    /// let pos = Position::new(2, 4);
+    /// assert_eq!(pos.with_x(7), Position::new(7, 4));
+    /// ```
+    #[must_use]
+    pub const fn with_x(self, x: u8) -> Self {
+        Self::new(x, self.y())
+    }
+
+    /// Returns a new position with the given row (y), preserving the column (x).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `y` is greater than or equal to 9.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::Position;
+    ///
+    /// let pos = Position::new(2, 4);
+    /// assert_eq!(pos.with_y(7), Position::new(2, 7));
+    /// ```
+    #[must_use]
+    pub const fn with_y(self, y: u8) -> Self {
+        Self::new(self.x(), y)
+    }
+
+    /// Returns the position one row above, or `None` if already at the top edge.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::Position;
+    ///
+    /// assert_eq!(Position::new(3, 5).up(), Some(Position::new(3, 4)));
+    /// assert_eq!(Position::new(3, 0).up(), None);
+    /// ```
+    #[must_use]
+    pub const fn up(self) -> Option<Self> {
+        if self.y > 0 {
+            Some(self.with_y(self.y - 1))
+        } else {
+            None
+        }
+    }
+
+    /// Returns the position one row below, or `None` if already at the bottom edge.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::Position;
+    ///
+    /// assert_eq!(Position::new(3, 5).down(), Some(Position::new(3, 6)));
+    /// assert_eq!(Position::new(3, 8).down(), None);
+    /// ```
+    #[must_use]
+    pub const fn down(self) -> Option<Self> {
+        if self.y < 8 {
+            Some(self.with_y(self.y + 1))
+        } else {
+            None
+        }
+    }
+
+    /// Returns the position one column to the left, or `None` if already at the left edge.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::Position;
+    ///
+    /// assert_eq!(Position::new(3, 5).left(), Some(Position::new(2, 5)));
+    /// assert_eq!(Position::new(0, 5).left(), None);
+    /// ```
+    #[must_use]
+    pub const fn left(self) -> Option<Self> {
+        if self.x > 0 {
+            Some(self.with_x(self.x - 1))
+        } else {
+            None
+        }
+    }
+
+    /// Returns the position one column to the right, or `None` if already at the right edge.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::Position;
+    ///
+    /// assert_eq!(Position::new(3, 5).right(), Some(Position::new(4, 5)));
+    /// assert_eq!(Position::new(8, 5).right(), None);
+    /// ```
+    #[must_use]
+    pub const fn right(self) -> Option<Self> {
+        if self.x < 8 {
+            Some(self.with_x(self.x + 1))
+        } else {
+            None
+        }
+    }
+
     /// Creates a position from box index and cell index within that box.
     ///
     /// # Panics
@@ -214,6 +328,12 @@ mod tests {
         let pos = Position::new(3, 5);
         assert_eq!(pos.x(), 3);
         assert_eq!(pos.y(), 5);
+        assert_eq!(pos.with_x(1), Position::new(1, 5));
+        assert_eq!(pos.with_y(7), Position::new(3, 7));
+        assert_eq!(pos.up(), Some(Position::new(3, 4)));
+        assert_eq!(pos.down(), Some(Position::new(3, 6)));
+        assert_eq!(pos.left(), Some(Position::new(2, 5)));
+        assert_eq!(pos.right(), Some(Position::new(4, 5)));
 
         assert_eq!(Position::new(0, 0).box_index(), 0);
         assert_eq!(Position::new(4, 4).box_index(), 4);

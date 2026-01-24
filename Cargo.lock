@@ -3041,6 +3041,9 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "sudoku-core",
+ "sudoku-game",
+ "sudoku-generator",
+ "sudoku-solver",
 ]
 
 [[package]]

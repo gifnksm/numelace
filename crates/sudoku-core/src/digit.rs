@@ -134,6 +134,33 @@ impl Digit {
     pub const fn value(&self) -> u8 {
         *self as u8
     }
+
+    /// Returns the string representation of this digit (\"1\"-\"9\").
+    ///
+    /// This is useful for UI rendering without allocating.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sudoku_core::Digit;
+    ///
+    /// assert_eq!(Digit::D1.as_str(), "1");
+    /// assert_eq!(Digit::D9.as_str(), "9");
+    /// ```
+    #[must_use]
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Digit::D1 => "1",
+            Digit::D2 => "2",
+            Digit::D3 => "3",
+            Digit::D4 => "4",
+            Digit::D5 => "5",
+            Digit::D6 => "6",
+            Digit::D7 => "7",
+            Digit::D8 => "8",
+            Digit::D9 => "9",
+        }
+    }
 }
 
 impl Display for Digit {
