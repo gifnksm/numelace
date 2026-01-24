@@ -6,8 +6,9 @@ Casual backlog for ideas, experiments, and future work. Order is not strict.
 
 ### UI / UX
 
-- Selection row/column/box highlight
-- Same digit highlight
+- Selection row/column/box highlight ✅
+- Same digit highlight ✅
+- Digit count/tally display (per digit)
 - Light/Dark mode toggle
 - Mouse-only input (number pad/buttons)
 - New Game confirmation dialog
