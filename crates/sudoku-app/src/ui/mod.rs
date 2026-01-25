@@ -1,12 +1,12 @@
 use sudoku_core::{Digit, Position};
 
-use crate::app::HighlightConfig;
+use crate::app::{HighlightConfig, ThemeConfig};
 
+pub mod dialogs;
 pub mod game_screen;
 pub mod grid;
 pub mod input;
 pub mod keypad;
-pub mod dialogs;
 pub mod sidebar;
 
 #[derive(Debug, Clone)]
@@ -19,6 +19,7 @@ pub enum Action {
     RequestNewGameConfirm,
     NewGame,
     UpdateHighlightConfig(HighlightConfig),
+    UpdateThemeConfig(ThemeConfig),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

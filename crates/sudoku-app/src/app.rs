@@ -11,7 +11,7 @@
 
 use eframe::{
     App, CreationContext, Frame,
-    egui::{CentralPanel, Context},
+    egui::{CentralPanel, Context, Visuals},
 };
 use sudoku_core::{Digit, Position};
 use sudoku_game::Game;
@@ -28,6 +28,7 @@ pub struct SudokuApp {
     game: Game,
     selected_cell: Option<Position>,
     highlight_config: HighlightConfig,
+    theme_config: ThemeConfig,
     show_new_game_confirm_dialogue: bool,
 }
 
@@ -59,12 +60,29 @@ impl Default for HighlightConfig {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ThemeConfig {
+    pub theme: Theme,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Theme {
+    Light,
+    Dark,
+}
+
 impl SudokuApp {
-    pub fn new(_cc: &CreationContext<'_>) -> Self {
+    pub fn new(cc: &CreationContext<'_>) -> Self {
+        let theme = if cc.egui_ctx.style().visuals.dark_mode {
+            Theme::Dark
+        } else {
+            Theme::Light
+        };
         Self {
             game: new_game(),
             selected_cell: None,
             highlight_config: HighlightConfig::default(),
+            theme_config: ThemeConfig { theme },
             show_new_game_confirm_dialogue: false,
         }
     }
@@ -94,7 +112,7 @@ impl SudokuApp {
         }
     }
 
-    fn apply_action(&mut self, action: Action) {
+    fn apply_action(&mut self, action: Action, ctx: &Context) {
         const DEFAULT_POSITION: Position = Position::new(0, 0);
         match action {
             Action::SelectCell(pos) => {
@@ -130,6 +148,17 @@ impl SudokuApp {
             Action::UpdateHighlightConfig(config) => {
                 self.highlight_config = config;
             }
+            Action::UpdateThemeConfig(config) => {
+                self.theme_config = config;
+                match self.theme_config.theme {
+                    Theme::Light => {
+                        ctx.set_visuals(Visuals::light());
+                    }
+                    Theme::Dark => {
+                        ctx.set_visuals(Visuals::dark());
+                    }
+                }
+            }
         }
     }
 }
@@ -145,7 +174,7 @@ impl App for SudokuApp {
         if !self.show_new_game_confirm_dialogue {
             ctx.input(|i| {
                 for action in ui::input::handle_input(i) {
-                    self.apply_action(action);
+                    self.apply_action(action, ctx);
                 }
             });
         }
@@ -170,7 +199,8 @@ impl App for SudokuApp {
             has_removable_digit,
             self.game.decided_digit_count(),
         );
-        let sidebar_vm = SidebarViewModel::new(self.status(), &self.highlight_config);
+        let sidebar_vm =
+            SidebarViewModel::new(self.status(), &self.highlight_config, &self.theme_config);
         let game_screen_vm = GameScreenViewModel::new(grid_vm, keypad_vm, sidebar_vm);
 
         let mut actions = vec![];
@@ -185,7 +215,7 @@ impl App for SudokuApp {
         });
 
         for action in actions {
-            self.apply_action(action);
+            self.apply_action(action, ctx);
         }
     }
 }

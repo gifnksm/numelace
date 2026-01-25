@@ -1,7 +1,7 @@
 use eframe::egui::{Button, CollapsingHeader, RichText, ScrollArea, Ui};
 
 use crate::{
-    app::{GameStatus, HighlightConfig, RcbHighlight},
+    app::{GameStatus, HighlightConfig, RcbHighlight, ThemeConfig, Theme},
     ui::Action,
 };
 
@@ -9,13 +9,19 @@ use crate::{
 pub struct SidebarViewModel<'a> {
     status: GameStatus,
     highlight_config: &'a HighlightConfig,
+    theme_config: &'a ThemeConfig,
 }
 
 impl<'a> SidebarViewModel<'a> {
-    pub fn new(status: GameStatus, highlight_config: &'a HighlightConfig) -> Self {
+    pub fn new(
+        status: GameStatus,
+        highlight_config: &'a HighlightConfig,
+        theme_config: &'a ThemeConfig,
+    ) -> Self {
         Self {
             status,
             highlight_config,
+            theme_config,
         }
     }
 }
@@ -68,6 +74,25 @@ pub fn show(ui: &mut Ui, vm: &SidebarViewModel) -> Vec<Action> {
                         actions.push(Action::UpdateHighlightConfig(hlc));
                     }
                 });
+
+            let mut theme_config = vm.theme_config.clone();
+            let mut theme_changed = false;
+            CollapsingHeader::new("Appearance settings")
+                .default_open(true)
+                .show(ui, |ui| {
+                    ui.label(RichText::new("Theme"));
+                    ui.indent("theme", |ui| {
+                        theme_changed |= ui
+                            .radio_value(&mut theme_config.theme, Theme::Light, "Light")
+                            .changed();
+                        theme_changed |= ui
+                            .radio_value(&mut theme_config.theme, Theme::Dark, "Dark")
+                            .changed();
+                    });
+                });
+            if theme_changed {
+                actions.push(Action::UpdateThemeConfig(theme_config));
+            }
         });
     });
     actions
