@@ -1,19 +1,29 @@
 use eframe::egui::Ui;
 use egui_extras::{Size, StripBuilder};
-use sudoku_core::Position;
-use sudoku_game::Game;
 
 use crate::{
     app::GameStatus,
-    ui::{self, Action},
+    ui::{self, Action, grid::GridViewModel, keypad::KeypadViewModel},
 };
 
-pub fn show(
-    ui: &mut Ui,
-    game: &Game,
+#[derive(Debug, Clone)]
+pub struct GameScreenViewModel<'a> {
+    grid_vm: GridViewModel<'a>,
+    keypad_vm: KeypadViewModel,
     status: GameStatus,
-    selected_cell: Option<Position>,
-) -> Vec<Action> {
+}
+
+impl<'a> GameScreenViewModel<'a> {
+    pub fn new(grid_vm: GridViewModel<'a>, keypad_vm: KeypadViewModel, status: GameStatus) -> Self {
+        Self {
+            grid_vm,
+            keypad_vm,
+            status,
+        }
+    }
+}
+
+pub fn show(ui: &mut Ui, vm: &GameScreenViewModel<'_>) -> Vec<Action> {
     let mut actions = vec![];
     StripBuilder::new(ui)
         .size(Size::relative(0.75))
@@ -25,15 +35,15 @@ pub fn show(
                     .size(Size::relative(2.0 / (9.0 + 2.0)))
                     .vertical(|mut strip| {
                         strip.cell(|ui| {
-                            actions.extend(&super::grid::show(ui, game, selected_cell));
+                            actions.extend(&super::grid::show(ui, &vm.grid_vm));
                         });
                         strip.cell(|ui| {
-                            actions.extend(&super::keypad::show(ui, game, selected_cell));
+                            actions.extend(&super::keypad::show(ui, &vm.keypad_vm));
                         });
                     });
             });
             strip.cell(|ui| {
-                actions.extend(&ui::sidebar::show(ui, status));
+                actions.extend(&ui::sidebar::show(ui, vm.status));
             });
         });
     actions

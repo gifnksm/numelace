@@ -18,7 +18,10 @@ use sudoku_game::Game;
 use sudoku_generator::PuzzleGenerator;
 use sudoku_solver::TechniqueSolver;
 
-use crate::ui::{self, Action, MoveDirection};
+use crate::ui::{
+    self, Action, MoveDirection, game_screen::GameScreenViewModel, grid::GridViewModel,
+    keypad::KeypadViewModel,
+};
 
 #[derive(Debug)]
 pub struct SudokuApp {
@@ -113,10 +116,23 @@ impl App for SudokuApp {
             }
         });
 
+        let can_set_digit = self
+            .selected_cell
+            .is_some_and(|pos| !self.game.cell(pos).is_given());
+        let selected_digit = self
+            .selected_cell
+            .and_then(|pos| self.game.cell(pos).as_digit());
+        let grid_vm = GridViewModel::new(&self.game, self.selected_cell, selected_digit);
+        let keypad_vm = KeypadViewModel::new(can_set_digit, self.game.decided_digit_count());
+        let game_screen_vm = GameScreenViewModel::new(grid_vm, keypad_vm, self.status());
+
+        let mut actions = vec![];
         CentralPanel::default().show(ctx, |ui| {
-            for action in ui::game_screen::show(ui, &self.game, self.status(), self.selected_cell) {
-                self.apply_action(action);
-            }
+            actions = ui::game_screen::show(ui, &game_screen_vm);
         });
+
+        for action in actions {
+            self.apply_action(action);
+        }
     }
 }

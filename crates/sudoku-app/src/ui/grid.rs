@@ -1,30 +1,106 @@
 use std::sync::Arc;
 
-use eframe::egui::{Button, Grid, RichText, Stroke, StrokeKind, Ui, Vec2};
-use sudoku_core::Position;
+use eframe::egui::{Button, Color32, Grid, RichText, Stroke, StrokeKind, Ui, Vec2, Visuals};
+use sudoku_core::{Digit, Position};
 use sudoku_game::{CellState, Game};
 
 use crate::ui::Action;
 
-pub fn show(ui: &mut Ui, game: &Game, selected_cell: Option<Position>) -> Vec<Action> {
+#[derive(Debug, Clone)]
+pub struct GridViewModel<'a> {
+    game: &'a Game,
+    selected_cell: Option<Position>,
+    selected_digit: Option<Digit>,
+}
+
+impl<'a> GridViewModel<'a> {
+    pub fn new(
+        game: &'a Game,
+        selected_cell: Option<Position>,
+        selected_digit: Option<Digit>,
+    ) -> Self {
+        Self {
+            game,
+            selected_cell,
+            selected_digit,
+        }
+    }
+
+    fn cell_highlight(&self, cell_pos: Position) -> CellHighlight {
+        let cell_digit = self.game.cell(cell_pos).as_digit();
+        if Some(cell_pos) == self.selected_cell {
+            CellHighlight::Selected
+        } else if self.selected_digit.is_some_and(|d| Some(d) == cell_digit) {
+            CellHighlight::SameDigit
+        } else if self
+            .selected_cell
+            .is_some_and(|p| is_same_home(p, cell_pos))
+        {
+            CellHighlight::SameHome
+        } else {
+            CellHighlight::None
+        }
+    }
+
+    fn cell_text(&self, pos: Position, visuals: &Visuals) -> RichText {
+        match self.game.cell(pos) {
+            CellState::Given(digit) => {
+                RichText::new(digit.as_str()).color(visuals.strong_text_color())
+            }
+            CellState::Filled(digit) => RichText::new(digit.as_str()).color(visuals.text_color()),
+            CellState::Empty => RichText::new(""),
+        }
+    }
+
+    fn inactive_border_color(visuals: &Visuals) -> Color32 {
+        visuals.widgets.inactive.fg_stroke.color
+    }
+
+    fn grid_thick_border(visuals: &Visuals) -> Stroke {
+        Stroke::new(3.0, Self::inactive_border_color(visuals))
+    }
+}
+
+fn is_same_home(pos1: Position, pos2: Position) -> bool {
+    pos1.x() == pos2.x() || pos1.y() == pos2.y() || pos1.box_index() == pos2.box_index()
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CellHighlight {
+    Selected,
+    SameDigit,
+    SameHome,
+    None,
+}
+
+impl CellHighlight {
+    fn fill_color(self, visuals: &Visuals) -> Color32 {
+        match self {
+            Self::Selected | CellHighlight::SameDigit => visuals.selection.bg_fill,
+            Self::SameHome => visuals.widgets.hovered.bg_fill,
+            Self::None => visuals.text_edit_bg_color(),
+        }
+    }
+
+    fn border(self, visuals: &Visuals) -> Stroke {
+        match self {
+            Self::Selected => Stroke::new(6.0, visuals.selection.stroke.color),
+            Self::SameDigit => Stroke::new(2.0, visuals.selection.stroke.color),
+            Self::SameHome => Stroke::new(1.5, visuals.widgets.hovered.fg_stroke.color),
+            Self::None => Stroke::new(1.0, GridViewModel::inactive_border_color(visuals)),
+        }
+    }
+}
+
+pub fn show(ui: &mut Ui, vm: &GridViewModel<'_>) -> Vec<Action> {
     let mut actions = vec![];
 
     let style = Arc::clone(ui.style());
     let visuals = &style.visuals;
-    let border_color = visuals.widgets.inactive.fg_stroke.color;
-    let given_text_color = visuals.strong_text_color();
-    let filled_text_color = visuals.text_color();
-    let selected_bg_color = visuals.selection.bg_fill;
-    let same_home_bg_color = visuals.widgets.hovered.bg_fill;
-    let bg_color = visuals.text_edit_bg_color();
+    let thick_border = GridViewModel::grid_thick_border(visuals);
 
-    let thin_border = Stroke::new(1.0, border_color);
-    let thick_border = Stroke::new(3.0, border_color);
-    let selected_border = Stroke::new(6.0, border_color);
-
-    let board_size = ui.available_size().min_elem();
-    let cell_size = board_size / 9.0;
-    let selected_digit = selected_cell.and_then(|pos| game.cell(pos).as_digit());
+    let grid_size = ui.available_size().min_elem();
+    let cell_size = grid_size / 9.0;
 
     Grid::new(ui.id().with("outer_board"))
         .spacing((0.0, 0.0))
@@ -43,45 +119,16 @@ pub fn show(ui: &mut Ui, game: &Game, selected_cell: Option<Position>) -> Vec<Ac
                                 for cell_col in 0..3 {
                                     let cell_index = cell_row * 3 + cell_col;
                                     let pos = Position::from_box(box_index, cell_index);
-                                    let cell = game.cell(pos);
-                                    let text = match cell {
-                                        CellState::Given(digit) => {
-                                            RichText::new(digit.as_str()).color(given_text_color)
-                                        }
-                                        CellState::Filled(digit) => {
-                                            RichText::new(digit.as_str()).color(filled_text_color)
-                                        }
-                                        CellState::Empty => RichText::new(""),
-                                    }
-                                    .size(cell_size * 0.8);
-
-                                    let mut button =
-                                        Button::new(text).min_size(Vec2::splat(cell_size));
-                                    if selected_cell == Some(pos)
-                                        || (selected_digit.is_some()
-                                            && cell.as_digit() == selected_digit)
-                                    {
-                                        button = button.fill(selected_bg_color);
-                                    } else if selected_cell.is_some_and(|p| {
-                                        p.x() == pos.x()
-                                            || p.y() == pos.y()
-                                            || p.box_index() == pos.box_index()
-                                    }) {
-                                        button = button.fill(same_home_bg_color);
-                                    } else {
-                                        button = button.fill(bg_color);
-                                    }
-
+                                    let text = vm.cell_text(pos, visuals).size(cell_size * 0.8);
+                                    let highlight = vm.cell_highlight(pos);
+                                    let button = Button::new(text)
+                                        .min_size(Vec2::splat(cell_size))
+                                        .fill(highlight.fill_color(visuals));
                                     let button = ui.add(button);
-                                    let border = if selected_cell == Some(pos) {
-                                        selected_border
-                                    } else {
-                                        thin_border
-                                    };
                                     ui.painter().rect_stroke(
                                         button.rect,
                                         0.0,
-                                        border,
+                                        highlight.border(visuals),
                                         StrokeKind::Inside,
                                     );
                                     if button.clicked() {

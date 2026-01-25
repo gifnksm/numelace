@@ -15,7 +15,7 @@ Casual backlog for ideas, experiments, and future work. Order is not strict.
 - Mouse-only input (number pad/buttons) ✅
 - New Game confirmation dialog
 - Feature toggles UI (assist on/off)
-- Rendering refactor (widgets/components)
+- UI ViewModel-based split/refactor ✅
 
 ### Gameplay
 

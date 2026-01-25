@@ -1,12 +1,26 @@
 use std::sync::Arc;
 
 use eframe::egui::{self, Align2, Button, FontId, Grid, RichText, Ui, Vec2};
-use sudoku_core::{Digit, Position};
-use sudoku_game::Game;
+use sudoku_core::{Digit, containers::Array9, index::DigitSemantics};
 
 use crate::ui::Action;
 
-pub fn show(ui: &mut Ui, game: &Game, selected_cell: Option<Position>) -> Vec<Action> {
+#[derive(Debug, Clone)]
+pub struct KeypadViewModel {
+    can_set_digit: bool,
+    decided_digit_count: Array9<usize, DigitSemantics>,
+}
+
+impl KeypadViewModel {
+    pub fn new(can_set_digit: bool, decided_digit_count: Array9<usize, DigitSemantics>) -> Self {
+        Self {
+            can_set_digit,
+            decided_digit_count,
+        }
+    }
+}
+
+pub fn show(ui: &mut Ui, vm: &KeypadViewModel) -> Vec<Action> {
     #[allow(clippy::enum_glob_use)]
     use Digit::*;
     enum ButtonType {
@@ -38,9 +52,8 @@ pub fn show(ui: &mut Ui, game: &Game, selected_cell: Option<Position>) -> Vec<Ac
         (avail.x - 4.0 * x_padding) / 5.0,
         (avail.y - y_padding) / 2.0,
     );
-    let counts = game.decided_digit_count();
-
-    let button_enabled = selected_cell.is_some_and(|pos| !game.cell(pos).is_given());
+    let counts = &vm.decided_digit_count;
+    let button_enabled = vm.can_set_digit;
 
     Grid::new(ui.id().with("keypad_grid"))
         .spacing((x_padding, y_padding))

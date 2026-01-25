@@ -5,6 +5,7 @@ Short, timestamped notes capturing decisions and rationale.
 ## Format
 
 - YYYY-MM-DD: Decision — Rationale
+  - Note: confirm the current date before adding an entry
   - Optional: alternatives considered
   - Optional: links to relevant files/PRs
 
@@ -15,3 +16,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-01-24: Prioritize visibility highlights (row/column/box + same digit) and track digit tally as a backlog item — focus on immediate playability pain points.
 - 2026-01-24: Highlight spec — row/column/box use a neutral tint (not necessarily warm); same digit uses a distinct cool tint; cool wins on overlap; apply same-digit highlight only when the selected cell contains a digit, tuned for dark theme readability.
 - 2026-01-24: Number pad UI — 2x5 layout; digits centered; per-digit filled count in the top-right; counts show filled totals; Del clears selected cell — improves mouse-only input while surfacing progress.
+- 2026-01-25: UI uses ViewModels and `Action` returns for input/interaction — keeps rendering decoupled from game logic and centralizes action application.
