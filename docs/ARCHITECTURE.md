@@ -1,8 +1,8 @@
-# Sudoku Application Architecture
+# Numelace Application Architecture
 
 ## Overview
 
-This document describes the architecture of the Sudoku application, including the crate structure, responsibilities, and dependencies.
+This document describes the architecture of the Numelace application, including the crate structure, responsibilities, and dependencies.
 
 ## Project Goals
 
@@ -14,13 +14,13 @@ This document describes the architecture of the Sudoku application, including th
 ## Crate Structure
 
 ```text
-sudoku/
+numelace/
 ├── crates/
-│   ├── sudoku-core/          # Core data structures and types
-│   ├── sudoku-solver/        # Solving algorithms
-│   ├── sudoku-generator/     # Puzzle generation
-│   ├── sudoku-game/          # Game logic and state management
-│   └── sudoku-app/           # GUI application (desktop, web planned)
+│   ├── numelace-core/          # Core data structures and types
+│   ├── numelace-solver/        # Solving algorithms
+│   ├── numelace-generator/     # Puzzle generation
+│   ├── numelace-game/          # Game logic and state management
+│   └── numelace-app/           # GUI application (desktop, web planned)
 └── docs/
     ├── ARCHITECTURE.md       # This file
     └── TESTING.md            # Testing guidelines
@@ -28,7 +28,7 @@ sudoku/
 
 ## Crate Descriptions
 
-### sudoku-core
+### numelace-core
 
 **Status**: Core data structures implemented ✅
 
@@ -40,11 +40,11 @@ sudoku/
 
 **Design**: Semantics Pattern (type-safe indexing), Two-Grid Architecture (separate grids for solving vs I/O)
 
-See [sudoku-core documentation](../crates/sudoku-core/src/lib.rs) for detailed documentation.
+See [numelace-core documentation](../crates/numelace-core/src/lib.rs) for detailed documentation.
 
 ---
 
-### sudoku-solver
+### numelace-solver
 
 **Status**: Solver framework implemented ⚙️ (techniques: minimal)
 
@@ -56,15 +56,15 @@ See [sudoku-core documentation](../crates/sudoku-core/src/lib.rs) for detailed d
 
 **TODO**: Naked/Hidden Pairs, Pointing Pairs, Box/Line Reduction, X-Wing, etc.
 
-**Dependencies**: `sudoku-core`
+**Dependencies**: `numelace-core`
 
 **Design**: Two-layer architecture (TechniqueSolver for technique-only solving, BacktrackSolver with backtracking fallback)
 
-See [sudoku-solver documentation](../crates/sudoku-solver/src/lib.rs) for detailed documentation.
+See [numelace-solver documentation](../crates/numelace-solver/src/lib.rs) for detailed documentation.
 
 ---
 
-### sudoku-generator
+### numelace-generator
 
 **Status**: Puzzle generation implemented ✅
 
@@ -72,15 +72,15 @@ See [sudoku-solver documentation](../crates/sudoku-solver/src/lib.rs) for detail
 
 **Key Components**: `PuzzleGenerator`, `GeneratedPuzzle`, `PuzzleSeed`
 
-**Dependencies**: `sudoku-core`, `sudoku-solver`, `rand`, `rand_pcg`
+**Dependencies**: `numelace-core`, `numelace-solver`, `rand`, `rand_pcg`
 
 **Design**: Removal method (generate complete solution, then remove cells with verification)
 
-See [sudoku-generator documentation](../crates/sudoku-generator/src/lib.rs) for detailed documentation.
+See [numelace-generator documentation](../crates/numelace-generator/src/lib.rs) for detailed documentation.
 
 ---
 
-### sudoku-game
+### numelace-game
 
 **Status**: Game logic minimally implemented ⚙️
 
@@ -88,25 +88,25 @@ See [sudoku-generator documentation](../crates/sudoku-generator/src/lib.rs) for 
 
 **Key Components**: `Game`, `CellState`, `GameError`
 
-**Dependencies**: `sudoku-core`, `sudoku-generator`
+**Dependencies**: `numelace-core`, `numelace-generator`
 
 **Design**: Permissive validation (allows rule violations), type-safe cell states, accepts any valid solution
 
 **Future Enhancements**: Candidate marks, undo/redo, hints, mistake detection, save/load, timer, statistics
 
-See [sudoku-game documentation](../crates/sudoku-game/src/lib.rs) for detailed documentation.
+See [numelace-game documentation](../crates/numelace-game/src/lib.rs) for detailed documentation.
 
 ---
 
-### sudoku-app
+### numelace-app
 
 **Status**: GUI minimally implemented ⚙️
 
 **Purpose**: Desktop GUI application using egui/eframe (web planned).
 
-**Key Components**: `SudokuApp`, board rendering, keyboard input, selection handling
+**Key Components**: `NumelaceApp`, board rendering, keyboard input, selection handling
 
-**Dependencies**: `sudoku-core`, `sudoku-game`, `sudoku-generator`, `sudoku-solver`, `eframe`
+**Dependencies**: `numelace-core`, `numelace-game`, `numelace-generator`, `numelace-solver`, `eframe`
 
 **Design Notes**:
 
@@ -122,7 +122,7 @@ See [sudoku-game documentation](../crates/sudoku-game/src/lib.rs) for detailed d
 
 ### Crate Separation
 
-**Decision**: `sudoku-core` provides pure data structures only; no solving logic.
+**Decision**: `numelace-core` provides pure data structures only; no solving logic.
 
 **Separation**:
 
@@ -148,15 +148,15 @@ See [sudoku-game documentation](../crates/sudoku-game/src/lib.rs) for detailed d
 ### Dependency Management
 
 ```text
-sudoku-core
+numelace-core
     ↓
-sudoku-solver
+numelace-solver
     ↓
-sudoku-generator
+numelace-generator
     ↓
-sudoku-game
+numelace-game
     ↓
-sudoku-app (desktop, web planned)
+numelace-app (desktop, web planned)
 ```
 
 **Principles**:

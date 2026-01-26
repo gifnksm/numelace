@@ -45,11 +45,11 @@ These section types are not mutually exclusive. A crate can have multiple sectio
 - **Design** for design patterns or decisions (e.g., "Design Decisions", "Semantics Pattern")
 - **Algorithm** for procedural approaches (e.g., "Removal Method")
 
-For example, sudoku-generator uses both "Algorithm" (describes the removal method) and "Design Rationale" (explains why that method was chosen).
+For example, numelace-generator uses both "Algorithm" (describes the removal method) and "Design Rationale" (explains why that method was chosen).
 
 ### Example
 
-See [sudoku-core/src/lib.rs](../crates/sudoku-core/src/lib.rs) for a complete example following this structure.
+See [numelace-core/src/lib.rs](../crates/numelace-core/src/lib.rs) for a complete example following this structure.
 
 ## Documentation Style
 

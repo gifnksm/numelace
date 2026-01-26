@@ -1,0 +1,25 @@
+[package]
+name = "numelace-generator"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+readme.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+rand.workspace = true
+rand_pcg.workspace = true
+numelace-core.workspace = true
+numelace-solver.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+proptest.workspace = true
+
+[[bench]]
+name = "generator"
+harness = false

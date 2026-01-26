@@ -2,7 +2,7 @@
 
 This file tracks tasks that must be done to achieve the project goals.
 
-**Workflow**: For initial component development (applies to sudoku-generator, sudoku-game, sudoku-app):
+**Workflow**: For initial component development (applies to numelace-generator, numelace-game, numelace-app):
 
 1. **Planning Phase**:
    - Create a design document at `docs/design/COMPONENT.md`
@@ -31,12 +31,12 @@ This file tracks tasks that must be done to achieve the project goals.
 
 ---
 
-## sudoku-app: GUI Implementation
+## numelace-app: GUI Implementation
 
-- [x] Create design document at `docs/design/sudoku-app.md`
+- [x] Create design document at `docs/design/numelace-app.md`
   - Consider aspects such as: UI layout, user interaction flow, egui/eframe integration, desktop/WASM build configuration, state management, etc.
 - [x] Add specific implementation tasks to this TODO based on design decisions
-  - [x] Update `crates/sudoku-app/Cargo.toml` dependencies to include `sudoku-game`, `sudoku-generator`, and `sudoku-solver`
+  - [x] Update `crates/numelace-app/Cargo.toml` dependencies to include `numelace-game`, `numelace-generator`, and `numelace-solver`
   - [x] Add app state: `Game`, selected cell, and optional status message
   - [x] Implement new game creation (create solver, generator, puzzle, and `Game`)
   - [x] Render 9x9 board with clear 3x3 boundaries
@@ -57,7 +57,7 @@ This file tracks tasks that must be done to achieve the project goals.
 
 ---
 
-## sudoku-solver: Technique Extensions
+## numelace-solver: Technique Extensions
 
 - [ ] Identify and prioritize additional solving techniques to implement
 - [ ] Implement new techniques with tests and documentation

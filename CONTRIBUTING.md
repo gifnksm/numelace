@@ -8,6 +8,7 @@ This document describes the standards and guidelines for this project.
 - [Documentation Guide](docs/DOCUMENTATION_GUIDE.md) - How to write documentation
 - [Testing Guidelines](docs/TESTING.md) - Testing philosophy and best practices
 - [Tasks and Roadmap](docs/TODO.md) - Current tasks and future plans
+- Naming: use `Numelace` for the app/brand name, and `Sudoku` when referring to the puzzle rules
 
 ## Development Workflow
 

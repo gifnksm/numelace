@@ -1,0 +1,23 @@
+[package]
+name = "numelace-app"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+readme.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "numelace"
+path = "src/main.rs"
+
+[dependencies]
+eframe.workspace = true
+egui_extras.workspace = true
+numelace-core.workspace = true
+numelace-game.workspace = true
+numelace-generator.workspace = true
+numelace-solver.workspace = true
+
+[lints]
+workspace = true

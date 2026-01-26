@@ -1,6 +1,6 @@
-# Sudoku
+# Numelace
 
-A Sudoku application written in Rust, supporting both desktop and web platforms.
+Numelace is a number-place (Sudoku) puzzle application written in Rust, supporting both desktop and web platforms.
 
 ## Project Goals
 
@@ -10,24 +10,24 @@ A Sudoku application written in Rust, supporting both desktop and web platforms.
 
 ## Current Status
 
-- ✅ **sudoku-core**: Core data structures **implemented**
+- ✅ **numelace-core**: Core data structures **implemented**
   - Type-safe grid containers and indexing (CandidateGrid, DigitGrid)
   - Basic types (Digit, Position) with semantic indexing
 
-- ⚙️ **sudoku-solver**: Solver framework **implemented** (techniques: minimal)
+- ⚙️ **numelace-solver**: Solver framework **implemented** (techniques: minimal)
   - Technique-based solver and backtracking solver
   - Current: basic techniques (Naked/Hidden Single)
   - TODO: Naked/Hidden Pairs, Pointing Pairs, Box/Line Reduction, X-Wing, etc.
 
-- ✅ **sudoku-generator**: Puzzle generation **implemented**
+- ✅ **numelace-generator**: Puzzle generation **implemented**
   - Removal method with unique solution guarantee
   - Reproducible generation via seeds
 
-- ⚙️ **sudoku-game**: Game logic **minimally implemented**
+- ⚙️ **numelace-game**: Game logic **minimally implemented**
   - Game session management with basic operations
   - TODO: candidate marks, undo/redo, hints, save/load
 
-- ⚙️ **sudoku-app**: GUI **minimally implemented**
+- ⚙️ **numelace-app**: GUI **minimally implemented**
   - 9x9 board rendering with 3x3 boundaries
   - Mouse selection and keyboard input
   - New game and solved status display
@@ -36,11 +36,11 @@ A Sudoku application written in Rust, supporting both desktop and web platforms.
 
 ```text
 crates/
-├── sudoku-core/       # Core data structures (CandidateGrid, DigitGrid, Digit, Position)
-├── sudoku-solver/     # Solving algorithms (technique-based + backtracking)
-├── sudoku-generator/  # Puzzle generation
-├── sudoku-game/       # Game logic
-└── sudoku-app/        # GUI application (desktop)
+├── numelace-core/       # Core data structures (CandidateGrid, DigitGrid, Digit, Position)
+├── numelace-solver/     # Solving algorithms (technique-based + backtracking)
+├── numelace-generator/  # Puzzle generation
+├── numelace-game/       # Game logic
+└── numelace-app/        # GUI application (desktop)
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for architecture and implementation plans, [docs/TESTING.md](docs/TESTING.md) for testing guidelines, and [docs/TODO.md](docs/TODO.md) for current tasks.

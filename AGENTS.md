@@ -23,6 +23,7 @@ Before proposing changes or plans, read these files in order:
 - Long-lived architectural decisions belong in `docs/ARCHITECTURE.md`.
 - Short-term decisions and rationale belong in `docs/DESIGN_LOG.md`.
 - Follow `docs/TESTING.md` for test scope and `docs/DOCUMENTATION_GUIDE.md` for doc conventions.
+- Use `Numelace` for the app/brand name and `Sudoku` when referring to the puzzle rules.
 
 ## Defaults
 

@@ -2033,6 +2033,57 @@ dependencies = [
 ]
 
 [[package]]
+name = "numelace-app"
+version = "0.1.0"
+dependencies = [
+ "eframe",
+ "egui_extras",
+ "numelace-core",
+ "numelace-game",
+ "numelace-generator",
+ "numelace-solver",
+]
+
+[[package]]
+name = "numelace-core"
+version = "0.1.0"
+dependencies = [
+ "derive_more",
+ "proptest",
+]
+
+[[package]]
+name = "numelace-game"
+version = "0.1.0"
+dependencies = [
+ "derive_more",
+ "numelace-core",
+ "numelace-generator",
+ "numelace-solver",
+]
+
+[[package]]
+name = "numelace-generator"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "numelace-core",
+ "numelace-solver",
+ "proptest",
+ "rand 0.9.2",
+ "rand_pcg",
+]
+
+[[package]]
+name = "numelace-solver"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "derive_more",
+ "numelace-core",
+]
+
+[[package]]
 name = "objc"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3151,57 +3202,6 @@ name = "strict-num"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6637bab7722d379c8b41ba849228d680cc12d0a45ba1fa2b48f2a30577a06731"
-
-[[package]]
-name = "sudoku-app"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "egui_extras",
- "sudoku-core",
- "sudoku-game",
- "sudoku-generator",
- "sudoku-solver",
-]
-
-[[package]]
-name = "sudoku-core"
-version = "0.1.0"
-dependencies = [
- "derive_more",
- "proptest",
-]
-
-[[package]]
-name = "sudoku-game"
-version = "0.1.0"
-dependencies = [
- "derive_more",
- "sudoku-core",
- "sudoku-generator",
- "sudoku-solver",
-]
-
-[[package]]
-name = "sudoku-generator"
-version = "0.1.0"
-dependencies = [
- "criterion",
- "proptest",
- "rand 0.9.2",
- "rand_pcg",
- "sudoku-core",
- "sudoku-solver",
-]
-
-[[package]]
-name = "sudoku-solver"
-version = "0.1.0"
-dependencies = [
- "criterion",
- "derive_more",
- "sudoku-core",
-]
 
 [[package]]
 name = "syn"

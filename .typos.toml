@@ -1,0 +1,4 @@
+[default.extend-words]
+# Allow project name variants.
+Numelace = "Numelace"
+numelace = "numelace"

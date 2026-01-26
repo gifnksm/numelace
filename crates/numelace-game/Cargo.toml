@@ -1,0 +1,19 @@
+[package]
+name = "numelace-game"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+readme.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+derive_more = { workspace = true, features = ["display", "error", "is_variant"] }
+numelace-core.workspace = true
+numelace-generator.workspace = true
+
+[dev-dependencies]
+numelace-solver.workspace = true
+
+[lints]
+workspace = true
