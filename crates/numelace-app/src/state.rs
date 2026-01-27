@@ -35,16 +35,16 @@ pub struct Settings {
 #[derive(Debug, Clone)]
 pub struct HighlightSettings {
     pub same_digit: bool,
-    pub rcb_selected: bool,
-    pub rcb_same_digit: bool,
+    pub house_selected: bool,
+    pub house_same_digit: bool,
 }
 
 impl Default for HighlightSettings {
     fn default() -> Self {
         Self {
             same_digit: true,
-            rcb_selected: true,
-            rcb_same_digit: true,
+            house_selected: true,
+            house_same_digit: true,
         }
     }
 }

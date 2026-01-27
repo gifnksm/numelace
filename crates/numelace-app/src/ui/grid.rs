@@ -4,70 +4,68 @@ use eframe::egui::{
     Align2, Button, Color32, FontId, Grid, Painter, Rect, RichText, Stroke, StrokeKind, Ui, Vec2,
     Visuals,
 };
-use numelace_core::{Digit, DigitSet, Position};
-use numelace_game::{CellState, Game};
+use numelace_core::{Digit, DigitSet, Position, containers::Array81, index::PositionSemantics};
+use numelace_game::CellState;
 
 use crate::{state::HighlightSettings, ui::Action};
 
+bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct CellVisualState: u8 {
+        const SELECTED = 0b0000_0001;
+        const SAME_DIGIT = 0b0000_0010;
+        const HOUSE_SELECTED = 0b0000_0100;
+        const HOUSE_SAME_DIGIT = 0b0000_1000;
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GridCell {
+    pub content: CellState,
+    pub visual_state: CellVisualState,
+}
+
 #[derive(Debug, Clone)]
 pub struct GridViewModel<'a> {
-    game: &'a Game,
-    selected_cell: Option<Position>,
+    grid: &'a Array81<GridCell, PositionSemantics>,
     selected_digit: Option<Digit>,
     highlight_settings: &'a HighlightSettings,
 }
 
 impl<'a> GridViewModel<'a> {
     pub fn new(
-        game: &'a Game,
-        selected_cell: Option<Position>,
+        grid: &'a Array81<GridCell, PositionSemantics>,
         selected_digit: Option<Digit>,
         highlight_settings: &'a HighlightSettings,
     ) -> Self {
         Self {
-            game,
-            selected_cell,
+            grid,
             selected_digit,
             highlight_settings,
         }
     }
 
     fn cell_highlight(&self, cell_pos: Position) -> CellHighlight {
-        let cell_digit = self.game.cell(cell_pos).as_digit();
-        if Some(cell_pos) == self.selected_cell {
+        let hlc = &self.highlight_settings;
+        let vs = self.grid[cell_pos].visual_state;
+
+        if vs.contains(CellVisualState::SELECTED) {
             return CellHighlight::Selected;
         }
-
-        let hlc = &self.highlight_settings;
-        if hlc.same_digit && self.selected_digit.is_some_and(|d| Some(d) == cell_digit) {
+        if hlc.same_digit && vs.contains(CellVisualState::SAME_DIGIT) {
             return CellHighlight::SameDigit;
         }
-
-        if hlc.rcb_selected
-            && self
-                .selected_cell
-                .is_some_and(|p| is_same_home(p, cell_pos))
-        {
-            return CellHighlight::RcbSelected;
+        if hlc.house_selected && vs.contains(CellVisualState::HOUSE_SELECTED) {
+            return CellHighlight::HouseSelected;
         }
-
-        if hlc.rcb_same_digit
-            && self.selected_digit.is_some_and(|d| {
-                Position::ROWS[cell_pos.y()]
-                    .into_iter()
-                    .chain(Position::COLUMNS[cell_pos.x()])
-                    .chain(Position::BOXES[cell_pos.box_index()])
-                    .any(|p| self.game.cell(p).as_digit() == Some(d))
-            })
-        {
-            return CellHighlight::RcbSameDigit;
+        if hlc.house_same_digit && vs.contains(CellVisualState::HOUSE_SAME_DIGIT) {
+            return CellHighlight::HouseSameDigit;
         }
-
         CellHighlight::None
     }
 
     fn cell_text(&self, pos: Position, visuals: &Visuals) -> RichText {
-        match self.game.cell(pos) {
+        match self.grid[pos].content {
             CellState::Given(digit) => {
                 RichText::new(digit.as_str()).color(visuals.strong_text_color())
             }
@@ -93,23 +91,19 @@ impl<'a> GridViewModel<'a> {
     }
 }
 
-fn is_same_home(pos1: Position, pos2: Position) -> bool {
-    pos1.x() == pos2.x() || pos1.y() == pos2.y() || pos1.box_index() == pos2.box_index()
-}
-
 const CELL_BORDER_BASE_RATIO: f32 = 0.03;
 const THICK_BORDER_RATIO: f32 = 2.0;
 const THIN_BORDER_RATIO: f32 = 1.0;
 const SELECTED_BORDER_RATIO: f32 = 3.0;
 const SAME_DIGIT_BORDER_RATIO: f32 = 1.0;
-const RCB_BORDER_RATIO: f32 = 1.0;
+const HOUSE_BORDER_RATIO: f32 = 1.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CellHighlight {
     Selected,
     SameDigit,
-    RcbSelected,
-    RcbSameDigit,
+    HouseSelected,
+    HouseSameDigit,
     None,
 }
 
@@ -117,7 +111,7 @@ impl CellHighlight {
     fn fill_color(self, visuals: &Visuals) -> Color32 {
         match self {
             Self::Selected | Self::SameDigit => visuals.selection.bg_fill,
-            Self::RcbSelected | Self::RcbSameDigit => visuals.widgets.hovered.bg_fill,
+            Self::HouseSelected | Self::HouseSameDigit => visuals.widgets.hovered.bg_fill,
             Self::None => visuals.text_edit_bg_color(),
         }
     }
@@ -126,8 +120,8 @@ impl CellHighlight {
         let (ratio, color) = match self {
             Self::Selected => (SELECTED_BORDER_RATIO, visuals.selection.stroke.color),
             Self::SameDigit => (SAME_DIGIT_BORDER_RATIO, visuals.selection.stroke.color),
-            Self::RcbSelected | Self::RcbSameDigit => (
-                RCB_BORDER_RATIO,
+            Self::HouseSelected | Self::HouseSameDigit => (
+                HOUSE_BORDER_RATIO,
                 GridViewModel::inactive_border_color(visuals),
             ),
             Self::None => (
@@ -176,12 +170,12 @@ pub fn show(ui: &mut Ui, vm: &GridViewModel<'_>) -> Vec<Action> {
                                         .min_size(Vec2::splat(cell_size))
                                         .fill(highlight.fill_color(visuals));
                                     let button = ui.add(button);
-                                    if let CellState::Notes(digits) = vm.game.cell(pos) {
+                                    if let Some(digits) = vm.grid[pos].content.as_notes() {
                                         draw_notes(
                                             ui.painter(),
                                             vm,
                                             button.rect.shrink(thick_border.width),
-                                            *digits,
+                                            digits,
                                             visuals,
                                         );
                                     }

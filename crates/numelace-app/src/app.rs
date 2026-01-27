@@ -15,7 +15,7 @@ use eframe::{
     App, CreationContext, Frame, Storage,
     egui::{CentralPanel, Context, Visuals},
 };
-use numelace_core::{Digit, Position};
+use numelace_core::{Digit, Position, containers::Array81, index::PositionSemantics};
 use numelace_game::Game;
 use numelace_generator::PuzzleGenerator;
 use numelace_solver::TechniqueSolver;
@@ -26,7 +26,7 @@ use crate::{
     ui::{
         self, Action, MoveDirection,
         game_screen::GameScreenViewModel,
-        grid::GridViewModel,
+        grid::{CellVisualState, GridCell, GridViewModel},
         keypad::{KeypadCapabilities, KeypadViewModel},
         sidebar::SidebarViewModel,
     },
@@ -149,6 +149,39 @@ impl NumelaceApp {
             }
         }
     }
+
+    fn make_grid(&self) -> Array81<GridCell, PositionSemantics> {
+        let game = &self.app_state.game;
+        let mut grid = Array81::from_fn(|pos| GridCell {
+            content: *game.cell(pos),
+            visual_state: CellVisualState::empty(),
+        });
+
+        if let Some(pos) = self.app_state.selected_cell {
+            grid[pos].visual_state.insert(CellVisualState::SELECTED);
+            for pos in pos.house_positions() {
+                grid[pos]
+                    .visual_state
+                    .insert(CellVisualState::HOUSE_SELECTED);
+            }
+
+            if let Some(digit) = game.cell(pos).as_digit() {
+                let same_digit_cells = Position::ALL
+                    .into_iter()
+                    .filter(|pos| game.cell(*pos).as_digit() == Some(digit));
+                for pos in same_digit_cells {
+                    grid[pos].visual_state.insert(CellVisualState::SAME_DIGIT);
+                    for pos in pos.house_positions() {
+                        grid[pos]
+                            .visual_state
+                            .insert(CellVisualState::HOUSE_SAME_DIGIT);
+                    }
+                }
+            }
+        }
+
+        grid
+    }
 }
 
 fn new_game() -> Game {
@@ -177,12 +210,13 @@ impl App for NumelaceApp {
             });
         }
 
+        let grid = self.make_grid();
         let game = &self.app_state.game;
         let selected_cell = self.app_state.selected_cell;
         let settings = &self.app_state.settings;
         let notes_mode = self.app_state.input_mode.is_notes();
         let selected_digit = selected_cell.and_then(|pos| game.cell(pos).as_digit());
-        let grid_vm = GridViewModel::new(game, selected_cell, selected_digit, &settings.highlight);
+        let grid_vm = GridViewModel::new(&grid, selected_digit, &settings.highlight);
         let mut keypad_capabilities = KeypadCapabilities::empty();
         keypad_capabilities.set(
             KeypadCapabilities::CAN_TOGGLE_DIGIT,

@@ -14,7 +14,7 @@ use std::{
     slice,
 };
 
-use crate::index::Index9Semantics;
+use crate::index::{Index9, Index9Semantics};
 
 /// A 9-element array with semantic indexing.
 ///
@@ -157,6 +157,32 @@ where
         }
     }
 
+    /// Creates a new `Array9` by calling `f` for each semantic value.
+    ///
+    /// Values are generated in index order (0-8) and converted via
+    /// [`Index9Semantics::from_index`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use numelace_core::{Digit, containers::Array9, index::DigitSemantics};
+    ///
+    /// let array = Array9::<u8, DigitSemantics>::from_fn(|digit| digit.value());
+    /// assert_eq!(array[Digit::D1], 1);
+    /// assert_eq!(array[Digit::D9], 9);
+    /// ```
+    #[expect(clippy::missing_panics_doc)]
+    pub fn from_fn<F>(mut f: F) -> Self
+    where
+        F: FnMut(S::Value) -> T,
+    {
+        Self::from_array(array::from_fn(|i| {
+            let index = Index9::new(u8::try_from(i).unwrap());
+            let value = S::from_index(index);
+            f(value)
+        }))
+    }
+
     /// Returns an iterator over the array elements.
     ///
     /// # Examples
@@ -258,6 +284,7 @@ where
 mod tests {
     use super::*;
     use crate::{
+        Digit,
         digit::Digit::*,
         index::{CellIndexSemantics, DigitSemantics},
     };
@@ -285,6 +312,14 @@ mod tests {
         assert_eq!(array[D1], 100);
         assert_eq!(array[D5], 500);
         assert_eq!(array[D9], 900);
+    }
+
+    #[test]
+    fn test_from_fn() {
+        let array: Array9<u8, DigitSemantics> = Array9::from_fn(|digit: Digit| digit.value());
+        assert_eq!(array[D1], 1);
+        assert_eq!(array[D5], 5);
+        assert_eq!(array[D9], 9);
     }
 
     #[test]

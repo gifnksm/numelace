@@ -62,12 +62,12 @@ pub fn show(ui: &mut Ui, vm: &SidebarViewModel) -> Vec<Action> {
                             .checkbox(&mut settings.same_digit, "Same digit cells/notes")
                             .changed();
                         ui.label(RichText::new("Row/Col/Box Highlight"));
-                        ui.indent("rcb_highlight", |ui| {
+                        ui.indent("house_highlight", |ui| {
                             changed |= ui
-                                .checkbox(&mut settings.rcb_selected, "Selected cell")
+                                .checkbox(&mut settings.house_selected, "Selected cell")
                                 .changed();
                             changed |= ui
-                                .checkbox(&mut settings.rcb_same_digit, "Same digit cells")
+                                .checkbox(&mut settings.house_same_digit, "Same digit cells")
                                 .changed();
                         });
                         if changed {

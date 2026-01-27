@@ -14,7 +14,7 @@ use std::{
     slice,
 };
 
-use crate::index::Index81Semantics;
+use crate::index::{Index81, Index81Semantics};
 
 /// An 81-element array with semantic indexing.
 ///
@@ -157,6 +157,33 @@ where
         }
     }
 
+    /// Creates a new `Array81` by calling `f` for each semantic value.
+    ///
+    /// Values are generated in index order (0-80) and converted via
+    /// [`Index81Semantics::from_index`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use numelace_core::{Position, containers::Array81, index::PositionSemantics};
+    ///
+    /// let array = Array81::<u8, PositionSemantics>::from_fn(|pos| pos.x() + pos.y());
+    /// assert_eq!(array[Position::new(0, 0)], 0);
+    /// assert_eq!(array[Position::new(8, 8)], 16);
+    /// ```
+    #[inline]
+    #[expect(clippy::missing_panics_doc)]
+    pub fn from_fn<F>(mut f: F) -> Self
+    where
+        F: FnMut(S::Value) -> T,
+    {
+        Self::from_array(array::from_fn(|i| {
+            let index = Index81::new(u8::try_from(i).unwrap());
+            let value = S::from_index(index);
+            f(value)
+        }))
+    }
+
     /// Returns an iterator over the array elements.
     ///
     /// # Examples
@@ -278,6 +305,15 @@ mod tests {
         assert_eq!(array[Position::new(0, 0)], 100);
         assert_eq!(array[Position::new(4, 4)], 500);
         assert_eq!(array[Position::new(8, 8)], 900);
+    }
+
+    #[test]
+    fn test_from_fn() {
+        let array: Array81<u8, PositionSemantics> =
+            Array81::from_fn(|pos: Position| pos.x() + pos.y());
+        assert_eq!(array[Position::new(0, 0)], 0);
+        assert_eq!(array[Position::new(4, 4)], 8);
+        assert_eq!(array[Position::new(8, 8)], 16);
     }
 
     #[test]

@@ -468,7 +468,7 @@ impl Game {
 /// [`Filled`]: CellState::Filled
 /// [`Notes`]: CellState::Notes
 /// [`Empty`]: CellState::Empty
-#[derive(Debug, Clone, PartialEq, Eq, derive_more::IsVariant)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
 pub enum CellState {
     /// A cell from the initial puzzle (cannot be modified by the player).
     Given(Digit),

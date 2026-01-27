@@ -22,3 +22,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-01-25: Always show the New Game confirmation dialog, even when the puzzle is solved — consistent UX and prevents accidental reset.
 - 2026-01-26: Persist app state via eframe storage with RON serialization and DTO/try-from conversions — safe restoration with failure fallback to defaults and periodic + action-triggered saves.
 - 2026-01-26: Candidate notes are exclusive with filled digits; memo input is toggle-based; normal input clears memos; memo input on filled cells is ignored; input mode toggles with S and command provides temporary swap with ^ indicator — keeps UX consistent and clear.
+- 2026-01-27: UI uses per-cell `content` and `visual state` (selection/house/same-digit/conflict) derived in app; rule-based conflict checks live in `numelace-game`; UI terminology sticks to `house` for consistency — keeps rule logic centralized while keeping UI state explicit and aligned with existing terms.

@@ -189,16 +189,16 @@ impl From<SettingsDto> for Settings {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HighlightSettingsDto {
     pub same_digit: bool,
-    pub rcb_selected: bool,
-    pub rcb_same_digit: bool,
+    pub house_selected: bool,
+    pub house_same_digit: bool,
 }
 
 impl From<&HighlightSettings> for HighlightSettingsDto {
     fn from(value: &HighlightSettings) -> Self {
         Self {
             same_digit: value.same_digit,
-            rcb_selected: value.rcb_selected,
-            rcb_same_digit: value.rcb_same_digit,
+            house_selected: value.house_selected,
+            house_same_digit: value.house_same_digit,
         }
     }
 }
@@ -207,8 +207,8 @@ impl From<HighlightSettingsDto> for HighlightSettings {
     fn from(value: HighlightSettingsDto) -> Self {
         Self {
             same_digit: value.same_digit,
-            rcb_selected: value.rcb_selected,
-            rcb_same_digit: value.rcb_same_digit,
+            house_selected: value.house_selected,
+            house_same_digit: value.house_same_digit,
         }
     }
 }

@@ -1,5 +1,6 @@
 //! Board position types.
 
+use crate::DigitPositions;
 use crate::containers::Array9;
 use crate::index::CellIndexSemantics;
 
@@ -345,6 +346,52 @@ impl Position {
         assert!(box_index < 9);
         Self::new((box_index % 3) * 3, (box_index / 3) * 3)
     }
+
+    /// Returns the union of row, column, and box positions for this cell.
+    ///
+    /// The returned set includes this position itself.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use numelace_core::Position;
+    ///
+    /// let pos = Position::new(4, 4);
+    /// let house = pos.house_positions();
+    /// assert!(house.contains(pos));
+    /// assert!(house.contains(Position::new(4, 0)));
+    /// assert!(house.contains(Position::new(0, 4)));
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn house_positions(self) -> DigitPositions {
+        DigitPositions::ROW_POSITIONS[self.y()]
+            | DigitPositions::COLUMN_POSITIONS[self.x()]
+            | DigitPositions::BOX_POSITIONS[self.box_index()]
+    }
+
+    /// Returns the positions that share a row, column, or box with this cell.
+    ///
+    /// The returned set excludes this position itself.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use numelace_core::Position;
+    ///
+    /// let pos = Position::new(4, 4);
+    /// let peers = pos.house_peers();
+    /// assert!(!peers.contains(pos));
+    /// assert!(peers.contains(Position::new(4, 0)));
+    /// assert!(peers.contains(Position::new(0, 4)));
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn house_peers(self) -> DigitPositions {
+        let mut set = self.house_positions();
+        set.remove(self);
+        set
+    }
 }
 
 #[cfg(test)]
@@ -438,6 +485,32 @@ mod tests {
                 assert_eq!(pos.box_cell_index(), cell_index);
             }
         }
+    }
+
+    #[test]
+    fn test_house_positions() {
+        let pos = Position::new(4, 4);
+        let house = pos.house_positions();
+
+        assert!(house.contains(pos));
+        assert_eq!(house.len(), 21);
+        assert!(house.contains(Position::new(4, 0)));
+        assert!(house.contains(Position::new(0, 4)));
+        assert!(house.contains(Position::new(3, 3)));
+        assert!(!house.contains(Position::new(0, 0)));
+    }
+
+    #[test]
+    fn test_house_peers() {
+        let pos = Position::new(4, 4);
+        let peers = pos.house_peers();
+
+        assert!(!peers.contains(pos));
+        assert_eq!(peers.len(), 20);
+        assert!(peers.contains(Position::new(4, 0)));
+        assert!(peers.contains(Position::new(0, 4)));
+        assert!(peers.contains(Position::new(3, 3)));
+        assert!(!peers.contains(Position::new(0, 0)));
     }
 
     #[test]
