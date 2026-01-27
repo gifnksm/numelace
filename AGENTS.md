@@ -31,4 +31,4 @@ Before proposing changes or plans, read these files in order:
 - Ask clarifying questions when scope or intent is ambiguous.
 - Seek confirmation before large changes (e.g., deletions, restructures, automated fixes, or commits).
 - Confirm who will implement code changes (user or agent) before starting.
-- When committing, confirm before running the commit; choose an appropriate message (prefix optional) and add a brief body only when intent, impact, or caveats aren't captured; e.g., `docs: clarify commit confirmation rule`.
+- When committing, confirm before running the commit unless the user explicitly asks you to commit; choose an appropriate message (prefix optional) and add a brief body only when intent, impact, or caveats aren't captured; e.g., `docs: clarify commit confirmation rule`.
