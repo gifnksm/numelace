@@ -54,40 +54,38 @@ pub fn show(ui: &mut Ui, vm: &SidebarViewModel) -> Vec<Action> {
             ui.heading("Settings");
             ui.indent("sidebar_settings", |ui| {
                 let mut settings = vm.highlight_settings.clone();
+                let HighlightSettings {
+                    same_digit,
+                    house_selected,
+                    house_same_digit,
+                    conflict,
+                } = &mut settings;
                 let mut changed = false;
                 CollapsingHeader::new("Highlight")
                     .default_open(true)
                     .show(ui, |ui| {
-                        changed |= ui
-                            .checkbox(&mut settings.same_digit, "Same digit cells/notes")
-                            .changed();
+                        changed |= ui.checkbox(same_digit, "Same digit cells/notes").changed();
+                        changed |= ui.checkbox(conflict, "Conflicting cells/notes").changed();
                         ui.label(RichText::new("Row/Col/Box Highlight"));
                         ui.indent("house_highlight", |ui| {
-                            changed |= ui
-                                .checkbox(&mut settings.house_selected, "Selected cell")
-                                .changed();
-                            changed |= ui
-                                .checkbox(&mut settings.house_same_digit, "Same digit cells")
-                                .changed();
+                            changed |= ui.checkbox(house_selected, "Selected cell").changed();
+                            changed |= ui.checkbox(house_same_digit, "Same digit cells").changed();
                         });
-                        if changed {
-                            actions.push(Action::UpdateHighlightSettings(settings));
-                        }
                     });
+                if changed {
+                    actions.push(Action::UpdateHighlightSettings(settings));
+                }
 
                 let mut settings = vm.appearance_settings.clone();
+                let AppearanceSettings { theme } = &mut settings;
                 let mut changed = false;
                 CollapsingHeader::new("Appearance")
                     .default_open(true)
                     .show(ui, |ui| {
                         ui.label(RichText::new("Theme"));
                         ui.indent("theme", |ui| {
-                            changed |= ui
-                                .radio_value(&mut settings.theme, Theme::Light, "Light")
-                                .changed();
-                            changed |= ui
-                                .radio_value(&mut settings.theme, Theme::Dark, "Dark")
-                                .changed();
+                            changed |= ui.radio_value(theme, Theme::Light, "Light").changed();
+                            changed |= ui.radio_value(theme, Theme::Dark, "Dark").changed();
                         });
                     });
                 if changed {

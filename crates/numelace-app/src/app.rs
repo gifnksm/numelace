@@ -160,30 +160,54 @@ impl NumelaceApp {
 
         if let Some(pos) = self.app_state.selected_cell {
             grid[pos].visual_state.insert(GridVisualState::SELECTED);
-            for pos in pos.house_positions() {
-                grid[pos]
+            for house_pos in pos.house_positions() {
+                grid[house_pos]
                     .visual_state
                     .insert(GridVisualState::HOUSE_SELECTED);
             }
+        }
 
+        let selected_digit = self
+            .app_state
+            .selected_cell
+            .and_then(|pos| game.cell(pos).as_digit());
+
+        for pos in Position::ALL {
             if let Some(digit) = game.cell(pos).as_digit() {
-                for pos in Position::ALL {
-                    if game.cell(pos).as_digit() == Some(digit) {
-                        grid[pos].visual_state.insert(GridVisualState::SAME_DIGIT);
-                        for pos in pos.house_positions() {
-                            grid[pos]
-                                .visual_state
-                                .insert(GridVisualState::HOUSE_SAME_DIGIT);
-                        }
+                for house_pos in pos.house_peers() {
+                    if grid[house_pos].content.as_digit() == Some(digit) {
+                        grid[house_pos]
+                            .visual_state
+                            .insert(GridVisualState::CONFLICT);
                     }
-                    if game
-                        .cell(pos)
+                    if grid[house_pos]
+                        .content
                         .as_notes()
                         .filter(|notes| notes.contains(digit))
                         .is_some()
                     {
-                        grid[pos].note_visual_state.same_digit.insert(digit);
+                        grid[house_pos].note_visual_state.conflict.insert(digit);
                     }
+                }
+            }
+
+            if let Some(digit) = selected_digit {
+                if game.cell(pos).as_digit() == Some(digit) {
+                    grid[pos].visual_state.insert(GridVisualState::SAME_DIGIT);
+                    for house_pos in pos.house_positions() {
+                        grid[house_pos]
+                            .visual_state
+                            .insert(GridVisualState::HOUSE_SAME_DIGIT);
+                    }
+                }
+
+                if game
+                    .cell(pos)
+                    .as_notes()
+                    .filter(|notes| notes.contains(digit))
+                    .is_some()
+                {
+                    grid[pos].note_visual_state.same_digit.insert(digit);
                 }
             }
         }

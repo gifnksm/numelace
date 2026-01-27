@@ -208,10 +208,12 @@ impl From<SettingsDto> for Settings {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
+#[expect(clippy::struct_excessive_bools)]
 pub struct HighlightSettingsDto {
     pub same_digit: bool,
     pub house_selected: bool,
     pub house_same_digit: bool,
+    pub conflict: bool,
 }
 
 impl Default for HighlightSettingsDto {
@@ -226,6 +228,7 @@ impl From<&HighlightSettings> for HighlightSettingsDto {
             same_digit: value.same_digit,
             house_selected: value.house_selected,
             house_same_digit: value.house_same_digit,
+            conflict: value.conflict,
         }
     }
 }
@@ -242,6 +245,7 @@ impl From<HighlightSettingsDto> for HighlightSettings {
             same_digit: value.same_digit,
             house_selected: value.house_selected,
             house_same_digit: value.house_same_digit,
+            conflict: value.conflict,
         }
     }
 }

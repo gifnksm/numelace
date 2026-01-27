@@ -28,7 +28,7 @@ This backlog is the single source of truth for tasks and ideas.
 - Auto candidate updates on input (optional)
 - Auto candidate updates on erase (optional)
 - Show candidates for selected cell (optional)
-- Mistake highlighting (row/col/box conflicts)
+- Mistake highlighting (row/col/box conflicts) ✅
 - Block rule-violating input (optional)
 - Hint system (show applicable technique or next step)
 - Save/resume automatically on startup ✅

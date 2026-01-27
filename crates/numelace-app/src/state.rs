@@ -33,10 +33,12 @@ pub struct Settings {
 }
 
 #[derive(Debug, Clone)]
+#[expect(clippy::struct_excessive_bools)]
 pub struct HighlightSettings {
     pub same_digit: bool,
     pub house_selected: bool,
     pub house_same_digit: bool,
+    pub conflict: bool,
 }
 
 impl Default for HighlightSettings {
@@ -45,6 +47,7 @@ impl Default for HighlightSettings {
             same_digit: true,
             house_selected: true,
             house_same_digit: true,
+            conflict: true,
         }
     }
 }

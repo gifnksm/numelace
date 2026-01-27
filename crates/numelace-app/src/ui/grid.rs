@@ -16,6 +16,7 @@ bitflags::bitflags! {
         const SAME_DIGIT = 0b0000_0010;
         const HOUSE_SELECTED = 0b0000_0100;
         const HOUSE_SAME_DIGIT = 0b0000_1000;
+        const CONFLICT = 0b0001_0000;
     }
 }
 
@@ -29,14 +30,21 @@ pub struct GridCell {
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct NoteVisualState {
     pub same_digit: DigitSet,
+    pub conflict: DigitSet,
 }
 
 impl NoteVisualState {
     pub fn digit_highlight(&self, digit: Digit) -> GridVisualState {
-        let Self { same_digit } = self;
+        let Self {
+            same_digit,
+            conflict,
+        } = self;
         let mut vs = GridVisualState::empty();
         if same_digit.contains(digit) {
             vs |= GridVisualState::SAME_DIGIT;
+        }
+        if conflict.contains(digit) {
+            vs |= GridVisualState::CONFLICT;
         }
         vs
     }
@@ -58,6 +66,7 @@ impl<'a> GridViewModel<'a> {
             same_digit,
             house_selected,
             house_same_digit,
+            conflict,
         } = highlight_settings;
         if *house_same_digit {
             enabled_highlights |= GridVisualState::HOUSE_SAME_DIGIT;
@@ -67,6 +76,9 @@ impl<'a> GridViewModel<'a> {
         }
         if *same_digit {
             enabled_highlights |= GridVisualState::SAME_DIGIT;
+        }
+        if *conflict {
+            enabled_highlights |= GridVisualState::CONFLICT;
         }
         Self {
             grid,
@@ -103,6 +115,9 @@ struct EffectiveGridVisualState(GridVisualState);
 
 impl EffectiveGridVisualState {
     fn text_color(self, is_given: bool, visuals: &Visuals) -> Color32 {
+        if self.0.intersects(GridVisualState::CONFLICT) {
+            return visuals.error_fg_color;
+        }
         if is_given {
             visuals.strong_text_color()
         } else {
@@ -137,6 +152,10 @@ impl EffectiveGridVisualState {
     }
 
     fn cell_border_color(self, visuals: &Visuals) -> Color32 {
+        if self.0.intersects(GridVisualState::CONFLICT) {
+            return visuals.error_fg_color;
+        }
+
         if self
             .0
             .intersects(GridVisualState::SELECTED | GridVisualState::SAME_DIGIT)
