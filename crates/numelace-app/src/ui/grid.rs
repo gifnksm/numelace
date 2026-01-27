@@ -19,28 +19,31 @@ bitflags::bitflags! {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GridCell {
     pub content: CellState,
     pub visual_state: CellVisualState,
+    pub note_visual_state: NoteVisualState,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct NoteVisualState {
+    pub same_digit: DigitSet,
 }
 
 #[derive(Debug, Clone)]
 pub struct GridViewModel<'a> {
     grid: &'a Array81<GridCell, PositionSemantics>,
-    selected_digit: Option<Digit>,
     highlight_settings: &'a HighlightSettings,
 }
 
 impl<'a> GridViewModel<'a> {
     pub fn new(
         grid: &'a Array81<GridCell, PositionSemantics>,
-        selected_digit: Option<Digit>,
         highlight_settings: &'a HighlightSettings,
     ) -> Self {
         Self {
             grid,
-            selected_digit,
             highlight_settings,
         }
     }
@@ -164,18 +167,21 @@ pub fn show(ui: &mut Ui, vm: &GridViewModel<'_>) -> Vec<Action> {
                                 for cell_col in 0..3 {
                                     let cell_index = cell_row * 3 + cell_col;
                                     let pos = Position::from_box(box_index, cell_index);
+                                    let cell = &vm.grid[pos];
                                     let text = vm.cell_text(pos, visuals).size(cell_size * 0.8);
                                     let highlight = vm.cell_highlight(pos);
                                     let button = Button::new(text)
                                         .min_size(Vec2::splat(cell_size))
                                         .fill(highlight.fill_color(visuals));
                                     let button = ui.add(button);
-                                    if let Some(digits) = vm.grid[pos].content.as_notes() {
+                                    if let Some(digits) = cell.content.as_notes() {
+                                        let rect = button.rect.shrink(thick_border.width);
                                         draw_notes(
                                             ui.painter(),
                                             vm,
-                                            button.rect.shrink(thick_border.width),
+                                            rect,
                                             digits,
+                                            &cell.note_visual_state,
                                             visuals,
                                         );
                                     }
@@ -211,6 +217,7 @@ fn draw_notes(
     vm: &GridViewModel,
     rect: Rect,
     digits: DigitSet,
+    note_visual_state: &NoteVisualState,
     visuals: &Visuals,
 ) {
     let note_font = FontId::proportional(rect.height() / 3.0);
@@ -229,7 +236,7 @@ fn draw_notes(
 
         let center = rect.min + Vec2::new((x + 0.5) * cell_w, (y + 0.5) * cell_h);
 
-        if vm.highlight_settings.same_digit && Some(digit) == vm.selected_digit {
+        if vm.highlight_settings.same_digit && note_visual_state.same_digit.contains(digit) {
             let highlight_rect =
                 Rect::from_center_size(center, Vec2::splat(f32::min(cell_w, cell_h)) * 0.9);
             painter.rect_filled(highlight_rect, 0.0, visuals.selection.bg_fill);
