@@ -1,5 +1,5 @@
 use numelace_core::{Digit, Position};
-use numelace_game::{Game, RuleCheckPolicy};
+use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
 use crate::history::UndoRedoStack;
 
@@ -27,6 +27,20 @@ impl AppState {
         } else {
             RuleCheckPolicy::Permissive
         }
+    }
+
+    pub fn note_cleanup_policy(&self) -> NoteCleanupPolicy {
+        if self.settings.assist.notes.auto_remove_peer_notes_on_fill {
+            NoteCleanupPolicy::RemovePeers
+        } else {
+            NoteCleanupPolicy::None
+        }
+    }
+
+    pub fn input_digit_options(&self) -> InputDigitOptions {
+        InputDigitOptions::default()
+            .rule_check_policy(self.rule_check_policy())
+            .note_cleanup_policy(self.note_cleanup_policy())
     }
 }
 
@@ -66,6 +80,7 @@ pub struct Settings {
 pub struct AssistSettings {
     pub block_rule_violations: bool,
     pub highlight: HighlightSettings,
+    pub notes: NotesSettings,
 }
 
 impl Default for AssistSettings {
@@ -73,6 +88,7 @@ impl Default for AssistSettings {
         Self {
             block_rule_violations: true,
             highlight: HighlightSettings::default(),
+            notes: NotesSettings::default(),
         }
     }
 }
@@ -93,6 +109,19 @@ impl Default for HighlightSettings {
             house_selected: true,
             house_same_digit: true,
             conflict: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NotesSettings {
+    pub auto_remove_peer_notes_on_fill: bool,
+}
+
+impl Default for NotesSettings {
+    fn default() -> Self {
+        Self {
+            auto_remove_peer_notes_on_fill: true,
         }
     }
 }
@@ -197,7 +226,7 @@ impl UiState {
 #[cfg(test)]
 mod tests {
     use numelace_core::{Digit, DigitGrid, Position};
-    use numelace_game::{CellState, Game, RuleCheckPolicy};
+    use numelace_game::{CellState, Game, InputDigitOptions};
 
     use super::{AppState, UiState};
 
@@ -240,14 +269,22 @@ mod tests {
         app_state.selected_cell = Some(Position::new(0, 0));
         app_state
             .game
-            .toggle_digit(Position::new(0, 0), Digit::D2, RuleCheckPolicy::Permissive)
+            .toggle_digit(
+                Position::new(0, 0),
+                Digit::D2,
+                &InputDigitOptions::default(),
+            )
             .unwrap();
         ui_state.push_history(&app_state);
 
         app_state.selected_cell = Some(Position::new(2, 0));
         app_state
             .game
-            .toggle_digit(Position::new(2, 0), Digit::D3, RuleCheckPolicy::Permissive)
+            .toggle_digit(
+                Position::new(2, 0),
+                Digit::D3,
+                &InputDigitOptions::default(),
+            )
             .unwrap();
         ui_state.push_history(&app_state);
 

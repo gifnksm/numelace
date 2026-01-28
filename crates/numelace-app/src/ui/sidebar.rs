@@ -2,7 +2,9 @@ use eframe::egui::{CollapsingHeader, RichText, ScrollArea, Ui};
 
 use crate::{
     action::{Action, ActionRequestQueue},
-    state::{AppearanceSettings, AssistSettings, HighlightSettings, Settings, Theme},
+    state::{
+        AppearanceSettings, AssistSettings, HighlightSettings, NotesSettings, Settings, Theme,
+    },
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,6 +48,7 @@ pub fn show(ui: &mut Ui, vm: &SidebarViewModel, action_queue: &mut ActionRequest
                 let AssistSettings {
                     block_rule_violations,
                     highlight,
+                    notes,
                 } = assist;
                 CollapsingHeader::new("Assist")
                     .default_open(true)
@@ -70,6 +73,19 @@ pub fn show(ui: &mut Ui, vm: &SidebarViewModel, action_queue: &mut ActionRequest
                                 changed |=
                                     ui.checkbox(house_same_digit, "Same digit cells").changed();
                             });
+                        });
+
+                        ui.label("Notes");
+                        ui.indent("notes", |ui| {
+                            let NotesSettings {
+                                auto_remove_peer_notes_on_fill,
+                            } = notes;
+                            changed |= ui
+                                .checkbox(
+                                    auto_remove_peer_notes_on_fill,
+                                    "Auto-remove row/col/box notes on fill",
+                                )
+                                .changed();
                         });
                     });
 

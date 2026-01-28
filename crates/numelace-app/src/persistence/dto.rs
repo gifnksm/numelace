@@ -6,7 +6,8 @@ use numelace_core::{DigitGrid, DigitGridParseError, Position, PositionNewError};
 use numelace_game::{CellState, Game, GameError};
 
 use crate::state::{
-    AppState, AppearanceSettings, AssistSettings, HighlightSettings, InputMode, Settings, Theme,
+    AppState, AppearanceSettings, AssistSettings, HighlightSettings, InputMode, NotesSettings,
+    Settings, Theme,
 };
 
 // DTO defaulting guidance:
@@ -213,6 +214,7 @@ impl From<SettingsDto> for Settings {
 pub struct AssistSettingsDto {
     pub block_rule_violations: bool,
     pub highlight: HighlightSettingsDto,
+    pub notes: NotesSettingsDto,
 }
 
 impl Default for AssistSettingsDto {
@@ -226,6 +228,7 @@ impl From<&AssistSettings> for AssistSettingsDto {
         Self {
             block_rule_violations: value.block_rule_violations,
             highlight: HighlightSettingsDto::from(&value.highlight),
+            notes: NotesSettingsDto::from(&value.notes),
         }
     }
 }
@@ -241,6 +244,7 @@ impl From<AssistSettingsDto> for AssistSettings {
         Self {
             block_rule_violations: value.block_rule_violations,
             highlight: value.highlight.into(),
+            notes: value.notes.into(),
         }
     }
 }
@@ -286,6 +290,40 @@ impl From<HighlightSettingsDto> for HighlightSettings {
             house_same_digit: value.house_same_digit,
             conflict: value.conflict,
         }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(default)]
+pub struct NotesSettingsDto {
+    pub auto_remove_peer_notes_on_fill: bool,
+}
+
+impl Default for NotesSettingsDto {
+    fn default() -> Self {
+        AssistSettings::default().notes.into()
+    }
+}
+
+impl From<&NotesSettings> for NotesSettingsDto {
+    fn from(value: &NotesSettings) -> Self {
+        Self {
+            auto_remove_peer_notes_on_fill: value.auto_remove_peer_notes_on_fill,
+        }
+    }
+}
+
+impl From<NotesSettingsDto> for NotesSettings {
+    fn from(value: NotesSettingsDto) -> Self {
+        Self {
+            auto_remove_peer_notes_on_fill: value.auto_remove_peer_notes_on_fill,
+        }
+    }
+}
+
+impl From<NotesSettings> for NotesSettingsDto {
+    fn from(value: NotesSettings) -> Self {
+        Self::from(&value)
     }
 }
 

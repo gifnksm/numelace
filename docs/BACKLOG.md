@@ -30,7 +30,7 @@ This backlog is the single source of truth for tasks and ideas.
   - Indicate blocked candidates on keypad buttons (optional) ✅
   - Allow toggling blocked-candidate indicator (optional)
 - Ghost input preview for blocked actions ✅
-- Assist: on digit entry, remove that digit’s note from all peers (same row, column, or box) (optional)
+- Assist: on digit entry, remove that digit’s note from all peers (same row, column, or box) (optional) ✅
 - Notes auto-fill for possible digits (optional)
   - For selected cell
   - For all cells

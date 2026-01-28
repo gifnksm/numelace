@@ -29,3 +29,6 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-01-27: Strict-conflicting inputs are rejected but shown as ghost UI state — surfaces rule violations without mutating game state.
 - 2026-01-28: App logic refactor splits Action handling, view model building, and action request queuing — improves responsibility separation and testability.
 - 2026-01-28: Undo/redo uses snapshot history with selection-aware restore and a top toolbar entry point — keeps undoable state consistent and exposes mouse-friendly controls without overloading the keypad area.
+- 2026-01-28: Assist auto-removes row/col/box notes on fill (including replacements), defaults enabled, and does nothing on rejected inputs — keeps assist behavior clear and limited to fill actions.
+- 2026-01-28: Replace digit input parameters with a `InputDigitOptions` struct (builder-style setters, defaults) — keeps API extensible without piling on flags.
+- 2026-01-28: Centralize CellState transitions (fill, note toggle, clear) into CellState methods — keeps state invariants consistent across game logic.

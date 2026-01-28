@@ -113,17 +113,18 @@ pub fn handle(
 impl ActionContext<'_> {
     fn request_digit(&mut self, digit: Digit, swap: bool) {
         if let Some(pos) = self.app_state.selected_cell {
-            let policy = self.app_state.rule_check_policy();
             match self.app_state.input_mode.swapped(swap) {
                 InputMode::Fill => {
+                    let options = self.app_state.input_digit_options();
                     if let Err(GameError::ConflictingDigit) =
-                        self.app_state.game.toggle_digit(pos, digit, policy)
+                        self.app_state.game.toggle_digit(pos, digit, &options)
                     {
-                        assert_eq!(policy, RuleCheckPolicy::Strict);
+                        assert_eq!(self.app_state.rule_check_policy(), RuleCheckPolicy::Strict);
                         self.ui_state.conflict_ghost = Some((pos, GhostType::Digit(digit)));
                     }
                 }
                 InputMode::Notes => {
+                    let policy = self.app_state.rule_check_policy();
                     if let Err(GameError::ConflictingDigit) =
                         self.app_state.game.toggle_note(pos, digit, policy)
                     {
