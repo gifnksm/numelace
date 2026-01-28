@@ -12,10 +12,11 @@ Numelace is a number-place (Sudoku) puzzle application written in Rust, with a d
 
 Planned features are tracked in docs/BACKLOG.md.
 
-- Core gameplay:
+- Gameplay:
   - ✅ 9x9 board with clear 3x3 boundaries
   - ✅ Core rules: given vs filled cells and solved-state validation
   - ✅ Candidate notes (player notes)
+  - ✅ Undo/redo
 - Puzzle & solver:
   - ✅ Puzzle generation with unique solutions, reproducible seeds, and technique-solver solvability (human-style techniques)
   - ✅ Solver with basic techniques (Naked/Hidden Single) plus backtracking
@@ -23,11 +24,46 @@ Planned features are tracked in docs/BACKLOG.md.
   - ✅ Highlight toggles (same digit, house, conflicts)
   - ✅ Mistake highlighting (row/col/box conflicts)
   - ✅ Rule-violation blocking with ghost preview (shows attempted inputs without applying them)
-  - ✅ Undo/redo
+  - ✅ Blocked-candidate indicator on keypad buttons (toggleable)
 - Application features:
   - ✅ Desktop GUI (keypad with digit counts, theme toggle, new game confirmation)
-  - ✅ Auto-save and resume on startup
+  - ✅ Assist toggles UI (optional features on/off)
+  - ✅ Auto-save and resume (board state + settings)
   - ⚙️ Web/WASM support is planned
+
+## Controls
+
+### Input modes
+
+- **Keyboard-only**: all inputs via keys.
+- **Mouse-only**: use the on-screen keypad and toolbar buttons.
+- **Mixed**: combine keyboard and mouse.
+
+### Keyboard
+
+- **Movement & selection**
+  - <kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>←</kbd>/<kbd>→</kbd>: move the selected cell.
+  - <kbd>Esc</kbd>: clear selection.
+- **Digit entry & notes**
+  - <kbd>1</kbd>–<kbd>9</kbd>: enter a digit for the selected cell.
+  - <kbd>S</kbd>: toggle between Fill and Notes modes.
+  - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> (hold): temporarily swap Fill/Notes while held.
+- **Clearing**
+  - <kbd>Delete</kbd>/<kbd>Backspace</kbd>: clear the selected cell (digit or notes).
+- **History & game actions**
+  - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Z</kbd>: undo.
+  - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Y</kbd>: redo.
+  - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>N</kbd>: new game (confirmation shown).
+
+### Mouse
+
+- **Keypad**
+  - <kbd>1</kbd>–<kbd>9</kbd> + <kbd>Delete</kbd>: entry and clearing.
+  - Fill/Notes toggle: switch input mode.
+  - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> (hold): temporarily swap Fill/Notes for keypad digit buttons.
+  - Per-digit counts: show how many of each digit are already placed.
+- **Toolbar**
+  - Undo, Redo, New Game buttons.
 
 ## Project Structure
 

@@ -17,6 +17,7 @@ This project uses a lightweight, memory-friendly workflow for hobby development.
 
 - Start coding once the scope is clear
 - If scope changes, log the decision
+- If UI inputs (keybinds or buttons) change, update README Controls
 
 ## 4) Mark done
 
