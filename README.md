@@ -25,6 +25,7 @@ Planned features are tracked in docs/BACKLOG.md.
   - ✅ Mistake highlighting (row/col/box conflicts)
   - ✅ Rule-violation blocking with ghost preview (shows attempted inputs without applying them)
   - ✅ Blocked-candidate indicator on keypad buttons (toggleable)
+  - ✅ Auto-remove row/col/box notes on fill
 - Application features:
   - ✅ Desktop GUI (keypad with digit counts, theme toggle, new game confirmation)
   - ✅ Assist toggles UI (optional features on/off)
