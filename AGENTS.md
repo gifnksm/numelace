@@ -17,6 +17,8 @@ Before proposing changes or plans, read these files in order:
 - If a new decision is made, append a short entry to `docs/DESIGN_LOG.md`.
 - If new work is requested or discovered, add it to `docs/BACKLOG.md`.
 - Prefer minimal edits and preserve the existing project structure and conventions.
+- When design discussion results are meant for human implementation, create a temporary summary document.
+- If file creation is needed but permissions are missing, ask whether you can grant permissions first.
 
 ## Documentation Updates
 

@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-- Test human-written logic and tricky edge cases.
+- Test manually implemented logic and tricky edge cases.
 - Avoid over-testing obvious behavior or derived traits.
 - Keep tests small, fast, and focused.
 
@@ -258,7 +258,7 @@ Integration tests verify that components work correctly together:
 ## Project Testing Philosophy
 
 1. **Trust the compiler for derived traits** - Don't test what Rust guarantees (e.g., derived `Clone`, `Debug`), but do test manual implementations
-2. **Test human-written logic** - Focus on manual implementations and complex computations
+2. **Test manually implemented logic** - Focus on manual implementations and complex computations (regardless of who wrote the code)
 3. **Optimize for maintenance** - Tests should be easy to understand and update
 4. **Enable confident refactoring** - Tests should catch real regressions, not implementation details
 5. **Balance coverage and cost** - Every test has a maintenance cost; ensure it provides value
