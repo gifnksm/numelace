@@ -32,3 +32,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-01-28: Assist auto-removes row/col/box notes on fill (including replacements), defaults enabled, and does nothing on rejected inputs — keeps assist behavior clear and limited to fill actions.
 - 2026-01-28: Replace digit input parameters with a `InputDigitOptions` struct (builder-style setters, defaults) — keeps API extensible without piling on flags.
 - 2026-01-28: Centralize CellState transitions (fill, note toggle, clear) into CellState methods — keeps state invariants consistent across game logic.
+- 2026-01-29: Digit input is non-toggle (same digit is no-op); notes remain toggle-based — aligns with typical Sudoku UX and keeps clear-cell as the explicit removal action.

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use eframe::egui::{self, Align2, Button, FontId, Grid, Layout, RichText, Ui, Vec2, Visuals};
 use numelace_core::{Digit, containers::Array9, index::DigitSemantics};
-use numelace_game::ToggleCapability;
+use numelace_game::InputCapability;
 
 use crate::{
     action::{Action, ActionRequestQueue},
@@ -18,19 +18,19 @@ pub struct KeypadViewModel {
 
 #[derive(Debug, Clone)]
 pub struct DigitKeyState {
-    toggle_digit: Option<ToggleCapability>,
-    toggle_note: Option<ToggleCapability>,
+    set_digit: Option<InputCapability>,
+    toggle_note: Option<InputCapability>,
     decided_count: usize,
 }
 
 impl DigitKeyState {
     pub fn new(
-        digit: Option<ToggleCapability>,
-        note: Option<ToggleCapability>,
+        digit: Option<InputCapability>,
+        note: Option<InputCapability>,
         decided_count: usize,
     ) -> Self {
         Self {
-            toggle_digit: digit,
+            set_digit: digit,
             toggle_note: note,
             decided_count,
         }
@@ -166,13 +166,13 @@ fn show_digit_button(
     let (toggle_capability, tooltip) = if effective_notes_mode {
         (state.toggle_note, "Toggle note")
     } else {
-        (state.toggle_digit, "Toggle digit")
+        (state.set_digit, "Set digit")
     };
 
     let (enabled, text_color) = match toggle_capability {
-        Some(ToggleCapability::BlockedByConflict) => (true, visuals.warn_fg_color),
-        Some(ToggleCapability::Allowed) => (true, visuals.text_color()),
-        Some(ToggleCapability::BlockedByGivenCell | ToggleCapability::BlockedByFilledCell)
+        Some(InputCapability::BlockedByConflict) => (true, visuals.warn_fg_color),
+        Some(InputCapability::Allowed) => (true, visuals.text_color()),
+        Some(InputCapability::BlockedByGivenCell | InputCapability::BlockedByFilledCell)
         | None => (false, visuals.text_color()),
     };
 

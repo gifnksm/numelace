@@ -115,7 +115,7 @@ impl ActionContext<'_> {
                 InputMode::Fill => {
                     let options = self.app_state.input_digit_options();
                     if let Err(GameError::ConflictingDigit) =
-                        self.app_state.game.toggle_digit(pos, digit, &options)
+                        self.app_state.game.set_digit(pos, digit, &options)
                     {
                         assert_eq!(self.app_state.rule_check_policy(), RuleCheckPolicy::Strict);
                         self.ui_state.conflict_ghost = Some((pos, GhostType::Digit(digit)));
@@ -214,6 +214,42 @@ mod tests {
             ui_state.conflict_ghost,
             Some((Position::new(0, 0), GhostType::Digit(Digit::D1)))
         );
+        assert!(matches!(
+            app_state.game.cell(Position::new(0, 0)),
+            CellState::Empty
+        ));
+    }
+
+    #[test]
+    fn same_digit_request_does_not_add_history_entry() {
+        let mut app_state = AppState::new(fixed_game());
+        app_state.selected_cell = Some(Position::new(0, 0));
+        let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
+        let mut effect = ActionEffect::default();
+
+        handle(
+            &mut app_state,
+            &mut ui_state,
+            &mut effect,
+            Action::RequestDigit {
+                digit: Digit::D2,
+                swap: false,
+            },
+        );
+
+        handle(
+            &mut app_state,
+            &mut ui_state,
+            &mut effect,
+            Action::RequestDigit {
+                digit: Digit::D2,
+                swap: false,
+            },
+        );
+
+        assert!(ui_state.can_undo());
+        assert!(ui_state.undo(&mut app_state));
+        assert!(!ui_state.can_undo());
         assert!(matches!(
             app_state.game.cell(Position::new(0, 0)),
             CellState::Empty

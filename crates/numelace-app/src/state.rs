@@ -256,7 +256,7 @@ mod tests {
         app_state.selected_cell = Some(Position::new(0, 0));
         app_state
             .game
-            .toggle_digit(
+            .set_digit(
                 Position::new(0, 0),
                 Digit::D2,
                 &InputDigitOptions::default(),
@@ -267,7 +267,7 @@ mod tests {
         app_state.selected_cell = Some(Position::new(2, 0));
         app_state
             .game
-            .toggle_digit(
+            .set_digit(
                 Position::new(2, 0),
                 Digit::D3,
                 &InputDigitOptions::default(),

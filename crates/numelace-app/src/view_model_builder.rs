@@ -110,10 +110,9 @@ pub fn build_game_screen_view_model<'a>(
     let policy = app_state.rule_check_policy();
     let decided_digit_count = game.decided_digit_count();
     let digit_capabilities = Array9::from_fn(|digit| {
-        let toggle_digit =
-            selected_cell.map(|pos| game.toggle_digit_capability(pos, digit, policy));
+        let set_digit = selected_cell.map(|pos| game.set_digit_capability(pos, digit, policy));
         let toggle_note = selected_cell.map(|pos| game.toggle_note_capability(pos, digit, policy));
-        DigitKeyState::new(toggle_digit, toggle_note, decided_digit_count[digit])
+        DigitKeyState::new(set_digit, toggle_note, decided_digit_count[digit])
     });
     let has_removable_digit = selected_cell.is_some_and(|pos| game.has_removable_digit(pos));
     let keypad_vm = KeypadViewModel::new(digit_capabilities, has_removable_digit, notes_mode);
