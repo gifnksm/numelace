@@ -203,9 +203,9 @@ pub fn show(ui: &mut Ui, vm: &GridViewModel, action_queue: &mut ActionRequestQue
 
     let grid_size = ui.available_size().min_elem();
     // - 9 cells across
-    // - 2 outer borders + 2 inner 3x3 borders (total 4 border widths)
-    // This keeps the 3x3 separator thickness consistent with the outer border.
-    let cell_size = grid_size / (9.0 + 4.0 * CELL_BORDER_WIDTH_BASE_RATIO * THICK_BORDER_RATIO);
+    // - 2 inner 3x3 borders
+    // - outer borders are drawn outside layout (not included here)
+    let cell_size = grid_size / (9.0 + 2.0 * CELL_BORDER_WIDTH_BASE_RATIO * THICK_BORDER_RATIO);
     let thick_border = GridViewModel::grid_thick_border(visuals, cell_size);
 
     Grid::new(ui.id().with("outer_board"))

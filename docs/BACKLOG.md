@@ -45,7 +45,7 @@ This backlog is the single source of truth for tasks and ideas.
 - New Game confirmation dialog ✅
 - Input discoverability (make shortcuts/keybinds easier to find; format TBD)
 - UI clarity & visual polish (general improvements; details TBD)
-- Keypad buttons show which action will occur (set/clear digit or set/clear note)
+- Keypad buttons show which action will occur for notes (add/remove) ✅
 - Feature toggles UI for (optional) assists ✅
 - UI ViewModel-based split/refactor ✅
 - App logic refactor for testability (action extraction + action_handler + view_model_builder split) ✅

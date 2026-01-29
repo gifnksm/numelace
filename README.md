@@ -60,9 +60,10 @@ Planned features are tracked in docs/BACKLOG.md.
 
 - **Keypad**
   - <kbd>1</kbd>–<kbd>9</kbd> + <kbd>Delete</kbd>: entry and clearing.
-  - Fill/Notes toggle: switch input mode.
+  - Notes toggle button (pencil): switch input mode.
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> (hold): temporarily swap Fill/Notes for keypad digit buttons.
   - Per-digit counts: show how many of each digit are already placed.
+  - Notes mode indicators: digit buttons show note add/remove actions.
 - **Toolbar**
   - Undo, Redo, New Game buttons.
 
