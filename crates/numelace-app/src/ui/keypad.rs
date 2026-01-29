@@ -4,7 +4,10 @@ use eframe::egui::{self, Align2, Button, FontId, Grid, Layout, RichText, Ui, Vec
 use numelace_core::{Digit, containers::Array9, index::DigitSemantics};
 use numelace_game::ToggleCapability;
 
-use crate::action::{Action, ActionRequestQueue};
+use crate::{
+    action::{Action, ActionRequestQueue},
+    ui::icon,
+};
 
 #[derive(Debug, Clone)]
 pub struct KeypadViewModel {
@@ -190,10 +193,10 @@ fn show_digit_button(
 }
 
 fn show_remove_button(ui: &mut Ui, button_size: f32, has_removable_digit: bool) -> bool {
-    let text = RichText::new("X").size(button_size * 0.8);
+    let text = RichText::new(icon::GARBAGE_CAN).size(button_size * 0.8);
     let button = Button::new(text).min_size(Vec2::splat(button_size));
     let button = ui
         .add_enabled(has_removable_digit, button)
-        .on_hover_text("Remove digit/notes");
+        .on_hover_text("Clear cell (digit + notes)");
     button.clicked()
 }

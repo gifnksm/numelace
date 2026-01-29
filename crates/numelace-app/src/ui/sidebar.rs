@@ -3,6 +3,7 @@ use eframe::egui::{CollapsingHeader, RichText, ScrollArea, Ui, widgets};
 use crate::{
     action::{Action, ActionRequestQueue},
     state::{AssistSettings, HighlightSettings, NotesSettings, Settings},
+    ui::icon,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,21 +42,21 @@ pub fn show(ui: &mut Ui, vm: &SidebarViewModel, action_queue: &mut ActionRequest
         let mut settings = vm.settings.clone();
         let Settings { assist } = &mut settings;
         ScrollArea::vertical().show(ui, |ui| {
-            ui.heading("Settings");
+            ui.heading(format!("{} Settings", icon::GEAR_NO_HUB));
             ui.indent("sidebar_settings", |ui| {
                 let AssistSettings {
                     block_rule_violations,
                     highlight,
                     notes,
                 } = assist;
-                CollapsingHeader::new("Assist")
+                CollapsingHeader::new(format!("{} Assist", icon::BOLT))
                     .default_open(true)
                     .show(ui, |ui| {
                         changed |= ui
                             .checkbox(block_rule_violations, "Block rule violations")
                             .changed();
 
-                        ui.label("Highlight");
+                        ui.label(format!("{} Highlight", icon::BRIGHTNESS));
                         ui.indent("highlight", |ui| {
                             let HighlightSettings {
                                 same_digit,
@@ -64,16 +65,16 @@ pub fn show(ui: &mut Ui, vm: &SidebarViewModel, action_queue: &mut ActionRequest
                                 conflict,
                             } = highlight;
                             changed |= ui.checkbox(same_digit, "Same digit cells/notes").changed();
+                            changed |= ui
+                                .checkbox(house_selected, "Selected cell's row/col/box")
+                                .changed();
+                            changed |= ui
+                                .checkbox(house_same_digit, "Same digit cells' row/col/box")
+                                .changed();
                             changed |= ui.checkbox(conflict, "Conflicting cells/notes").changed();
-                            ui.label(RichText::new("Row/Col/Box Highlight"));
-                            ui.indent("house_highlight", |ui| {
-                                changed |= ui.checkbox(house_selected, "Selected cell").changed();
-                                changed |=
-                                    ui.checkbox(house_same_digit, "Same digit cells").changed();
-                            });
                         });
 
-                        ui.label("Notes");
+                        ui.label(format!("{} Notes", icon::PENCIL));
                         ui.indent("notes", |ui| {
                             let NotesSettings {
                                 auto_remove_peer_notes_on_fill,
@@ -87,7 +88,7 @@ pub fn show(ui: &mut Ui, vm: &SidebarViewModel, action_queue: &mut ActionRequest
                         });
                     });
 
-                CollapsingHeader::new("Appearance")
+                CollapsingHeader::new(format!("{} Appearance", icon::PALETTE))
                     .default_open(true)
                     .show(ui, |ui| {
                         widgets::global_theme_preference_buttons(ui);

@@ -1,6 +1,9 @@
 use eframe::egui::{Button, Response, RichText, Ui};
 
-use crate::action::{Action, ActionRequestQueue};
+use crate::{
+    action::{Action, ActionRequestQueue},
+    ui::icon,
+};
 
 #[derive(Debug, Clone)]
 pub struct ToolbarViewModel {
@@ -17,17 +20,17 @@ impl ToolbarViewModel {
 pub fn show(ui: &mut Ui, vm: &ToolbarViewModel, action_queue: &mut ActionRequestQueue) {
     ui.add_space(ui.spacing().item_spacing.y);
     ui.horizontal(|ui| {
-        if button(ui, "⮪", "Undo", vm.can_undo).clicked() {
+        if button(ui, icon::ARROW_UNDO, "Undo", vm.can_undo).clicked() {
             action_queue.request(Action::Undo);
         }
 
-        if button(ui, "⮫", "Redo", vm.can_redo).clicked() {
+        if button(ui, icon::ARROW_REDO, "Redo", vm.can_redo).clicked() {
             action_queue.request(Action::Redo);
         }
 
         ui.separator();
 
-        if button(ui, "➕", "New Game", true).clicked() {
+        if button(ui, icon::PLUS, "New Game", true).clicked() {
             action_queue.request(Action::RequestNewGameConfirm);
         }
     });

@@ -1,6 +1,9 @@
 use eframe::egui::{Id, Key, Modal, Sides, Ui};
 
-use crate::action::{Action, ActionRequestQueue};
+use crate::{
+    action::{Action, ActionRequestQueue},
+    ui::icon,
+};
 
 pub fn show_new_game_confirm(ui: &mut Ui, action_queue: &mut ActionRequestQueue) {
     let modal = Modal::new(Id::new("new_game_confirm")).show(ui.ctx(), |ui| {
@@ -13,7 +16,7 @@ pub fn show_new_game_confirm(ui: &mut Ui, action_queue: &mut ActionRequestQueue)
             ui,
             |_ui| {},
             |ui| {
-                let new_game = ui.button("New Game");
+                let new_game = ui.button(format!("{} New Game", icon::CHECK));
                 if ui.memory(|memory| memory.focused().is_none()) {
                     new_game.request_focus();
                 }
@@ -21,7 +24,9 @@ pub fn show_new_game_confirm(ui: &mut Ui, action_queue: &mut ActionRequestQueue)
                     action_queue.request(Action::StartNewGame);
                     ui.close();
                 }
-                if ui.button("Cancel").clicked() || ui.input(|i| i.key_pressed(Key::Escape)) {
+                if ui.button(format! {"{} Cancel", icon::CANCEL}).clicked()
+                    || ui.input(|i| i.key_pressed(Key::Escape))
+                {
                     ui.close();
                 }
             },
