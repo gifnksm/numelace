@@ -1,12 +1,12 @@
-use eframe::egui::{Id, Key, Modal, Sides, Ui};
+use eframe::egui::{Context, Id, Key, Modal, Sides};
 
 use crate::{
     action::{Action, ActionRequestQueue},
     ui::icon,
 };
 
-pub fn show_new_game_confirm(ui: &mut Ui, action_queue: &mut ActionRequestQueue) {
-    let modal = Modal::new(Id::new("new_game_confirm")).show(ui.ctx(), |ui| {
+pub fn show_new_game_confirm(ctx: &Context, action_queue: &mut ActionRequestQueue) {
+    let modal = Modal::new(Id::new("new_game_confirm")).show(ctx, |ui| {
         ui.heading("New Game?");
         ui.add_space(4.0);
         ui.label("Start a new game? Current progress will be lost.");

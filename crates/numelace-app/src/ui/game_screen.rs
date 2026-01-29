@@ -4,50 +4,47 @@ use egui_extras::{Size, StripBuilder};
 use super::{grid, keypad};
 use crate::{
     action::ActionRequestQueue,
-    ui::{
-        grid::GridViewModel,
-        keypad::KeypadViewModel,
-        sidebar::{self, SidebarViewModel},
-    },
+    ui::{grid::GridViewModel, keypad::KeypadViewModel},
 };
 
 #[derive(Debug, Clone)]
-#[expect(clippy::struct_field_names)]
-pub struct GameScreenViewModel<'a> {
-    grid_vm: GridViewModel,
-    keypad_vm: KeypadViewModel,
-    sidebar_vm: SidebarViewModel<'a>,
+pub struct GameScreenViewModel {
+    pub grid_vm: GridViewModel,
+    pub keypad_vm: KeypadViewModel,
 }
 
-impl<'a> GameScreenViewModel<'a> {
-    pub fn new(
-        grid_vm: GridViewModel,
-        keypad_vm: KeypadViewModel,
-        sidebar_vm: SidebarViewModel<'a>,
-    ) -> Self {
-        Self {
-            grid_vm,
-            keypad_vm,
-            sidebar_vm,
-        }
+impl GameScreenViewModel {
+    pub fn new(grid_vm: GridViewModel, keypad_vm: KeypadViewModel) -> Self {
+        Self { grid_vm, keypad_vm }
     }
 }
 
-pub fn show(ui: &mut Ui, vm: &GameScreenViewModel<'_>, action_queue: &mut ActionRequestQueue) {
-    let grid_ratio = egui::vec2(0.75, 9.0 / (9.0 + 2.0));
+pub fn show(ui: &mut Ui, vm: &GameScreenViewModel, action_queue: &mut ActionRequestQueue) {
+    let grid_rows = 9.0;
+    let keypad_rows = 2.0;
+    let total_rows = grid_rows + keypad_rows;
+
+    let grid_ratio = egui::vec2(1.0, grid_rows / total_rows);
     let spacing = ui.spacing().item_spacing;
-    let adjusted_size = ((ui.available_size() - spacing) * grid_ratio).min_elem();
+    let spaces = spacing * egui::vec2(2.0, 3.0);
+    let grid_size = ((ui.available_size() - spaces) * grid_ratio).min_elem();
+    let keypad_size = grid_size / grid_rows * keypad_rows;
+
     StripBuilder::new(ui)
-        .size(Size::exact(adjusted_size))
-        .size(Size::exact(spacing.x))
+        .size(Size::remainder())
+        .size(Size::exact(grid_size))
         .size(Size::remainder())
         .horizontal(|mut strip| {
+            strip.empty();
             strip.cell(|ui| {
                 StripBuilder::new(ui)
-                    .size(Size::exact(adjusted_size))
+                    .size(Size::remainder())
+                    .size(Size::exact(grid_size))
                     .size(Size::exact(spacing.y))
+                    .size(Size::exact(keypad_size))
                     .size(Size::remainder())
                     .vertical(|mut strip| {
+                        strip.empty();
                         strip.cell(|ui| {
                             grid::show(ui, &vm.grid_vm, action_queue);
                         });
@@ -55,11 +52,9 @@ pub fn show(ui: &mut Ui, vm: &GameScreenViewModel<'_>, action_queue: &mut Action
                         strip.cell(|ui| {
                             keypad::show(ui, &vm.keypad_vm, action_queue);
                         });
+                        strip.empty();
                     });
             });
-            strip.cell(|_ui| {}); // Spacer
-            strip.cell(|ui| {
-                sidebar::show(ui, &vm.sidebar_vm, action_queue);
-            });
+            strip.empty();
         });
 }

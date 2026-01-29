@@ -96,13 +96,13 @@ pub fn show(ui: &mut Ui, vm: &KeypadViewModel, action_queue: &mut ActionRequestQ
     // Center the digit block so keys "3" and "8" align with the overall grid center.
     // The block spans 5 columns; its center is column index 2 (0-based).
     let digit_center_offset = button_size * 2.5 + x_padding * 2.0;
-    let swap_input_mode = ui.input(|i| i.modifiers.command);
-    let effective_notes_mode = vm.notes_mode ^ swap_input_mode;
-
     let rect = ui.available_rect_before_wrap();
     let origin_x = rect.center().x - digit_center_offset;
-    let grid_rect = rect.intersect(rect.with_min_x(origin_x));
-    ui.scope_builder(UiBuilder::new().max_rect(grid_rect), |ui| {
+    let rect = rect.intersect(rect.with_min_x(origin_x));
+
+    let swap_input_mode = ui.input(|i| i.modifiers.command);
+    let effective_notes_mode = vm.notes_mode ^ swap_input_mode;
+    ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
         Grid::new(ui.id().with("keypad_grid"))
             .spacing((x_padding, y_padding))
             .max_col_width(button_size)

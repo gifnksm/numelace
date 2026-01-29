@@ -95,10 +95,10 @@ fn build_grid(app_state: &AppState, ui_state: &UiState) -> Array81<GridCell, Pos
     grid
 }
 
-pub fn build_game_screen_view_model<'a>(
-    app_state: &'a AppState,
-    ui_state: &'a UiState,
-) -> GameScreenViewModel<'a> {
+pub fn build_game_screen_view_model(
+    app_state: &AppState,
+    ui_state: &UiState,
+) -> GameScreenViewModel {
     let game = &app_state.game;
     let selected_cell = app_state.selected_cell;
     let settings = &app_state.settings;
@@ -117,14 +117,17 @@ pub fn build_game_screen_view_model<'a>(
     let has_removable_digit = selected_cell.is_some_and(|pos| game.has_removable_digit(pos));
     let keypad_vm = KeypadViewModel::new(digit_capabilities, has_removable_digit, notes_mode);
 
-    let status = if game.is_solved() {
+    GameScreenViewModel::new(grid_vm, keypad_vm)
+}
+
+pub fn build_sidebar_view_model(app_state: &AppState) -> SidebarViewModel<'_> {
+    let status = if app_state.game.is_solved() {
         GameStatus::Solved
     } else {
         GameStatus::InProgress
     };
-    let sidebar_vm = SidebarViewModel::new(status, settings);
-
-    GameScreenViewModel::new(grid_vm, keypad_vm, sidebar_vm)
+    let settings = &app_state.settings;
+    SidebarViewModel::new(status, settings)
 }
 
 #[cfg(test)]

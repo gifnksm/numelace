@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use eframe::{
     App, CreationContext, Frame, Storage,
-    egui::{CentralPanel, Context, TopBottomPanel},
+    egui::{CentralPanel, Context, SidePanel, TopBottomPanel},
 };
 
 use crate::{
@@ -80,6 +80,7 @@ impl App for NumelaceApp {
         }
 
         let toolbar_vm = view_model_builder::build_toolbar_vm(&self.ui_state);
+        let sidebar_vm = view_model_builder::build_sidebar_view_model(&self.app_state);
         let game_screen_vm =
             view_model_builder::build_game_screen_view_model(&self.app_state, &self.ui_state);
 
@@ -87,12 +88,17 @@ impl App for NumelaceApp {
             ui::toolbar::show(ui, &toolbar_vm, &mut action_queue);
         });
 
+        SidePanel::right("sidebar").show(ctx, |ui| {
+            ui::sidebar::show(ui, &sidebar_vm, &mut action_queue);
+        });
+
         CentralPanel::default().show(ctx, |ui| {
             ui::game_screen::show(ui, &game_screen_vm, &mut action_queue);
-            if self.ui_state.show_new_game_confirm_dialogue {
-                ui::dialogs::show_new_game_confirm(ui, &mut action_queue);
-            }
         });
+
+        if self.ui_state.show_new_game_confirm_dialogue {
+            ui::dialogs::show_new_game_confirm(ctx, &mut action_queue);
+        }
 
         action_handler::handle_all(
             &mut self.app_state,
