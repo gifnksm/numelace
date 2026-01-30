@@ -1,8 +1,8 @@
 //! Game logic for Sudoku gameplay.
 //!
 //! This crate manages game sessions and player interactions, providing the core
-//! game logic that sits between puzzle generation ([`numelace-generator`]) and the
-//! user interface ([`numelace-app`]).
+//! game logic that sits between puzzle generation (numelace-generator) and the
+//! user interface (numelace-app).
 //!
 //! # Overview
 //!
