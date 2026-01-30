@@ -24,6 +24,7 @@ numelace-solver.workspace = true
 serde = { workspace = true, features = ["derive"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+better-panic.workspace = true
 env_logger.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

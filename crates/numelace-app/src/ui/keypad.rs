@@ -138,7 +138,7 @@ pub fn show(ui: &mut Ui, vm: &KeypadViewModel, action_queue: &mut ActionRequestQ
                                 }
                             }
                             None => {
-                                ui.add_space(button_size);
+                                ui.allocate_space(Vec2::splat(button_size - x_padding));
                             }
                         }
                     }

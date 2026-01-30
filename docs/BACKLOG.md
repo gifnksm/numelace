@@ -56,7 +56,7 @@ This backlog is the single source of truth for tasks and ideas.
 
 ## Bugs / Fixes
 
-- Debug: debug builds hit a `debug_assert` with the message `add_space makes no sense in a grid layout` (root cause TBD)
+- Debug: debug builds hit a `debug_assert` with the message `add_space makes no sense in a grid layout` (resolved ✅)
 
 ## Notes
 

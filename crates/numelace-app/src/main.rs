@@ -20,6 +20,7 @@ mod view_model_builder;
 fn main() -> eframe::Result<()> {
     const APP_ID: &str = "io.github.gifnksm.numelace";
 
+    better_panic::install();
     env_logger::init();
 
     let options = eframe::NativeOptions {

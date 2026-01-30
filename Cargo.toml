@@ -11,6 +11,7 @@ repository = "https://github.com/gifnksm/numelace"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
+better-panic = "0.3.0"
 bitflags = "2.10.0"
 criterion = "0.8.1"
 derive_more = "2.1.1"
