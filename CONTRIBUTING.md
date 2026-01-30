@@ -19,7 +19,7 @@ Prerequisites: `cargo`, `trunk`, and `typos` must be available on your PATH.
 Run the local CI script to mirror GitHub Actions checks:
 
 ```bash
-scripts/ci.sh
+scripts/ci
 ```
 
 ### Code Quality

@@ -21,7 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
       - run: cargo doc --no-deps
+      - run: cargo doc --no-deps --target wasm32-unknown-unknown
 
   test:
     name: Test Suite

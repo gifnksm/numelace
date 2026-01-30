@@ -1,0 +1,11 @@
+name: Markdownlint
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  markdownlint:
+    name: Markdownlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx markdownlint .
