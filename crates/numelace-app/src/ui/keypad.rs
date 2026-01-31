@@ -17,7 +17,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct KeypadViewModel {
     digit_states: Array9<DigitKeyState, DigitSemantics>,
-    has_removable_digit: bool,
+    has_removable_input: bool,
     notes_mode: bool,
 }
 
@@ -45,12 +45,12 @@ impl DigitKeyState {
 impl KeypadViewModel {
     pub fn new(
         digit_states: Array9<DigitKeyState, DigitSemantics>,
-        has_removable_digit: bool,
+        has_removable_input: bool,
         notes_mode: bool,
     ) -> Self {
         Self {
             digit_states,
-            has_removable_digit,
+            has_removable_input,
             notes_mode,
         }
     }
@@ -155,7 +155,7 @@ pub fn show(
                                 }
                             }
                             Some(ButtonType::ClearCell) => {
-                                if show_remove_button(ui, button_size, vm.has_removable_digit) {
+                                if show_remove_button(ui, button_size, vm.has_removable_input) {
                                     action_queue.request(Action::ClearCell);
                                 }
                             }
@@ -323,11 +323,11 @@ fn show_digit_button(
     clicked
 }
 
-fn show_remove_button(ui: &mut Ui, button_size: f32, has_removable_digit: bool) -> bool {
+fn show_remove_button(ui: &mut Ui, button_size: f32, has_removable_input: bool) -> bool {
     let text = RichText::new(icon::GARBAGE_CAN).size(button_size * 0.8);
     let button = Button::new(text).min_size(Vec2::splat(button_size));
     let button = ui
-        .add_enabled(has_removable_digit, button)
+        .add_enabled(has_removable_input, button)
         .on_hover_text("Clear cell (digit and notes)")
         .on_disabled_hover_text("Clear cell (no removable cell selected)");
     button.clicked()

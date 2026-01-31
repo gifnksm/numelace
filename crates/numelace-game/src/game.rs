@@ -397,12 +397,12 @@ impl Game {
         Ok(())
     }
 
-    /// Returns whether the cell currently contains a removable digit.
+    /// Returns whether the cell currently contains removable player input.
     ///
-    /// This is `true` only for filled (player-entered) cells.
+    /// This is `true` for filled (player-entered) digits or notes.
     #[must_use]
-    pub fn has_removable_digit(&self, pos: Position) -> bool {
-        self.cell(pos).is_filled()
+    pub fn has_removable_input(&self, pos: Position) -> bool {
+        self.cell(pos).has_removable_input()
     }
 
     /// Returns the count of each decided digit (given or filled) on the board.
@@ -792,10 +792,8 @@ mod tests {
             Ok(InputOperation::Set)
         );
 
-        assert!(!game.has_removable_digit(empty_pos));
         game.set_digit(empty_pos, Digit::D5, &InputDigitOptions::default())
             .unwrap();
-        assert!(game.has_removable_digit(empty_pos));
         assert_eq!(
             game.toggle_note_capability(empty_pos, Digit::D1, RuleCheckPolicy::Permissive),
             Err(InputBlockReason::FilledCell)

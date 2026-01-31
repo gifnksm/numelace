@@ -123,8 +123,8 @@ pub fn build_game_screen_view_model(
         let toggle_note = selected_cell.map(|pos| game.toggle_note_capability(pos, digit, policy));
         DigitKeyState::new(set_digit, toggle_note, decided_digit_count[digit])
     });
-    let has_removable_digit = selected_cell.is_some_and(|pos| game.has_removable_digit(pos));
-    let keypad_vm = KeypadViewModel::new(digit_capabilities, has_removable_digit, notes_mode);
+    let has_removable_input = selected_cell.is_some_and(|pos| game.has_removable_input(pos));
+    let keypad_vm = KeypadViewModel::new(digit_capabilities, has_removable_input, notes_mode);
 
     GameScreenViewModel::new(toolbar_vm, status_line_vm, grid_vm, keypad_vm)
 }

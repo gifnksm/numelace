@@ -125,6 +125,11 @@ impl CellState {
         }
     }
 
+    /// Returns whether this cell currently contains removable player input.
+    pub(crate) fn has_removable_input(self) -> bool {
+        matches!(self, CellState::Filled(_) | CellState::Notes(_))
+    }
+
     /// Returns the digit if this is a given cell, otherwise `None`.
     #[must_use]
     pub fn as_given(&self) -> Option<Digit> {
@@ -244,6 +249,17 @@ mod tests {
         let mut cell = CellState::Notes(notes);
         cell.clear().unwrap();
         assert_eq!(cell, CellState::Empty);
+    }
+
+    #[test]
+    fn test_cell_state_has_removable_input() {
+        assert!(!CellState::Given(Digit::D2).has_removable_input());
+        assert!(!CellState::Empty.has_removable_input());
+        assert!(CellState::Filled(Digit::D7).has_removable_input());
+
+        let mut notes = DigitSet::new();
+        notes.insert(Digit::D4);
+        assert!(CellState::Notes(notes).has_removable_input());
     }
 
     #[test]
