@@ -38,6 +38,10 @@ pub fn show(ui: &mut Ui, vm: &ToolbarViewModel, action_queue: &mut ActionRequest
                     action_queue.request(Action::OpenModal(ModalKind::NewGameConfirm));
                 }
 
+                if button(ui, icon::ROTATE_CCW, "Reset Puzzle", true).clicked() {
+                    action_queue.request(Action::OpenModal(ModalKind::ResetCurrentPuzzleConfirm));
+                }
+
                 if button(ui, icon::GEAR_NO_HUB, "Settings", true).clicked() {
                     action_queue.request(Action::OpenModal(ModalKind::Settings));
                 }

@@ -149,6 +149,7 @@ impl GameSnapshot {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModalKind {
     NewGameConfirm,
+    ResetCurrentPuzzleConfirm,
     Settings,
 }
 

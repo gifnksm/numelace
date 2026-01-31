@@ -98,6 +98,10 @@ pub fn handle(
             push_history_if_changed = false;
             ctx.start_new_game();
         }
+        Action::ResetCurrentPuzzle => {
+            push_history_if_changed = false;
+            ctx.reset_current_puzzle();
+        }
         Action::UpdateSettings(settings) => {
             ctx.app_state.settings = settings;
         }
@@ -142,6 +146,14 @@ impl ActionContext<'_> {
 
     fn start_new_game(&mut self) {
         self.app_state.game = game_factory::generate_random_game();
+        self.app_state.selected_cell = None;
+        self.ui_state.reset_history(self.app_state);
+    }
+
+    fn reset_current_puzzle(&mut self) {
+        for pos in Position::ALL {
+            let _ = self.app_state.game.clear_cell(pos);
+        }
         self.app_state.selected_cell = None;
         self.ui_state.reset_history(self.app_state);
     }

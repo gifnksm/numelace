@@ -96,6 +96,9 @@ impl App for NumelaceApp {
                 ModalKind::NewGameConfirm => {
                     ui::dialogs::show_new_game_confirm(ctx, &mut action_queue);
                 }
+                ModalKind::ResetCurrentPuzzleConfirm => {
+                    ui::dialogs::show_reset_current_puzzle_confirm(ctx, &mut action_queue);
+                }
                 ModalKind::Settings => {
                     let settings_vm =
                         view_model_builder::build_settings_view_model(&self.app_state);

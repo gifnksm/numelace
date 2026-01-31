@@ -65,6 +65,7 @@ cargo run --release
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Z</kbd>: undo.
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Y</kbd>: redo.
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>N</kbd>: new game (confirmation shown).
+  - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Backspace</kbd>: reset puzzle (confirmation shown).
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>,</kbd>: open settings.
 
 ### Mouse
@@ -76,7 +77,7 @@ cargo run --release
   - Per-digit counts: show how many of each digit are already placed.
   - Notes mode indicators: digit buttons show note add/remove actions.
 - **Toolbar**
-  - Undo, Redo, New Game, Settings buttons.
+  - Undo, Redo, New Game, Reset Puzzle, Settings buttons.
   - Theme switch (Light/Dark/System).
 
 ## Project Structure

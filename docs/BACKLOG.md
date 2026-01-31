@@ -9,7 +9,7 @@ This backlog is the single source of truth for tasks and ideas.
 
 - Candidate notes (player notes) ✅
 - Undo/redo ✅
-- Reset current puzzle
+- Reset current puzzle ✅
 - Timer and statistics (e.g., solve time, mistakes, hints used)
 - Puzzle paste/import (text paste/manual input; no difficulty/uniqueness assumptions)
 

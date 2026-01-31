@@ -40,3 +40,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-01-30: Provide a local CI script mirroring GitHub Actions checks — makes it easy to run the same checks before pushing.
 - 2026-01-30: Use a front-and-center Settings modal (on-demand) and move theme switching to the toolbar — simplifies access while keeping the grid area clean.
 - 2026-01-31: Auto-generate `icon.rs` from emoji-icon-font CSS via a script — keeps icon ordering aligned with upstream and reduces manual updates.
+- 2026-01-31: Add reset-puzzle action with confirmation, toolbar entry, and shortcut — distinguishes input reset from New Game and reduces accidental loss.

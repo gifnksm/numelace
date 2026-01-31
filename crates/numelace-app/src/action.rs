@@ -17,6 +17,7 @@ pub enum Action {
     OpenModal(ModalKind),
     CloseModal,
     StartNewGame,
+    ResetCurrentPuzzle,
     UpdateSettings(Settings),
 }
 
