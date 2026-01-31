@@ -8,39 +8,24 @@ Numelace is a number-place (Sudoku) puzzle application written in Rust, with des
 - **Multiple Solving Strategies**: Implement both algorithmic (backtracking) and human-like solving techniques
 - **Cross-Platform**: Desktop and Web/WASM GUIs using egui/eframe
 
-## Current Status
+## Try the Web Demo
 
-Planned features are tracked in docs/BACKLOG.md.
+<https://gifnksm.github.io/numelace/>
 
-- Gameplay:
-  - ✅ 9x9 board with clear 3x3 boundaries
-  - ✅ Core rules: given vs filled cells and solved-state validation
-  - ✅ Candidate notes (player notes)
-  - ✅ Undo/redo
-- Puzzle & solver:
-  - ✅ Puzzle generation with unique solutions, reproducible seeds, and technique-solver solvability (human-style techniques)
-  - ✅ Solver with basic techniques (Naked/Hidden Single) plus backtracking
-- Optional assist features:
-  - ✅ Highlight toggles (same digit, house, conflicts)
-  - ✅ Mistake highlighting (row/col/box conflicts)
-  - ✅ Rule-violation blocking with ghost preview (shows attempted inputs without applying them)
-  - ✅ Blocked-candidate indicator on keypad buttons (toggleable)
-  - ✅ Auto-remove row/col/box notes on fill
-- Application features:
-  - ✅ Desktop GUI (keypad with digit counts, theme toggle, new game confirmation)
-  - ✅ Assist toggles UI (optional features on/off)
-  - ✅ Auto-save and resume (board state + settings)
-  - ✅ Web/WASM support
-
-## Web Demo
-
-- Web demo: <https://gifnksm.github.io/numelace>
-
-## Run on Desktop
+## Run on Desktop (Local)
 
 ```bash
 cargo run --release
 ```
+
+## Current Status
+
+Planned features are tracked in docs/BACKLOG.md.
+
+- Core UX: notes, undo/redo, highlight toggles, rule-violation preview
+- Platforms: Desktop + Web/WASM
+- Persistence: auto-save and resume
+- UI: on-screen keypad, theme switch, settings modal
 
 ## Controls
 
