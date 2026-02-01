@@ -52,7 +52,7 @@ This backlog is the single source of truth for tasks and ideas.
 - [X] Auto-save and resume (board state + settings)
 - [X] WASM build (run in web browser)
 - [X] Publish web build via GitHub Actions + GitHub Pages
-- [ ] Replace template app icons with Numelace branding
+- [X] Replace template app icons with Numelace branding
 - [X] Smartphone UI optimization (touch targets, layout adjustments, modal sizing)
 - [X] Settings modal (front-and-center modal with close button + outside click)
 

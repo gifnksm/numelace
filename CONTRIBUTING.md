@@ -10,6 +10,15 @@ This document describes the standards and guidelines for this project.
 - [Backlog](docs/BACKLOG.md) - Ideas, experiments, and future work
 - Naming: use `Numelace` for the app/brand name, and `Sudoku` when referring to the puzzle rules
 
+### Icon assets
+
+- Source SVG lives in `assets/source/icon.svg`.
+- Generate the SVG with:
+  - `scripts/generate_icon_svg`
+- Generate all PNG/ICO assets with:
+  - `scripts/generate_icon_assets`
+- Default output path matches `assets/source/icon.svg`.
+
 ## Development Workflow
 
 ### Local CI checks
