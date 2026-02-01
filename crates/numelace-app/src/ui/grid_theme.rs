@@ -32,27 +32,45 @@ impl GridPalette {
     /// This keeps behavior identical to the current visuals-based colors,
     /// while making the palette structure explicit for later customization.
     pub fn from_visuals(visuals: &Visuals) -> Self {
-        let cell_bg_selected = visuals.selection.bg_fill;
-        let cell_bg_house = visuals.widgets.hovered.bg_fill;
+        // Palette guidance:
+        // - Prefer meaning-based colors that do not overlap with existing semantics.
+        // - Keep light/dark modes on the same semantic hue, adjust luminance only.
+        // - Keep backgrounds subtle so digits/notes stay primary.
+        // - For visuals-derived values, keep a single value comment at the source line.
+        let cell_bg_selected = visuals.selection.bg_fill; // dark=(0, 92, 128) light=(144, 209, 255)
+        let (cell_bg_house_selected, cell_bg_house_same_digit, note_bg_house_same_digit) =
+            if visuals.dark_mode {
+                (
+                    Color32::from_gray(80), // base: widgets.hovered.bg_fill = (70, 70, 70) (dark)
+                    Color32::from_gray(45), // tuned from widgets.hovered.bg_fill (dark), higher contrast
+                    Color32::from_gray(45), // tuned from widgets.hovered.bg_fill (dark), higher contrast
+                )
+            } else {
+                (
+                    Color32::from_gray(170), // tuned from widgets.hovered.bg_fill (light), higher contrast
+                    Color32::from_gray(210), // base: widgets.hovered.bg_fill = (220, 220, 220) (light)
+                    Color32::from_gray(210), // base: widgets.hovered.bg_fill = (220, 220, 220) (light)
+                )
+            };
 
         Self {
-            cell_bg_default: visuals.text_edit_bg_color(),
+            cell_bg_default: visuals.text_edit_bg_color(), // dark=(10, 10, 10) light=(255, 255, 255)
             cell_bg_selected,
             cell_bg_same_digit: cell_bg_selected,
-            cell_bg_house_selected: cell_bg_house,
-            cell_bg_house_same_digit: cell_bg_house,
+            cell_bg_house_selected,
+            cell_bg_house_same_digit,
 
             note_bg_same_digit: cell_bg_selected,
-            note_bg_house_same_digit: cell_bg_house,
+            note_bg_house_same_digit,
 
-            border_inactive: visuals.widgets.inactive.fg_stroke.color,
-            border_selected: visuals.selection.stroke.color,
+            border_inactive: visuals.widgets.inactive.fg_stroke.color, // dark=(180, 180, 180) light=(60, 60, 60)
+            border_selected: visuals.selection.stroke.color, // dark=(192, 222, 255) light=(0, 83, 125)
             border_same_digit: visuals.selection.stroke.color,
-            border_conflict: visuals.error_fg_color,
+            border_conflict: visuals.error_fg_color, // dark/light=(255, 0, 0)
 
-            text_normal: visuals.text_color(),
-            text_given: visuals.strong_text_color(),
-            text_conflict: visuals.error_fg_color,
+            text_normal: visuals.text_color(), // dark=(140, 140, 140) light=(80, 80, 80)
+            text_given: visuals.strong_text_color(), // dark=(255, 255, 255) light=(0, 0, 0)
+            text_conflict: visuals.error_fg_color, // dark/light=(255, 0, 0)
         }
     }
 }
