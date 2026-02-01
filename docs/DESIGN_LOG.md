@@ -43,3 +43,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-01-31: Add reset-puzzle action with confirmation, toolbar entry, and shortcut — distinguishes input reset from New Game and reduces accidental loss.
 - 2026-01-31: Quantize UI cell_size to 1/100 steps before GUI rounding — prevents cumulative layout drift from rounding.
 - 2026-02-01: Notes auto-fill uses keypad (selected cell) + toolbar (all cells), `a`/`A` shortcuts, replaces notes with peer-exclusion candidates computed in `numelace-game`, and defaults auto-fill on new game/reset to ON — keeps UX discoverable while centralizing rule-driven note generation.
+- 2026-02-01: Grid rendering now uses a dedicated grid palette/theme structure (light/dark), initially mirroring existing visuals — enables future hint colors and clearer semantic color tuning.

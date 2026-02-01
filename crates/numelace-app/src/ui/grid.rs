@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use eframe::egui::{
-    Align2, Color32, FontId, Painter, Pos2, Rect, Sense, Stroke, StrokeKind, Ui, Vec2, Visuals,
+    Align2, Color32, FontId, Painter, Pos2, Rect, Sense, Stroke, StrokeKind, Ui, Vec2,
 };
 use numelace_core::{Digit, DigitSet, Position, containers::Array81, index::PositionSemantics};
 use numelace_game::CellState;
@@ -9,7 +9,10 @@ use numelace_game::CellState;
 use crate::{
     action::{Action, ActionRequestQueue},
     state::HighlightSettings,
-    ui::layout::{ComponentUnits, LayoutScale},
+    ui::{
+        grid_theme::{GridPalette, GridTheme},
+        layout::{ComponentUnits, LayoutScale},
+    },
 };
 
 bitflags::bitflags! {
@@ -95,15 +98,11 @@ impl GridViewModel {
         }
     }
 
-    fn inactive_border_color(visuals: &Visuals) -> Color32 {
-        visuals.widgets.inactive.fg_stroke.color
-    }
-
-    fn grid_thick_border(visuals: &Visuals, cell_size: f32) -> Stroke {
+    fn grid_thick_border(palette: &GridPalette, cell_size: f32) -> Stroke {
         let base_width = f32::max(cell_size * CELL_BORDER_WIDTH_BASE_RATIO, 1.0);
         Stroke::new(
             base_width * THICK_BORDER_WIDTH_RATIO,
-            Self::inactive_border_color(visuals),
+            palette.border_inactive,
         )
     }
 
@@ -140,55 +139,54 @@ const HOUSE_BORDER_WIDTH_RATIO: f32 = 1.0;
 struct EffectiveGridVisualState(GridVisualState);
 
 impl EffectiveGridVisualState {
-    fn text_color(self, is_given: bool, visuals: &Visuals) -> Color32 {
+    fn text_color(self, is_given: bool, palette: &GridPalette) -> Color32 {
         if self.0.intersects(GridVisualState::CONFLICT) {
-            return visuals.error_fg_color;
+            return palette.text_conflict;
         }
         if is_given {
-            visuals.strong_text_color()
+            palette.text_given
         } else {
-            visuals.text_color()
+            palette.text_normal
         }
     }
 
-    fn cell_fill_color(self, visuals: &Visuals) -> Color32 {
-        if self
-            .0
-            .intersects(GridVisualState::SELECTED | GridVisualState::SAME_DIGIT)
-        {
-            return visuals.selection.bg_fill;
+    fn cell_fill_color(self, palette: &GridPalette) -> Color32 {
+        if self.0.intersects(GridVisualState::SELECTED) {
+            return palette.cell_bg_selected;
         }
-        if self
-            .0
-            .intersects(GridVisualState::HOUSE_SELECTED | GridVisualState::HOUSE_SAME_DIGIT)
-        {
-            return visuals.widgets.hovered.bg_fill;
+        if self.0.intersects(GridVisualState::SAME_DIGIT) {
+            return palette.cell_bg_same_digit;
         }
-        visuals.text_edit_bg_color()
+        if self.0.intersects(GridVisualState::HOUSE_SELECTED) {
+            return palette.cell_bg_house_selected;
+        }
+        if self.0.intersects(GridVisualState::HOUSE_SAME_DIGIT) {
+            return palette.cell_bg_house_same_digit;
+        }
+        palette.cell_bg_default
     }
 
-    fn note_fill_color(self, visuals: &Visuals) -> Option<Color32> {
-        if self
-            .0
-            .intersects(GridVisualState::SAME_DIGIT | GridVisualState::HOUSE_SAME_DIGIT)
-        {
-            return Some(self.cell_fill_color(visuals));
+    fn note_fill_color(self, palette: &GridPalette) -> Option<Color32> {
+        if self.0.intersects(GridVisualState::SAME_DIGIT) {
+            return Some(palette.note_bg_same_digit);
+        }
+        if self.0.intersects(GridVisualState::HOUSE_SAME_DIGIT) {
+            return Some(palette.note_bg_house_same_digit);
         }
         None
     }
 
-    fn cell_border_color(self, visuals: &Visuals) -> Color32 {
+    fn cell_border_color(self, palette: &GridPalette) -> Color32 {
         if self.0.intersects(GridVisualState::CONFLICT) {
-            return visuals.error_fg_color;
+            return palette.border_conflict;
         }
-
-        if self
-            .0
-            .intersects(GridVisualState::SELECTED | GridVisualState::SAME_DIGIT)
-        {
-            return visuals.selection.stroke.color;
+        if self.0.intersects(GridVisualState::SELECTED) {
+            return palette.border_selected;
         }
-        GridViewModel::inactive_border_color(visuals)
+        if self.0.intersects(GridVisualState::SAME_DIGIT) {
+            return palette.border_same_digit;
+        }
+        palette.border_inactive
     }
 
     fn cell_border_width_ratio(self) -> f32 {
@@ -206,8 +204,8 @@ impl EffectiveGridVisualState {
         }
     }
 
-    fn cell_border(self, visuals: &Visuals, cell_size: f32) -> Stroke {
-        let color = self.cell_border_color(visuals);
+    fn cell_border(self, palette: &GridPalette, cell_size: f32) -> Stroke {
+        let color = self.cell_border_color(palette);
         let ratio = self.cell_border_width_ratio();
         let base_width = f32::max(cell_size * CELL_BORDER_WIDTH_BASE_RATIO, 1.0);
         Stroke::new(base_width * ratio, color)
@@ -223,11 +221,13 @@ pub fn show(
     let cell_size = scale.cell_size;
     let style = Arc::clone(ui.style());
     let visuals = &style.visuals;
+    let grid_theme = GridTheme::from_visuals(visuals);
+    let palette = grid_theme.palette_for(visuals);
     let grid_side = grid_side_with_border(cell_size);
 
     let (rect, _response) = ui.allocate_exact_size(Vec2::splat(grid_side), Sense::hover());
 
-    let thick_border = GridViewModel::grid_thick_border(visuals, cell_size);
+    let thick_border = GridViewModel::grid_thick_border(palette, cell_size);
     let base_border = f32::max(cell_size * CELL_BORDER_WIDTH_BASE_RATIO, 1.0);
     let inner_rect = rect.shrink(thick_border.width);
 
@@ -250,7 +250,7 @@ pub fn show(
             let cell_max = cell_min + Vec2::splat(cell_size);
             let cell_rect = Rect::from_min_max(cell_min, cell_max);
 
-            painter.rect_filled(cell_rect, 0.0, vs.cell_fill_color(visuals));
+            painter.rect_filled(cell_rect, 0.0, vs.cell_fill_color(palette));
 
             if let Some(digits) = cell.content.as_notes() {
                 let notes_rect = cell_rect.shrink(base_border);
@@ -260,7 +260,7 @@ pub fn show(
                     notes_rect,
                     digits,
                     &cell.note_visual_state,
-                    visuals,
+                    palette,
                 );
             } else if let Some(digit) = cell.content.as_digit() {
                 painter.text(
@@ -268,14 +268,14 @@ pub fn show(
                     Align2::CENTER_CENTER,
                     digit.as_str(),
                     FontId::proportional(cell_size * 0.8),
-                    vs.text_color(cell.content.is_given(), visuals),
+                    vs.text_color(cell.content.is_given(), palette),
                 );
             }
 
             painter.rect_stroke(
                 cell_rect,
                 0.0,
-                vs.cell_border(visuals, cell_size),
+                vs.cell_border(palette, cell_size),
                 StrokeKind::Inside,
             );
 
@@ -339,7 +339,7 @@ fn draw_notes(
     rect: Rect,
     digits: DigitSet,
     note_visual_state: &NoteVisualState,
-    visuals: &Visuals,
+    palette: &GridPalette,
 ) {
     let note_font = FontId::proportional(rect.height() / 3.0);
 
@@ -356,8 +356,8 @@ fn draw_notes(
 
         let center = rect.min + Vec2::new((x + 0.5) * cell_w, (y + 0.5) * cell_h);
         let vs = vm.effective_visual_state(note_visual_state.digit_highlight(digit));
-        let text_color = vs.text_color(false, visuals);
-        if let Some(fill_color) = vs.note_fill_color(visuals) {
+        let text_color = vs.text_color(false, palette);
+        if let Some(fill_color) = vs.note_fill_color(palette) {
             let fill_rect =
                 Rect::from_center_size(center, Vec2::splat(f32::min(cell_w, cell_h)) * 0.9);
             painter.rect_filled(fill_rect, 0.0, fill_color);

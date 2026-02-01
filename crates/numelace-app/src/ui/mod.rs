@@ -1,6 +1,7 @@
 pub mod dialogs;
 pub mod game_screen;
 pub mod grid;
+pub mod grid_theme;
 pub mod icon;
 pub mod input;
 pub mod keypad;
