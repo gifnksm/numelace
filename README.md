@@ -46,6 +46,8 @@ Planned features are tracked in docs/BACKLOG.md.
   - <kbd>1</kbd>–<kbd>9</kbd>: enter a digit for the selected cell.
   - <kbd>S</kbd>: toggle between Fill and Notes modes.
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> (hold): temporarily swap Fill/Notes while held.
+  - <kbd>A</kbd>: auto-fill notes for the selected cell.
+  - <kbd>Shift</kbd>+<kbd>A</kbd>: auto-fill notes for all cells.
 - **Clearing**
   - <kbd>Delete</kbd>/<kbd>Backspace</kbd>: clear the selected cell (digit or notes).
 - **History & game actions**
@@ -60,11 +62,12 @@ Planned features are tracked in docs/BACKLOG.md.
 - **Keypad**
   - <kbd>1</kbd>–<kbd>9</kbd> + <kbd>Delete</kbd>: entry and clearing.
   - Notes toggle button (pencil): switch input mode.
+  - Auto-fill notes button (selected cell).
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> (hold): temporarily swap Fill/Notes for keypad digit buttons.
   - Per-digit counts: show how many of each digit are already placed.
   - Notes mode indicators: digit buttons show note add/remove actions.
 - **Toolbar**
-  - Undo, Redo, New Game, Reset Puzzle, Settings buttons.
+  - Undo, Redo, New Game, Reset Puzzle, Settings, Auto-fill notes (all cells) buttons.
   - Theme switch (Light/Dark/System).
 
 ## Project Structure

@@ -124,7 +124,13 @@ pub fn build_game_screen_view_model(
         DigitKeyState::new(set_digit, toggle_note, decided_digit_count[digit])
     });
     let has_removable_input = selected_cell.is_some_and(|pos| game.has_removable_input(pos));
-    let keypad_vm = KeypadViewModel::new(digit_capabilities, has_removable_input, notes_mode);
+    let auto_fill_capability = selected_cell.map(|pos| game.auto_fill_cell_notes_capability(pos));
+    let keypad_vm = KeypadViewModel::new(
+        digit_capabilities,
+        has_removable_input,
+        notes_mode,
+        auto_fill_capability,
+    );
 
     GameScreenViewModel::new(toolbar_vm, status_line_vm, grid_vm, keypad_vm)
 }

@@ -31,9 +31,10 @@ This backlog is the single source of truth for tasks and ideas.
   - [ ] Allow toggling blocked-candidate indicator (optional)
 - [X] Ghost input preview for blocked actions
 - [X] Assist: on digit entry, remove that digit’s note from all peers (same row, column, or box) (optional)
-- [ ] Notes auto-fill for possible digits (optional)
-  - [ ] For selected cell
-  - [ ] For all cells
+- [X] Notes auto-fill for possible digits (optional)
+  - [X] For selected cell
+  - [X] For all cells
+  - [X] Auto-fill notes on new game/reset (optional)
 - [ ] Hint system (scope TBD: show applicable technique, target cells, or apply a step)
 
 ### Application features

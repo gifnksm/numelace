@@ -7,7 +7,7 @@ use numelace_core::{Digit, containers::Array9, index::DigitSemantics};
 use numelace_game::{InputBlockReason, InputOperation};
 
 use crate::{
-    action::{Action, ActionRequestQueue},
+    action::{Action, ActionRequestQueue, NotesFillScope},
     ui::{
         icon,
         layout::{ComponentUnits, LayoutScale},
@@ -19,6 +19,7 @@ pub struct KeypadViewModel {
     digit_states: Array9<DigitKeyState, DigitSemantics>,
     has_removable_input: bool,
     notes_mode: bool,
+    auto_fill_capability: Option<Result<InputOperation, InputBlockReason>>,
 }
 
 #[derive(Debug, Clone)]
@@ -47,11 +48,13 @@ impl KeypadViewModel {
         digit_states: Array9<DigitKeyState, DigitSemantics>,
         has_removable_input: bool,
         notes_mode: bool,
+        auto_fill_capability: Option<Result<InputOperation, InputBlockReason>>,
     ) -> Self {
         Self {
             digit_states,
             has_removable_input,
             notes_mode,
+            auto_fill_capability,
         }
     }
 }
@@ -59,6 +62,7 @@ impl KeypadViewModel {
 enum ButtonType {
     Digit(Digit),
     ClearCell,
+    AutoFillNotes,
     ToggleInputMode,
 }
 
@@ -72,6 +76,10 @@ const BUTTON_LAYOUT: [[Option<ButtonType>; 6]; 2] = {
         Some(ButtonType::ClearCell)
     }
     #[expect(clippy::unnecessary_wraps)]
+    const fn a() -> Option<ButtonType> {
+        Some(ButtonType::AutoFillNotes)
+    }
+    #[expect(clippy::unnecessary_wraps)]
     const fn t() -> Option<ButtonType> {
         Some(ButtonType::ToggleInputMode)
     }
@@ -80,7 +88,7 @@ const BUTTON_LAYOUT: [[Option<ButtonType>; 6]; 2] = {
     use Digit::*;
     [
         [d(D1), d(D2), d(D3), d(D4), d(D5), t()],
-        [d(D6), d(D7), d(D8), d(D9), c(), None],
+        [d(D6), d(D7), d(D8), d(D9), c(), a()],
     ]
 };
 
@@ -155,8 +163,15 @@ pub fn show(
                                 }
                             }
                             Some(ButtonType::ClearCell) => {
-                                if show_remove_button(ui, button_size, vm.has_removable_input) {
+                                if show_clear_button(ui, button_size, vm.has_removable_input) {
                                     action_queue.request(Action::ClearCell);
+                                }
+                            }
+                            Some(ButtonType::AutoFillNotes) => {
+                                if show_auto_fill_button(ui, button_size, vm.auto_fill_capability) {
+                                    action_queue.request(Action::AutoFillNotes {
+                                        scope: NotesFillScope::Cell,
+                                    });
                                 }
                             }
                             Some(ButtonType::ToggleInputMode) => {
@@ -323,13 +338,27 @@ fn show_digit_button(
     clicked
 }
 
-fn show_remove_button(ui: &mut Ui, button_size: f32, has_removable_input: bool) -> bool {
+fn show_clear_button(ui: &mut Ui, button_size: f32, has_removable_input: bool) -> bool {
     let text = RichText::new(icon::GARBAGE_CAN).size(button_size * 0.8);
     let button = Button::new(text).min_size(Vec2::splat(button_size));
     let button = ui
         .add_enabled(has_removable_input, button)
         .on_hover_text("Clear cell (digit and notes)")
         .on_disabled_hover_text("Clear cell (no removable cell selected)");
+    button.clicked()
+}
+
+fn show_auto_fill_button(
+    ui: &mut Ui,
+    button_size: f32,
+    auto_fill_capability: Option<Result<InputOperation, InputBlockReason>>,
+) -> bool {
+    let enabled = auto_fill_capability.is_some_and(|res| res.is_ok_and(|op| op.is_set()));
+    let text = RichText::new(icon::LETTER_A).size(button_size * 0.8);
+    let button = Button::new(text).min_size(Vec2::splat(button_size));
+    let button = ui
+        .add_enabled(enabled, button)
+        .on_hover_text("Auto-fill notes (selected cell)");
     button.clicked()
 }
 

@@ -292,6 +292,7 @@ impl From<HighlightSettingsDto> for HighlightSettings {
 #[serde(default)]
 pub struct NotesSettingsDto {
     pub auto_remove_peer_notes_on_fill: bool,
+    pub auto_fill_notes_on_new_or_reset: bool,
 }
 
 impl Default for NotesSettingsDto {
@@ -304,6 +305,7 @@ impl From<&NotesSettings> for NotesSettingsDto {
     fn from(value: &NotesSettings) -> Self {
         Self {
             auto_remove_peer_notes_on_fill: value.auto_remove_peer_notes_on_fill,
+            auto_fill_notes_on_new_or_reset: value.auto_fill_notes_on_new_or_reset,
         }
     }
 }
@@ -312,6 +314,7 @@ impl From<NotesSettingsDto> for NotesSettings {
     fn from(value: NotesSettingsDto) -> Self {
         Self {
             auto_remove_peer_notes_on_fill: value.auto_remove_peer_notes_on_fill,
+            auto_fill_notes_on_new_or_reset: value.auto_fill_notes_on_new_or_reset,
         }
     }
 }

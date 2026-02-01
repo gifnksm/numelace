@@ -2,7 +2,7 @@ use eframe::egui::{InputState, Key};
 use numelace_core::Digit;
 
 use crate::{
-    action::{Action, ActionRequestQueue, MoveDirection},
+    action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
     state::ModalKind,
 };
 
@@ -40,6 +40,10 @@ impl Shortcut {
         Self::new(Trigger::new(key, true, true), action)
     }
 
+    const fn shift(key: Key, action: Action) -> Self {
+        Self::new(Trigger::new(key, false, true), action)
+    }
+
     const fn plain(key: Key, action: Action) -> Self {
         Self::new(Trigger::new(key, false, false), action)
     }
@@ -55,7 +59,7 @@ impl Shortcut {
     }
 }
 
-const SHORTCUTS: [Shortcut; 31] = [
+const SHORTCUTS: [Shortcut; 33] = [
     Shortcut::command(Key::N, Action::OpenModal(ModalKind::NewGameConfirm)),
     Shortcut::command(Key::Comma, Action::OpenModal(ModalKind::Settings)),
     Shortcut::command_shift(
@@ -70,6 +74,18 @@ const SHORTCUTS: [Shortcut; 31] = [
     Shortcut::plain(Key::ArrowRight, Action::MoveSelection(MoveDirection::Right)),
     Shortcut::plain(Key::Escape, Action::ClearSelection),
     Shortcut::plain(Key::S, Action::ToggleInputMode),
+    Shortcut::plain(
+        Key::A,
+        Action::AutoFillNotes {
+            scope: NotesFillScope::Cell,
+        },
+    ),
+    Shortcut::shift(
+        Key::A,
+        Action::AutoFillNotes {
+            scope: NotesFillScope::AllCells,
+        },
+    ),
     Shortcut::plain(Key::Delete, Action::ClearCell),
     Shortcut::plain(Key::Backspace, Action::ClearCell),
     Shortcut::digit(Key::Num1, Digit::D1, true),

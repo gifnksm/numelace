@@ -109,6 +109,49 @@ impl CellState {
         }
     }
 
+    /// Returns whether notes can be set on this cell.
+    ///
+    /// This is blocked for given or filled cells.
+    pub(crate) fn can_set_notes(self) -> Result<(), InputBlockReason> {
+        match self {
+            CellState::Given(_) => Err(InputBlockReason::GivenCell),
+            CellState::Filled(_) => Err(InputBlockReason::FilledCell),
+            CellState::Notes(_) | CellState::Empty => Ok(()),
+        }
+    }
+
+    /// Returns the operation that would occur when replacing notes with `notes`.
+    ///
+    /// Setting empty notes is treated as a no-op for empty cells.
+    pub(crate) fn set_notes_capability(
+        self,
+        notes: DigitSet,
+    ) -> Result<InputOperation, InputBlockReason> {
+        match self {
+            CellState::Given(_) => Err(InputBlockReason::GivenCell),
+            CellState::Filled(_) => Err(InputBlockReason::FilledCell),
+            CellState::Notes(digits) if digits == notes => Ok(InputOperation::NoOp),
+            CellState::Empty if notes.is_empty() => Ok(InputOperation::NoOp),
+            CellState::Notes(_) | CellState::Empty => Ok(InputOperation::Set),
+        }
+    }
+
+    /// Replaces notes with the provided set, mapping empty notes to `Empty`.
+    pub(crate) fn set_notes(&mut self, digits: DigitSet) {
+        match self {
+            CellState::Notes(_) | CellState::Empty => {
+                if digits.is_empty() {
+                    *self = CellState::Empty;
+                } else {
+                    *self = CellState::Notes(digits);
+                }
+            }
+            CellState::Given(_) | CellState::Filled(_) => {
+                unreachable!("set_notes is invalid for given or filled cells")
+            }
+        }
+    }
+
     /// Clears this cell if it contains player input or notes.
     ///
     /// # Errors
@@ -236,6 +279,15 @@ mod tests {
             cell,
             CellState::Notes(notes) if notes.contains(Digit::D3) && notes.contains(Digit::D5)
         ));
+    }
+
+    #[test]
+    fn test_cell_state_set_notes_empty_becomes_empty() {
+        let mut notes = DigitSet::new();
+        notes.insert(Digit::D4);
+        let mut cell = CellState::Notes(notes);
+        cell.set_notes(DigitSet::new());
+        assert_eq!(cell, CellState::Empty);
     }
 
     #[test]

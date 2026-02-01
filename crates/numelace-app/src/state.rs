@@ -115,12 +115,14 @@ impl Default for HighlightSettings {
 #[derive(Debug, Clone)]
 pub struct NotesSettings {
     pub auto_remove_peer_notes_on_fill: bool,
+    pub auto_fill_notes_on_new_or_reset: bool,
 }
 
 impl Default for NotesSettings {
     fn default() -> Self {
         Self {
             auto_remove_peer_notes_on_fill: true,
+            auto_fill_notes_on_new_or_reset: true,
         }
     }
 }

@@ -357,6 +357,72 @@ impl Game {
 
         Ok(operation)
     }
+    /// Returns the note auto-fill capability for a single cell.
+    ///
+    /// This computes candidate notes by excluding digits already present in peers,
+    /// then reports whether applying those notes would be a no-op or a set.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InputBlockReason::GivenCell`] if the cell is a given cell.
+    /// Returns [`InputBlockReason::FilledCell`] if the cell is filled.
+    pub fn auto_fill_cell_notes_capability(
+        &self,
+        pos: Position,
+    ) -> Result<InputOperation, InputBlockReason> {
+        self.cell(pos).can_set_notes()?;
+        let mut notes = DigitSet::FULL;
+        for peer_pos in pos.house_peers() {
+            if let Some(digit) = self.grid[peer_pos].as_digit() {
+                notes.remove(digit);
+            }
+        }
+        self.cell(pos).set_notes_capability(notes)
+    }
+
+    /// Auto-fills notes for a single cell by replacing its notes with computed candidates.
+    ///
+    /// Candidates are derived by excluding digits already present in peers. Empty candidates
+    /// clear notes for the cell.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InputBlockReason::GivenCell`] if the cell is a given cell.
+    /// Returns [`InputBlockReason::FilledCell`] if the cell is filled.
+    pub fn auto_fill_cell_notes(
+        &mut self,
+        pos: Position,
+    ) -> Result<InputOperation, InputBlockReason> {
+        self.cell(pos).can_set_notes()?;
+        let mut notes = DigitSet::FULL;
+        for peer_pos in pos.house_peers() {
+            if let Some(digit) = self.grid[peer_pos].as_digit() {
+                notes.remove(digit);
+            }
+        }
+        let operation = self.cell(pos).set_notes_capability(notes)?;
+        match operation {
+            InputOperation::NoOp => {}
+            InputOperation::Set => {
+                self.grid[pos].set_notes(notes);
+            }
+            InputOperation::Removed => unreachable!(""),
+        }
+        Ok(operation)
+    }
+
+    /// Auto-fills notes for all cells that can accept notes.
+    ///
+    /// Cells that cannot accept notes (given/filled) are skipped.
+    pub fn auto_fill_notes_all_cells(&mut self) {
+        for pos in Position::ALL {
+            if self.cell(pos).can_set_notes().is_err() {
+                continue;
+            }
+            #[expect(clippy::missing_panics_doc)]
+            self.auto_fill_cell_notes(pos).unwrap();
+        }
+    }
 
     /// Clears the digit at the given position.
     ///
@@ -423,7 +489,7 @@ impl Game {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{Digit, DigitGrid, Position};
+    use numelace_core::{Digit, DigitGrid, DigitSet, Position};
     use numelace_generator::PuzzleGenerator;
 
     use crate::NoteCleanupPolicy;
@@ -659,6 +725,91 @@ mod tests {
         game.toggle_note(empty_pos, Digit::D3, RuleCheckPolicy::Permissive)
             .unwrap();
         assert_eq!(game.cell(empty_pos), &CellState::Empty);
+    }
+
+    #[test]
+    fn test_auto_fill_cell_notes_sets_candidates() {
+        let problem: DigitGrid = "\
+.12......\
+3........\
+.4.......\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+"
+        .parse()
+        .expect("valid problem grid");
+        let filled: DigitGrid = "\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+"
+        .parse()
+        .expect("valid filled grid");
+
+        let mut game = Game::from_problem_filled_notes(&problem, &filled, &[[0; 9]; 9]).unwrap();
+        let pos = Position::new(0, 0);
+
+        let result = game.auto_fill_cell_notes(pos).unwrap();
+        assert_eq!(result, InputOperation::Set);
+
+        let mut expected = DigitSet::new();
+        for digit in [Digit::D5, Digit::D6, Digit::D7, Digit::D8, Digit::D9] {
+            expected.insert(digit);
+        }
+
+        assert!(matches!(
+            game.cell(pos),
+            CellState::Notes(notes) if *notes == expected
+        ));
+    }
+
+    #[test]
+    fn test_auto_fill_cell_notes_clears_when_no_candidates() {
+        let problem: DigitGrid = "\
+.12345678\
+9........\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+"
+        .parse()
+        .expect("valid problem grid");
+        let filled: DigitGrid = "\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+.........\
+"
+        .parse()
+        .expect("valid filled grid");
+
+        let mut game = Game::from_problem_filled_notes(&problem, &filled, &[[0; 9]; 9]).unwrap();
+        let pos = Position::new(0, 0);
+
+        game.toggle_note(pos, Digit::D1, RuleCheckPolicy::Permissive)
+            .unwrap();
+        let result = game.auto_fill_cell_notes(pos).unwrap();
+        assert_eq!(result, InputOperation::Set);
+        assert_eq!(game.cell(pos), &CellState::Empty);
     }
 
     #[test]

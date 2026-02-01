@@ -58,11 +58,18 @@ pub fn show(ctx: &Context, vm: &SettingsViewModel, action_queue: &mut ActionRequ
                     ui.indent("notes", |ui| {
                         let NotesSettings {
                             auto_remove_peer_notes_on_fill,
+                            auto_fill_notes_on_new_or_reset,
                         } = notes;
                         changed |= ui
                             .checkbox(
                                 auto_remove_peer_notes_on_fill,
                                 "Auto-remove row/col/box notes on fill",
+                            )
+                            .changed();
+                        changed |= ui
+                            .checkbox(
+                                auto_fill_notes_on_new_or_reset,
+                                "Auto-fill notes on new game/reset",
                             )
                             .changed();
                     });

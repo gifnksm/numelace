@@ -12,6 +12,7 @@ pub enum Action {
     ToggleInputMode,
     RequestDigit { digit: Digit, swap: bool },
     ClearCell,
+    AutoFillNotes { scope: NotesFillScope },
     Undo,
     Redo,
     OpenModal(ModalKind),
@@ -21,12 +22,18 @@ pub enum Action {
     UpdateSettings(Settings),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
 pub enum MoveDirection {
     Up,
     Down,
     Left,
     Right,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
+pub enum NotesFillScope {
+    Cell,
+    AllCells,
 }
 
 #[derive(Debug, Default)]

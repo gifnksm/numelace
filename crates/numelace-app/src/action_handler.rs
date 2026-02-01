@@ -2,7 +2,7 @@ use numelace_core::{Digit, Position};
 use numelace_game::{GameError, RuleCheckPolicy};
 
 use crate::{
-    action::{Action, ActionRequestQueue, MoveDirection},
+    action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
     game_factory,
     state::{AppState, GhostType, InputMode, UiState},
 };
@@ -53,12 +53,8 @@ pub fn handle(
     ctx.ui_state.conflict_ghost = None;
 
     match action {
-        Action::SelectCell(pos) => {
-            ctx.app_state.selected_cell = Some(pos);
-        }
-        Action::ClearSelection => {
-            ctx.app_state.selected_cell = None;
-        }
+        Action::SelectCell(pos) => ctx.app_state.selected_cell = Some(pos),
+        Action::ClearSelection => ctx.app_state.selected_cell = None,
         Action::MoveSelection(move_direction) => {
             let pos = ctx.app_state.selected_cell.get_or_insert(DEFAULT_POSITION);
             let new_pos = match move_direction {
@@ -71,15 +67,10 @@ pub fn handle(
                 *pos = new_pos;
             }
         }
-        Action::ToggleInputMode => {
-            ctx.app_state.input_mode.toggle();
-        }
-        Action::RequestDigit { digit, swap } => {
-            ctx.request_digit(digit, swap);
-        }
-        Action::ClearCell => {
-            ctx.clear_cell();
-        }
+        Action::ToggleInputMode => ctx.app_state.input_mode.toggle(),
+        Action::RequestDigit { digit, swap } => ctx.request_digit(digit, swap),
+        Action::ClearCell => ctx.clear_cell(),
+        Action::AutoFillNotes { scope } => ctx.auto_fill_notes(scope),
         Action::Undo => {
             push_history_if_changed = false;
             ctx.ui_state.undo(ctx.app_state);
@@ -147,6 +138,15 @@ impl ActionContext<'_> {
     fn start_new_game(&mut self) {
         self.app_state.game = game_factory::generate_random_game();
         self.app_state.selected_cell = None;
+        if self
+            .app_state
+            .settings
+            .assist
+            .notes
+            .auto_fill_notes_on_new_or_reset
+        {
+            self.app_state.game.auto_fill_notes_all_cells();
+        }
         self.ui_state.reset_history(self.app_state);
     }
 
@@ -155,7 +155,29 @@ impl ActionContext<'_> {
             let _ = self.app_state.game.clear_cell(pos);
         }
         self.app_state.selected_cell = None;
+        if self
+            .app_state
+            .settings
+            .assist
+            .notes
+            .auto_fill_notes_on_new_or_reset
+        {
+            self.app_state.game.auto_fill_notes_all_cells();
+        }
         self.ui_state.reset_history(self.app_state);
+    }
+
+    fn auto_fill_notes(&mut self, scope: NotesFillScope) {
+        match scope {
+            NotesFillScope::Cell => {
+                if let Some(pos) = self.app_state.selected_cell {
+                    let _ = self.app_state.game.auto_fill_cell_notes(pos);
+                }
+            }
+            NotesFillScope::AllCells => {
+                self.app_state.game.auto_fill_notes_all_cells();
+            }
+        }
     }
 }
 
@@ -167,7 +189,7 @@ mod tests {
     use super::{ActionEffect, handle};
     use crate::{
         DEFAULT_MAX_HISTORY_LENGTH,
-        action::Action,
+        action::{Action, NotesFillScope},
         state::{AppState, GhostType, ModalKind, UiState},
     };
 
@@ -230,6 +252,49 @@ mod tests {
             app_state.game.cell(Position::new(0, 0)),
             CellState::Empty
         ));
+    }
+
+    #[test]
+    fn auto_fill_cell_without_selection_is_noop() {
+        let mut app_state = AppState::new(fixed_game());
+        let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
+        let mut effect = ActionEffect::default();
+        let before = app_state.game.clone();
+
+        handle(
+            &mut app_state,
+            &mut ui_state,
+            &mut effect,
+            Action::AutoFillNotes {
+                scope: NotesFillScope::Cell,
+            },
+        );
+
+        assert_eq!(app_state.game, before);
+    }
+
+    #[test]
+    fn reset_current_puzzle_auto_fills_notes_when_enabled() {
+        let mut app_state = AppState::new(fixed_game());
+        app_state
+            .settings
+            .assist
+            .notes
+            .auto_fill_notes_on_new_or_reset = true;
+        let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
+        let mut effect = ActionEffect::default();
+
+        handle(
+            &mut app_state,
+            &mut ui_state,
+            &mut effect,
+            Action::ResetCurrentPuzzle,
+        );
+
+        let any_notes = Position::ALL
+            .into_iter()
+            .any(|pos| app_state.game.cell(pos).is_notes());
+        assert!(any_notes);
     }
 
     #[test]

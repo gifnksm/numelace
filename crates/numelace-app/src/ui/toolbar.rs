@@ -1,7 +1,7 @@
 use eframe::egui::{Button, Response, RichText, Sides, Ui, Vec2, widgets};
 
 use crate::{
-    action::{Action, ActionRequestQueue},
+    action::{Action, ActionRequestQueue, NotesFillScope},
     state::ModalKind,
     ui::{
         icon,
@@ -57,6 +57,20 @@ pub fn show(
 
                 if button(ui, icon::GEAR_NO_HUB, "Settings", true, cell_size).clicked() {
                     action_queue.request(Action::OpenModal(ModalKind::Settings));
+                }
+
+                if button(
+                    ui,
+                    icon::LETTER_UPPER_A,
+                    "Auto-fill notes (all cells)",
+                    true,
+                    cell_size,
+                )
+                .clicked()
+                {
+                    action_queue.request(Action::AutoFillNotes {
+                        scope: NotesFillScope::AllCells,
+                    });
                 }
             });
         },
