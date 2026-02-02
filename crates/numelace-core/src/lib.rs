@@ -225,8 +225,9 @@ mod candidate_grid;
 pub mod containers;
 mod digit;
 mod digit_grid;
+mod house;
 pub mod index;
 mod position;
 
 // Re-export commonly used types
-pub use self::{candidate_grid::*, digit::*, digit_grid::*, position::*};
+pub use self::{candidate_grid::*, digit::*, digit_grid::*, house::*, position::*};

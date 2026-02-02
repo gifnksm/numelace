@@ -48,25 +48,17 @@ impl Technique for HiddenSingle {
 
         for digit in Digit::ALL {
             for y in 0..9 {
-                let row = grid.row_mask(y, digit);
-                if row.len() == 1 {
-                    let x = row.first().unwrap();
+                if let Some(x) = grid.row_mask(y, digit).as_single() {
                     changed |= grid.place(Position::new(x, y), digit);
                 }
             }
-
             for x in 0..9 {
-                let col = grid.col_mask(x, digit);
-                if col.len() == 1 {
-                    let y = col.first().unwrap();
+                if let Some(y) = grid.col_mask(x, digit).as_single() {
                     changed |= grid.place(Position::new(x, y), digit);
                 }
             }
-
             for box_index in 0..9 {
-                let block = grid.box_mask(box_index, digit);
-                if block.len() == 1 {
-                    let i = block.first().unwrap();
+                if let Some(i) = grid.box_mask(box_index, digit).as_single() {
                     changed |= grid.place(Position::from_box(box_index, i), digit);
                 }
             }

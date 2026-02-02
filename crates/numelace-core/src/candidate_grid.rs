@@ -3,7 +3,7 @@
 use std::iter;
 
 use crate::{
-    DigitGrid,
+    DigitGrid, House,
     containers::{Array9, BitSet9, BitSet81},
     digit::Digit,
     index::{CellIndexSemantics, DigitSemantics, Index9, Index9Semantics, PositionSemantics},
@@ -96,6 +96,24 @@ impl DigitPositions {
         Array9::from_array(masks)
     };
 
+    /// Returns a bitmask of positions in the specified house.
+    ///
+    /// This is a convenience wrapper around [`row_mask`], [`col_mask`], and [`box_mask`],
+    /// depending on the [`House`] variant.
+    ///
+    /// [`row_mask`]: Self::row_mask
+    /// [`col_mask`]: Self::col_mask
+    /// [`box_mask`]: Self::box_mask
+    #[must_use]
+    #[inline]
+    pub fn house_mask(&self, house: House) -> HouseMask {
+        match house {
+            House::Row { y } => self.row_mask(y),
+            House::Column { x } => self.col_mask(x),
+            House::Box { index } => self.box_mask(index),
+        }
+    }
+
     /// Returns a bitmask of positions in the specified row.
     ///
     /// The returned mask contains the column indices (0-8) where positions exist
@@ -117,6 +135,7 @@ impl DigitPositions {
     /// assert!(mask.contains(5));
     /// ```
     #[must_use]
+    #[inline]
     pub fn row_mask(&self, y: u8) -> HouseMask {
         let mut mask = HouseMask::new();
         for pos in *self & Self::ROW_POSITIONS[y] {
@@ -146,6 +165,7 @@ impl DigitPositions {
     /// assert!(mask.contains(4));
     /// ```
     #[must_use]
+    #[inline]
     pub fn col_mask(&self, x: u8) -> HouseMask {
         let mut mask = HouseMask::new();
         for pos in *self & Self::COLUMN_POSITIONS[x] {
@@ -173,6 +193,7 @@ impl DigitPositions {
     /// assert_eq!(mask.len(), 2); // Two positions in box 0
     /// ```
     #[must_use]
+    #[inline]
     pub fn box_mask(&self, box_index: u8) -> HouseMask {
         let mut mask = HouseMask::new();
         for pos in *self & Self::BOX_POSITIONS[box_index] {
@@ -388,6 +409,7 @@ impl CandidateGrid {
     /// let changed = grid.place(Position::new(0, 0), Digit::D5);
     /// assert!(!changed); // Placing again has no effect
     /// ```
+    #[inline]
     pub fn place(&mut self, pos: Position, digit: Digit) -> bool {
         let mut changed = false;
         for (d, digits) in iter::zip(Digit::ALL, &mut self.digit_positions) {
@@ -415,6 +437,7 @@ impl CandidateGrid {
     /// let changed = grid.remove_candidate(Position::new(0, 0), Digit::D1);
     /// assert!(!changed); // D1 is already removed
     /// ```
+    #[inline]
     pub fn remove_candidate(&mut self, pos: Position, digit: Digit) -> bool {
         self.digit_positions[digit].remove(pos)
     }
@@ -443,6 +466,7 @@ impl CandidateGrid {
     /// let changed = grid.remove_candidate_with_mask(row_mask, Digit::D5);
     /// assert!(!changed); // D5 is already removed from all positions
     /// ```
+    #[inline]
     pub fn remove_candidate_with_mask(&mut self, mask: DigitPositions, digit: Digit) -> bool {
         let before = self.digit_positions[digit];
         self.digit_positions[digit] &= !mask;
@@ -451,12 +475,14 @@ impl CandidateGrid {
 
     /// Returns the set of all positions where the specified digit can be placed.
     #[must_use]
+    #[inline]
     pub fn digit_positions(&self, digit: Digit) -> DigitPositions {
         self.digit_positions[digit]
     }
 
     /// Returns the set of candidate digits that can be placed at a position.
     #[must_use]
+    #[inline]
     pub fn candidates_at(&self, pos: Position) -> DigitSet {
         let mut candidates = DigitSet::new();
         for (i, digit_pos) in (0..).zip(&self.digit_positions) {
@@ -467,10 +493,27 @@ impl CandidateGrid {
         candidates
     }
 
+    /// Returns a bitmask of candidate positions in the specified house for the digit.
+    ///
+    /// This is a convenience wrapper around [`row_mask`], [`col_mask`], and [`box_mask`],
+    /// depending on the [`House`] variant.
+    ///
+    /// If the returned mask has only one bit set, a Hidden Single is detected.
+    ///
+    /// [`row_mask`]: Self::row_mask
+    /// [`col_mask`]: Self::col_mask
+    /// [`box_mask`]: Self::box_mask
+    #[must_use]
+    #[inline]
+    pub fn house_mask(&self, house: House, digit: Digit) -> HouseMask {
+        self.digit_positions[digit].house_mask(house)
+    }
+
     /// Returns a bitmask of candidate positions in the specified row for the digit.
     ///
     /// If the returned mask has only one bit set, a Hidden Single is detected.
     #[must_use]
+    #[inline]
     pub fn row_mask(&self, y: u8, digit: Digit) -> HouseMask {
         self.digit_positions[digit].row_mask(y)
     }
@@ -479,6 +522,7 @@ impl CandidateGrid {
     ///
     /// If the returned mask has only one bit set, a Hidden Single is detected.
     #[must_use]
+    #[inline]
     pub fn col_mask(&self, x: u8, digit: Digit) -> HouseMask {
         self.digit_positions[digit].col_mask(x)
     }
@@ -487,6 +531,7 @@ impl CandidateGrid {
     ///
     /// If the returned mask has only one bit set, a Hidden Single is detected.
     #[must_use]
+    #[inline]
     pub fn box_mask(&self, box_index: u8, digit: Digit) -> HouseMask {
         self.digit_positions[digit].box_mask(box_index)
     }
@@ -524,6 +569,7 @@ impl CandidateGrid {
     /// ```
     ///
     /// [`is_solved`]: CandidateGrid::is_solved
+    #[inline]
     pub fn check_consistency(&self) -> Result<(), ConsistencyError> {
         let [empty_cells, decided_cells] = self.classify_cells();
         if !empty_cells.is_empty() {
@@ -555,6 +601,7 @@ impl CandidateGrid {
     /// let grid = CandidateGrid::new();
     /// assert!(!grid.is_solved().unwrap()); // Empty grid is not solved but is consistent
     /// ```
+    #[inline]
     pub fn is_solved(&self) -> Result<bool, ConsistencyError> {
         let [empty_cells, decided_cells] = self.classify_cells();
         if !empty_cells.is_empty() {
@@ -587,6 +634,7 @@ impl CandidateGrid {
     /// assert_eq!(grid.decided_cells().len(), 1);
     /// ```
     #[must_use]
+    #[inline]
     pub fn decided_cells(&self) -> DigitPositions {
         let [_empty_cells, decided_cells] = self.classify_cells();
         decided_cells
@@ -652,6 +700,7 @@ impl CandidateGrid {
     /// // empty: 0 candidates, one: 1 candidate, two: 2 candidates, three: 3 candidates
     /// ```
     #[must_use]
+    #[inline]
     pub fn classify_cells<const N: usize>(&self) -> [DigitPositions; N] {
         let mut cells = [DigitPositions::EMPTY; N];
 

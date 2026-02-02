@@ -250,6 +250,13 @@ where
         self.last_index().map(S::from_index)
     }
 
+    /// Returns the only element in the set, or `None` if the set has zero or multiple elements.
+    #[must_use]
+    #[inline]
+    pub fn as_single(self) -> Option<S::Value> {
+        if self.len() == 1 { self.first() } else { None }
+    }
+
     /// Removes and returns the smallest element in the set, or `None` if the set is empty.
     #[inline]
     pub fn pop_first(&mut self) -> Option<S::Value> {
@@ -766,6 +773,13 @@ mod tests {
         assert_eq!(set.last(), Some((3, 3)));
         assert_eq!(TestSet::EMPTY.first(), None);
         assert_eq!(TestSet::EMPTY.last(), None);
+    }
+
+    #[test]
+    fn test_as_single() {
+        assert_eq!(set![].as_single(), None);
+        assert_eq!(set![(3, 4)].as_single(), Some((3, 4)));
+        assert_eq!(set![(2, 2), (1, 1)].as_single(), None);
     }
 
     #[test]
