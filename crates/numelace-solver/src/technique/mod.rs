@@ -5,7 +5,7 @@
 
 use std::fmt::Debug;
 
-use numelace_core::CandidateGrid;
+use numelace_core::{CandidateGrid, Digit, DigitPositions, DigitSet, Position};
 
 pub use self::{hidden_single::HiddenSingle, naked_single::NakedSingle};
 use crate::SolverError;
@@ -65,6 +65,15 @@ pub trait Technique: Debug {
     /// Returns a boxed clone of the technique.
     fn clone_box(&self) -> BoxedTechnique;
 
+    /// Finds the next hint step without mutating the grid.
+    ///
+    /// Returns `Ok(None)` when this technique has no applicable step.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the technique detects an invalid state in the grid.
+    fn find_step(&self, grid: &CandidateGrid) -> Result<Option<BoxedTechniqueStep>, SolverError>;
+
     /// Applies the technique to a candidate grid.
     ///
     /// # Arguments
@@ -82,10 +91,69 @@ pub trait Technique: Debug {
     fn apply(&self, grid: &mut CandidateGrid) -> Result<bool, SolverError>;
 }
 
+/// Cells involved in a technique's applicability conditions.
+pub type ConditionCells = DigitPositions;
+
+/// Pairs of (cells, digits) involved in a technique's applicability conditions.
+pub type ConditionDigitCells = Vec<(DigitPositions, DigitSet)>;
+
+/// A hint step produced by a technique.
+pub trait TechniqueStep: Debug {
+    /// Returns the name of the technique that produced this step.
+    fn technique_name(&self) -> &'static str;
+
+    /// Returns a boxed clone of the step.
+    fn clone_box(&self) -> BoxedTechniqueStep;
+
+    /// Returns the cells involved in the applicability conditions.
+    ///
+    /// These are the cells that justify applying the technique. Hint systems may
+    /// use this to highlight relevant cells before naming the technique.
+    fn condition_cells(&self) -> ConditionCells;
+
+    /// Returns condition pairs of (cells, digits) involved in applicability.
+    ///
+    /// Each pair provides a set of cells and the digits that matter for the
+    /// technique's conditions. Hint systems may use this as a more detailed
+    /// explanation of the underlying logic.
+    fn condition_digit_cells(&self) -> ConditionDigitCells;
+
+    /// Returns the concrete changes produced by applying the technique.
+    fn application(&self) -> Vec<TechniqueApplication>;
+}
+
+/// Concrete changes produced by applying a technique.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TechniqueApplication {
+    /// Place a digit in a single cell.
+    Placement {
+        /// Cell to place the digit into.
+        position: Position,
+        /// Digit to place.
+        digit: Digit,
+    },
+    /// Remove candidates from the specified positions.
+    CandidateElimination {
+        /// Positions where candidates are removed.
+        positions: DigitPositions,
+        /// Digits to remove from the specified positions.
+        digits: DigitSet,
+    },
+}
+
 /// A boxed technique.
 pub type BoxedTechnique = Box<dyn Technique>;
 
 impl Clone for BoxedTechnique {
+    fn clone(&self) -> Self {
+        self.clone_box()
+    }
+}
+
+/// A boxed technique step.
+pub type BoxedTechniqueStep = Box<dyn TechniqueStep>;
+
+impl Clone for BoxedTechniqueStep {
     fn clone(&self) -> Self {
         self.clone_box()
     }

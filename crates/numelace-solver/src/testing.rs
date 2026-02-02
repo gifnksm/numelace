@@ -7,12 +7,13 @@
 //!
 //! ```
 //! # use numelace_solver::testing::TechniqueTester;
-//! # use numelace_solver::technique::Technique;
+//! # use numelace_solver::technique::{BoxedTechniqueStep, Technique};
 //! # use numelace_core::{Position, Digit};
 //! # #[derive(Debug)] struct DummyTechnique;
 //! # impl Technique for DummyTechnique {
 //! #     fn name(&self) -> &str { "dummy" }
 //! #     fn clone_box(&self) -> Box<dyn Technique> { Box::new(DummyTechnique) }
+//! #     fn find_step(&self, _: &numelace_core::CandidateGrid) -> Result<Option<BoxedTechniqueStep>, numelace_solver::SolverError> { Ok(None) }
 //! #     fn apply(&self, _: &mut numelace_core::CandidateGrid) -> Result<bool, numelace_solver::SolverError> { Ok(false) }
 //! # }
 //! # let technique = DummyTechnique;
@@ -268,6 +269,13 @@ mod tests {
             Box::new(NoOpTechnique)
         }
 
+        fn find_step(
+            &self,
+            _grid: &CandidateGrid,
+        ) -> Result<Option<crate::technique::BoxedTechniqueStep>, crate::SolverError> {
+            Ok(None)
+        }
+
         fn apply(&self, _grid: &mut CandidateGrid) -> Result<bool, crate::SolverError> {
             Ok(false)
         }
@@ -284,6 +292,13 @@ mod tests {
 
         fn clone_box(&self) -> crate::technique::BoxedTechnique {
             Box::new(PlaceD1At00)
+        }
+
+        fn find_step(
+            &self,
+            _grid: &CandidateGrid,
+        ) -> Result<Option<crate::technique::BoxedTechniqueStep>, crate::SolverError> {
+            Ok(None)
         }
 
         fn apply(&self, grid: &mut CandidateGrid) -> Result<bool, crate::SolverError> {

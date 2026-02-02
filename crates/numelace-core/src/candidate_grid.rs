@@ -418,6 +418,16 @@ impl CandidateGrid {
         changed
     }
 
+    /// Returns `true` if placing the digit would change the grid.
+    ///
+    /// This mirrors the change detection behavior of [`place`](Self::place) without
+    /// mutating the grid, which is useful for hint generation.
+    #[must_use]
+    #[inline]
+    pub fn would_place_change(&self, pos: Position, digit: Digit) -> bool {
+        self.candidates_at(pos).as_single() != Some(digit)
+    }
+
     /// Removes a specific digit as a candidate at a position.
     ///
     /// # Returns
@@ -471,6 +481,23 @@ impl CandidateGrid {
         let before = self.digit_positions[digit];
         self.digit_positions[digit] &= !mask;
         before != self.digit_positions[digit]
+    }
+
+    /// Returns `true` if removing the digit from the masked positions would change the grid.
+    ///
+    /// This mirrors the change detection behavior of
+    /// [`remove_candidate_with_mask`](Self::remove_candidate_with_mask) without
+    /// mutating the grid, which is useful for hint generation.
+    #[must_use]
+    #[inline]
+    pub fn would_remove_candidate_with_mask_change(
+        &self,
+        mask: DigitPositions,
+        digit: Digit,
+    ) -> bool {
+        let before = self.digit_positions[digit];
+        let after = before & !mask;
+        before != after
     }
 
     /// Returns the set of all positions where the specified digit can be placed.
@@ -778,6 +805,8 @@ mod tests {
 
         // Place is idempotent
         assert!(!grid.place(pos, D5));
+        assert!(!grid.would_place_change(pos, D5));
+        assert!(grid.would_place_change(pos, D1));
 
         // Placement reduces cell to single candidate and removes others
         let candidates = grid.candidates_at(pos);
@@ -829,7 +858,15 @@ mod tests {
         for (name, mask, digit, pos_in_mask) in cases {
             let mut grid = CandidateGrid::new();
 
+            assert!(
+                grid.would_remove_candidate_with_mask_change(mask, digit),
+                "{name}"
+            );
             assert!(grid.remove_candidate_with_mask(mask, digit), "{name}");
+            assert!(
+                !grid.would_remove_candidate_with_mask_change(mask, digit),
+                "{name}"
+            );
 
             // Removal is idempotent
             assert!(!grid.remove_candidate_with_mask(mask, digit), "{name}");

@@ -182,7 +182,7 @@
 //!
 //! ```
 //! use numelace_core::CandidateGrid;
-//! use numelace_solver::{SolverError, technique::Technique};
+//! use numelace_solver::{SolverError, technique::{BoxedTechniqueStep, Technique}};
 //!
 //! #[derive(Debug, Clone)]
 //! struct MyTechnique;
@@ -194,6 +194,10 @@
 //!
 //!     fn clone_box(&self) -> Box<dyn Technique> {
 //!         Box::new(self.clone())
+//!     }
+//!
+//!     fn find_step(&self, _grid: &CandidateGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+//!         Ok(None)
 //!     }
 //!
 //!     fn apply(&self, grid: &mut CandidateGrid) -> Result<bool, SolverError> {

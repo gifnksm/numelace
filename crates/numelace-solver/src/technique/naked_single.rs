@@ -1,7 +1,12 @@
-use numelace_core::{CandidateGrid, Digit, DigitPositions};
+use numelace_core::{CandidateGrid, Digit, DigitPositions, DigitSet, Position};
 
-use super::BoxedTechnique;
-use crate::{SolverError, technique::Technique};
+use super::{BoxedTechnique, TechniqueApplication};
+use crate::{
+    SolverError,
+    technique::{BoxedTechniqueStep, Technique, TechniqueStep},
+};
+
+const NAME: &str = "naked singles";
 
 /// A technique that finds cells with only one remaining candidate and propagates constraints.
 ///
@@ -38,13 +43,78 @@ impl NakedSingle {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct NakedSingleStep {
+    position: Position,
+    digit: Digit,
+    affected_positions: DigitPositions,
+}
+
+impl NakedSingleStep {
+    fn new(position: Position, digit: Digit, affected_positions: DigitPositions) -> Self {
+        Self {
+            position,
+            digit,
+            affected_positions,
+        }
+    }
+}
+
+impl TechniqueStep for NakedSingleStep {
+    fn technique_name(&self) -> &'static str {
+        NAME
+    }
+
+    fn clone_box(&self) -> BoxedTechniqueStep {
+        Box::new(self.clone())
+    }
+
+    fn condition_cells(&self) -> DigitPositions {
+        DigitPositions::from_elem(self.position)
+    }
+
+    fn condition_digit_cells(&self) -> Vec<(DigitPositions, DigitSet)> {
+        vec![(
+            DigitPositions::from_elem(self.position),
+            DigitSet::from_elem(self.digit),
+        )]
+    }
+
+    fn application(&self) -> Vec<TechniqueApplication> {
+        vec![TechniqueApplication::CandidateElimination {
+            positions: self.affected_positions,
+            digits: DigitSet::from_elem(self.digit),
+        }]
+    }
+}
+
 impl Technique for NakedSingle {
     fn name(&self) -> &'static str {
-        "naked singles"
+        NAME
     }
 
     fn clone_box(&self) -> BoxedTechnique {
         Box::new(*self)
+    }
+
+    fn find_step(&self, grid: &CandidateGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+        let decided_cells = grid.decided_cells();
+        for digit in Digit::ALL {
+            for pos in grid.digit_positions(digit) & decided_cells {
+                let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.y()]
+                    | DigitPositions::COLUMN_POSITIONS[pos.x()]
+                    | DigitPositions::BOX_POSITIONS[pos.box_index()];
+                affected_pos.remove(pos);
+                if grid.would_remove_candidate_with_mask_change(affected_pos, digit) {
+                    return Ok(Some(Box::new(NakedSingleStep::new(
+                        pos,
+                        digit,
+                        affected_pos,
+                    ))));
+                }
+            }
+        }
+        Ok(None)
     }
 
     fn apply(&self, grid: &mut CandidateGrid) -> Result<bool, SolverError> {
@@ -67,7 +137,7 @@ impl Technique for NakedSingle {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{CandidateGrid, Digit, Position};
+    use numelace_core::{CandidateGrid, Digit, DigitPositions, DigitSet, Position};
 
     use super::*;
     use crate::testing::TechniqueTester;
@@ -119,6 +189,52 @@ mod tests {
             .apply_once(&NakedSingle::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
+    }
+
+    #[test]
+    fn test_find_step_matches_apply() {
+        let mut grid = CandidateGrid::new();
+
+        // Make (0, 0) have only D5 as candidate
+        grid.place(Position::new(0, 0), Digit::D5);
+
+        let technique = NakedSingle::new();
+        let step = technique.find_step(&grid).unwrap().expect("expected step");
+
+        let condition_cells = step.condition_cells();
+        assert_eq!(
+            condition_cells,
+            DigitPositions::from_elem(Position::new(0, 0))
+        );
+
+        let condition_digit_cells = step.condition_digit_cells();
+        assert_eq!(condition_digit_cells.len(), 1);
+        assert_eq!(
+            condition_digit_cells[0],
+            (
+                DigitPositions::from_elem(Position::new(0, 0)),
+                DigitSet::from_elem(Digit::D5)
+            )
+        );
+
+        let applications = step.application();
+        assert_eq!(applications.len(), 1);
+        match applications[0] {
+            TechniqueApplication::CandidateElimination { positions, digits } => {
+                assert!(!positions.contains(Position::new(0, 0)));
+                assert!(positions.contains(Position::new(1, 0)));
+                assert!(positions.contains(Position::new(0, 1)));
+                assert!(positions.contains(Position::new(1, 1)));
+                assert_eq!(digits, DigitSet::from_elem(Digit::D5));
+            }
+            TechniqueApplication::Placement { .. } => panic!("expected candidate elimination step"),
+        }
+
+        TechniqueTester::new(grid)
+            .apply_once(&NakedSingle::new())
+            .assert_removed_exact(Position::new(1, 0), [Digit::D5])
+            .assert_removed_exact(Position::new(0, 1), [Digit::D5])
+            .assert_removed_exact(Position::new(1, 1), [Digit::D5]);
     }
 
     #[test]

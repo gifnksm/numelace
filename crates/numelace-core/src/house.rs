@@ -1,7 +1,7 @@
 use std::iter::FusedIterator;
 
 use crate::{
-    Digit, Position,
+    Digit, DigitPositions, Position,
     index::{DigitSemantics, Index9, Index9Semantics as _},
 };
 
@@ -92,6 +92,16 @@ impl House {
             House::Row { y } => Position::new(i, y),
             House::Column { x } => Position::new(x, i),
             House::Box { index } => Position::from_box(index, i),
+        }
+    }
+
+    /// Returns all positions contained in this house.
+    #[must_use]
+    pub fn positions(self) -> DigitPositions {
+        match self {
+            House::Row { y } => DigitPositions::ROW_POSITIONS[y],
+            House::Column { x } => DigitPositions::COLUMN_POSITIONS[x],
+            House::Box { index } => DigitPositions::BOX_POSITIONS[index],
         }
     }
 }

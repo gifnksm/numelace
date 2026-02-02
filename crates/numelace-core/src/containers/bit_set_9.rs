@@ -138,6 +138,18 @@ where
         Self::EMPTY
     }
 
+    /// Creates a set containing exactly one element.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value cannot be converted to a valid bit index by the semantics.
+    #[must_use]
+    #[inline]
+    pub fn from_elem(value: S::Value) -> Self {
+        let index = S::to_index(value);
+        Self::from_bits(index.bit())
+    }
+
     /// Returns a new set containing only the elements in this set that fall within the given range.
     #[must_use]
     pub fn range<R>(self, range: R) -> Self
@@ -637,6 +649,13 @@ mod tests {
         assert!(set.is_empty());
 
         assert!(TestSet::try_from_bits(0x200).is_none());
+    }
+
+    #[test]
+    fn test_from_elem() {
+        let set = TestSet::from_elem(4);
+        assert_eq!(set.len(), 1);
+        assert!(set.contains(4));
     }
 
     #[test]

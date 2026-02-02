@@ -4,7 +4,7 @@ use numelace_core::CandidateGrid;
 
 use crate::{
     SolverError,
-    technique::{self, BoxedTechnique},
+    technique::{self, BoxedTechnique, BoxedTechniqueStep},
 };
 
 /// Statistics collected during technique-based solving.
@@ -260,6 +260,26 @@ impl TechniqueSolver {
             }
         }
         Ok(false)
+    }
+
+    /// Finds the next available hint step without mutating the grid.
+    ///
+    /// Returns `Ok(None)` when no technique can provide a step.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SolverError::Inconsistent`] if the grid is inconsistent.
+    pub fn find_step(
+        &self,
+        grid: &CandidateGrid,
+    ) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+        grid.check_consistency()?;
+        for technique in &self.techniques {
+            if let Some(step) = technique.find_step(grid)? {
+                return Ok(Some(step));
+            }
+        }
+        Ok(None)
     }
 
     /// Applies techniques repeatedly until the grid is solved or no progress can be made.

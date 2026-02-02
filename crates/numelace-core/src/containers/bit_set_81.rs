@@ -135,6 +135,18 @@ where
         Self::EMPTY
     }
 
+    /// Creates a set containing exactly one element.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value cannot be converted to a valid bit index by the semantics.
+    #[must_use]
+    #[inline]
+    pub fn from_elem(value: S::Value) -> Self {
+        let index = S::to_index(value);
+        Self::from_bits(index.bit())
+    }
+
     /// Returns the raw bits representing the set.
     #[must_use]
     pub fn bits(self) -> u128 {
@@ -580,6 +592,13 @@ mod tests {
         let set: TestSet = positions.into_iter().collect();
         assert_eq!(set.len(), 3);
         assert!(set.contains((0, 0)));
+    }
+
+    #[test]
+    fn test_from_elem() {
+        let set = TestSet::from_elem((3, 4));
+        assert_eq!(set.len(), 1);
+        assert!(set.contains((3, 4)));
     }
 
     #[test]
