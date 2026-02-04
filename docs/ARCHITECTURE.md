@@ -88,7 +88,7 @@ See [numelace-generator documentation](../crates/numelace-generator/src/lib.rs) 
 
 **Key Components**: `Game`, `CellState`, `GameError`
 
-**Dependencies**: `numelace-core`, `numelace-generator`
+**Dependencies**: `numelace-core`, `numelace-generator`, `numelace-solver`
 
 **Design**: Permissive validation (allows rule violations), type-safe cell states, accepts any valid solution
 

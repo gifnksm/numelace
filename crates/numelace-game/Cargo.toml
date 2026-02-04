@@ -11,6 +11,7 @@ license.workspace = true
 derive_more = { workspace = true, features = ["display", "error", "is_variant"] }
 numelace-core.workspace = true
 numelace-generator.workspace = true
+numelace-solver.workspace = true
 
 [dev-dependencies]
 numelace-solver.workspace = true

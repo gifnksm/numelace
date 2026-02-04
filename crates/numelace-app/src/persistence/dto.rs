@@ -61,6 +61,7 @@ impl TryFrom<PersistedState> for AppState {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct GameDto {
     problem: String,
+    solution: String,
     filled: String,
     #[serde(default)]
     notes: [[u16; 9]; 9],
@@ -69,6 +70,7 @@ pub struct GameDto {
 impl From<&Game> for GameDto {
     fn from(value: &Game) -> Self {
         let mut problem = String::with_capacity(81);
+        let solution = value.solution().to_string();
         let mut filled = String::with_capacity(81);
         let mut notes = [[0; 9]; 9];
 
@@ -96,6 +98,7 @@ impl From<&Game> for GameDto {
 
         Self {
             problem,
+            solution,
             filled,
             notes,
         }
@@ -113,9 +116,11 @@ impl TryFrom<GameDto> for Game {
 
     fn try_from(value: GameDto) -> Result<Self, Self::Error> {
         let problem: DigitGrid = value.problem.parse()?;
+        let solution: DigitGrid = value.solution.parse()?;
         let filled: DigitGrid = value.filled.parse()?;
         Ok(Game::from_problem_filled_notes(
             &problem,
+            &solution,
             &filled,
             &value.notes,
         )?)

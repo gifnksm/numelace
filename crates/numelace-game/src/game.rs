@@ -1,9 +1,10 @@
 use numelace_core::{
-    CandidateGrid, Digit, DigitGrid, DigitSet, Position,
+    CandidateGrid, Digit, DigitGrid, DigitPositions, DigitSet, Position,
     containers::{Array9, Array81},
     index::{DigitSemantics, PositionSemantics},
 };
 use numelace_generator::GeneratedPuzzle;
+use numelace_solver::technique::{TechniqueApplication, TechniqueStep};
 
 use crate::{
     CellState, GameError, InputBlockReason, InputDigitOptions, InputOperation, RuleCheckPolicy,
@@ -33,6 +34,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Game {
     grid: Array81<CellState, PositionSemantics>,
+    solution: DigitGrid,
 }
 
 impl Game {
@@ -56,19 +58,26 @@ impl Game {
     #[must_use]
     #[allow(clippy::needless_pass_by_value)]
     pub fn new(puzzle: GeneratedPuzzle) -> Self {
+        let GeneratedPuzzle {
+            problem,
+            solution,
+            seed: _,
+        } = puzzle;
         let mut grid = Array81::from_array([const { CellState::Empty }; 81]);
         for pos in Position::ALL {
-            if let Some(digit) = puzzle.problem[pos] {
+            if let Some(digit) = problem[pos] {
                 grid[pos] = CellState::Given(digit);
             }
         }
-        Self { grid }
+        Self { grid, solution }
     }
 
-    /// Creates a game from a problem grid and a filled (player input) grid.
+    /// Creates a game from a problem grid, solution grid, and a filled (player input) grid.
     ///
     /// Cells with digits in `problem` are treated as givens. Digits in `filled`
     /// are applied as player-entered values.
+    ///
+    /// The solution grid is stored for hint placement verification.
     ///
     /// # Errors
     ///
@@ -76,6 +85,7 @@ impl Game {
     /// in a position that is a given in `problem`.
     pub fn from_problem_filled_notes(
         problem: &DigitGrid,
+        solution: &DigitGrid,
         filled: &DigitGrid,
         notes: &[[u16; 9]; 9],
     ) -> Result<Self, GameError> {
@@ -86,7 +96,10 @@ impl Game {
             }
         }
 
-        let mut this = Self { grid };
+        let mut this = Self {
+            grid,
+            solution: solution.clone(),
+        };
         for pos in Position::ALL {
             if let Some(digit) = filled[pos] {
                 this.set_digit(pos, digit, &InputDigitOptions::default())?;
@@ -133,6 +146,12 @@ impl Game {
     #[must_use]
     pub fn cell(&self, pos: Position) -> &CellState {
         &self.grid[pos]
+    }
+
+    /// Returns the stored solution grid for this puzzle.
+    #[must_use]
+    pub fn solution(&self) -> &DigitGrid {
+        &self.solution
     }
 
     /// Checks if the game is solved.
@@ -183,6 +202,30 @@ impl Game {
                     candidate_grid.place(pos, *digit);
                 }
                 CellState::Notes(_) | CellState::Empty => {}
+            }
+        }
+        candidate_grid
+    }
+
+    /// Returns a candidate grid derived from givens, filled digits, and notes.
+    ///
+    /// Notes are treated as the authoritative candidate set for that cell.
+    #[must_use]
+    pub fn to_candidate_grid_with_notes(&self) -> CandidateGrid {
+        let mut candidate_grid = CandidateGrid::new();
+        for pos in Position::ALL {
+            match &self.grid[pos] {
+                CellState::Given(digit) | CellState::Filled(digit) => {
+                    candidate_grid.place(pos, *digit);
+                }
+                CellState::Notes(notes) => {
+                    for digit in Digit::ALL {
+                        if !notes.contains(digit) {
+                            candidate_grid.remove_candidate(pos, digit);
+                        }
+                    }
+                }
+                CellState::Empty => {}
             }
         }
         candidate_grid
@@ -357,6 +400,7 @@ impl Game {
 
         Ok(operation)
     }
+
     /// Returns the note auto-fill capability for a single cell.
     ///
     /// This computes candidate notes by excluding digits already present in peers,
@@ -417,6 +461,19 @@ impl Game {
     pub fn auto_fill_notes_all_cells(&mut self) {
         for pos in Position::ALL {
             if self.cell(pos).can_set_notes().is_err() {
+                continue;
+            }
+            #[expect(clippy::missing_panics_doc)]
+            self.auto_fill_cell_notes(pos).unwrap();
+        }
+    }
+
+    /// Auto-fills notes for empty cells only.
+    ///
+    /// Existing notes are preserved, and given/filled cells are skipped.
+    pub fn auto_fill_notes_empty_cells(&mut self) {
+        for pos in Position::ALL {
+            if !self.cell(pos).is_empty() {
                 continue;
             }
             #[expect(clippy::missing_panics_doc)]
@@ -485,16 +542,77 @@ impl Game {
         }
         counts
     }
+
+    fn apply_candidate_elimination(&mut self, positions: DigitPositions, digits: DigitSet) {
+        for pos in positions {
+            for digit in digits {
+                self.grid[pos].drop_note_digit(digit);
+            }
+        }
+    }
+
+    /// Returns whether all placements in the technique step match the stored solution.
+    ///
+    /// Candidate eliminations are ignored for validation.
+    #[must_use]
+    pub fn verify_hint_step<T>(&self, step: &T) -> bool
+    where
+        T: TechniqueStep,
+    {
+        for app in step.application() {
+            if let TechniqueApplication::Placement { position, digit } = app
+                && self.solution.get(position) != Some(digit)
+            {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Applies a technique step to the game state.
+    ///
+    /// Candidate eliminations only update existing notes and do not auto-fill notes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if applying a placement fails (e.g., due to an invalid
+    /// position or rule constraint enforced by the game state).
+    pub fn apply_technique_step<T>(
+        &mut self,
+        step: &T,
+        options: &InputDigitOptions,
+    ) -> Result<(), GameError>
+    where
+        T: TechniqueStep,
+    {
+        for app in step.application() {
+            match app {
+                TechniqueApplication::Placement { position, digit } => {
+                    self.set_digit(position, digit, options)?;
+                }
+                TechniqueApplication::CandidateElimination { positions, digits } => {
+                    self.apply_candidate_elimination(positions, digits);
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::NoteCleanupPolicy;
     use numelace_core::{Digit, DigitGrid, DigitSet, Position};
     use numelace_generator::PuzzleGenerator;
 
-    use crate::NoteCleanupPolicy;
-
     use super::*;
+
+    const TEST_SOLUTION: &str =
+        "185362947793148526246795183564239871931874265827516394318427659672951438459683712";
+
+    fn test_solution_grid() -> DigitGrid {
+        TEST_SOLUTION.parse().expect("valid solution grid")
+    }
 
     #[test]
     fn test_new_game_preserves_puzzle_structure() {
@@ -522,11 +640,12 @@ mod tests {
         let problem: DigitGrid = format!("1{}", ".".repeat(80))
             .parse()
             .expect("valid problem grid");
+        let solution = test_solution_grid();
         let filled: DigitGrid = format!(".2{}", ".".repeat(79))
             .parse()
             .expect("valid filled grid");
 
-        let game = Game::from_problem_filled_notes(&problem, &filled, &[[0; 9]; 9])
+        let game = Game::from_problem_filled_notes(&problem, &solution, &filled, &[[0; 9]; 9])
             .expect("compatible grids");
 
         assert_eq!(game.cell(Position::new(0, 0)), &CellState::Given(Digit::D1));
@@ -539,7 +658,7 @@ mod tests {
             .parse()
             .expect("valid filled grid");
         assert!(matches!(
-            Game::from_problem_filled_notes(&problem, &conflict, &[[0; 9]; 9]),
+            Game::from_problem_filled_notes(&problem, &solution, &conflict, &[[0; 9]; 9]),
             Err(GameError::CannotModifyGivenCell)
         ));
     }
@@ -756,7 +875,9 @@ mod tests {
         .parse()
         .expect("valid filled grid");
 
-        let mut game = Game::from_problem_filled_notes(&problem, &filled, &[[0; 9]; 9]).unwrap();
+        let solution = test_solution_grid();
+        let mut game =
+            Game::from_problem_filled_notes(&problem, &solution, &filled, &[[0; 9]; 9]).unwrap();
         let pos = Position::new(0, 0);
 
         let result = game.auto_fill_cell_notes(pos).unwrap();
@@ -802,7 +923,9 @@ mod tests {
         .parse()
         .expect("valid filled grid");
 
-        let mut game = Game::from_problem_filled_notes(&problem, &filled, &[[0; 9]; 9]).unwrap();
+        let solution = test_solution_grid();
+        let mut game =
+            Game::from_problem_filled_notes(&problem, &solution, &filled, &[[0; 9]; 9]).unwrap();
         let pos = Position::new(0, 0);
 
         game.toggle_note(pos, Digit::D1, RuleCheckPolicy::Permissive)
@@ -810,6 +933,135 @@ mod tests {
         let result = game.auto_fill_cell_notes(pos).unwrap();
         assert_eq!(result, InputOperation::Set);
         assert_eq!(game.cell(pos), &CellState::Empty);
+    }
+
+    #[test]
+    fn test_verify_hint_step_matches_solution() {
+        use numelace_solver::technique::TechniqueStep;
+
+        #[derive(Debug)]
+        struct MatchStep;
+
+        impl TechniqueStep for MatchStep {
+            fn technique_name(&self) -> &'static str {
+                "MatchStep"
+            }
+
+            fn clone_box(&self) -> numelace_solver::technique::BoxedTechniqueStep {
+                Box::new(Self)
+            }
+
+            fn condition_cells(&self) -> numelace_core::DigitPositions {
+                numelace_core::DigitPositions::EMPTY
+            }
+
+            fn condition_digit_cells(&self) -> numelace_solver::technique::ConditionDigitCells {
+                Vec::new()
+            }
+
+            fn application(&self) -> Vec<TechniqueApplication> {
+                vec![TechniqueApplication::Placement {
+                    position: Position::new(0, 0),
+                    digit: Digit::D1,
+                }]
+            }
+        }
+
+        #[derive(Debug)]
+        struct MismatchStep;
+
+        impl TechniqueStep for MismatchStep {
+            fn technique_name(&self) -> &'static str {
+                "MismatchStep"
+            }
+
+            fn clone_box(&self) -> numelace_solver::technique::BoxedTechniqueStep {
+                Box::new(Self)
+            }
+
+            fn condition_cells(&self) -> numelace_core::DigitPositions {
+                numelace_core::DigitPositions::EMPTY
+            }
+
+            fn condition_digit_cells(&self) -> numelace_solver::technique::ConditionDigitCells {
+                Vec::new()
+            }
+
+            fn application(&self) -> Vec<TechniqueApplication> {
+                vec![TechniqueApplication::Placement {
+                    position: Position::new(0, 0),
+                    digit: Digit::D2,
+                }]
+            }
+        }
+
+        let solution = test_solution_grid();
+        let mut problem = DigitGrid::new();
+        problem.set(Position::new(0, 0), Some(Digit::D1));
+        let filled = DigitGrid::new();
+
+        let game = Game::from_problem_filled_notes(&problem, &solution, &filled, &[[0; 9]; 9])
+            .expect("compatible grids");
+
+        assert!(game.verify_hint_step(&MatchStep));
+        assert!(!game.verify_hint_step(&MismatchStep));
+        assert_eq!(game.solution(), &solution);
+    }
+
+    #[test]
+    fn test_apply_technique_step_eliminates_notes_only() {
+        use numelace_solver::technique::TechniqueStep;
+
+        #[derive(Debug)]
+        struct TestStep;
+
+        impl TechniqueStep for TestStep {
+            fn technique_name(&self) -> &'static str {
+                "Test"
+            }
+
+            fn clone_box(&self) -> numelace_solver::technique::BoxedTechniqueStep {
+                Box::new(Self)
+            }
+
+            fn condition_cells(&self) -> numelace_core::DigitPositions {
+                numelace_core::DigitPositions::EMPTY
+            }
+
+            fn condition_digit_cells(&self) -> numelace_solver::technique::ConditionDigitCells {
+                Vec::new()
+            }
+
+            fn application(&self) -> Vec<TechniqueApplication> {
+                let mut positions = DigitPositions::EMPTY;
+                positions.insert(Position::new(0, 0));
+                positions.insert(Position::new(1, 0));
+                let mut digits = DigitSet::EMPTY;
+                digits.insert(Digit::D5);
+                vec![TechniqueApplication::CandidateElimination { positions, digits }]
+            }
+        }
+
+        let solution = test_solution_grid();
+        let problem = DigitGrid::new();
+        let filled = DigitGrid::new();
+        let mut game =
+            Game::from_problem_filled_notes(&problem, &solution, &filled, &[[0; 9]; 9]).unwrap();
+
+        game.toggle_note(Position::new(0, 0), Digit::D5, RuleCheckPolicy::Permissive)
+            .unwrap();
+        game.toggle_note(Position::new(1, 0), Digit::D5, RuleCheckPolicy::Permissive)
+            .unwrap();
+        assert!(matches!(
+            game.cell(Position::new(0, 0)),
+            CellState::Notes(notes) if notes.contains(Digit::D5)
+        ));
+
+        game.apply_technique_step(&TestStep, &InputDigitOptions::default())
+            .unwrap();
+
+        assert_eq!(game.cell(Position::new(0, 0)), &CellState::Empty);
+        assert_eq!(game.cell(Position::new(1, 0)), &CellState::Empty);
     }
 
     #[test]

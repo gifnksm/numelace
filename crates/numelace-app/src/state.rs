@@ -240,6 +240,10 @@ mod tests {
 "
         .parse()
         .unwrap();
+        let solution: DigitGrid =
+            "185362947793148526246795183564239871931874265827516394318427659672951438459683712"
+                .parse()
+                .unwrap();
         let filled: DigitGrid = "\
 .........\
 .........\
@@ -254,7 +258,7 @@ mod tests {
         .parse()
         .unwrap();
         let notes = [[0u16; 9]; 9];
-        Game::from_problem_filled_notes(&problem, &filled, &notes).unwrap()
+        Game::from_problem_filled_notes(&problem, &solution, &filled, &notes).unwrap()
     }
 
     #[test]
