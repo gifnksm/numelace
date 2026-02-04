@@ -32,5 +32,5 @@ Before proposing changes or plans, read these files in order:
 - Don’t introduce scheduling or strict plans unless explicitly requested.
 - Ask clarifying questions when scope or intent is ambiguous.
 - Seek confirmation before large changes (e.g., deletions, restructures, automated fixes, or commits).
-- Confirm who will implement code changes (user or agent) before starting.
+- Proceed with code changes when the user explicitly requests a fix or modification; do not make changes for questions or confirmations.
 - When committing, confirm before running the commit unless the user explicitly asks you to commit; choose an appropriate message (prefix optional) and add a brief body only when intent, impact, or caveats aren't captured; e.g., `docs: clarify commit confirmation rule`.
