@@ -21,6 +21,26 @@ impl AppState {
         }
     }
 
+    pub fn new_with_settings_applied(game: Game) -> Self {
+        let mut state = Self::new(game);
+        state.apply_new_game_settings();
+        state
+    }
+
+    pub fn apply_new_game_settings(&mut self) {
+        if self.settings.assist.notes.auto_fill_notes_on_new_or_reset {
+            self.game.auto_fill_notes_all_cells();
+        }
+    }
+
+    pub fn reset_current_puzzle_state(&mut self) {
+        for pos in Position::ALL {
+            let _ = self.game.clear_cell(pos);
+        }
+        self.selected_cell = None;
+        self.apply_new_game_settings();
+    }
+
     pub fn rule_check_policy(&self) -> RuleCheckPolicy {
         if self.settings.assist.block_rule_violations {
             RuleCheckPolicy::Strict

@@ -138,32 +138,12 @@ impl ActionContext<'_> {
     fn start_new_game(&mut self) {
         self.app_state.game = game_factory::generate_random_game();
         self.app_state.selected_cell = None;
-        if self
-            .app_state
-            .settings
-            .assist
-            .notes
-            .auto_fill_notes_on_new_or_reset
-        {
-            self.app_state.game.auto_fill_notes_all_cells();
-        }
+        self.app_state.apply_new_game_settings();
         self.ui_state.reset_history(self.app_state);
     }
 
     fn reset_current_puzzle(&mut self) {
-        for pos in Position::ALL {
-            let _ = self.app_state.game.clear_cell(pos);
-        }
-        self.app_state.selected_cell = None;
-        if self
-            .app_state
-            .settings
-            .assist
-            .notes
-            .auto_fill_notes_on_new_or_reset
-        {
-            self.app_state.game.auto_fill_notes_all_cells();
-        }
+        self.app_state.reset_current_puzzle_state();
         self.ui_state.reset_history(self.app_state);
     }
 

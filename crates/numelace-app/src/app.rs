@@ -34,10 +34,9 @@ pub struct NumelaceApp {
 
 impl NumelaceApp {
     pub fn new(cc: &CreationContext<'_>) -> Self {
-        let app_state = cc
-            .storage
-            .and_then(storage::load_state)
-            .unwrap_or_else(|| AppState::new(game_factory::generate_random_game()));
+        let app_state = cc.storage.and_then(storage::load_state).unwrap_or_else(|| {
+            AppState::new_with_settings_applied(game_factory::generate_random_game())
+        });
         let ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
         Self {
             app_state,
