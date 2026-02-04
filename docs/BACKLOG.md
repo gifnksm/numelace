@@ -18,7 +18,7 @@ This backlog is the single source of truth for tasks and ideas.
 - [ ] Difficulty-based puzzle generation
 - [ ] Seeded generation and regenerate by seed
 - [ ] Technique explanations for hints (may overlap with hint system)
-- [ ] Solver technique extensions (pairs, pointing, box/line, X-Wing)
+- [ ] Generator-aligned technique expansion (solver + generator; pairs, pointing, box/line, X-Wing)
 
 ### Optional assist features
 
@@ -35,7 +35,13 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] For selected cell
   - [X] For all cells
   - [X] Auto-fill notes on new game/reset (optional)
-- [ ] Hint system (scope TBD: show applicable technique, target cells, or apply a step)
+- [ ] Hint system (incremental)
+  - [X] Core flow wiring (candidate grid + inconsistency check)
+  - [ ] Check Solvability UI + dialog
+  - [ ] Hint stage 1 highlight (condition cells)
+  - [ ] Hint stage 2 technique + condition pairs
+  - [ ] Hint stage 3 apply step + ghost eliminations
+  - [ ] Rollback flow for inconsistent boards
 
 ### Application features
 

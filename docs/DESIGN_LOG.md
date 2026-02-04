@@ -47,3 +47,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-02: Hint steps are derived by per-technique `find_step` returning `TechniqueStep` with condition/application data, while game applies changes — keeps hint derivation non-destructive and consistent with technique logic.
 - 2026-02-04: Game persists puzzle solutions for hint placement verification and applies hint candidate eliminations only to existing notes — enables deterministic hint validation while keeping memo updates explicit.
 - 2026-02-04: Hint placement validation is performed at the step level by checking `TechniqueStep` placements against the stored solution — keeps validation aligned with hint application and avoids pushing step decomposition logic into the app layer.
+- 2026-02-05: Use “inconsistent” for immediate A/B issues and “no solution” for solvability outcomes — separates current rule violations from unsolvable states.
