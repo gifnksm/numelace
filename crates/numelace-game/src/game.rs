@@ -193,8 +193,11 @@ impl Game {
         grid.is_solved().unwrap_or_default()
     }
 
+    /// Returns a candidate grid derived from givens and filled digits.
+    ///
+    /// Notes are ignored and treated as unconstrained candidates.
     #[must_use]
-    fn to_candidate_grid(&self) -> CandidateGrid {
+    pub fn to_candidate_grid(&self) -> CandidateGrid {
         let mut candidate_grid = CandidateGrid::new();
         for pos in Position::ALL {
             match &self.grid[pos] {
@@ -209,7 +212,8 @@ impl Game {
 
     /// Returns a candidate grid derived from givens, filled digits, and notes.
     ///
-    /// Notes are treated as the authoritative candidate set for that cell.
+    /// Notes are treated as the authoritative candidate set for that cell, while empty
+    /// cells keep all candidates.
     #[must_use]
     pub fn to_candidate_grid_with_notes(&self) -> CandidateGrid {
         let mut candidate_grid = CandidateGrid::new();

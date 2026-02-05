@@ -13,6 +13,7 @@ pub enum Action {
     RequestDigit { digit: Digit, swap: bool },
     ClearCell,
     AutoFillNotes { scope: NotesFillScope },
+    CheckSolvability,
     Undo,
     Redo,
     OpenModal(ModalKind),

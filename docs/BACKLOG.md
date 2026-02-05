@@ -37,7 +37,7 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] Auto-fill notes on new game/reset (optional)
 - [ ] Hint system (incremental)
   - [X] Core flow wiring (candidate grid + inconsistency check)
-  - [ ] Check Solvability UI + dialog
+  - [ ] Check Solvability UI + dialog + shortcut (Ctrl+K)
   - [ ] Hint stage 1 highlight (condition cells)
   - [ ] Hint stage 2 technique + condition pairs
   - [ ] Hint stage 3 apply step + ghost eliminations

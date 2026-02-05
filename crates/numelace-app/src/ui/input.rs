@@ -59,13 +59,14 @@ impl Shortcut {
     }
 }
 
-const SHORTCUTS: [Shortcut; 33] = [
+const SHORTCUTS: [Shortcut; 34] = [
     Shortcut::command(Key::N, Action::OpenModal(ModalKind::NewGameConfirm)),
     Shortcut::command(Key::Comma, Action::OpenModal(ModalKind::Settings)),
     Shortcut::command_shift(
         Key::Backspace,
         Action::OpenModal(ModalKind::ResetCurrentPuzzleConfirm),
     ),
+    Shortcut::command(Key::K, Action::CheckSolvability),
     Shortcut::command(Key::Z, Action::Undo),
     Shortcut::command(Key::Y, Action::Redo),
     Shortcut::plain(Key::ArrowUp, Action::MoveSelection(MoveDirection::Up)),

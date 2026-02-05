@@ -72,6 +72,18 @@ pub fn show(
                         scope: NotesFillScope::AllCells,
                     });
                 }
+
+                if button(
+                    ui,
+                    icon::SEARCH_RIGHT,
+                    "Check whether the current board still has a solution.",
+                    true,
+                    cell_size,
+                )
+                .clicked()
+                {
+                    action_queue.request(Action::CheckSolvability);
+                }
             });
         },
         |ui| {

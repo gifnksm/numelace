@@ -85,7 +85,7 @@ impl App for NumelaceApp {
             ui::game_screen::show(ui, &game_screen_vm, &mut action_queue);
         });
 
-        if let Some(modal) = self.ui_state.active_modal {
+        if let Some(modal) = &self.ui_state.active_modal {
             match modal {
                 ModalKind::NewGameConfirm => {
                     ui::dialogs::show_new_game_confirm(ctx, &mut action_queue);
@@ -97,6 +97,9 @@ impl App for NumelaceApp {
                     let settings_vm =
                         view_model_builder::build_settings_view_model(&self.app_state);
                     ui::settings::show(ctx, &settings_vm, &mut action_queue);
+                }
+                ModalKind::CheckSolvabilityResult(state) => {
+                    ui::dialogs::show_solvability(ctx, &mut action_queue, state);
                 }
             }
         }

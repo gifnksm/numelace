@@ -1,5 +1,6 @@
 use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
+use numelace_solver::BacktrackSolverStats;
 
 use crate::history::UndoRedoStack;
 
@@ -168,11 +169,22 @@ impl GameSnapshot {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum ModalKind {
     NewGameConfirm,
     ResetCurrentPuzzleConfirm,
     Settings,
+    CheckSolvabilityResult(SolvabilityState),
+}
+
+#[derive(Debug, Clone)]
+pub enum SolvabilityState {
+    Inconsistent,
+    NoSolution,
+    Solvable {
+        with_user_notes: bool,
+        stats: BacktrackSolverStats,
+    },
 }
 
 #[derive(Debug)]

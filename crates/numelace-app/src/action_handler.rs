@@ -1,10 +1,11 @@
-use numelace_core::{Digit, Position};
-use numelace_game::{GameError, RuleCheckPolicy};
+use numelace_core::{CandidateGrid, Digit, Position};
+use numelace_game::{Game, GameError, RuleCheckPolicy};
+use numelace_solver::BacktrackSolver;
 
 use crate::{
     action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
     game_factory,
-    state::{AppState, GhostType, InputMode, UiState},
+    state::{AppState, GhostType, InputMode, ModalKind, SolvabilityState, UiState},
 };
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,6 +72,7 @@ pub fn handle(
         Action::RequestDigit { digit, swap } => ctx.request_digit(digit, swap),
         Action::ClearCell => ctx.clear_cell(),
         Action::AutoFillNotes { scope } => ctx.auto_fill_notes(scope),
+        Action::CheckSolvability => ctx.check_solvability(),
         Action::Undo => {
             push_history_if_changed = false;
             ctx.ui_state.undo(ctx.app_state);
@@ -158,6 +160,38 @@ impl ActionContext<'_> {
                 self.app_state.game.auto_fill_notes_all_cells();
             }
         }
+    }
+
+    fn check_solvability(&mut self) {
+        let result = check_solvability(&self.app_state.game);
+        self.ui_state.active_modal = Some(ModalKind::CheckSolvabilityResult(result));
+    }
+}
+
+fn check_solvability(game: &Game) -> SolvabilityState {
+    // First attempt: check solvability with user notes
+    let grid = game.to_candidate_grid_with_notes();
+    match check_grid_solvability(grid, true) {
+        SolvabilityState::Inconsistent | SolvabilityState::NoSolution => {}
+        res @ SolvabilityState::Solvable { .. } => return res,
+    }
+
+    // Second attempt: check solvability without user notes
+    let grid = game.to_candidate_grid();
+    check_grid_solvability(grid, false)
+}
+
+fn check_grid_solvability(grid: CandidateGrid, with_user_notes: bool) -> SolvabilityState {
+    if grid.check_consistency().is_err() {
+        return SolvabilityState::Inconsistent;
+    }
+    let solver = BacktrackSolver::with_all_techniques();
+    match solver.solve(grid).map(|mut sol| sol.next()) {
+        Ok(Some((_grid, stats))) => SolvabilityState::Solvable {
+            with_user_notes,
+            stats,
+        },
+        Ok(None) | Err(_) => SolvabilityState::NoSolution,
     }
 }
 
