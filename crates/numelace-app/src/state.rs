@@ -2,6 +2,7 @@ use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
 use crate::async_work::{WorkError, WorkHandle};
+use crate::flow::FlowExecutor;
 use crate::history::UndoRedoStack;
 
 #[derive(Debug)]
@@ -213,6 +214,7 @@ pub struct UiState {
     pub active_modal: Option<ModalKind>,
     pub conflict_ghost: Option<(Position, GhostType)>,
     pub work: WorkState,
+    pub flow: FlowExecutor,
     history: UndoRedoStack<GameSnapshot>,
 }
 
@@ -223,6 +225,7 @@ impl UiState {
             active_modal: None,
             conflict_ghost: None,
             work: WorkState::default(),
+            flow: FlowExecutor::new(),
             history: UndoRedoStack::new(max_history_len),
         };
         this.reset_history(init_state);

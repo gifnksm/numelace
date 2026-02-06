@@ -23,6 +23,14 @@ pub enum Action {
     ResetCurrentPuzzle,
     ApplyWorkResponse(WorkResponse),
     UpdateSettings(Settings),
+    StartNewGameFlow,
+    ConfirmNewGame(ConfirmResult),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConfirmResult {
+    Confirmed,
+    Cancelled,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]

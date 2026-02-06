@@ -71,6 +71,13 @@ impl App for NumelaceApp {
 
         let work_flow = WorkFlow;
         work_flow.poll_and_queue(&mut self.ui_state.work, &mut action_queue);
+        self.ui_state.flow.poll(&mut action_queue);
+        action_handler::handle_all(
+            &mut self.app_state,
+            &mut self.ui_state,
+            &mut effect,
+            &mut action_queue,
+        );
 
         if self.ui_state.active_modal.is_none() && !WorkFlow::is_work_in_flight(&self.ui_state.work)
         {

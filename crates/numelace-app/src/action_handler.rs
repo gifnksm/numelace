@@ -2,8 +2,9 @@ use numelace_core::{Digit, Position};
 use numelace_game::{GameError, RuleCheckPolicy};
 
 use crate::{
-    action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
+    action::{Action, ActionRequestQueue, ConfirmResult, MoveDirection, NotesFillScope},
     async_work::{WorkResponse, work_actions},
+    flow::new_game_flow,
     state::{AppState, GhostType, InputMode, UiState},
 };
 
@@ -86,6 +87,14 @@ pub fn handle(
         Action::CloseModal => {
             ctx.ui_state.active_modal = None;
         }
+        Action::StartNewGameFlow => {
+            push_history_if_changed = false;
+            ctx.start_new_game_flow();
+        }
+        Action::ConfirmNewGame(result) => {
+            push_history_if_changed = false;
+            ctx.confirm_new_game(result);
+        }
         Action::StartNewGame => {
             push_history_if_changed = false;
             ctx.request_new_game();
@@ -144,7 +153,22 @@ impl ActionContext<'_> {
         let _ = work_actions::request_new_game(self.ui_state);
     }
 
+    fn start_new_game_flow(&mut self) {
+        if !self.ui_state.flow.is_idle()
+            || crate::async_work::work_flow::WorkFlow::is_work_in_flight(&self.ui_state.work)
+        {
+            return;
+        }
+        let handle = self.ui_state.flow.handle();
+        self.ui_state.flow.spawn(new_game_flow(handle));
+    }
+
+    fn confirm_new_game(&mut self, result: ConfirmResult) {
+        self.ui_state.flow.confirm_new_game(result);
+    }
+
     fn apply_work_response(&mut self, response: WorkResponse) {
+        self.ui_state.flow.record_work_response(&response);
         work_actions::apply_work_response(self.app_state, self.ui_state, response);
     }
 

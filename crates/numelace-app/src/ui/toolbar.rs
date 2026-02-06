@@ -50,7 +50,7 @@ pub fn show(
                 ui.separator();
 
                 if button(ui, icon::PLUS, "New Game", true, cell_size).clicked() {
-                    action_queue.request(Action::OpenModal(ModalKind::NewGameConfirm));
+                    action_queue.request(Action::StartNewGameFlow);
                 }
 
                 if button(ui, icon::ROTATE_CCW, "Reset Puzzle", true, cell_size).clicked() {

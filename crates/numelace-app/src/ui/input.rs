@@ -60,7 +60,7 @@ impl Shortcut {
 }
 
 const SHORTCUTS: [Shortcut; 34] = [
-    Shortcut::command(Key::N, Action::OpenModal(ModalKind::NewGameConfirm)),
+    Shortcut::command(Key::N, Action::StartNewGameFlow),
     Shortcut::command(Key::Comma, Action::OpenModal(ModalKind::Settings)),
     Shortcut::command_shift(
         Key::Backspace,

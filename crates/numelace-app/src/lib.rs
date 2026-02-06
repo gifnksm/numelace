@@ -7,6 +7,7 @@ pub mod action;
 pub mod action_handler;
 pub mod app;
 pub mod async_work;
+pub mod flow;
 pub mod game_factory;
 pub mod history;
 pub mod persistence;

@@ -1,7 +1,7 @@
 use eframe::egui::{Button, Context, Id, Modal, Response, RichText, Sides, Ui};
 
 use crate::{
-    action::{Action, ActionRequestQueue, NotesFillScope},
+    action::{Action, ActionRequestQueue, ConfirmResult, NotesFillScope},
     state::SolvabilityState,
     ui::icon,
 };
@@ -13,11 +13,13 @@ fn show_dialog<Heading, Body, Buttons>(
     heading: Heading,
     body: Body,
     buttons: Buttons,
+    on_close: Option<Action>,
 ) where
     Heading: Into<RichText>,
     Body: FnOnce(&mut Ui),
-    Buttons: FnOnce(&mut Ui, &mut ActionRequestQueue),
+    Buttons: FnOnce(&mut Ui, &mut ActionRequestQueue, &mut bool),
 {
+    let mut action_requested = false;
     let modal = Modal::new(id).show(ctx, |ui| {
         ui.heading(heading);
         ui.add_space(4.0);
@@ -29,13 +31,18 @@ fn show_dialog<Heading, Body, Buttons>(
             ui,
             |_ui| {},
             |ui| {
-                buttons(ui, action_queue);
+                buttons(ui, action_queue, &mut action_requested);
             },
         );
     });
 
     if modal.should_close() {
         action_queue.request(Action::CloseModal);
+        if let Some(action) = on_close
+            && !action_requested
+        {
+            action_queue.request(action);
+        }
     }
 }
 
@@ -70,6 +77,19 @@ fn cancel_button(ui: &mut Ui) {
     close_button(ui, format!("{} Cancel", icon::CANCEL));
 }
 
+fn cancel_action_button(
+    ui: &mut Ui,
+    action_queue: &mut ActionRequestQueue,
+    action_requested: &mut bool,
+    action: Action,
+) {
+    if ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
+        *action_requested = true;
+        action_queue.request(action);
+        ui.close();
+    }
+}
+
 fn disabled_button(ui: &mut Ui, label: String) {
     ui.add_enabled(false, Button::new(label));
 }
@@ -77,12 +97,14 @@ fn disabled_button(ui: &mut Ui, label: String) {
 fn action_button(
     ui: &mut Ui,
     action_queue: &mut ActionRequestQueue,
+    action_requested: &mut bool,
     label: String,
     request_focus: bool,
     action: Action,
 ) {
     let response = primary_button(ui, label, request_focus);
     if response.clicked() {
+        *action_requested = true;
         action_queue.request(action);
         ui.close();
     }
@@ -97,16 +119,23 @@ pub fn show_new_game_confirm(ctx: &Context, action_queue: &mut ActionRequestQueu
         |ui: &mut Ui| {
             ui.label("Start a new game? Current progress will be lost.");
         },
-        |ui: &mut Ui, action_queue| {
+        |ui: &mut Ui, action_queue, action_requested| {
             action_button(
                 ui,
                 action_queue,
+                action_requested,
                 format!("{} New Game", icon::CHECK),
                 true,
-                Action::StartNewGame,
+                Action::ConfirmNewGame(ConfirmResult::Confirmed),
             );
-            cancel_button(ui);
+            cancel_action_button(
+                ui,
+                action_queue,
+                action_requested,
+                Action::ConfirmNewGame(ConfirmResult::Cancelled),
+            );
         },
+        Some(Action::ConfirmNewGame(ConfirmResult::Cancelled)),
     );
 }
 
@@ -119,16 +148,18 @@ pub fn show_reset_current_puzzle_confirm(ctx: &Context, action_queue: &mut Actio
         |ui: &mut Ui| {
             ui.label("Clear all your inputs and return to the initial puzzle state?");
         },
-        |ui: &mut Ui, action_queue| {
+        |ui: &mut Ui, action_queue, action_requested| {
             action_button(
                 ui,
                 action_queue,
+                action_requested,
                 format!("{} Reset", icon::CHECK),
                 true,
                 Action::ResetCurrentPuzzle,
             );
             cancel_button(ui);
         },
+        None,
     );
 }
 
@@ -147,10 +178,11 @@ pub fn show_solvability(
                 |ui: &mut Ui| {
                     ui.label("A conflict or a no-candidate cell was detected. We recommend undoing to the last consistent state.");
                 },
-                |ui: &mut Ui, _action_queue: &mut ActionRequestQueue| {
+                |ui: &mut Ui, _action_queue: &mut ActionRequestQueue, _action_requested| {
                     disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
                     cancel_button(ui);
                 },
+                None,
             );
         }
         SolvabilityState::NoSolution => {
@@ -162,10 +194,11 @@ pub fn show_solvability(
                 |ui: &mut Ui| {
                     ui.label("No solution exists from the current state. We recommend undoing to the last solvable state.");
                 },
-                |ui: &mut Ui, _action_queue: &mut ActionRequestQueue| {
+                |ui: &mut Ui, _action_queue: &mut ActionRequestQueue, _action_requested| {
                     disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
                     cancel_button(ui);
                 },
+                None,
             );
         }
         SolvabilityState::Solvable {
@@ -180,9 +213,10 @@ pub fn show_solvability(
                 |ui: &mut Ui| {
                     ui.label("A solution is still possible from the current state.");
                 },
-                |ui: &mut Ui, _action_queue: &mut ActionRequestQueue| {
+                |ui: &mut Ui, _action_queue: &mut ActionRequestQueue, _action_requested| {
                     primary_close_button(ui, format!("{} OK", icon::CHECK));
                 },
+                None,
             );
         }
         SolvabilityState::Solvable {
@@ -197,10 +231,11 @@ pub fn show_solvability(
                 |ui: &mut Ui| {
                     ui.label("A solution exists when ignoring notes. Rebuild candidates now?");
                 },
-                |ui: &mut Ui, action_queue: &mut ActionRequestQueue| {
+                |ui: &mut Ui, action_queue: &mut ActionRequestQueue, action_requested| {
                     action_button(
                         ui,
                         action_queue,
+                        action_requested,
                         format!("{} Rebuild", icon::CHECK),
                         true,
                         Action::AutoFillNotes {
@@ -209,6 +244,7 @@ pub fn show_solvability(
                     );
                     cancel_button(ui);
                 },
+                None,
             );
         }
     }
