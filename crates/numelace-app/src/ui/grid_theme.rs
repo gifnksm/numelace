@@ -31,6 +31,7 @@ impl GridPalette {
     ///
     /// This keeps behavior identical to the current visuals-based colors,
     /// while making the palette structure explicit for later customization.
+    #[must_use]
     pub fn from_visuals(visuals: &Visuals) -> Self {
         // Palette guidance:
         // - Prefer meaning-based colors that do not overlap with existing semantics.
@@ -86,6 +87,7 @@ impl GridTheme {
     /// Create a theme using the current visuals for both palettes.
     ///
     /// This preserves existing colors today while allowing later divergence.
+    #[must_use]
     pub fn from_visuals(visuals: &Visuals) -> Self {
         let palette = GridPalette::from_visuals(visuals);
         Self {
@@ -94,6 +96,7 @@ impl GridTheme {
         }
     }
 
+    #[must_use]
     pub fn palette_for(&self, visuals: &Visuals) -> &GridPalette {
         if visuals.dark_mode {
             &self.dark

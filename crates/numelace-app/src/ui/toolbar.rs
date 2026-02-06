@@ -16,11 +16,13 @@ pub struct ToolbarViewModel {
 }
 
 impl ToolbarViewModel {
+    #[must_use]
     pub fn new(can_undo: bool, can_redo: bool) -> Self {
         Self { can_undo, can_redo }
     }
 }
 
+#[must_use]
 pub const fn required_units() -> ComponentUnits {
     ComponentUnits::new(0.0, 1.0)
 }

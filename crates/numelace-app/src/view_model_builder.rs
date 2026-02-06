@@ -17,6 +17,7 @@ use crate::{
     },
 };
 
+#[must_use]
 pub fn build_toolbar_vm(ui_state: &UiState) -> ToolbarViewModel {
     ToolbarViewModel::new(ui_state.can_undo(), ui_state.can_redo())
 }
@@ -96,6 +97,7 @@ fn build_grid(app_state: &AppState, ui_state: &UiState) -> Array81<GridCell, Pos
     grid
 }
 
+#[must_use]
 pub fn build_game_screen_view_model(
     app_state: &AppState,
     ui_state: &UiState,
@@ -135,6 +137,7 @@ pub fn build_game_screen_view_model(
     GameScreenViewModel::new(toolbar_vm, status_line_vm, grid_vm, keypad_vm)
 }
 
+#[must_use]
 pub fn build_settings_view_model(app_state: &AppState) -> SettingsViewModel<'_> {
     let settings = &app_state.settings;
     SettingsViewModel::new(settings)

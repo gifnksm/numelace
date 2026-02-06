@@ -13,13 +13,15 @@ use std::time::Duration;
 
 use eframe::{
     App, CreationContext, Frame, Storage,
-    egui::{CentralPanel, Context},
+    egui::{CentralPanel, Context, Id, Modal, Spinner},
 };
 
 use crate::{
     DEFAULT_MAX_HISTORY_LENGTH,
     action::ActionRequestQueue,
     action_handler::{self, ActionEffect},
+    async_work,
+    async_work::work_flow::WorkFlow,
     game_factory,
     persistence::storage,
     state::{AppState, ModalKind, UiState},
@@ -34,6 +36,7 @@ pub struct NumelaceApp {
 
 impl NumelaceApp {
     pub fn new(cc: &CreationContext<'_>) -> Self {
+        let _ = async_work::warm_up();
         let app_state = cc.storage.and_then(storage::load_state).unwrap_or_else(|| {
             AppState::new_with_settings_applied(game_factory::generate_random_game())
         });
@@ -66,7 +69,12 @@ impl App for NumelaceApp {
         let mut effect = ActionEffect::default();
         let mut action_queue = ActionRequestQueue::default();
 
-        if self.ui_state.active_modal.is_none() {
+        let work_flow = WorkFlow;
+        work_flow.poll_and_queue(&mut self.ui_state.work, &mut action_queue);
+
+        if self.ui_state.active_modal.is_none()
+            && !WorkFlow::is_new_game_in_flight(&self.ui_state.work)
+        {
             ctx.input(|i| {
                 ui::input::handle_input(i, &mut action_queue);
                 action_handler::handle_all(
@@ -102,6 +110,15 @@ impl App for NumelaceApp {
                     ui::dialogs::show_solvability(ctx, &mut action_queue, state);
                 }
             }
+        }
+
+        if WorkFlow::is_new_game_in_flight(&self.ui_state.work) {
+            ctx.request_repaint();
+            Modal::new(Id::new("generating_new_game")).show(ctx, |ui| {
+                ui.heading("Generating...");
+                ui.add(Spinner::new());
+                ui.label("Generating new game...");
+            });
         }
 
         action_handler::handle_all(

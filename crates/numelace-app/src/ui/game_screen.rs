@@ -25,6 +25,7 @@ pub struct GameScreenViewModel {
 }
 
 impl GameScreenViewModel {
+    #[must_use]
     pub fn new(
         toolbar: ToolbarViewModel,
         status_line: StatusLineViewModel,

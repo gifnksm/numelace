@@ -8,6 +8,7 @@ pub struct UndoRedoStack<T> {
 }
 
 impl<T> UndoRedoStack<T> {
+    #[must_use]
     pub fn new(capacity: usize) -> Self {
         assert!(capacity > 0);
         Self {
@@ -40,6 +41,7 @@ impl<T> UndoRedoStack<T> {
         self.cursor = self.stack.len() - 1;
     }
 
+    #[must_use]
     pub fn can_undo(&self) -> bool {
         !self.stack.is_empty() && self.cursor > 0
     }
@@ -53,6 +55,7 @@ impl<T> UndoRedoStack<T> {
         }
     }
 
+    #[must_use]
     pub fn can_redo(&self) -> bool {
         !self.stack.is_empty() && self.cursor + 1 < self.stack.len()
     }
@@ -71,6 +74,7 @@ impl<T> UndoRedoStack<T> {
         self.cursor = 0;
     }
 
+    #[must_use]
     pub fn current(&self) -> Option<&T> {
         self.stack.get(self.cursor)
     }

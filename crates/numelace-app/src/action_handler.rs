@@ -4,7 +4,7 @@ use numelace_solver::BacktrackSolver;
 
 use crate::{
     action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
-    game_factory,
+    async_work::{WorkResponse, work_actions},
     state::{AppState, GhostType, InputMode, ModalKind, SolvabilityState, UiState},
 };
 
@@ -89,11 +89,15 @@ pub fn handle(
         }
         Action::StartNewGame => {
             push_history_if_changed = false;
-            ctx.start_new_game();
+            ctx.request_new_game();
         }
         Action::ResetCurrentPuzzle => {
             push_history_if_changed = false;
             ctx.reset_current_puzzle();
+        }
+        Action::ApplyWorkResponse(response) => {
+            push_history_if_changed = false;
+            ctx.apply_work_response(response);
         }
         Action::UpdateSettings(settings) => {
             ctx.app_state.settings = settings;
@@ -137,11 +141,12 @@ impl ActionContext<'_> {
         }
     }
 
-    fn start_new_game(&mut self) {
-        self.app_state.game = game_factory::generate_random_game();
-        self.app_state.selected_cell = None;
-        self.app_state.apply_new_game_settings();
-        self.ui_state.reset_history(self.app_state);
+    fn request_new_game(&mut self) {
+        let _ = work_actions::request_new_game(self.ui_state);
+    }
+
+    fn apply_work_response(&mut self, response: WorkResponse) {
+        work_actions::apply_work_response(self.app_state, self.ui_state, response);
     }
 
     fn reset_current_puzzle(&mut self) {

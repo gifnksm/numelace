@@ -2,6 +2,7 @@ use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 use numelace_solver::BacktrackSolverStats;
 
+use crate::async_work::{WorkError, WorkHandle};
 use crate::history::UndoRedoStack;
 
 #[derive(Debug)]
@@ -13,6 +14,7 @@ pub struct AppState {
 }
 
 impl AppState {
+    #[must_use]
     pub fn new(game: Game) -> Self {
         Self {
             game,
@@ -22,6 +24,7 @@ impl AppState {
         }
     }
 
+    #[must_use]
     pub fn new_with_settings_applied(game: Game) -> Self {
         let mut state = Self::new(game);
         state.apply_new_game_settings();
@@ -42,6 +45,7 @@ impl AppState {
         self.apply_new_game_settings();
     }
 
+    #[must_use]
     pub fn rule_check_policy(&self) -> RuleCheckPolicy {
         if self.settings.assist.block_rule_violations {
             RuleCheckPolicy::Strict
@@ -50,6 +54,7 @@ impl AppState {
         }
     }
 
+    #[must_use]
     pub fn note_cleanup_policy(&self) -> NoteCleanupPolicy {
         if self.settings.assist.notes.auto_remove_peer_notes_on_fill {
             NoteCleanupPolicy::RemovePeers
@@ -58,6 +63,7 @@ impl AppState {
         }
     }
 
+    #[must_use]
     pub fn input_digit_options(&self) -> InputDigitOptions {
         InputDigitOptions::default()
             .rule_check_policy(self.rule_check_policy())
@@ -79,6 +85,7 @@ impl InputMode {
         }
     }
 
+    #[must_use]
     pub fn swapped(self, swap: bool) -> Self {
         if swap {
             match self {
@@ -187,18 +194,28 @@ pub enum SolvabilityState {
     },
 }
 
+#[derive(Debug, Default)]
+pub struct WorkState {
+    pub pending: Option<WorkHandle>,
+    pub is_generating_new_game: bool,
+    pub last_error: Option<WorkError>,
+}
+
 #[derive(Debug)]
 pub struct UiState {
     pub active_modal: Option<ModalKind>,
     pub conflict_ghost: Option<(Position, GhostType)>,
+    pub work: WorkState,
     history: UndoRedoStack<GameSnapshot>,
 }
 
 impl UiState {
+    #[must_use]
     pub fn new(max_history_len: usize, init_state: &AppState) -> Self {
         let mut this = Self {
             active_modal: None,
             conflict_ghost: None,
+            work: WorkState::default(),
             history: UndoRedoStack::new(max_history_len),
         };
         this.reset_history(init_state);
@@ -210,6 +227,7 @@ impl UiState {
         self.history.push(GameSnapshot::new(init_state));
     }
 
+    #[must_use]
     pub fn can_undo(&self) -> bool {
         self.history.can_undo()
     }
@@ -230,6 +248,7 @@ impl UiState {
         }
     }
 
+    #[must_use]
     pub fn can_redo(&self) -> bool {
         self.history.can_redo()
     }

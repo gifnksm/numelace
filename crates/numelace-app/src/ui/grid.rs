@@ -42,6 +42,7 @@ pub struct NoteVisualState {
 }
 
 impl NoteVisualState {
+    #[must_use]
     pub fn digit_highlight(&self, digit: Digit) -> GridVisualState {
         let Self {
             same_digit,
@@ -69,6 +70,7 @@ pub struct GridViewModel {
 }
 
 impl GridViewModel {
+    #[must_use]
     pub fn new(
         grid: Array81<GridCell, PositionSemantics>,
         highlight_settings: &HighlightSettings,
@@ -113,11 +115,13 @@ impl GridViewModel {
 
 pub const GRID_CELLS: f32 = 9.0;
 
+#[must_use]
 pub fn grid_side_with_border(cell_size: f32) -> f32 {
     let thick_border = thick_border_width(cell_size);
     GRID_CELLS * cell_size + thick_border * 4.0
 }
 
+#[must_use]
 pub const fn required_units() -> ComponentUnits {
     let len = GRID_CELLS + CELL_BORDER_WIDTH_BASE_RATIO * (THICK_BORDER_WIDTH_RATIO * 4.0);
     ComponentUnits::new(len, len)

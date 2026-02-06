@@ -2,19 +2,7 @@
 //!
 //! This is the main entry point for the desktop Numelace application.
 
-use crate::app::NumelaceApp;
-
-const DEFAULT_MAX_HISTORY_LENGTH: usize = 200;
-
-mod action;
-mod action_handler;
-mod app;
-mod game_factory;
-mod history;
-mod persistence;
-mod state;
-mod ui;
-mod view_model_builder;
+use numelace_app::app::NumelaceApp;
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result<()> {
@@ -30,8 +18,10 @@ fn main() -> eframe::Result<()> {
             .with_inner_size((800.0, 600.0))
             .with_min_inner_size((400.0, 300.0))
             .with_icon(
-                eframe::icon_data::from_png_bytes(include_bytes!("../../../assets/icon-256.png"))
-                    .expect("Failed to load icon"),
+                eframe::icon_data::from_png_bytes(include_bytes!(
+                    "../../../../assets/icon-256.png"
+                ))
+                .expect("Failed to load icon"),
             ),
         ..Default::default()
     };

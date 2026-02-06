@@ -30,6 +30,7 @@ pub struct DigitKeyState {
 }
 
 impl DigitKeyState {
+    #[must_use]
     pub fn new(
         digit: Option<Result<InputOperation, InputBlockReason>>,
         note: Option<Result<InputOperation, InputBlockReason>>,
@@ -44,6 +45,7 @@ impl DigitKeyState {
 }
 
 impl KeypadViewModel {
+    #[must_use]
     pub fn new(
         digit_states: Array9<DigitKeyState, DigitSemantics>,
         has_removable_input: bool,
@@ -97,6 +99,7 @@ const KEYPAD_COLUMNS: f32 = BUTTON_LAYOUT[0].len() as f32;
 #[expect(clippy::cast_precision_loss)]
 const KEYPAD_ROWS: f32 = BUTTON_LAYOUT.len() as f32;
 
+#[must_use]
 pub fn required_units() -> ComponentUnits {
     ComponentUnits::new(
         KEYPAD_COLUMNS + (KEYPAD_COLUMNS - 1.0) * LayoutScale::SPACING_FACTOR.x,

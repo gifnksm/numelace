@@ -11,6 +11,7 @@ impl LayoutScale {
     pub const SPACING_FACTOR: Vec2 = Vec2::new(0.15, 0.20);
     pub const PADDING_FACTOR: Vec2 = Vec2::new(0.20, 0.30);
 
+    #[must_use]
     pub fn new(cell_size: f32) -> Self {
         let spacing = Vec2::splat(cell_size) * Self::SPACING_FACTOR;
         let padding = Vec2::splat(cell_size) * Self::PADDING_FACTOR;
@@ -29,6 +30,7 @@ pub struct ComponentUnits {
 }
 
 impl ComponentUnits {
+    #[must_use]
     pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
     }

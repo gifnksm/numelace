@@ -12,6 +12,7 @@ pub struct SettingsViewModel<'a> {
 }
 
 impl<'a> SettingsViewModel<'a> {
+    #[must_use]
     pub fn new(settings: &'a Settings) -> Self {
         Self { settings }
     }

@@ -19,6 +19,19 @@
             href="crates/numelace-app/Cargo.toml"
             data-bin="numelace"
         />
+        <link
+            data-trunk
+            rel="rust"
+            data-wasm-opt="2"
+            href="crates/numelace-app/Cargo.toml"
+            data-bin="numelace-worker"
+            data-type="worker"
+        />
+        <link
+            data-trunk
+            rel="copy-file"
+            href="assets/numelace-worker-bootstrap.js"
+        />
         <!-- this is the base url relative to which other urls will be constructed. trunk will insert this from the public-url option -->
         <base data-trunk-public-url />
 
@@ -154,7 +167,7 @@
 
     <body>
         <!-- The WASM code will resize the canvas dynamically -->
-        <!-- the id is hardcoded in main.rs . so, make sure both match. -->
+        <!-- the id is hardcoded in src/bin/numelace.rs . so, make sure both match. -->
         <canvas id="the_canvas_id"></canvas>
 
         <!-- the loading spinner will be removed in main.rs -->

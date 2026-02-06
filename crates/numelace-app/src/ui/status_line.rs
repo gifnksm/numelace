@@ -17,11 +17,13 @@ pub struct StatusLineViewModel {
 }
 
 impl StatusLineViewModel {
+    #[must_use]
     pub fn new(status: GameStatus) -> Self {
         Self { status }
     }
 }
 
+#[must_use]
 pub fn required_units() -> ComponentUnits {
     ComponentUnits::new(0.0, 0.5)
 }

@@ -1,5 +1,6 @@
 [package]
 name = "numelace-app"
+default-run = "numelace"
 version.workspace = true
 edition.workspace = true
 description.workspace = true
@@ -9,7 +10,11 @@ license.workspace = true
 
 [[bin]]
 name = "numelace"
-path = "src/main.rs"
+path = "src/bin/numelace.rs"
+
+[[bin]]
+name = "numelace-worker"
+path = "src/bin/numelace-worker.rs"
 
 [dependencies]
 bitflags.workspace = true
@@ -29,8 +34,19 @@ env_logger.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { workspace = true, features = ["wasm_js"] }
+js-sys.workspace = true
+serde-wasm-bindgen.workspace = true
+wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
-web-sys = { workspace = true, features = ["Document", "HtmlCanvasElement", "Window"] }
+web-sys = { workspace = true, features = [
+    "DedicatedWorkerGlobalScope",
+    "Document",
+    "HtmlCanvasElement",
+    "MessageEvent",
+    "Url",
+    "Window",
+    "Worker",
+] }
 
 [lints]
 workspace = true

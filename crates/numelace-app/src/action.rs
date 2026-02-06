@@ -2,6 +2,7 @@ use std::mem;
 
 use numelace_core::{Digit, Position};
 
+use crate::async_work::WorkResponse;
 use crate::state::{ModalKind, Settings};
 
 #[derive(Debug, Clone)]
@@ -20,6 +21,7 @@ pub enum Action {
     CloseModal,
     StartNewGame,
     ResetCurrentPuzzle,
+    ApplyWorkResponse(WorkResponse),
     UpdateSettings(Settings),
 }
 
