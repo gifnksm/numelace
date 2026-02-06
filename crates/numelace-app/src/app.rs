@@ -70,8 +70,7 @@ impl App for NumelaceApp {
         let mut effect = ActionEffect::default();
         let mut action_queue = ActionRequestQueue::default();
 
-        let work_flow = WorkFlow;
-        work_flow.poll_and_queue(&mut self.ui_state.work, &mut action_queue);
+        WorkFlow::poll_and_queue(&mut self.ui_state.work, &mut action_queue);
         self.ui_state.flow.poll(&mut action_queue);
         action_handler::handle_all(
             &mut self.app_state,

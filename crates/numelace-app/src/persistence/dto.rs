@@ -14,7 +14,7 @@ use crate::state::{
 //   so missing fields preserve non-false defaults on deserialization.
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct PersistedState {
+pub(crate) struct PersistedState {
     game: GameDto,
     #[serde(default)]
     selected_cell: Option<PositionDto>,
@@ -36,7 +36,7 @@ impl From<&AppState> for PersistedState {
 }
 
 #[derive(Debug, derive_more::Display, derive_more::Error, derive_more::From)]
-pub enum AppStateConversionError {
+pub(crate) enum AppStateConversionError {
     #[display("failed to parse game data: {_0}")]
     GameParse(DigitGridParseError),
     #[display("failed to apply saved game data: {_0}")]
@@ -59,7 +59,7 @@ impl TryFrom<PersistedState> for AppState {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct GameDto {
+pub(crate) struct GameDto {
     problem: String,
     solution: String,
     filled: String,
@@ -128,7 +128,7 @@ impl TryFrom<GameDto> for Game {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct PositionDto {
+pub(crate) struct PositionDto {
     x: u8,
     y: u8,
 }
@@ -151,7 +151,7 @@ impl TryFrom<PositionDto> for Position {
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
-pub enum InputModeDto {
+pub(crate) enum InputModeDto {
     #[default]
     Fill,
     Notes,
@@ -177,7 +177,7 @@ impl From<InputModeDto> for InputMode {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
-pub struct SettingsDto {
+pub(crate) struct SettingsDto {
     assist: AssistSettingsDto,
 }
 
@@ -211,10 +211,10 @@ impl From<SettingsDto> for Settings {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
-pub struct AssistSettingsDto {
-    pub block_rule_violations: bool,
-    pub highlight: HighlightSettingsDto,
-    pub notes: NotesSettingsDto,
+pub(crate) struct AssistSettingsDto {
+    pub(crate) block_rule_violations: bool,
+    pub(crate) highlight: HighlightSettingsDto,
+    pub(crate) notes: NotesSettingsDto,
 }
 
 impl Default for AssistSettingsDto {
@@ -252,11 +252,11 @@ impl From<AssistSettingsDto> for AssistSettings {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
 #[expect(clippy::struct_excessive_bools)]
-pub struct HighlightSettingsDto {
-    pub same_digit: bool,
-    pub house_selected: bool,
-    pub house_same_digit: bool,
-    pub conflict: bool,
+pub(crate) struct HighlightSettingsDto {
+    pub(crate) same_digit: bool,
+    pub(crate) house_selected: bool,
+    pub(crate) house_same_digit: bool,
+    pub(crate) conflict: bool,
 }
 
 impl Default for HighlightSettingsDto {
@@ -295,9 +295,9 @@ impl From<HighlightSettingsDto> for HighlightSettings {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
-pub struct NotesSettingsDto {
-    pub auto_remove_peer_notes_on_fill: bool,
-    pub auto_fill_notes_on_new_or_reset: bool,
+pub(crate) struct NotesSettingsDto {
+    pub(crate) auto_remove_peer_notes_on_fill: bool,
+    pub(crate) auto_fill_notes_on_new_or_reset: bool,
 }
 
 impl Default for NotesSettingsDto {

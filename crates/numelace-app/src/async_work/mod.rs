@@ -7,18 +7,18 @@
 
 use crate::game_factory;
 
-pub mod new_game_dto;
+pub(crate) mod new_game_dto;
 mod platform;
-pub mod solvability_dto;
-pub mod work_actions;
-pub mod work_flow;
+pub(crate) mod solvability_dto;
+pub(crate) mod work_actions;
+pub(crate) mod work_flow;
 
 use new_game_dto::NewGameDto;
 use solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto, SolvabilityStatsDto};
 
 /// A request that can be offloaded to a background worker.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub enum WorkRequest {
+pub(crate) enum WorkRequest {
     /// Generate a new Sudoku puzzle.
     GenerateNewGame,
     /// Check solvability for a given puzzle state.
@@ -27,7 +27,7 @@ pub enum WorkRequest {
 
 /// A response produced by background work.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub enum WorkResponse {
+pub(crate) enum WorkResponse {
     /// New puzzle data ready for a fresh game.
     NewGameReady(NewGameDto),
     /// Solvability result ready for display.
@@ -38,7 +38,7 @@ pub enum WorkResponse {
 
 /// Errors that can occur while scheduling or receiving background work.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub enum WorkError {
+pub(crate) enum WorkError {
     /// The worker URL was missing or invalid.
     WorkerUrlMissing,
     /// Failed to initialize the worker instance.
@@ -70,7 +70,7 @@ impl WorkRequest {
     ///
     /// This keeps the request-to-response mapping centralized across backends.
     #[must_use]
-    pub fn handle(&self) -> WorkResponse {
+    pub(crate) fn handle(&self) -> WorkResponse {
         match self {
             WorkRequest::GenerateNewGame => {
                 WorkResponse::NewGameReady(game_factory::generate_new_game_dto())
@@ -119,4 +119,4 @@ fn check_grid_solvability(
     }
 }
 
-pub use platform::{WorkHandle, enqueue, warm_up};
+pub(crate) use platform::{WorkHandle, enqueue, warm_up};

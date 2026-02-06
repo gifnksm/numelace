@@ -2,7 +2,7 @@
 //!
 //! This is the main entry point for the desktop Numelace application.
 
-use numelace_app::app::NumelaceApp;
+use numelace_app::NumelaceApp;
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result<()> {

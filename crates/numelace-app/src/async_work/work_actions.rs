@@ -13,7 +13,8 @@ use super::{
 };
 
 /// Request background work using the async pipeline and panic on failure.
-pub fn request_work(request: WorkRequest, ui_state: &mut UiState) -> Result<(), WorkError> {
+#[expect(clippy::unnecessary_wraps, clippy::needless_pass_by_value)]
+pub(crate) fn request_work(request: WorkRequest, ui_state: &mut UiState) -> Result<(), WorkError> {
     if WorkFlow::is_work_in_flight(&ui_state.work) {
         return Ok(());
     }
@@ -33,7 +34,7 @@ pub fn request_work(request: WorkRequest, ui_state: &mut UiState) -> Result<(), 
 }
 
 /// Build a solvability request for background work.
-pub fn build_solvability_request(game: &Game) -> WorkRequest {
+pub(crate) fn build_solvability_request(game: &Game) -> WorkRequest {
     let request = SolvabilityRequestDto {
         with_user_notes: SolvabilityGridDto::from_candidate_grid(
             &game.to_candidate_grid_with_notes(),
@@ -45,7 +46,7 @@ pub fn build_solvability_request(game: &Game) -> WorkRequest {
 }
 
 /// Apply a completed background response, updating app state.
-pub fn apply_work_response(
+pub(crate) fn apply_work_response(
     app_state: &mut AppState,
     ui_state: &mut UiState,
     response: WorkResponse,

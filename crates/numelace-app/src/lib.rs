@@ -1,16 +1,19 @@
 //! Shared library module for the Numelace app crate.
 #![allow(missing_docs, clippy::missing_errors_doc, clippy::missing_panics_doc)]
 
-pub const DEFAULT_MAX_HISTORY_LENGTH: usize = 200;
+pub(crate) const DEFAULT_MAX_HISTORY_LENGTH: usize = 200;
 
-pub mod action;
-pub mod action_handler;
-pub mod app;
-pub mod async_work;
-pub mod flow;
-pub mod game_factory;
-pub mod history;
-pub mod persistence;
-pub mod state;
-pub mod ui;
-pub mod view_model_builder;
+pub(crate) mod action;
+pub(crate) mod action_handler;
+pub(crate) mod app;
+pub(crate) mod async_work;
+pub(crate) mod flow;
+pub(crate) mod game_factory;
+pub(crate) mod history;
+pub(crate) mod persistence;
+pub(crate) mod state;
+pub(crate) mod ui;
+pub(crate) mod view_model_builder;
+pub mod worker_api;
+
+pub use self::app::NumelaceApp;

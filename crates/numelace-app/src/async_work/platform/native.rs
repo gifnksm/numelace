@@ -12,7 +12,7 @@ struct WorkRequestEnvelope {
 static WORKER_SENDER: OnceLock<mpsc::Sender<WorkRequestEnvelope>> = OnceLock::new();
 
 /// A handle for polling background work completion.
-pub struct WorkHandle {
+pub(crate) struct WorkHandle {
     receiver: mpsc::Receiver<WorkResponse>,
 }
 
@@ -36,7 +36,8 @@ impl WorkHandle {
 }
 
 /// Starts the shared worker thread without sending a request.
-pub fn warm_up() -> Result<(), WorkError> {
+#[expect(clippy::unnecessary_wraps)]
+pub(crate) fn warm_up() -> Result<(), WorkError> {
     let _ = WORKER_SENDER.get_or_init(|| {
         let (tx, rx) = mpsc::channel::<WorkRequestEnvelope>();
         std::thread::spawn(move || {
@@ -51,7 +52,7 @@ pub fn warm_up() -> Result<(), WorkError> {
 }
 
 /// Enqueues a background task on the shared worker thread and returns a handle for polling completion.
-pub fn enqueue(request: WorkRequest) -> Result<WorkHandle, WorkError> {
+pub(crate) fn enqueue(request: WorkRequest) -> Result<WorkHandle, WorkError> {
     let worker_tx = WORKER_SENDER.get_or_init(|| {
         let (tx, rx) = mpsc::channel::<WorkRequestEnvelope>();
         std::thread::spawn(move || {

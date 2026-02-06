@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 #[derive(Debug, Clone)]
-pub struct UndoRedoStack<T> {
+pub(crate) struct UndoRedoStack<T> {
     stack: VecDeque<T>,
     capacity: usize,
     cursor: usize,
@@ -9,7 +9,7 @@ pub struct UndoRedoStack<T> {
 
 impl<T> UndoRedoStack<T> {
     #[must_use]
-    pub fn new(capacity: usize) -> Self {
+    pub(crate) fn new(capacity: usize) -> Self {
         assert!(capacity > 0);
         Self {
             stack: VecDeque::with_capacity(capacity),
@@ -18,7 +18,7 @@ impl<T> UndoRedoStack<T> {
         }
     }
 
-    pub fn push(&mut self, item: T) {
+    pub(crate) fn push(&mut self, item: T) {
         if self.stack.is_empty() {
             self.stack.push_back(item);
             self.cursor = 0;
@@ -42,11 +42,11 @@ impl<T> UndoRedoStack<T> {
     }
 
     #[must_use]
-    pub fn can_undo(&self) -> bool {
+    pub(crate) fn can_undo(&self) -> bool {
         !self.stack.is_empty() && self.cursor > 0
     }
 
-    pub fn undo(&mut self) -> bool {
+    pub(crate) fn undo(&mut self) -> bool {
         if self.can_undo() {
             self.cursor -= 1;
             true
@@ -56,11 +56,11 @@ impl<T> UndoRedoStack<T> {
     }
 
     #[must_use]
-    pub fn can_redo(&self) -> bool {
+    pub(crate) fn can_redo(&self) -> bool {
         !self.stack.is_empty() && self.cursor + 1 < self.stack.len()
     }
 
-    pub fn redo(&mut self) -> bool {
+    pub(crate) fn redo(&mut self) -> bool {
         if self.can_redo() {
             self.cursor += 1;
             true
@@ -69,13 +69,13 @@ impl<T> UndoRedoStack<T> {
         }
     }
 
-    pub fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         self.stack.clear();
         self.cursor = 0;
     }
 
     #[must_use]
-    pub fn current(&self) -> Option<&T> {
+    pub(crate) fn current(&self) -> Option<&T> {
         self.stack.get(self.cursor)
     }
 }

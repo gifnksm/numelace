@@ -16,7 +16,7 @@ use crate::{
 ///
 /// This executor is polled from the app update loop and drives flow futures
 /// that request UI actions and await UI events.
-pub struct FlowExecutor {
+pub(crate) struct FlowExecutor {
     state: Rc<RefCell<FlowState>>,
     tasks: Vec<FlowTask>,
 }
@@ -37,7 +37,7 @@ impl Default for FlowExecutor {
 
 impl FlowExecutor {
     #[must_use]
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             state: Rc::new(RefCell::new(FlowState::default())),
             tasks: Vec::new(),
@@ -46,7 +46,7 @@ impl FlowExecutor {
 
     /// Returns a handle for flows to request actions and await events.
     #[must_use]
-    pub fn handle(&self) -> FlowHandle {
+    pub(crate) fn handle(&self) -> FlowHandle {
         FlowHandle {
             state: Rc::clone(&self.state),
         }
@@ -54,25 +54,25 @@ impl FlowExecutor {
 
     /// Returns the active spinner (if any) for flow-driven UI feedback.
     #[must_use]
-    pub fn active_spinner(&self) -> Option<SpinnerKind> {
+    pub(crate) fn active_spinner(&self) -> Option<SpinnerKind> {
         self.state.borrow().active_spinner
     }
 
     /// Returns true if no flows are currently running.
     #[must_use]
-    pub fn is_idle(&self) -> bool {
+    pub(crate) fn is_idle(&self) -> bool {
         self.tasks.is_empty()
     }
 
     /// Spawn a new flow future.
-    pub fn spawn(&mut self, future: impl Future<Output = ()> + 'static) {
+    pub(crate) fn spawn(&mut self, future: impl Future<Output = ()> + 'static) {
         self.tasks.push(FlowTask {
             future: Box::pin(future),
         });
     }
 
     /// Poll all active flows and drain any queued actions into the UI action queue.
-    pub fn poll(&mut self, action_queue: &mut ActionRequestQueue) {
+    pub(crate) fn poll(&mut self, action_queue: &mut ActionRequestQueue) {
         self.drain_actions(action_queue);
 
         let waker = noop_waker();
@@ -92,7 +92,7 @@ impl FlowExecutor {
     }
 
     /// Provide the result of the new game confirmation dialog.
-    pub fn confirm_new_game(&mut self, result: ConfirmResult) {
+    pub(crate) fn confirm_new_game(&mut self, result: ConfirmResult) {
         let mut state = self.state.borrow_mut();
         state.new_game_confirm = Some(result);
         if let Some(waker) = state.new_game_confirm_waker.take() {
@@ -103,7 +103,7 @@ impl FlowExecutor {
     /// Notify the flow executor that background work completed.
     ///
     /// This updates flow state so awaiting tasks can resume.
-    pub fn record_work_response(&mut self, response: &WorkResponse) {
+    pub(crate) fn record_work_response(&mut self, response: &WorkResponse) {
         let mut state = self.state.borrow_mut();
 
         if state.work_pending && state.work_response.is_none() {
@@ -124,19 +124,14 @@ impl FlowExecutor {
 
 /// Flow handle used by async flows to request actions and await events.
 #[derive(Clone)]
-pub struct FlowHandle {
+pub(crate) struct FlowHandle {
     state: Rc<RefCell<FlowState>>,
 }
 
 impl FlowHandle {
-    /// Request an action to be queued for the next update loop.
-    pub fn request_action(&self, action: Action) {
-        self.state.borrow_mut().pending_actions.push(action);
-    }
-
     /// Await a new game confirmation dialog.
     #[must_use]
-    pub fn confirm_new_game(&self) -> ConfirmNewGameFuture {
+    fn confirm_new_game(&self) -> ConfirmNewGameFuture {
         ConfirmNewGameFuture {
             state: Rc::clone(&self.state),
             started: false,
@@ -145,7 +140,7 @@ impl FlowHandle {
 
     /// Dispatch background work and await the response.
     #[must_use]
-    pub fn await_work(&self, request: WorkRequest) -> WorkResponseFuture {
+    fn await_work(&self, request: WorkRequest) -> WorkResponseFuture {
         WorkResponseFuture {
             state: Rc::clone(&self.state),
             request,
@@ -155,7 +150,7 @@ impl FlowHandle {
 
     /// Wrap a future with a flow-driven spinner.
     #[must_use]
-    pub fn with_spinner<F>(&self, kind: SpinnerKind, future: F) -> WithSpinnerFuture<F>
+    fn with_spinner<F>(&self, kind: SpinnerKind, future: F) -> WithSpinnerFuture<F>
     where
         F: Future,
     {
@@ -171,7 +166,7 @@ impl FlowHandle {
 /// Async flow for new game confirmation + work dispatch.
 ///
 /// On confirm, it runs the background request and awaits the response.
-pub async fn new_game_flow(handle: FlowHandle) {
+pub(crate) async fn new_game_flow(handle: FlowHandle) {
     let result = handle.confirm_new_game().await;
     if matches!(result, ConfirmResult::Confirmed) {
         let work = handle.await_work(WorkRequest::GenerateNewGame);
@@ -182,7 +177,7 @@ pub async fn new_game_flow(handle: FlowHandle) {
 /// Async flow for solvability check work dispatch.
 ///
 /// Runs the background request and awaits the response.
-pub async fn check_solvability_flow(handle: FlowHandle, request: WorkRequest) {
+pub(crate) async fn check_solvability_flow(handle: FlowHandle, request: WorkRequest) {
     let work = handle.await_work(request);
     let _ = handle
         .with_spinner(SpinnerKind::CheckSolvability, work)
@@ -206,7 +201,7 @@ struct FlowState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SpinnerKind {
+pub(crate) enum SpinnerKind {
     NewGame,
     CheckSolvability,
 }
@@ -214,7 +209,7 @@ pub enum SpinnerKind {
 /// Awaitable for the new game confirmation dialog.
 ///
 /// On first poll, it opens the dialog via an action request.
-pub struct ConfirmNewGameFuture {
+struct ConfirmNewGameFuture {
     state: Rc<RefCell<FlowState>>,
     started: bool,
 }
@@ -242,7 +237,7 @@ impl Future for ConfirmNewGameFuture {
 }
 
 /// Awaitable for background work responses.
-pub struct WorkResponseFuture {
+struct WorkResponseFuture {
     state: Rc<RefCell<FlowState>>,
     request: WorkRequest,
     started: bool,
@@ -275,7 +270,7 @@ impl Future for WorkResponseFuture {
 }
 
 /// Awaitable wrapper that toggles a flow spinner while the inner future runs.
-pub struct WithSpinnerFuture<F>
+struct WithSpinnerFuture<F>
 where
     F: Future,
 {

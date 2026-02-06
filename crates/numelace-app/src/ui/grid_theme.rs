@@ -6,24 +6,24 @@ use eframe::egui::{Color32, Visuals};
 /// semantics (selection, house highlight, conflicts, hints) can be tuned
 /// without being constrained by the global UI theme.
 #[derive(Debug, Clone)]
-pub struct GridPalette {
-    pub cell_bg_default: Color32,
-    pub cell_bg_selected: Color32,
-    pub cell_bg_same_digit: Color32,
-    pub cell_bg_house_selected: Color32,
-    pub cell_bg_house_same_digit: Color32,
+pub(crate) struct GridPalette {
+    pub(crate) cell_bg_default: Color32,
+    pub(crate) cell_bg_selected: Color32,
+    pub(crate) cell_bg_same_digit: Color32,
+    pub(crate) cell_bg_house_selected: Color32,
+    pub(crate) cell_bg_house_same_digit: Color32,
 
-    pub note_bg_same_digit: Color32,
-    pub note_bg_house_same_digit: Color32,
+    pub(crate) note_bg_same_digit: Color32,
+    pub(crate) note_bg_house_same_digit: Color32,
 
-    pub border_inactive: Color32,
-    pub border_selected: Color32,
-    pub border_same_digit: Color32,
-    pub border_conflict: Color32,
+    pub(crate) border_inactive: Color32,
+    pub(crate) border_selected: Color32,
+    pub(crate) border_same_digit: Color32,
+    pub(crate) border_conflict: Color32,
 
-    pub text_normal: Color32,
-    pub text_given: Color32,
-    pub text_conflict: Color32,
+    pub(crate) text_normal: Color32,
+    pub(crate) text_given: Color32,
+    pub(crate) text_conflict: Color32,
 }
 
 impl GridPalette {
@@ -32,7 +32,7 @@ impl GridPalette {
     /// This keeps behavior identical to the current visuals-based colors,
     /// while making the palette structure explicit for later customization.
     #[must_use]
-    pub fn from_visuals(visuals: &Visuals) -> Self {
+    pub(crate) fn from_visuals(visuals: &Visuals) -> Self {
         // Palette guidance:
         // - Prefer meaning-based colors that do not overlap with existing semantics.
         // - Keep light/dark modes on the same semantic hue, adjust luminance only.
@@ -78,9 +78,9 @@ impl GridPalette {
 
 /// Holds light/dark palettes and selects one based on current visuals.
 #[derive(Debug, Clone)]
-pub struct GridTheme {
-    pub light: GridPalette,
-    pub dark: GridPalette,
+pub(crate) struct GridTheme {
+    pub(crate) light: GridPalette,
+    pub(crate) dark: GridPalette,
 }
 
 impl GridTheme {
@@ -88,7 +88,7 @@ impl GridTheme {
     ///
     /// This preserves existing colors today while allowing later divergence.
     #[must_use]
-    pub fn from_visuals(visuals: &Visuals) -> Self {
+    pub(crate) fn from_visuals(visuals: &Visuals) -> Self {
         let palette = GridPalette::from_visuals(visuals);
         Self {
             light: palette.clone(),
@@ -97,7 +97,7 @@ impl GridTheme {
     }
 
     #[must_use]
-    pub fn palette_for(&self, visuals: &Visuals) -> &GridPalette {
+    pub(crate) fn palette_for(&self, visuals: &Visuals) -> &GridPalette {
         if visuals.dark_mode {
             &self.dark
         } else {

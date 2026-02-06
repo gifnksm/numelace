@@ -6,16 +6,16 @@ use crate::flow::FlowExecutor;
 use crate::history::UndoRedoStack;
 
 #[derive(Debug)]
-pub struct AppState {
-    pub game: Game,
-    pub selected_cell: Option<Position>,
-    pub input_mode: InputMode,
-    pub settings: Settings,
+pub(crate) struct AppState {
+    pub(crate) game: Game,
+    pub(crate) selected_cell: Option<Position>,
+    pub(crate) input_mode: InputMode,
+    pub(crate) settings: Settings,
 }
 
 impl AppState {
     #[must_use]
-    pub fn new(game: Game) -> Self {
+    pub(crate) fn new(game: Game) -> Self {
         Self {
             game,
             selected_cell: None,
@@ -25,19 +25,19 @@ impl AppState {
     }
 
     #[must_use]
-    pub fn new_with_settings_applied(game: Game) -> Self {
+    pub(crate) fn new_with_settings_applied(game: Game) -> Self {
         let mut state = Self::new(game);
         state.apply_new_game_settings();
         state
     }
 
-    pub fn apply_new_game_settings(&mut self) {
+    pub(crate) fn apply_new_game_settings(&mut self) {
         if self.settings.assist.notes.auto_fill_notes_on_new_or_reset {
             self.game.auto_fill_notes_all_cells();
         }
     }
 
-    pub fn reset_current_puzzle_state(&mut self) {
+    pub(crate) fn reset_current_puzzle_state(&mut self) {
         for pos in Position::ALL {
             let _ = self.game.clear_cell(pos);
         }
@@ -46,7 +46,7 @@ impl AppState {
     }
 
     #[must_use]
-    pub fn rule_check_policy(&self) -> RuleCheckPolicy {
+    pub(crate) fn rule_check_policy(&self) -> RuleCheckPolicy {
         if self.settings.assist.block_rule_violations {
             RuleCheckPolicy::Strict
         } else {
@@ -55,7 +55,7 @@ impl AppState {
     }
 
     #[must_use]
-    pub fn note_cleanup_policy(&self) -> NoteCleanupPolicy {
+    pub(crate) fn note_cleanup_policy(&self) -> NoteCleanupPolicy {
         if self.settings.assist.notes.auto_remove_peer_notes_on_fill {
             NoteCleanupPolicy::RemovePeers
         } else {
@@ -64,7 +64,7 @@ impl AppState {
     }
 
     #[must_use]
-    pub fn input_digit_options(&self) -> InputDigitOptions {
+    pub(crate) fn input_digit_options(&self) -> InputDigitOptions {
         InputDigitOptions::default()
             .rule_check_policy(self.rule_check_policy())
             .note_cleanup_policy(self.note_cleanup_policy())
@@ -72,13 +72,13 @@ impl AppState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
-pub enum InputMode {
+pub(crate) enum InputMode {
     Fill,
     Notes,
 }
 
 impl InputMode {
-    pub fn toggle(&mut self) {
+    pub(crate) fn toggle(&mut self) {
         *self = match self {
             InputMode::Fill => InputMode::Notes,
             InputMode::Notes => InputMode::Fill,
@@ -86,7 +86,7 @@ impl InputMode {
     }
 
     #[must_use]
-    pub fn swapped(self, swap: bool) -> Self {
+    pub(crate) fn swapped(self, swap: bool) -> Self {
         if swap {
             match self {
                 InputMode::Fill => InputMode::Notes,
@@ -99,15 +99,15 @@ impl InputMode {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct Settings {
-    pub assist: AssistSettings,
+pub(crate) struct Settings {
+    pub(crate) assist: AssistSettings,
 }
 
 #[derive(Debug, Clone)]
-pub struct AssistSettings {
-    pub block_rule_violations: bool,
-    pub highlight: HighlightSettings,
-    pub notes: NotesSettings,
+pub(crate) struct AssistSettings {
+    pub(crate) block_rule_violations: bool,
+    pub(crate) highlight: HighlightSettings,
+    pub(crate) notes: NotesSettings,
 }
 
 impl Default for AssistSettings {
@@ -122,11 +122,11 @@ impl Default for AssistSettings {
 
 #[derive(Debug, Clone)]
 #[expect(clippy::struct_excessive_bools)]
-pub struct HighlightSettings {
-    pub same_digit: bool,
-    pub house_selected: bool,
-    pub house_same_digit: bool,
-    pub conflict: bool,
+pub(crate) struct HighlightSettings {
+    pub(crate) same_digit: bool,
+    pub(crate) house_selected: bool,
+    pub(crate) house_same_digit: bool,
+    pub(crate) conflict: bool,
 }
 
 impl Default for HighlightSettings {
@@ -141,9 +141,9 @@ impl Default for HighlightSettings {
 }
 
 #[derive(Debug, Clone)]
-pub struct NotesSettings {
-    pub auto_remove_peer_notes_on_fill: bool,
-    pub auto_fill_notes_on_new_or_reset: bool,
+pub(crate) struct NotesSettings {
+    pub(crate) auto_remove_peer_notes_on_fill: bool,
+    pub(crate) auto_fill_notes_on_new_or_reset: bool,
 }
 
 impl Default for NotesSettings {
@@ -156,7 +156,7 @@ impl Default for NotesSettings {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GhostType {
+pub(crate) enum GhostType {
     Digit(Digit),
     Note(Digit),
 }
@@ -177,7 +177,7 @@ impl GameSnapshot {
 }
 
 #[derive(Debug, Clone)]
-pub enum ModalKind {
+pub(crate) enum ModalKind {
     NewGameConfirm,
     ResetCurrentPuzzleConfirm,
     Settings,
@@ -185,14 +185,15 @@ pub enum ModalKind {
 }
 
 #[derive(Debug, Clone)]
-pub struct SolvabilityStats {
-    pub assumptions_len: usize,
-    pub backtrack_count: usize,
-    pub solved_without_assumptions: bool,
+#[expect(dead_code)]
+pub(crate) struct SolvabilityStats {
+    pub(crate) assumptions_len: usize,
+    pub(crate) backtrack_count: usize,
+    pub(crate) solved_without_assumptions: bool,
 }
 
 #[derive(Debug, Clone)]
-pub enum SolvabilityState {
+pub(crate) enum SolvabilityState {
     Inconsistent,
     NoSolution,
     Solvable {
@@ -202,25 +203,25 @@ pub enum SolvabilityState {
 }
 
 #[derive(Debug, Default)]
-pub struct WorkState {
-    pub pending: Option<WorkHandle>,
-    pub is_generating_new_game: bool,
-    pub is_checking_solvability: bool,
-    pub last_error: Option<WorkError>,
+pub(crate) struct WorkState {
+    pub(crate) pending: Option<WorkHandle>,
+    pub(crate) is_generating_new_game: bool,
+    pub(crate) is_checking_solvability: bool,
+    pub(crate) last_error: Option<WorkError>,
 }
 
 #[derive(Debug)]
-pub struct UiState {
-    pub active_modal: Option<ModalKind>,
-    pub conflict_ghost: Option<(Position, GhostType)>,
-    pub work: WorkState,
-    pub flow: FlowExecutor,
+pub(crate) struct UiState {
+    pub(crate) active_modal: Option<ModalKind>,
+    pub(crate) conflict_ghost: Option<(Position, GhostType)>,
+    pub(crate) work: WorkState,
+    pub(crate) flow: FlowExecutor,
     history: UndoRedoStack<GameSnapshot>,
 }
 
 impl UiState {
     #[must_use]
-    pub fn new(max_history_len: usize, init_state: &AppState) -> Self {
+    pub(crate) fn new(max_history_len: usize, init_state: &AppState) -> Self {
         let mut this = Self {
             active_modal: None,
             conflict_ghost: None,
@@ -232,17 +233,17 @@ impl UiState {
         this
     }
 
-    pub fn reset_history(&mut self, init_state: &AppState) {
+    pub(crate) fn reset_history(&mut self, init_state: &AppState) {
         self.history.clear();
         self.history.push(GameSnapshot::new(init_state));
     }
 
     #[must_use]
-    pub fn can_undo(&self) -> bool {
+    pub(crate) fn can_undo(&self) -> bool {
         self.history.can_undo()
     }
 
-    pub fn undo(&mut self, app_state: &mut AppState) -> bool {
+    pub(crate) fn undo(&mut self, app_state: &mut AppState) -> bool {
         let Some(current) = self.history.current() else {
             return false;
         };
@@ -259,11 +260,11 @@ impl UiState {
     }
 
     #[must_use]
-    pub fn can_redo(&self) -> bool {
+    pub(crate) fn can_redo(&self) -> bool {
         self.history.can_redo()
     }
 
-    pub fn redo(&mut self, app_state: &mut AppState) -> bool {
+    pub(crate) fn redo(&mut self, app_state: &mut AppState) -> bool {
         if self.history.redo()
             && let Some(snapshot) = self.history.current()
         {
@@ -275,7 +276,7 @@ impl UiState {
         }
     }
 
-    pub fn push_history(&mut self, app_state: &AppState) {
+    pub(crate) fn push_history(&mut self, app_state: &AppState) {
         self.history.push(GameSnapshot::new(app_state));
     }
 }

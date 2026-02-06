@@ -17,16 +17,16 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct GameScreenViewModel {
-    pub toolbar: ToolbarViewModel,
-    pub status_line: StatusLineViewModel,
-    pub grid: GridViewModel,
-    pub keypad: KeypadViewModel,
+pub(crate) struct GameScreenViewModel {
+    pub(crate) toolbar: ToolbarViewModel,
+    pub(crate) status_line: StatusLineViewModel,
+    pub(crate) grid: GridViewModel,
+    pub(crate) keypad: KeypadViewModel,
 }
 
 impl GameScreenViewModel {
     #[must_use]
-    pub fn new(
+    pub(crate) fn new(
         toolbar: ToolbarViewModel,
         status_line: StatusLineViewModel,
         grid: GridViewModel,
@@ -41,7 +41,7 @@ impl GameScreenViewModel {
     }
 }
 
-pub fn show(ui: &mut Ui, vm: &GameScreenViewModel, action_queue: &mut ActionRequestQueue) {
+pub(crate) fn show(ui: &mut Ui, vm: &GameScreenViewModel, action_queue: &mut ActionRequestQueue) {
     let avail = ui.available_size();
     let toolbar_units = toolbar::required_units();
     let grid_units = grid::required_units();

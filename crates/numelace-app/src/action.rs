@@ -6,7 +6,7 @@ use crate::async_work::{WorkRequest, WorkResponse};
 use crate::state::{ModalKind, Settings};
 
 #[derive(Debug, Clone)]
-pub enum Action {
+pub(crate) enum Action {
     SelectCell(Position),
     ClearSelection,
     MoveSelection(MoveDirection),
@@ -28,13 +28,13 @@ pub enum Action {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ConfirmResult {
+pub(crate) enum ConfirmResult {
     Confirmed,
     Cancelled,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
-pub enum MoveDirection {
+pub(crate) enum MoveDirection {
     Up,
     Down,
     Left,
@@ -42,22 +42,22 @@ pub enum MoveDirection {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
-pub enum NotesFillScope {
+pub(crate) enum NotesFillScope {
     Cell,
     AllCells,
 }
 
 #[derive(Debug, Default)]
-pub struct ActionRequestQueue {
+pub(crate) struct ActionRequestQueue {
     actions: Vec<Action>,
 }
 
 impl ActionRequestQueue {
-    pub fn request(&mut self, action: Action) {
+    pub(crate) fn request(&mut self, action: Action) {
         self.actions.push(action);
     }
 
-    pub fn take_all(&mut self) -> Vec<Action> {
+    pub(crate) fn take_all(&mut self) -> Vec<Action> {
         mem::take(&mut self.actions)
     }
 }

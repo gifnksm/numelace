@@ -14,14 +14,14 @@ use numelace_solver::BacktrackSolverStats;
 /// The flow first checks `with_user_notes`, and if that is inconsistent or has
 /// no solution, it falls back to `without_user_notes`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SolvabilityRequestDto {
-    pub with_user_notes: SolvabilityGridDto,
-    pub without_user_notes: SolvabilityGridDto,
+pub(crate) struct SolvabilityRequestDto {
+    pub(crate) with_user_notes: SolvabilityGridDto,
+    pub(crate) without_user_notes: SolvabilityGridDto,
 }
 
 /// DTO representing solvability results across worker boundaries.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SolvabilityStateDto {
+pub(crate) enum SolvabilityStateDto {
     Inconsistent,
     NoSolution,
     Solvable {
@@ -32,15 +32,15 @@ pub enum SolvabilityStateDto {
 
 /// Compact solver statistics used by solvability results.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SolvabilityStatsDto {
-    pub assumptions_len: usize,
-    pub backtrack_count: usize,
-    pub solved_without_assumptions: bool,
+pub(crate) struct SolvabilityStatsDto {
+    pub(crate) assumptions_len: usize,
+    pub(crate) backtrack_count: usize,
+    pub(crate) solved_without_assumptions: bool,
 }
 
 impl SolvabilityStatsDto {
     #[must_use]
-    pub fn from_stats(stats: &BacktrackSolverStats) -> Self {
+    pub(crate) fn from_stats(stats: &BacktrackSolverStats) -> Self {
         Self {
             assumptions_len: stats.assumptions().len(),
             backtrack_count: stats.backtrack_count(),
@@ -53,14 +53,14 @@ impl SolvabilityStatsDto {
 ///
 /// Stores a 9-bit mask per cell, ordered by `Position::ALL`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SolvabilityGridDto {
-    pub candidates: Vec<u16>,
+pub(crate) struct SolvabilityGridDto {
+    pub(crate) candidates: Vec<u16>,
 }
 
 impl SolvabilityGridDto {
     /// Builds a DTO from a [`CandidateGrid`].
     #[must_use]
-    pub fn from_candidate_grid(grid: &CandidateGrid) -> Self {
+    pub(crate) fn from_candidate_grid(grid: &CandidateGrid) -> Self {
         let mut candidates = Vec::with_capacity(81);
         for pos in Position::ALL {
             let set = grid.candidates_at(pos);
@@ -78,7 +78,7 @@ impl SolvabilityGridDto {
     ///
     /// Returns [`SolvabilityDtoError::InvalidCandidateBits`] if any cell contains
     /// invalid bits outside the 9-bit candidate range.
-    pub fn to_candidate_grid(&self) -> Result<CandidateGrid, SolvabilityDtoError> {
+    pub(crate) fn to_candidate_grid(&self) -> Result<CandidateGrid, SolvabilityDtoError> {
         if self.candidates.len() != 81 {
             return Err(SolvabilityDtoError::InvalidCandidateLength {
                 len: self.candidates.len(),
@@ -102,7 +102,7 @@ impl SolvabilityGridDto {
 
 /// Errors that can occur when converting solvability DTOs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display, derive_more::Error)]
-pub enum SolvabilityDtoError {
+pub(crate) enum SolvabilityDtoError {
     #[display("invalid candidate length: {len}")]
     InvalidCandidateLength { len: usize },
     #[display("invalid candidate bits for {pos:?}: {bits:#05x}")]

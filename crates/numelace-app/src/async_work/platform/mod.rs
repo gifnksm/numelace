@@ -4,6 +4,6 @@ mod native;
 mod wasm;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use native::{WorkHandle, enqueue, warm_up};
+pub(crate) use native::{WorkHandle, enqueue, warm_up};
 #[cfg(target_arch = "wasm32")]
-pub use wasm::{WorkHandle, enqueue, warm_up};
+pub(crate) use wasm::{WorkHandle, enqueue, warm_up};

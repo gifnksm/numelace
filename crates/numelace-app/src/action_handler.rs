@@ -9,8 +9,8 @@ use crate::{
 };
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ActionEffect {
-    pub state_save_requested: bool,
+pub(crate) struct ActionEffect {
+    pub(crate) state_save_requested: bool,
 }
 
 #[derive(Debug)]
@@ -20,7 +20,7 @@ struct ActionContext<'a> {
     effect: &'a mut ActionEffect,
 }
 
-pub fn handle_all(
+pub(crate) fn handle_all(
     app_state: &mut AppState,
     ui_state: &mut UiState,
     effect: &mut ActionEffect,
@@ -31,7 +31,7 @@ pub fn handle_all(
     }
 }
 
-pub fn handle(
+pub(crate) fn handle(
     app_state: &mut AppState,
     ui_state: &mut UiState,
     effect: &mut ActionEffect,

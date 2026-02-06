@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct KeypadViewModel {
+pub(crate) struct KeypadViewModel {
     digit_states: Array9<DigitKeyState, DigitSemantics>,
     has_removable_input: bool,
     notes_mode: bool,
@@ -23,7 +23,7 @@ pub struct KeypadViewModel {
 }
 
 #[derive(Debug, Clone)]
-pub struct DigitKeyState {
+pub(crate) struct DigitKeyState {
     set_digit: Option<Result<InputOperation, InputBlockReason>>,
     toggle_note: Option<Result<InputOperation, InputBlockReason>>,
     decided_count: usize,
@@ -31,7 +31,7 @@ pub struct DigitKeyState {
 
 impl DigitKeyState {
     #[must_use]
-    pub fn new(
+    pub(crate) fn new(
         digit: Option<Result<InputOperation, InputBlockReason>>,
         note: Option<Result<InputOperation, InputBlockReason>>,
         decided_count: usize,
@@ -46,7 +46,7 @@ impl DigitKeyState {
 
 impl KeypadViewModel {
     #[must_use]
-    pub fn new(
+    pub(crate) fn new(
         digit_states: Array9<DigitKeyState, DigitSemantics>,
         has_removable_input: bool,
         notes_mode: bool,
@@ -100,7 +100,7 @@ const KEYPAD_COLUMNS: f32 = BUTTON_LAYOUT[0].len() as f32;
 const KEYPAD_ROWS: f32 = BUTTON_LAYOUT.len() as f32;
 
 #[must_use]
-pub fn required_units() -> ComponentUnits {
+pub(crate) fn required_units() -> ComponentUnits {
     ComponentUnits::new(
         KEYPAD_COLUMNS + (KEYPAD_COLUMNS - 1.0) * LayoutScale::SPACING_FACTOR.x,
         KEYPAD_ROWS
@@ -110,7 +110,7 @@ pub fn required_units() -> ComponentUnits {
 }
 
 #[expect(clippy::cast_precision_loss)]
-pub fn show(
+pub(crate) fn show(
     ui: &mut Ui,
     vm: &KeypadViewModel,
     scale: &LayoutScale,

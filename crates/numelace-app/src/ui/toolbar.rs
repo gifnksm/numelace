@@ -10,24 +10,24 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct ToolbarViewModel {
+pub(crate) struct ToolbarViewModel {
     can_undo: bool,
     can_redo: bool,
 }
 
 impl ToolbarViewModel {
     #[must_use]
-    pub fn new(can_undo: bool, can_redo: bool) -> Self {
+    pub(crate) fn new(can_undo: bool, can_redo: bool) -> Self {
         Self { can_undo, can_redo }
     }
 }
 
 #[must_use]
-pub const fn required_units() -> ComponentUnits {
+pub(crate) const fn required_units() -> ComponentUnits {
     ComponentUnits::new(0.0, 1.0)
 }
 
-pub fn show(
+pub(crate) fn show(
     ui: &mut Ui,
     vm: &ToolbarViewModel,
     scale: &LayoutScale,

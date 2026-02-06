@@ -109,7 +109,7 @@ const SHORTCUTS: [Shortcut; 34] = [
     Shortcut::digit(Key::Num9, Digit::D9, false),
 ];
 
-pub fn handle_input(i: &InputState, action_queue: &mut ActionRequestQueue) {
+pub(crate) fn handle_input(i: &InputState, action_queue: &mut ActionRequestQueue) {
     // `i.modifiers.command` is true when Ctrl (Windows/Linux) or Cmd (Mac) is pressed
     for shortcut in SHORTCUTS {
         let triggered = i.key_pressed(shortcut.trigger.key)

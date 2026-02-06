@@ -17,7 +17,7 @@ use crate::{
 
 bitflags::bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct GridVisualState: u8 {
+    pub(crate) struct GridVisualState: u8 {
         const SELECTED = 0b0000_0001;
         const SAME_DIGIT = 0b0000_0010;
         const HOUSE_SELECTED = 0b0000_0100;
@@ -28,22 +28,22 @@ bitflags::bitflags! {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct GridCell {
-    pub content: CellState,
-    pub visual_state: GridVisualState,
-    pub note_visual_state: NoteVisualState,
+pub(crate) struct GridCell {
+    pub(crate) content: CellState,
+    pub(crate) visual_state: GridVisualState,
+    pub(crate) note_visual_state: NoteVisualState,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct NoteVisualState {
-    pub same_digit: DigitSet,
-    pub conflict: DigitSet,
-    pub ghost: DigitSet,
+pub(crate) struct NoteVisualState {
+    pub(crate) same_digit: DigitSet,
+    pub(crate) conflict: DigitSet,
+    pub(crate) ghost: DigitSet,
 }
 
 impl NoteVisualState {
     #[must_use]
-    pub fn digit_highlight(&self, digit: Digit) -> GridVisualState {
+    pub(crate) fn digit_highlight(&self, digit: Digit) -> GridVisualState {
         let Self {
             same_digit,
             conflict,
@@ -64,14 +64,14 @@ impl NoteVisualState {
 }
 
 #[derive(Debug, Clone)]
-pub struct GridViewModel {
+pub(crate) struct GridViewModel {
     grid: Array81<GridCell, PositionSemantics>,
     enabled_highlights: GridVisualState,
 }
 
 impl GridViewModel {
     #[must_use]
-    pub fn new(
+    pub(crate) fn new(
         grid: Array81<GridCell, PositionSemantics>,
         highlight_settings: &HighlightSettings,
     ) -> Self {
@@ -113,16 +113,16 @@ impl GridViewModel {
     }
 }
 
-pub const GRID_CELLS: f32 = 9.0;
+pub(crate) const GRID_CELLS: f32 = 9.0;
 
 #[must_use]
-pub fn grid_side_with_border(cell_size: f32) -> f32 {
+pub(crate) fn grid_side_with_border(cell_size: f32) -> f32 {
     let thick_border = thick_border_width(cell_size);
     GRID_CELLS * cell_size + thick_border * 4.0
 }
 
 #[must_use]
-pub const fn required_units() -> ComponentUnits {
+pub(crate) const fn required_units() -> ComponentUnits {
     let len = GRID_CELLS + CELL_BORDER_WIDTH_BASE_RATIO * (THICK_BORDER_WIDTH_RATIO * 4.0);
     ComponentUnits::new(len, len)
 }
@@ -216,7 +216,7 @@ impl EffectiveGridVisualState {
     }
 }
 
-pub fn show(
+pub(crate) fn show(
     ui: &mut Ui,
     vm: &GridViewModel,
     scale: &LayoutScale,

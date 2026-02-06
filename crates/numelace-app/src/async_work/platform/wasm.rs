@@ -15,7 +15,7 @@ use super::super::{WorkError, WorkRequest, WorkResponse};
 /// A handle for polling background work completion.
 ///
 /// Note: the WASM backend assumes a single in-flight request at a time.
-pub struct WorkHandle {
+pub(crate) struct WorkHandle {
     response: Rc<RefCell<Option<WorkResponse>>>,
     error: Rc<RefCell<Option<WorkError>>>,
 }
@@ -119,7 +119,7 @@ where
 }
 
 /// Starts the shared worker without sending a request.
-pub fn warm_up() -> Result<(), WorkError> {
+pub(crate) fn warm_up() -> Result<(), WorkError> {
     with_worker(|worker| {
         worker.reset();
         Ok(())
@@ -128,7 +128,7 @@ pub fn warm_up() -> Result<(), WorkError> {
 
 /// Enqueues a background task and returns a handle for polling completion.
 #[expect(clippy::needless_pass_by_value)]
-pub fn enqueue(request: WorkRequest) -> Result<WorkHandle, WorkError> {
+pub(crate) fn enqueue(request: WorkRequest) -> Result<WorkHandle, WorkError> {
     with_worker(|worker| {
         worker.reset();
         worker.send(&request)?;

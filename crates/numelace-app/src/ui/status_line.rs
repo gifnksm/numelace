@@ -6,29 +6,29 @@ use crate::ui::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GameStatus {
+pub(crate) enum GameStatus {
     InProgress,
     Solved,
 }
 
 #[derive(Debug, Clone)]
-pub struct StatusLineViewModel {
+pub(crate) struct StatusLineViewModel {
     status: GameStatus,
 }
 
 impl StatusLineViewModel {
     #[must_use]
-    pub fn new(status: GameStatus) -> Self {
+    pub(crate) fn new(status: GameStatus) -> Self {
         Self { status }
     }
 }
 
 #[must_use]
-pub fn required_units() -> ComponentUnits {
+pub(crate) fn required_units() -> ComponentUnits {
     ComponentUnits::new(0.0, 0.5)
 }
 
-pub fn show(ui: &mut Ui, vm: &StatusLineViewModel, scale: &LayoutScale) {
+pub(crate) fn show(ui: &mut Ui, vm: &StatusLineViewModel, scale: &LayoutScale) {
     let cell_size = scale.cell_size;
     ui.spacing_mut().item_spacing = Vec2::new(scale.spacing.x, 0.0);
     ui.horizontal(|ui| {

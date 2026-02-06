@@ -110,7 +110,7 @@ fn action_button(
     }
 }
 
-pub fn show_new_game_confirm(ctx: &Context, action_queue: &mut ActionRequestQueue) {
+pub(crate) fn show_new_game_confirm(ctx: &Context, action_queue: &mut ActionRequestQueue) {
     show_dialog(
         ctx,
         action_queue,
@@ -139,7 +139,10 @@ pub fn show_new_game_confirm(ctx: &Context, action_queue: &mut ActionRequestQueu
     );
 }
 
-pub fn show_reset_current_puzzle_confirm(ctx: &Context, action_queue: &mut ActionRequestQueue) {
+pub(crate) fn show_reset_current_puzzle_confirm(
+    ctx: &Context,
+    action_queue: &mut ActionRequestQueue,
+) {
     show_dialog(
         ctx,
         action_queue,
@@ -163,7 +166,7 @@ pub fn show_reset_current_puzzle_confirm(ctx: &Context, action_queue: &mut Actio
     );
 }
 
-pub fn show_solvability(
+pub(crate) fn show_solvability(
     ctx: &Context,
     action_queue: &mut ActionRequestQueue,
     state: &SolvabilityState,

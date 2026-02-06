@@ -7,18 +7,18 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct SettingsViewModel<'a> {
+pub(crate) struct SettingsViewModel<'a> {
     settings: &'a Settings,
 }
 
 impl<'a> SettingsViewModel<'a> {
     #[must_use]
-    pub fn new(settings: &'a Settings) -> Self {
+    pub(crate) fn new(settings: &'a Settings) -> Self {
         Self { settings }
     }
 }
 
-pub fn show(ctx: &Context, vm: &SettingsViewModel, action_queue: &mut ActionRequestQueue) {
+pub(crate) fn show(ctx: &Context, vm: &SettingsViewModel, action_queue: &mut ActionRequestQueue) {
     let modal = Modal::new(Id::new("settings_modal")).show(ctx, |ui| {
         ui.heading("Settings");
         let mut changed = false;
