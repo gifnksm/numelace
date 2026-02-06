@@ -1,6 +1,5 @@
 use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
-use numelace_solver::BacktrackSolverStats;
 
 use crate::async_work::{WorkError, WorkHandle};
 use crate::history::UndoRedoStack;
@@ -185,12 +184,19 @@ pub enum ModalKind {
 }
 
 #[derive(Debug, Clone)]
+pub struct SolvabilityStats {
+    pub assumptions_len: usize,
+    pub backtrack_count: usize,
+    pub solved_without_assumptions: bool,
+}
+
+#[derive(Debug, Clone)]
 pub enum SolvabilityState {
     Inconsistent,
     NoSolution,
     Solvable {
         with_user_notes: bool,
-        stats: BacktrackSolverStats,
+        stats: SolvabilityStats,
     },
 }
 
@@ -198,6 +204,7 @@ pub enum SolvabilityState {
 pub struct WorkState {
     pub pending: Option<WorkHandle>,
     pub is_generating_new_game: bool,
+    pub is_checking_solvability: bool,
     pub last_error: Option<WorkError>,
 }
 

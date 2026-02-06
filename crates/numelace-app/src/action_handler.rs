@@ -1,11 +1,10 @@
-use numelace_core::{CandidateGrid, Digit, Position};
-use numelace_game::{Game, GameError, RuleCheckPolicy};
-use numelace_solver::BacktrackSolver;
+use numelace_core::{Digit, Position};
+use numelace_game::{GameError, RuleCheckPolicy};
 
 use crate::{
     action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
     async_work::{WorkResponse, work_actions},
-    state::{AppState, GhostType, InputMode, ModalKind, SolvabilityState, UiState},
+    state::{AppState, GhostType, InputMode, UiState},
 };
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
@@ -168,35 +167,7 @@ impl ActionContext<'_> {
     }
 
     fn check_solvability(&mut self) {
-        let result = check_solvability(&self.app_state.game);
-        self.ui_state.active_modal = Some(ModalKind::CheckSolvabilityResult(result));
-    }
-}
-
-fn check_solvability(game: &Game) -> SolvabilityState {
-    // First attempt: check solvability with user notes
-    let grid = game.to_candidate_grid_with_notes();
-    match check_grid_solvability(grid, true) {
-        SolvabilityState::Inconsistent | SolvabilityState::NoSolution => {}
-        res @ SolvabilityState::Solvable { .. } => return res,
-    }
-
-    // Second attempt: check solvability without user notes
-    let grid = game.to_candidate_grid();
-    check_grid_solvability(grid, false)
-}
-
-fn check_grid_solvability(grid: CandidateGrid, with_user_notes: bool) -> SolvabilityState {
-    if grid.check_consistency().is_err() {
-        return SolvabilityState::Inconsistent;
-    }
-    let solver = BacktrackSolver::with_all_techniques();
-    match solver.solve(grid).map(|mut sol| sol.next()) {
-        Ok(Some((_grid, stats))) => SolvabilityState::Solvable {
-            with_user_notes,
-            stats,
-        },
-        Ok(None) | Err(_) => SolvabilityState::NoSolution,
+        let _ = work_actions::request_check_solvability(&self.app_state.game, self.ui_state);
     }
 }
 

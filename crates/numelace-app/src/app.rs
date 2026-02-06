@@ -72,8 +72,7 @@ impl App for NumelaceApp {
         let work_flow = WorkFlow;
         work_flow.poll_and_queue(&mut self.ui_state.work, &mut action_queue);
 
-        if self.ui_state.active_modal.is_none()
-            && !WorkFlow::is_new_game_in_flight(&self.ui_state.work)
+        if self.ui_state.active_modal.is_none() && !WorkFlow::is_work_in_flight(&self.ui_state.work)
         {
             ctx.input(|i| {
                 ui::input::handle_input(i, &mut action_queue);
@@ -112,13 +111,21 @@ impl App for NumelaceApp {
             }
         }
 
-        if WorkFlow::is_new_game_in_flight(&self.ui_state.work) {
+        if WorkFlow::is_work_in_flight(&self.ui_state.work) {
             ctx.request_repaint();
-            Modal::new(Id::new("generating_new_game")).show(ctx, |ui| {
-                ui.heading("Generating...");
-                ui.add(Spinner::new());
-                ui.label("Generating new game...");
-            });
+            if WorkFlow::is_new_game_in_flight(&self.ui_state.work) {
+                Modal::new(Id::new("generating_new_game")).show(ctx, |ui| {
+                    ui.heading("Generating...");
+                    ui.add(Spinner::new());
+                    ui.label("Generating new game...");
+                });
+            } else if WorkFlow::is_solvability_check_in_flight(&self.ui_state.work) {
+                Modal::new(Id::new("checking_solvability")).show(ctx, |ui| {
+                    ui.heading("Checking...");
+                    ui.add(Spinner::new());
+                    ui.label("Checking solvability...");
+                });
+            }
         }
 
         action_handler::handle_all(

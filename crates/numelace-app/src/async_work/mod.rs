@@ -9,16 +9,20 @@ use crate::game_factory;
 
 pub mod new_game_dto;
 mod platform;
+pub mod solvability_dto;
 pub mod work_actions;
 pub mod work_flow;
 
 use new_game_dto::NewGameDto;
+use solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto, SolvabilityStatsDto};
 
 /// A request that can be offloaded to a background worker.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum WorkRequest {
     /// Generate a new Sudoku puzzle.
     GenerateNewGame,
+    /// Check solvability for a given puzzle state.
+    CheckSolvability(SolvabilityRequestDto),
 }
 
 /// A response produced by background work.
@@ -26,6 +30,8 @@ pub enum WorkRequest {
 pub enum WorkResponse {
     /// New puzzle data ready for a fresh game.
     NewGameReady(NewGameDto),
+    /// Solvability result ready for display.
+    SolvabilityReady(SolvabilityStateDto),
     /// An error occurred while performing background work.
     Error(WorkError),
 }
@@ -69,7 +75,47 @@ impl WorkRequest {
             WorkRequest::GenerateNewGame => {
                 WorkResponse::NewGameReady(game_factory::generate_new_game_dto())
             }
+            WorkRequest::CheckSolvability(request) => handle_solvability_request(request),
         }
+    }
+}
+
+fn handle_solvability_request(request: &SolvabilityRequestDto) -> WorkResponse {
+    let Ok(with_user_notes) = request.with_user_notes.to_candidate_grid() else {
+        return WorkResponse::Error(WorkError::DeserializationFailed);
+    };
+    let Ok(without_user_notes) = request.without_user_notes.to_candidate_grid() else {
+        return WorkResponse::Error(WorkError::DeserializationFailed);
+    };
+
+    let first_result = check_grid_solvability(with_user_notes, true);
+    let result = if matches!(
+        first_result,
+        SolvabilityStateDto::Inconsistent | SolvabilityStateDto::NoSolution
+    ) {
+        check_grid_solvability(without_user_notes, false)
+    } else {
+        first_result
+    };
+
+    WorkResponse::SolvabilityReady(result)
+}
+
+fn check_grid_solvability(
+    grid: numelace_core::CandidateGrid,
+    with_user_notes: bool,
+) -> SolvabilityStateDto {
+    if grid.check_consistency().is_err() {
+        return SolvabilityStateDto::Inconsistent;
+    }
+
+    let solver = numelace_solver::BacktrackSolver::with_all_techniques();
+    match solver.solve(grid).map(|mut sol| sol.next()) {
+        Ok(Some((_grid, stats))) => SolvabilityStateDto::Solvable {
+            with_user_notes,
+            stats: SolvabilityStatsDto::from_stats(&stats),
+        },
+        Ok(None) | Err(_) => SolvabilityStateDto::NoSolution,
     }
 }
 

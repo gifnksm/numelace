@@ -3,15 +3,18 @@
 use numelace_core::DigitGrid;
 use numelace_game::Game;
 
-use crate::state::{AppState, UiState};
+use crate::state::{AppState, ModalKind, SolvabilityState, SolvabilityStats, UiState};
 
 use super::{
-    WorkError, WorkRequest, WorkResponse, enqueue, new_game_dto::NewGameDto, work_flow::WorkFlow,
+    WorkError, WorkRequest, WorkResponse, enqueue,
+    new_game_dto::NewGameDto,
+    solvability_dto::{SolvabilityGridDto, SolvabilityRequestDto, SolvabilityStateDto},
+    work_flow::WorkFlow,
 };
 
 /// Request a new game using the async pipeline and panic on failure.
 pub fn request_new_game(ui_state: &mut UiState) -> Result<(), WorkError> {
-    if WorkFlow::is_new_game_in_flight(&ui_state.work) {
+    if WorkFlow::is_work_in_flight(&ui_state.work) {
         return Ok(());
     }
 
@@ -29,13 +32,42 @@ pub fn request_new_game(ui_state: &mut UiState) -> Result<(), WorkError> {
     }
 }
 
+/// Request a solvability check using the async pipeline and panic on failure.
+pub fn request_check_solvability(game: &Game, ui_state: &mut UiState) -> Result<(), WorkError> {
+    if WorkFlow::is_work_in_flight(&ui_state.work) {
+        return Ok(());
+    }
+
+    ui_state.work.last_error = None;
+
+    let request = SolvabilityRequestDto {
+        with_user_notes: SolvabilityGridDto::from_candidate_grid(
+            &game.to_candidate_grid_with_notes(),
+        ),
+        without_user_notes: SolvabilityGridDto::from_candidate_grid(&game.to_candidate_grid()),
+    };
+
+    let work_request = WorkRequest::CheckSolvability(request);
+
+    match enqueue(work_request.clone()) {
+        Ok(handle) => {
+            WorkFlow::start_request(&mut ui_state.work, &work_request, handle);
+            Ok(())
+        }
+        Err(err) => {
+            WorkFlow::record_error(&mut ui_state.work, err.clone());
+            panic!("background work failed: {err}");
+        }
+    }
+}
+
 /// Apply a completed background response, updating app state.
 pub fn apply_work_response(
     app_state: &mut AppState,
     ui_state: &mut UiState,
     response: WorkResponse,
 ) {
-    WorkFlow::finish_new_game(&mut ui_state.work, &response);
+    WorkFlow::finish_response(&mut ui_state.work, &response);
 
     match response {
         WorkResponse::NewGameReady(dto) => {
@@ -43,6 +75,10 @@ pub fn apply_work_response(
                 ui_state.work.last_error = Some(err.clone());
                 panic!("failed to apply new game response: {err}");
             }
+        }
+        WorkResponse::SolvabilityReady(result) => {
+            let state = map_solvability_state(result);
+            ui_state.active_modal = Some(ModalKind::CheckSolvabilityResult(state));
         }
         WorkResponse::Error(err) => {
             ui_state.work.last_error = Some(err.clone());
@@ -76,4 +112,22 @@ fn apply_new_game_dto(
     ui_state.reset_history(app_state);
 
     Ok(())
+}
+
+fn map_solvability_state(result: SolvabilityStateDto) -> SolvabilityState {
+    match result {
+        SolvabilityStateDto::Inconsistent => SolvabilityState::Inconsistent,
+        SolvabilityStateDto::NoSolution => SolvabilityState::NoSolution,
+        SolvabilityStateDto::Solvable {
+            with_user_notes,
+            stats,
+        } => SolvabilityState::Solvable {
+            with_user_notes,
+            stats: SolvabilityStats {
+                assumptions_len: stats.assumptions_len,
+                backtrack_count: stats.backtrack_count,
+                solved_without_assumptions: stats.solved_without_assumptions,
+            },
+        },
+    }
 }
