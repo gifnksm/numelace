@@ -3,7 +3,7 @@ use numelace_game::{GameError, RuleCheckPolicy};
 
 use crate::{
     action::{Action, ActionRequestQueue, ConfirmResult, MoveDirection, NotesFillScope},
-    async_work::{WorkResponse, work_actions},
+    async_work::{WorkRequest, WorkResponse, work_actions},
     flow::new_game_flow,
     state::{AppState, GhostType, InputMode, UiState},
 };
@@ -99,6 +99,10 @@ pub fn handle(
             push_history_if_changed = false;
             ctx.request_new_game();
         }
+        Action::StartWork(request) => {
+            push_history_if_changed = false;
+            ctx.request_work(request);
+        }
         Action::ResetCurrentPuzzle => {
             push_history_if_changed = false;
             ctx.reset_current_puzzle();
@@ -151,6 +155,10 @@ impl ActionContext<'_> {
 
     fn request_new_game(&mut self) {
         let _ = work_actions::request_new_game(self.ui_state);
+    }
+
+    fn request_work(&mut self, request: WorkRequest) {
+        let _ = work_actions::request_work(request, self.ui_state);
     }
 
     fn start_new_game_flow(&mut self) {

@@ -8,7 +8,7 @@ use std::{
 
 use crate::{
     action::{Action, ActionRequestQueue, ConfirmResult},
-    async_work::{WorkError, WorkResponse},
+    async_work::{WorkRequest, WorkResponse},
     state::ModalKind,
 };
 
@@ -50,6 +50,12 @@ impl FlowExecutor {
         FlowHandle {
             state: Rc::clone(&self.state),
         }
+    }
+
+    /// Returns the active spinner (if any) for flow-driven UI feedback.
+    #[must_use]
+    pub fn active_spinner(&self) -> Option<SpinnerKind> {
+        self.state.borrow().active_spinner
     }
 
     /// Returns true if no flows are currently running.
@@ -99,22 +105,12 @@ impl FlowExecutor {
     /// This updates flow state so awaiting tasks can resume.
     pub fn record_work_response(&mut self, response: &WorkResponse) {
         let mut state = self.state.borrow_mut();
-        if !state.new_game_completion_pending || state.new_game_completion.is_some() {
-            return;
-        }
 
-        match response {
-            WorkResponse::NewGameReady(_) => {
-                state.new_game_completion = Some(NewGameCompletion::Completed);
+        if state.work_pending && state.work_response.is_none() {
+            state.work_response = Some(response.clone());
+            if let Some(waker) = state.work_waker.take() {
+                waker.wake();
             }
-            WorkResponse::Error(err) => {
-                state.new_game_completion = Some(NewGameCompletion::Failed(err.clone()));
-            }
-            WorkResponse::SolvabilityReady(_) => {}
-        }
-
-        if let Some(waker) = state.new_game_completion_waker.take() {
-            waker.wake();
         }
     }
 
@@ -138,14 +134,6 @@ impl FlowHandle {
         self.state.borrow_mut().pending_actions.push(action);
     }
 
-    /// Mark the new game completion path as pending.
-    pub fn mark_new_game_completion_pending(&self) {
-        let mut state = self.state.borrow_mut();
-        state.new_game_completion_pending = true;
-        state.new_game_completion = None;
-        state.new_game_completion_waker = None;
-    }
-
     /// Await a new game confirmation dialog.
     #[must_use]
     pub fn confirm_new_game(&self) -> ConfirmNewGameFuture {
@@ -155,25 +143,39 @@ impl FlowHandle {
         }
     }
 
-    /// Await background completion of a new game request.
+    /// Dispatch background work and await the response.
     #[must_use]
-    pub fn await_new_game_completion(&self) -> NewGameCompletionFuture {
-        NewGameCompletionFuture {
+    pub fn await_work(&self, request: WorkRequest) -> WorkResponseFuture {
+        WorkResponseFuture {
             state: Rc::clone(&self.state),
+            request,
+            started: false,
+        }
+    }
+
+    /// Wrap a future with a flow-driven spinner.
+    #[must_use]
+    pub fn with_spinner<F>(&self, kind: SpinnerKind, future: F) -> WithSpinnerFuture<F>
+    where
+        F: Future,
+    {
+        WithSpinnerFuture {
+            state: Rc::clone(&self.state),
+            kind,
+            started: false,
+            inner: Box::pin(future),
         }
     }
 }
 
 /// Async flow for new game confirmation + work dispatch.
 ///
-/// On confirm, it queues `StartNewGame` which triggers the async work pipeline,
-/// then awaits the completion.
+/// On confirm, it runs the background request and awaits the response.
 pub async fn new_game_flow(handle: FlowHandle) {
     let result = handle.confirm_new_game().await;
     if matches!(result, ConfirmResult::Confirmed) {
-        handle.mark_new_game_completion_pending();
-        handle.request_action(Action::StartNewGame);
-        let _ = handle.await_new_game_completion().await;
+        let work = handle.await_work(WorkRequest::GenerateNewGame);
+        let _ = handle.with_spinner(SpinnerKind::NewGame, work).await;
     }
 }
 
@@ -186,15 +188,17 @@ struct FlowState {
     pending_actions: Vec<Action>,
     new_game_confirm: Option<ConfirmResult>,
     new_game_confirm_waker: Option<Waker>,
-    new_game_completion_pending: bool,
-    new_game_completion: Option<NewGameCompletion>,
-    new_game_completion_waker: Option<Waker>,
+
+    work_pending: bool,
+    work_response: Option<WorkResponse>,
+    work_waker: Option<Waker>,
+    active_spinner: Option<SpinnerKind>,
 }
 
-#[derive(Debug, Clone)]
-pub enum NewGameCompletion {
-    Completed,
-    Failed(WorkError),
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpinnerKind {
+    NewGame,
+    CheckSolvability,
 }
 
 /// Awaitable for the new game confirmation dialog.
@@ -227,24 +231,72 @@ impl Future for ConfirmNewGameFuture {
     }
 }
 
-/// Awaitable for new game completion.
-pub struct NewGameCompletionFuture {
+/// Awaitable for background work responses.
+pub struct WorkResponseFuture {
     state: Rc<RefCell<FlowState>>,
+    request: WorkRequest,
+    started: bool,
 }
 
-impl Future for NewGameCompletionFuture {
-    type Output = NewGameCompletion;
+impl Future for WorkResponseFuture {
+    type Output = WorkResponse;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if !self.started {
+            self.started = true;
+            let mut state = self.state.borrow_mut();
+            state.work_pending = true;
+            state.work_response = None;
+            state.work_waker = None;
+            state
+                .pending_actions
+                .push(Action::StartWork(self.request.clone()));
+        }
+
         let mut state = self.state.borrow_mut();
-        state.new_game_completion_pending = true;
-        if let Some(result) = state.new_game_completion.take() {
-            state.new_game_completion_pending = false;
-            Poll::Ready(result)
+        if let Some(response) = state.work_response.take() {
+            state.work_pending = false;
+            Poll::Ready(response)
         } else {
-            state.new_game_completion_waker = Some(cx.waker().clone());
+            state.work_waker = Some(cx.waker().clone());
             Poll::Pending
         }
+    }
+}
+
+/// Awaitable wrapper that toggles a flow spinner while the inner future runs.
+pub struct WithSpinnerFuture<F>
+where
+    F: Future,
+{
+    state: Rc<RefCell<FlowState>>,
+    kind: SpinnerKind,
+    started: bool,
+    inner: Pin<Box<F>>,
+}
+
+impl<F> Future for WithSpinnerFuture<F>
+where
+    F: Future,
+{
+    type Output = F::Output;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if !self.started {
+            self.started = true;
+            self.state.borrow_mut().active_spinner = Some(self.kind);
+        }
+
+        let result = self.inner.as_mut().poll(cx);
+
+        if result.is_ready() {
+            let mut state = self.state.borrow_mut();
+            if state.active_spinner == Some(self.kind) {
+                state.active_spinner = None;
+            }
+        }
+
+        result
     }
 }
 

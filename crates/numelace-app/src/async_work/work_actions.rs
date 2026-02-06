@@ -32,6 +32,26 @@ pub fn request_new_game(ui_state: &mut UiState) -> Result<(), WorkError> {
     }
 }
 
+/// Request background work using the async pipeline and panic on failure.
+pub fn request_work(request: WorkRequest, ui_state: &mut UiState) -> Result<(), WorkError> {
+    if WorkFlow::is_work_in_flight(&ui_state.work) {
+        return Ok(());
+    }
+
+    ui_state.work.last_error = None;
+
+    match enqueue(request.clone()) {
+        Ok(handle) => {
+            WorkFlow::start_request(&mut ui_state.work, &request, handle);
+            Ok(())
+        }
+        Err(err) => {
+            WorkFlow::record_error(&mut ui_state.work, err.clone());
+            panic!("background work failed: {err}");
+        }
+    }
+}
+
 /// Request a solvability check using the async pipeline and panic on failure.
 pub fn request_check_solvability(game: &Game, ui_state: &mut UiState) -> Result<(), WorkError> {
     if WorkFlow::is_work_in_flight(&ui_state.work) {

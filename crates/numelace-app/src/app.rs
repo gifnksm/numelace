@@ -22,6 +22,7 @@ use crate::{
     action_handler::{self, ActionEffect},
     async_work,
     async_work::work_flow::WorkFlow,
+    flow::SpinnerKind,
     game_factory,
     persistence::storage,
     state::{AppState, ModalKind, UiState},
@@ -79,8 +80,7 @@ impl App for NumelaceApp {
             &mut action_queue,
         );
 
-        if self.ui_state.active_modal.is_none() && !WorkFlow::is_work_in_flight(&self.ui_state.work)
-        {
+        if self.ui_state.active_modal.is_none() && self.ui_state.flow.active_spinner().is_none() {
             ctx.input(|i| {
                 ui::input::handle_input(i, &mut action_queue);
                 action_handler::handle_all(
@@ -118,20 +118,23 @@ impl App for NumelaceApp {
             }
         }
 
-        if WorkFlow::is_work_in_flight(&self.ui_state.work) {
+        if let Some(spinner) = self.ui_state.flow.active_spinner() {
             ctx.request_repaint();
-            if WorkFlow::is_new_game_in_flight(&self.ui_state.work) {
-                Modal::new(Id::new("generating_new_game")).show(ctx, |ui| {
-                    ui.heading("Generating...");
-                    ui.add(Spinner::new());
-                    ui.label("Generating new game...");
-                });
-            } else if WorkFlow::is_solvability_check_in_flight(&self.ui_state.work) {
-                Modal::new(Id::new("checking_solvability")).show(ctx, |ui| {
-                    ui.heading("Checking...");
-                    ui.add(Spinner::new());
-                    ui.label("Checking solvability...");
-                });
+            match spinner {
+                SpinnerKind::NewGame => {
+                    Modal::new(Id::new("generating_new_game")).show(ctx, |ui| {
+                        ui.heading("Generating...");
+                        ui.add(Spinner::new());
+                        ui.label("Generating new game...");
+                    });
+                }
+                SpinnerKind::CheckSolvability => {
+                    Modal::new(Id::new("checking_solvability")).show(ctx, |ui| {
+                        ui.heading("Checking...");
+                        ui.add(Spinner::new());
+                        ui.label("Checking solvability...");
+                    });
+                }
             }
         }
 

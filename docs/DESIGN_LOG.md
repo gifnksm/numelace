@@ -50,3 +50,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-05: Use “inconsistent” for immediate A/B issues and “no solution” for solvability outcomes — separates current rule violations from unsolvable states.
 - 2026-02-06: Offload new game generation via a worker-backed async pipeline with a lightweight DTO and UI spinner — keeps egui responsive and supports WASM hosting constraints.
 - 2026-02-06: Add a lightweight flow executor to orchestrate UI async flows (e.g., new game confirmation + background work) — keeps control flow linear and avoids scattered state transitions.
+- 2026-02-06: Make async work awaitable via flow futures with a spinner wrapper — enables generic flow orchestration while reusing the async_work pipeline.
