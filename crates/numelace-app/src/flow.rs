@@ -7,9 +7,9 @@ use std::{
 };
 
 use crate::{
-    action::{Action, ActionRequestQueue, ConfirmResult},
-    async_work::{WorkRequest, WorkResponse},
-    state::ModalKind,
+    action::{Action, ActionRequestQueue, ConfirmResult, NotesFillScope, SolvabilityDialogResult},
+    async_work::{WorkRequest, WorkResponse, solvability_dto::SolvabilityStateDto},
+    state::{ModalKind, SolvabilityState, SolvabilityStats},
 };
 
 /// Lightweight async flow executor for UI orchestration.
@@ -100,6 +100,15 @@ impl FlowExecutor {
         }
     }
 
+    /// Provide the result of the solvability dialog.
+    pub(crate) fn confirm_solvability_dialog(&mut self, result: SolvabilityDialogResult) {
+        let mut state = self.state.borrow_mut();
+        state.solvability_dialog_result = Some(result);
+        if let Some(waker) = state.solvability_dialog_waker.take() {
+            waker.wake();
+        }
+    }
+
     /// Notify the flow executor that background work completed.
     ///
     /// This updates flow state so awaiting tasks can resume.
@@ -129,18 +138,35 @@ pub(crate) struct FlowHandle {
 }
 
 impl FlowHandle {
+    fn request_action(&self, action: Action) {
+        self.state.borrow_mut().pending_actions.push(action);
+    }
+
     /// Await a new game confirmation dialog.
     #[must_use]
-    fn confirm_new_game(&self) -> ConfirmNewGameFuture {
+    pub(crate) fn confirm_new_game(&self) -> ConfirmNewGameFuture {
         ConfirmNewGameFuture {
             state: Rc::clone(&self.state),
             started: false,
         }
     }
 
+    /// Await the solvability result dialog.
+    #[must_use]
+    pub(crate) fn await_solvability_dialog(
+        &self,
+        state: SolvabilityState,
+    ) -> SolvabilityDialogFuture {
+        SolvabilityDialogFuture {
+            state: Rc::clone(&self.state),
+            modal_state: state,
+            started: false,
+        }
+    }
+
     /// Dispatch background work and await the response.
     #[must_use]
-    fn await_work(&self, request: WorkRequest) -> WorkResponseFuture {
+    pub(crate) fn await_work(&self, request: WorkRequest) -> WorkResponseFuture {
         WorkResponseFuture {
             state: Rc::clone(&self.state),
             request,
@@ -179,9 +205,22 @@ pub(crate) async fn new_game_flow(handle: FlowHandle) {
 /// Runs the background request and awaits the response.
 pub(crate) async fn check_solvability_flow(handle: FlowHandle, request: WorkRequest) {
     let work = handle.await_work(request);
-    let _ = handle
+    let response = handle
         .with_spinner(SpinnerKind::CheckSolvability, work)
         .await;
+
+    let WorkResponse::SolvabilityReady(state) = response else {
+        return;
+    };
+
+    let state = map_solvability_state(state);
+    let dialog_result = handle.await_solvability_dialog(state).await;
+
+    if matches!(dialog_result, SolvabilityDialogResult::RebuildNotes) {
+        handle.request_action(Action::AutoFillNotes {
+            scope: NotesFillScope::AllCells,
+        });
+    }
 }
 
 struct FlowTask {
@@ -193,6 +232,8 @@ struct FlowState {
     pending_actions: Vec<Action>,
     new_game_confirm: Option<ConfirmResult>,
     new_game_confirm_waker: Option<Waker>,
+    solvability_dialog_result: Option<SolvabilityDialogResult>,
+    solvability_dialog_waker: Option<Waker>,
 
     work_pending: bool,
     work_response: Option<WorkResponse>,
@@ -236,8 +277,57 @@ impl Future for ConfirmNewGameFuture {
     }
 }
 
+/// Awaitable for the solvability result dialog.
+pub(crate) struct SolvabilityDialogFuture {
+    state: Rc<RefCell<FlowState>>,
+    modal_state: SolvabilityState,
+    started: bool,
+}
+
+impl Future for SolvabilityDialogFuture {
+    type Output = SolvabilityDialogResult;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if !self.started {
+            self.started = true;
+            self.state
+                .borrow_mut()
+                .pending_actions
+                .push(Action::OpenModal(ModalKind::CheckSolvabilityResult(
+                    self.modal_state.clone(),
+                )));
+        }
+
+        let mut state = self.state.borrow_mut();
+        if let Some(result) = state.solvability_dialog_result.take() {
+            Poll::Ready(result)
+        } else {
+            state.solvability_dialog_waker = Some(cx.waker().clone());
+            Poll::Pending
+        }
+    }
+}
+
+fn map_solvability_state(result: SolvabilityStateDto) -> SolvabilityState {
+    match result {
+        SolvabilityStateDto::Inconsistent => SolvabilityState::Inconsistent,
+        SolvabilityStateDto::NoSolution => SolvabilityState::NoSolution,
+        SolvabilityStateDto::Solvable {
+            with_user_notes,
+            stats,
+        } => SolvabilityState::Solvable {
+            with_user_notes,
+            stats: SolvabilityStats {
+                assumptions_len: stats.assumptions_len,
+                backtrack_count: stats.backtrack_count,
+                solved_without_assumptions: stats.solved_without_assumptions,
+            },
+        },
+    }
+}
+
 /// Awaitable for background work responses.
-struct WorkResponseFuture {
+pub(crate) struct WorkResponseFuture {
     state: Rc<RefCell<FlowState>>,
     request: WorkRequest,
     started: bool,

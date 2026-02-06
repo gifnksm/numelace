@@ -1,7 +1,7 @@
 use eframe::egui::{Button, Context, Id, Modal, Response, RichText, Sides, Ui};
 
 use crate::{
-    action::{Action, ActionRequestQueue, ConfirmResult, NotesFillScope},
+    action::{Action, ActionRequestQueue, ConfirmResult, SolvabilityDialogResult},
     state::SolvabilityState,
     ui::icon,
 };
@@ -62,13 +62,6 @@ fn primary_button(ui: &mut Ui, label: String, request_focus: bool) -> Response {
 
 fn close_button(ui: &mut Ui, label: String) {
     if ui.button(label).clicked() {
-        ui.close();
-    }
-}
-
-fn primary_close_button(ui: &mut Ui, label: String) {
-    let response = primary_button(ui, label, true);
-    if response.clicked() {
         ui.close();
     }
 }
@@ -181,11 +174,18 @@ pub(crate) fn show_solvability(
                 |ui: &mut Ui| {
                     ui.label("A conflict or a no-candidate cell was detected. We recommend undoing to the last consistent state.");
                 },
-                |ui: &mut Ui, _action_queue: &mut ActionRequestQueue, _action_requested| {
+                |ui: &mut Ui, action_queue, action_requested| {
                     disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
-                    cancel_button(ui);
+                    cancel_action_button(
+                        ui,
+                        action_queue,
+                        action_requested,
+                        Action::ConfirmSolvabilityDialog(SolvabilityDialogResult::Close),
+                    );
                 },
-                None,
+                Some(Action::ConfirmSolvabilityDialog(
+                    SolvabilityDialogResult::Close,
+                )),
             );
         }
         SolvabilityState::NoSolution => {
@@ -197,11 +197,18 @@ pub(crate) fn show_solvability(
                 |ui: &mut Ui| {
                     ui.label("No solution exists from the current state. We recommend undoing to the last solvable state.");
                 },
-                |ui: &mut Ui, _action_queue: &mut ActionRequestQueue, _action_requested| {
+                |ui: &mut Ui, action_queue, action_requested| {
                     disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
-                    cancel_button(ui);
+                    cancel_action_button(
+                        ui,
+                        action_queue,
+                        action_requested,
+                        Action::ConfirmSolvabilityDialog(SolvabilityDialogResult::Close),
+                    );
                 },
-                None,
+                Some(Action::ConfirmSolvabilityDialog(
+                    SolvabilityDialogResult::Close,
+                )),
             );
         }
         SolvabilityState::Solvable {
@@ -216,10 +223,19 @@ pub(crate) fn show_solvability(
                 |ui: &mut Ui| {
                     ui.label("A solution is still possible from the current state.");
                 },
-                |ui: &mut Ui, _action_queue: &mut ActionRequestQueue, _action_requested| {
-                    primary_close_button(ui, format!("{} OK", icon::CHECK));
+                |ui: &mut Ui, action_queue, action_requested| {
+                    action_button(
+                        ui,
+                        action_queue,
+                        action_requested,
+                        format!("{} OK", icon::CHECK),
+                        true,
+                        Action::ConfirmSolvabilityDialog(SolvabilityDialogResult::Close),
+                    );
                 },
-                None,
+                Some(Action::ConfirmSolvabilityDialog(
+                    SolvabilityDialogResult::Close,
+                )),
             );
         }
         SolvabilityState::Solvable {
@@ -241,13 +257,18 @@ pub(crate) fn show_solvability(
                         action_requested,
                         format!("{} Rebuild", icon::CHECK),
                         true,
-                        Action::AutoFillNotes {
-                            scope: NotesFillScope::AllCells,
-                        },
+                        Action::ConfirmSolvabilityDialog(SolvabilityDialogResult::RebuildNotes),
                     );
-                    cancel_button(ui);
+                    cancel_action_button(
+                        ui,
+                        action_queue,
+                        action_requested,
+                        Action::ConfirmSolvabilityDialog(SolvabilityDialogResult::Close),
+                    );
                 },
-                None,
+                Some(Action::ConfirmSolvabilityDialog(
+                    SolvabilityDialogResult::Close,
+                )),
             );
         }
     }

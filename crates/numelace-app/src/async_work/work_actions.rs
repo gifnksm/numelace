@@ -3,12 +3,12 @@
 use numelace_core::DigitGrid;
 use numelace_game::Game;
 
-use crate::state::{AppState, ModalKind, SolvabilityState, SolvabilityStats, UiState};
+use crate::state::{AppState, UiState};
 
 use super::{
     WorkError, WorkRequest, WorkResponse, enqueue,
     new_game_dto::NewGameDto,
-    solvability_dto::{SolvabilityGridDto, SolvabilityRequestDto, SolvabilityStateDto},
+    solvability_dto::{SolvabilityGridDto, SolvabilityRequestDto},
     work_flow::WorkFlow,
 };
 
@@ -60,10 +60,7 @@ pub(crate) fn apply_work_response(
                 panic!("failed to apply new game response: {err}");
             }
         }
-        WorkResponse::SolvabilityReady(result) => {
-            let state = map_solvability_state(result);
-            ui_state.active_modal = Some(ModalKind::CheckSolvabilityResult(state));
-        }
+        WorkResponse::SolvabilityReady(_result) => {}
         WorkResponse::Error(err) => {
             ui_state.work.last_error = Some(err.clone());
             panic!("background work failed: {err}");
@@ -96,22 +93,4 @@ fn apply_new_game_dto(
     ui_state.reset_history(app_state);
 
     Ok(())
-}
-
-fn map_solvability_state(result: SolvabilityStateDto) -> SolvabilityState {
-    match result {
-        SolvabilityStateDto::Inconsistent => SolvabilityState::Inconsistent,
-        SolvabilityStateDto::NoSolution => SolvabilityState::NoSolution,
-        SolvabilityStateDto::Solvable {
-            with_user_notes,
-            stats,
-        } => SolvabilityState::Solvable {
-            with_user_notes,
-            stats: SolvabilityStats {
-                assumptions_len: stats.assumptions_len,
-                backtrack_count: stats.backtrack_count,
-                solved_without_assumptions: stats.solved_without_assumptions,
-            },
-        },
-    }
 }

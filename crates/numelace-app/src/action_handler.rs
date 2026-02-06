@@ -2,7 +2,10 @@ use numelace_core::{Digit, Position};
 use numelace_game::{GameError, RuleCheckPolicy};
 
 use crate::{
-    action::{Action, ActionRequestQueue, ConfirmResult, MoveDirection, NotesFillScope},
+    action::{
+        Action, ActionRequestQueue, ConfirmResult, MoveDirection, NotesFillScope,
+        SolvabilityDialogResult,
+    },
     async_work::{WorkRequest, WorkResponse, work_actions},
     flow::{check_solvability_flow, new_game_flow},
     state::{AppState, GhostType, InputMode, UiState},
@@ -95,6 +98,10 @@ pub(crate) fn handle(
             push_history_if_changed = false;
             ctx.confirm_new_game(result);
         }
+        Action::ConfirmSolvabilityDialog(result) => {
+            push_history_if_changed = false;
+            ctx.confirm_solvability_dialog(result);
+        }
         Action::StartWork(request) => {
             push_history_if_changed = false;
             ctx.request_work(request);
@@ -165,6 +172,10 @@ impl ActionContext<'_> {
 
     fn confirm_new_game(&mut self, result: ConfirmResult) {
         self.ui_state.flow.confirm_new_game(result);
+    }
+
+    fn confirm_solvability_dialog(&mut self, result: SolvabilityDialogResult) {
+        self.ui_state.flow.confirm_solvability_dialog(result);
     }
 
     fn apply_work_response(&mut self, response: WorkResponse) {
