@@ -7,7 +7,10 @@ use std::{
 };
 
 use crate::{
-    action::{Action, ActionRequestQueue, ConfirmResult, NotesFillScope, SolvabilityDialogResult},
+    action::{
+        Action, ActionRequestQueue, ConfirmResult, ModalResponse, NotesFillScope,
+        SolvabilityDialogResult,
+    },
     async_work::{WorkRequest, WorkResponse, solvability_dto::SolvabilityStateDto},
     state::{ModalKind, SolvabilityState, SolvabilityStats},
 };
@@ -91,20 +94,10 @@ impl FlowExecutor {
         self.drain_actions(action_queue);
     }
 
-    /// Provide the result of the new game confirmation dialog.
-    pub(crate) fn confirm_new_game(&mut self, result: ConfirmResult) {
+    pub(crate) fn resolve_modal_response(&mut self, response: ModalResponse) {
         let mut state = self.state.borrow_mut();
-        state.new_game_confirm = Some(result);
-        if let Some(waker) = state.new_game_confirm_waker.take() {
-            waker.wake();
-        }
-    }
-
-    /// Provide the result of the solvability dialog.
-    pub(crate) fn confirm_solvability_dialog(&mut self, result: SolvabilityDialogResult) {
-        let mut state = self.state.borrow_mut();
-        state.solvability_dialog_result = Some(result);
-        if let Some(waker) = state.solvability_dialog_waker.take() {
+        state.modal_response = Some(response);
+        if let Some(waker) = state.modal_waker.take() {
             waker.wake();
         }
     }
@@ -144,22 +137,39 @@ impl FlowHandle {
 
     /// Await a new game confirmation dialog.
     #[must_use]
-    pub(crate) fn confirm_new_game(&self) -> ConfirmNewGameFuture {
-        ConfirmNewGameFuture {
-            state: Rc::clone(&self.state),
-            started: false,
+    pub(crate) async fn confirm_new_game(&self) -> ConfirmResult {
+        match self
+            .await_modal(ModalKind::NewGameConfirm, ModalResponseKind::Confirm)
+            .await
+        {
+            ModalResponse::Confirm(result) => result,
+            ModalResponse::Solvability(_) => ConfirmResult::Cancelled,
         }
     }
 
     /// Await the solvability result dialog.
     #[must_use]
-    pub(crate) fn await_solvability_dialog(
+    pub(crate) async fn await_solvability_dialog(
         &self,
         state: SolvabilityState,
-    ) -> SolvabilityDialogFuture {
-        SolvabilityDialogFuture {
+    ) -> SolvabilityDialogResult {
+        let modal = ModalKind::CheckSolvabilityResult(state);
+        match self
+            .await_modal(modal, ModalResponseKind::Solvability)
+            .await
+        {
+            ModalResponse::Solvability(result) => result,
+            ModalResponse::Confirm(_) => SolvabilityDialogResult::Close,
+        }
+    }
+
+    /// Await a modal response from the UI.
+    #[must_use]
+    fn await_modal(&self, modal: ModalKind, expected: ModalResponseKind) -> ModalResponseFuture {
+        ModalResponseFuture {
             state: Rc::clone(&self.state),
-            modal_state: state,
+            modal,
+            expected,
             started: false,
         }
     }
@@ -230,10 +240,8 @@ struct FlowTask {
 #[derive(Default)]
 struct FlowState {
     pending_actions: Vec<Action>,
-    new_game_confirm: Option<ConfirmResult>,
-    new_game_confirm_waker: Option<Waker>,
-    solvability_dialog_result: Option<SolvabilityDialogResult>,
-    solvability_dialog_waker: Option<Waker>,
+    modal_response: Option<ModalResponse>,
+    modal_waker: Option<Waker>,
 
     work_pending: bool,
     work_response: Option<WorkResponse>,
@@ -247,16 +255,22 @@ pub(crate) enum SpinnerKind {
     CheckSolvability,
 }
 
-/// Awaitable for the new game confirmation dialog.
-///
-/// On first poll, it opens the dialog via an action request.
-struct ConfirmNewGameFuture {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ModalResponseKind {
+    Confirm,
+    Solvability,
+}
+
+/// Awaitable for modal responses.
+struct ModalResponseFuture {
     state: Rc<RefCell<FlowState>>,
+    modal: ModalKind,
+    expected: ModalResponseKind,
     started: bool,
 }
 
-impl Future for ConfirmNewGameFuture {
-    type Output = ConfirmResult;
+impl Future for ModalResponseFuture {
+    type Output = ModalResponse;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if !self.started {
@@ -264,45 +278,28 @@ impl Future for ConfirmNewGameFuture {
             self.state
                 .borrow_mut()
                 .pending_actions
-                .push(Action::OpenModal(ModalKind::NewGameConfirm));
+                .push(Action::OpenModal(self.modal.clone()));
         }
 
         let mut state = self.state.borrow_mut();
-        if let Some(result) = state.new_game_confirm.take() {
-            Poll::Ready(result)
+        if let Some(response) = state.modal_response.take() {
+            let matches_expected = matches!(
+                (self.expected, &response),
+                (ModalResponseKind::Confirm, ModalResponse::Confirm(_))
+                    | (
+                        ModalResponseKind::Solvability,
+                        ModalResponse::Solvability(_)
+                    )
+            );
+            if matches_expected {
+                Poll::Ready(response)
+            } else {
+                state.modal_response = Some(response);
+                state.modal_waker = Some(cx.waker().clone());
+                Poll::Pending
+            }
         } else {
-            state.new_game_confirm_waker = Some(cx.waker().clone());
-            Poll::Pending
-        }
-    }
-}
-
-/// Awaitable for the solvability result dialog.
-pub(crate) struct SolvabilityDialogFuture {
-    state: Rc<RefCell<FlowState>>,
-    modal_state: SolvabilityState,
-    started: bool,
-}
-
-impl Future for SolvabilityDialogFuture {
-    type Output = SolvabilityDialogResult;
-
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if !self.started {
-            self.started = true;
-            self.state
-                .borrow_mut()
-                .pending_actions
-                .push(Action::OpenModal(ModalKind::CheckSolvabilityResult(
-                    self.modal_state.clone(),
-                )));
-        }
-
-        let mut state = self.state.borrow_mut();
-        if let Some(result) = state.solvability_dialog_result.take() {
-            Poll::Ready(result)
-        } else {
-            state.solvability_dialog_waker = Some(cx.waker().clone());
+            state.modal_waker = Some(cx.waker().clone());
             Poll::Pending
         }
     }

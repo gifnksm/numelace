@@ -1,7 +1,7 @@
 use eframe::egui::{Button, Context, Id, Modal, Response, RichText, Sides, Ui};
 
 use crate::{
-    action::{Action, ActionRequestQueue, ConfirmResult, SolvabilityDialogResult},
+    action::{Action, ActionRequestQueue, ConfirmResult, ModalResponse, SolvabilityDialogResult},
     state::SolvabilityState,
     ui::icon,
 };
@@ -119,16 +119,18 @@ pub(crate) fn show_new_game_confirm(ctx: &Context, action_queue: &mut ActionRequ
                 action_requested,
                 format!("{} New Game", icon::CHECK),
                 true,
-                Action::ConfirmNewGame(ConfirmResult::Confirmed),
+                Action::ModalResponse(ModalResponse::Confirm(ConfirmResult::Confirmed)),
             );
             cancel_action_button(
                 ui,
                 action_queue,
                 action_requested,
-                Action::ConfirmNewGame(ConfirmResult::Cancelled),
+                Action::ModalResponse(ModalResponse::Confirm(ConfirmResult::Cancelled)),
             );
         },
-        Some(Action::ConfirmNewGame(ConfirmResult::Cancelled)),
+        Some(Action::ModalResponse(ModalResponse::Confirm(
+            ConfirmResult::Cancelled,
+        ))),
     );
 }
 
@@ -165,111 +167,121 @@ pub(crate) fn show_solvability(
     state: &SolvabilityState,
 ) {
     match state {
-        SolvabilityState::Inconsistent => {
-            show_dialog(
-                ctx,
-                action_queue,
-                Id::new("solvability_result"),
-                "Board Inconsistent",
-                |ui: &mut Ui| {
-                    ui.label("A conflict or a no-candidate cell was detected. We recommend undoing to the last consistent state.");
-                },
-                |ui: &mut Ui, action_queue, action_requested| {
-                    disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
-                    cancel_action_button(
-                        ui,
-                        action_queue,
-                        action_requested,
-                        Action::ConfirmSolvabilityDialog(SolvabilityDialogResult::Close),
-                    );
-                },
-                Some(Action::ConfirmSolvabilityDialog(
-                    SolvabilityDialogResult::Close,
-                )),
-            );
-        }
-        SolvabilityState::NoSolution => {
-            show_dialog(
-                ctx,
-                action_queue,
-                Id::new("solvability_result"),
-                "No Solution Found",
-                |ui: &mut Ui| {
-                    ui.label("No solution exists from the current state. We recommend undoing to the last solvable state.");
-                },
-                |ui: &mut Ui, action_queue, action_requested| {
-                    disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
-                    cancel_action_button(
-                        ui,
-                        action_queue,
-                        action_requested,
-                        Action::ConfirmSolvabilityDialog(SolvabilityDialogResult::Close),
-                    );
-                },
-                Some(Action::ConfirmSolvabilityDialog(
-                    SolvabilityDialogResult::Close,
-                )),
-            );
-        }
+        SolvabilityState::Inconsistent => show_solvability_inconsistent(ctx, action_queue),
+        SolvabilityState::NoSolution => show_solvability_no_solution(ctx, action_queue),
         SolvabilityState::Solvable {
             with_user_notes: true,
             stats: _stats,
-        } => {
-            show_dialog(
-                ctx,
-                action_queue,
-                Id::new("solvability_result"),
-                "Solvable",
-                |ui: &mut Ui| {
-                    ui.label("A solution is still possible from the current state.");
-                },
-                |ui: &mut Ui, action_queue, action_requested| {
-                    action_button(
-                        ui,
-                        action_queue,
-                        action_requested,
-                        format!("{} OK", icon::CHECK),
-                        true,
-                        Action::ConfirmSolvabilityDialog(SolvabilityDialogResult::Close),
-                    );
-                },
-                Some(Action::ConfirmSolvabilityDialog(
-                    SolvabilityDialogResult::Close,
-                )),
-            );
-        }
+        } => show_solvability_solvable(ctx, action_queue),
         SolvabilityState::Solvable {
             with_user_notes: false,
             stats: _stats,
-        } => {
-            show_dialog(
-                ctx,
+        } => show_solvability_notes_maybe_incorrect(ctx, action_queue),
+    }
+}
+
+fn show_solvability_inconsistent(ctx: &Context, action_queue: &mut ActionRequestQueue) {
+    show_dialog(
+        ctx,
+        action_queue,
+        Id::new("solvability_result"),
+        "Board Inconsistent",
+        |ui: &mut Ui| {
+            ui.label("A conflict or a no-candidate cell was detected. We recommend undoing to the last consistent state.");
+        },
+        |ui: &mut Ui, action_queue, action_requested| {
+            disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
+            cancel_action_button(
+                ui,
                 action_queue,
-                Id::new("solvability_result"),
-                "Notes May Be Incorrect",
-                |ui: &mut Ui| {
-                    ui.label("A solution exists when ignoring notes. Rebuild candidates now?");
-                },
-                |ui: &mut Ui, action_queue: &mut ActionRequestQueue, action_requested| {
-                    action_button(
-                        ui,
-                        action_queue,
-                        action_requested,
-                        format!("{} Rebuild", icon::CHECK),
-                        true,
-                        Action::ConfirmSolvabilityDialog(SolvabilityDialogResult::RebuildNotes),
-                    );
-                    cancel_action_button(
-                        ui,
-                        action_queue,
-                        action_requested,
-                        Action::ConfirmSolvabilityDialog(SolvabilityDialogResult::Close),
-                    );
-                },
-                Some(Action::ConfirmSolvabilityDialog(
-                    SolvabilityDialogResult::Close,
+                action_requested,
+                Action::ModalResponse(ModalResponse::Solvability(SolvabilityDialogResult::Close)),
+            );
+        },
+        Some(Action::ModalResponse(ModalResponse::Solvability(
+            SolvabilityDialogResult::Close,
+        ))),
+    );
+}
+
+fn show_solvability_no_solution(ctx: &Context, action_queue: &mut ActionRequestQueue) {
+    show_dialog(
+        ctx,
+        action_queue,
+        Id::new("solvability_result"),
+        "No Solution Found",
+        |ui: &mut Ui| {
+            ui.label("No solution exists from the current state. We recommend undoing to the last solvable state.");
+        },
+        |ui: &mut Ui, action_queue, action_requested| {
+            disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
+            cancel_action_button(
+                ui,
+                action_queue,
+                action_requested,
+                Action::ModalResponse(ModalResponse::Solvability(SolvabilityDialogResult::Close)),
+            );
+        },
+        Some(Action::ModalResponse(ModalResponse::Solvability(
+            SolvabilityDialogResult::Close,
+        ))),
+    );
+}
+
+fn show_solvability_solvable(ctx: &Context, action_queue: &mut ActionRequestQueue) {
+    show_dialog(
+        ctx,
+        action_queue,
+        Id::new("solvability_result"),
+        "Solvable",
+        |ui: &mut Ui| {
+            ui.label("A solution is still possible from the current state.");
+        },
+        |ui: &mut Ui, action_queue, action_requested| {
+            action_button(
+                ui,
+                action_queue,
+                action_requested,
+                format!("{} OK", icon::CHECK),
+                true,
+                Action::ModalResponse(ModalResponse::Solvability(SolvabilityDialogResult::Close)),
+            );
+        },
+        Some(Action::ModalResponse(ModalResponse::Solvability(
+            SolvabilityDialogResult::Close,
+        ))),
+    );
+}
+
+fn show_solvability_notes_maybe_incorrect(ctx: &Context, action_queue: &mut ActionRequestQueue) {
+    show_dialog(
+        ctx,
+        action_queue,
+        Id::new("solvability_result"),
+        "Notes May Be Incorrect",
+        |ui: &mut Ui| {
+            ui.label("A solution exists when ignoring notes. Rebuild candidates now?");
+        },
+        |ui: &mut Ui, action_queue: &mut ActionRequestQueue, action_requested| {
+            action_button(
+                ui,
+                action_queue,
+                action_requested,
+                format!("{} Rebuild", icon::CHECK),
+                true,
+                Action::ModalResponse(ModalResponse::Solvability(
+                    SolvabilityDialogResult::RebuildNotes,
                 )),
             );
-        }
-    }
+            cancel_action_button(
+                ui,
+                action_queue,
+                action_requested,
+                Action::ModalResponse(ModalResponse::Solvability(SolvabilityDialogResult::Close)),
+            );
+        },
+        Some(Action::ModalResponse(ModalResponse::Solvability(
+            SolvabilityDialogResult::Close,
+        ))),
+    );
 }

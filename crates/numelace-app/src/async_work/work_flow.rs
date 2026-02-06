@@ -34,29 +34,26 @@ impl WorkFlow {
     /// Record an error from the async pipeline.
     pub(crate) fn record_error(work: &mut WorkState, err: WorkError) {
         work.pending = None;
-        work.is_generating_new_game = false;
-        work.is_checking_solvability = false;
+        work.in_flight = None;
         work.last_error = Some(err);
     }
 
     /// Mark a request as started with the given handle.
     pub(crate) fn start_request(work: &mut WorkState, request: &WorkRequest, handle: WorkHandle) {
         work.pending = Some(handle);
-        work.is_generating_new_game = matches!(request, WorkRequest::GenerateNewGame);
-        work.is_checking_solvability = matches!(request, WorkRequest::CheckSolvability(_));
+        work.in_flight = Some(request.kind());
     }
 
     /// Returns true if any background work is currently in flight.
     #[must_use]
     pub(crate) fn is_work_in_flight(work: &WorkState) -> bool {
-        work.is_generating_new_game || work.is_checking_solvability
+        work.in_flight.is_some()
     }
 
     /// Clear pending state after a response is handled.
     pub(crate) fn finish_response(work: &mut WorkState, _response: &WorkResponse) {
         work.pending = None;
-        work.is_generating_new_game = false;
-        work.is_checking_solvability = false;
+        work.in_flight = None;
         work.last_error = None;
     }
 }

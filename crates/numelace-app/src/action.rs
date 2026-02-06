@@ -24,8 +24,7 @@ pub(crate) enum Action {
     ApplyWorkResponse(WorkResponse),
     UpdateSettings(Settings),
     StartNewGameFlow,
-    ConfirmNewGame(ConfirmResult),
-    ConfirmSolvabilityDialog(SolvabilityDialogResult),
+    ModalResponse(ModalResponse),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,6 +37,12 @@ pub(crate) enum ConfirmResult {
 pub(crate) enum SolvabilityDialogResult {
     Close,
     RebuildNotes,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ModalResponse {
+    Confirm(ConfirmResult),
+    Solvability(SolvabilityDialogResult),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]

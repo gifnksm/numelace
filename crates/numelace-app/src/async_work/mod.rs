@@ -25,6 +25,13 @@ pub(crate) enum WorkRequest {
     CheckSolvability(SolvabilityRequestDto),
 }
 
+/// Kind of background work currently in flight.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WorkKind {
+    NewGame,
+    CheckSolvability,
+}
+
 /// A response produced by background work.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) enum WorkResponse {
@@ -76,6 +83,14 @@ impl WorkRequest {
                 WorkResponse::NewGameReady(game_factory::generate_new_game_dto())
             }
             WorkRequest::CheckSolvability(request) => handle_solvability_request(request),
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn kind(&self) -> WorkKind {
+        match self {
+            WorkRequest::GenerateNewGame => WorkKind::NewGame,
+            WorkRequest::CheckSolvability(_) => WorkKind::CheckSolvability,
         }
     }
 }

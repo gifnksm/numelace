@@ -2,10 +2,7 @@ use numelace_core::{Digit, Position};
 use numelace_game::{GameError, RuleCheckPolicy};
 
 use crate::{
-    action::{
-        Action, ActionRequestQueue, ConfirmResult, MoveDirection, NotesFillScope,
-        SolvabilityDialogResult,
-    },
+    action::{Action, ActionRequestQueue, ModalResponse, MoveDirection, NotesFillScope},
     async_work::{WorkRequest, WorkResponse, work_actions},
     flow::{check_solvability_flow, new_game_flow},
     state::{AppState, GhostType, InputMode, UiState},
@@ -94,13 +91,9 @@ pub(crate) fn handle(
             push_history_if_changed = false;
             ctx.start_new_game_flow();
         }
-        Action::ConfirmNewGame(result) => {
+        Action::ModalResponse(response) => {
             push_history_if_changed = false;
-            ctx.confirm_new_game(result);
-        }
-        Action::ConfirmSolvabilityDialog(result) => {
-            push_history_if_changed = false;
-            ctx.confirm_solvability_dialog(result);
+            ctx.handle_modal_response(response);
         }
         Action::StartWork(request) => {
             push_history_if_changed = false;
@@ -170,12 +163,8 @@ impl ActionContext<'_> {
         self.ui_state.flow.spawn(new_game_flow(handle));
     }
 
-    fn confirm_new_game(&mut self, result: ConfirmResult) {
-        self.ui_state.flow.confirm_new_game(result);
-    }
-
-    fn confirm_solvability_dialog(&mut self, result: SolvabilityDialogResult) {
-        self.ui_state.flow.confirm_solvability_dialog(result);
+    fn handle_modal_response(&mut self, response: ModalResponse) {
+        self.ui_state.flow.resolve_modal_response(response);
     }
 
     fn apply_work_response(&mut self, response: WorkResponse) {

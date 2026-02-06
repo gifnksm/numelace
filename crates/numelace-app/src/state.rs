@@ -1,7 +1,7 @@
 use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
-use crate::async_work::{WorkError, WorkHandle};
+use crate::async_work::{WorkError, WorkHandle, WorkKind};
 use crate::flow::FlowExecutor;
 use crate::history::UndoRedoStack;
 
@@ -205,8 +205,7 @@ pub(crate) enum SolvabilityState {
 #[derive(Debug, Default)]
 pub(crate) struct WorkState {
     pub(crate) pending: Option<WorkHandle>,
-    pub(crate) is_generating_new_game: bool,
-    pub(crate) is_checking_solvability: bool,
+    pub(crate) in_flight: Option<WorkKind>,
     pub(crate) last_error: Option<WorkError>,
 }
 
