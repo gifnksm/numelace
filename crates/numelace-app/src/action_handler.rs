@@ -4,7 +4,7 @@ use numelace_game::{GameError, RuleCheckPolicy};
 use crate::{
     action::{Action, ActionRequestQueue, ConfirmResult, MoveDirection, NotesFillScope},
     async_work::{WorkRequest, WorkResponse, work_actions},
-    flow::new_game_flow,
+    flow::{check_solvability_flow, new_game_flow},
     state::{AppState, GhostType, InputMode, UiState},
 };
 
@@ -95,10 +95,6 @@ pub fn handle(
             push_history_if_changed = false;
             ctx.confirm_new_game(result);
         }
-        Action::StartNewGame => {
-            push_history_if_changed = false;
-            ctx.request_new_game();
-        }
         Action::StartWork(request) => {
             push_history_if_changed = false;
             ctx.request_work(request);
@@ -153,10 +149,6 @@ impl ActionContext<'_> {
         }
     }
 
-    fn request_new_game(&mut self) {
-        let _ = work_actions::request_new_game(self.ui_state);
-    }
-
     fn request_work(&mut self, request: WorkRequest) {
         let _ = work_actions::request_work(request, self.ui_state);
     }
@@ -199,7 +191,17 @@ impl ActionContext<'_> {
     }
 
     fn check_solvability(&mut self) {
-        let _ = work_actions::request_check_solvability(&self.app_state.game, self.ui_state);
+        if !self.ui_state.flow.is_idle()
+            || crate::async_work::work_flow::WorkFlow::is_work_in_flight(&self.ui_state.work)
+        {
+            return;
+        }
+
+        let handle = self.ui_state.flow.handle();
+        let request = work_actions::build_solvability_request(&self.app_state.game);
+        self.ui_state
+            .flow
+            .spawn(check_solvability_flow(handle, request));
     }
 }
 

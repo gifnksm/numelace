@@ -19,7 +19,6 @@ pub enum Action {
     Redo,
     OpenModal(ModalKind),
     CloseModal,
-    StartNewGame,
     StartWork(WorkRequest),
     ResetCurrentPuzzle,
     ApplyWorkResponse(WorkResponse),

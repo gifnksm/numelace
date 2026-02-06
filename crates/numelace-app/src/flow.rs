@@ -179,6 +179,16 @@ pub async fn new_game_flow(handle: FlowHandle) {
     }
 }
 
+/// Async flow for solvability check work dispatch.
+///
+/// Runs the background request and awaits the response.
+pub async fn check_solvability_flow(handle: FlowHandle, request: WorkRequest) {
+    let work = handle.await_work(request);
+    let _ = handle
+        .with_spinner(SpinnerKind::CheckSolvability, work)
+        .await;
+}
+
 struct FlowTask {
     future: Pin<Box<dyn Future<Output = ()>>>,
 }

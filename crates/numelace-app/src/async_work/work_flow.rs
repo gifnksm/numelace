@@ -45,20 +45,6 @@ impl WorkFlow {
         }
     }
 
-    /// Set the current work handle and mark the workflow as in-flight.
-    pub fn set_pending(work: &mut WorkState, handle: WorkHandle) {
-        work.pending = Some(handle);
-        work.is_generating_new_game = true;
-        work.is_checking_solvability = false;
-    }
-
-    /// Clear any pending work and reset the in-flight flag.
-    pub fn clear_pending(work: &mut WorkState) {
-        work.pending = None;
-        work.is_generating_new_game = false;
-        work.is_checking_solvability = false;
-    }
-
     /// Record an error from the async pipeline.
     pub fn record_error(work: &mut WorkState, err: WorkError) {
         work.pending = None;
@@ -67,38 +53,11 @@ impl WorkFlow {
         work.last_error = Some(err);
     }
 
-    /// Clear last error state after successful completion.
-    pub fn clear_error(work: &mut WorkState) {
-        work.last_error = None;
-    }
-
     /// Mark a request as started with the given handle.
     pub fn start_request(work: &mut WorkState, request: &WorkRequest, handle: WorkHandle) {
         work.pending = Some(handle);
         work.is_generating_new_game = matches!(request, WorkRequest::GenerateNewGame);
         work.is_checking_solvability = matches!(request, WorkRequest::CheckSolvability(_));
-    }
-
-    /// Helper to mark a new-game request as started.
-    pub fn start_new_game(work: &mut WorkState, handle: WorkHandle) {
-        Self::start_request(work, &WorkRequest::GenerateNewGame, handle);
-    }
-
-    /// Helper to finish a new-game response.
-    pub fn finish_new_game(work: &mut WorkState, response: &WorkResponse) {
-        Self::finish_response(work, response);
-    }
-
-    /// Returns true if a new-game request is currently in flight.
-    #[must_use]
-    pub fn is_new_game_in_flight(work: &WorkState) -> bool {
-        work.is_generating_new_game
-    }
-
-    /// Returns true if a solvability check is currently in flight.
-    #[must_use]
-    pub fn is_solvability_check_in_flight(work: &WorkState) -> bool {
-        work.is_checking_solvability
     }
 
     /// Returns true if any background work is currently in flight.

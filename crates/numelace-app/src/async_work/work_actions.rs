@@ -12,26 +12,6 @@ use super::{
     work_flow::WorkFlow,
 };
 
-/// Request a new game using the async pipeline and panic on failure.
-pub fn request_new_game(ui_state: &mut UiState) -> Result<(), WorkError> {
-    if WorkFlow::is_work_in_flight(&ui_state.work) {
-        return Ok(());
-    }
-
-    ui_state.work.last_error = None;
-
-    match enqueue(WorkRequest::GenerateNewGame) {
-        Ok(handle) => {
-            WorkFlow::start_new_game(&mut ui_state.work, handle);
-            Ok(())
-        }
-        Err(err) => {
-            WorkFlow::record_error(&mut ui_state.work, err.clone());
-            panic!("background work failed: {err}");
-        }
-    }
-}
-
 /// Request background work using the async pipeline and panic on failure.
 pub fn request_work(request: WorkRequest, ui_state: &mut UiState) -> Result<(), WorkError> {
     if WorkFlow::is_work_in_flight(&ui_state.work) {
@@ -52,14 +32,8 @@ pub fn request_work(request: WorkRequest, ui_state: &mut UiState) -> Result<(), 
     }
 }
 
-/// Request a solvability check using the async pipeline and panic on failure.
-pub fn request_check_solvability(game: &Game, ui_state: &mut UiState) -> Result<(), WorkError> {
-    if WorkFlow::is_work_in_flight(&ui_state.work) {
-        return Ok(());
-    }
-
-    ui_state.work.last_error = None;
-
+/// Build a solvability request for background work.
+pub fn build_solvability_request(game: &Game) -> WorkRequest {
     let request = SolvabilityRequestDto {
         with_user_notes: SolvabilityGridDto::from_candidate_grid(
             &game.to_candidate_grid_with_notes(),
@@ -67,18 +41,7 @@ pub fn request_check_solvability(game: &Game, ui_state: &mut UiState) -> Result<
         without_user_notes: SolvabilityGridDto::from_candidate_grid(&game.to_candidate_grid()),
     };
 
-    let work_request = WorkRequest::CheckSolvability(request);
-
-    match enqueue(work_request.clone()) {
-        Ok(handle) => {
-            WorkFlow::start_request(&mut ui_state.work, &work_request, handle);
-            Ok(())
-        }
-        Err(err) => {
-            WorkFlow::record_error(&mut ui_state.work, err.clone());
-            panic!("background work failed: {err}");
-        }
-    }
+    WorkRequest::CheckSolvability(request)
 }
 
 /// Apply a completed background response, updating app state.
