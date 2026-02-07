@@ -11,7 +11,7 @@ use crate::{
         game_screen::GameScreenViewModel,
         grid::{GridCell, GridViewModel, GridVisualState, NoteVisualState},
         keypad::{DigitKeyState, KeypadViewModel},
-        settings::SettingsViewModel,
+        modal::SettingsViewModel,
         status_line::{GameStatus, StatusLineViewModel},
         toolbar::ToolbarViewModel,
     },

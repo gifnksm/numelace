@@ -13,13 +13,13 @@ use std::time::Duration;
 
 use eframe::{
     App, CreationContext, Frame, Storage,
-    egui::{CentralPanel, Context, Id, Modal, Spinner},
+    egui::{CentralPanel, Context},
 };
 use numelace_game::Game;
 
 use crate::{
     DEFAULT_MAX_HISTORY_LENGTH,
-    action::{self, ActionRequestQueue, ModalRequest, SpinnerKind},
+    action::{self, ActionRequestQueue},
     game_factory,
     persistence::storage,
     state::{AppState, UiState},
@@ -90,46 +90,12 @@ impl App for NumelaceApp {
         });
 
         if let Some(modal_request) = &mut self.ui_state.active_modal {
-            match modal_request {
-                ModalRequest::NewGameConfirm(responder) => {
-                    ui::dialogs::show_new_game_confirm(ctx, &mut action_queue, responder);
-                }
-                ModalRequest::ResetCurrentPuzzleConfirm(responder) => {
-                    ui::dialogs::show_reset_current_puzzle_confirm(
-                        ctx,
-                        &mut action_queue,
-                        responder,
-                    );
-                }
-                ModalRequest::Settings => {
-                    let settings_vm =
-                        view_model_builder::build_settings_view_model(&self.app_state);
-                    ui::settings::show(ctx, &settings_vm, &mut action_queue);
-                }
-                ModalRequest::CheckSolvabilityResult { state, responder } => {
-                    ui::dialogs::show_solvability(ctx, &mut action_queue, state, responder);
-                }
-            }
+            let settings_vm = view_model_builder::build_settings_view_model(&self.app_state);
+            ui::modal::show(ctx, &mut action_queue, modal_request, &settings_vm);
         }
 
         if let Some(spinner) = self.ui_state.spinner_state.active_kind() {
-            ctx.request_repaint();
-            match spinner {
-                SpinnerKind::NewGame => {
-                    Modal::new(Id::new("generating_new_game")).show(ctx, |ui| {
-                        ui.heading("Generating...");
-                        ui.add(Spinner::new());
-                        ui.label("Generating new game...");
-                    });
-                }
-                SpinnerKind::CheckSolvability => {
-                    Modal::new(Id::new("checking_solvability")).show(ctx, |ui| {
-                        ui.heading("Checking...");
-                        ui.add(Spinner::new());
-                        ui.label("Checking solvability...");
-                    });
-                }
-            }
+            ui::spinner::show(ctx, spinner);
         }
 
         action::handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);

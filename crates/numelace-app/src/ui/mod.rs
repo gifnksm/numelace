@@ -1,4 +1,3 @@
-pub(crate) mod dialogs;
 pub(crate) mod game_screen;
 pub(crate) mod grid;
 pub(crate) mod grid_theme;
@@ -6,6 +5,7 @@ pub(crate) mod icon;
 pub(crate) mod input;
 pub(crate) mod keypad;
 pub(crate) mod layout;
-pub(crate) mod settings;
+pub(crate) mod modal;
+pub(crate) mod spinner;
 pub(crate) mod status_line;
 pub(crate) mod toolbar;
