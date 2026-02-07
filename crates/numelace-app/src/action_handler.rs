@@ -3,61 +3,46 @@ use numelace_game::{GameError, RuleCheckPolicy};
 
 use crate::{
     action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
-    async_work::{WorkResponse, work_actions},
+    async_work::work_actions,
     flow::{check_solvability_flow, new_game_flow},
-    state::{AppState, GhostType, InputMode, UiState},
+    state::{AppState, AppStateAccess, GhostType, InputMode, UiState},
 };
-
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct ActionEffect {
-    pub(crate) state_save_requested: bool,
-}
 
 #[derive(Debug)]
 struct ActionContext<'a> {
-    app_state: &'a mut AppState,
+    app_state: AppStateAccess<'a>,
     ui_state: &'a mut UiState,
-    effect: &'a mut ActionEffect,
 }
 
 pub(crate) fn handle_all(
     app_state: &mut AppState,
     ui_state: &mut UiState,
-    effect: &mut ActionEffect,
     action_queue: &mut ActionRequestQueue,
 ) {
     for action in action_queue.take_all() {
-        handle(app_state, ui_state, effect, action);
+        handle(app_state, ui_state, action);
     }
 }
 
-pub(crate) fn handle(
-    app_state: &mut AppState,
-    ui_state: &mut UiState,
-    effect: &mut ActionEffect,
-    action: Action,
-) {
+pub(crate) fn handle(app_state: &mut AppState, ui_state: &mut UiState, action: Action) {
     const DEFAULT_POSITION: Position = Position::new(0, 0);
 
     let mut ctx = ActionContext {
-        app_state,
+        app_state: app_state.access(),
         ui_state,
-        effect,
     };
 
-    let game_snapshot_before = ctx.app_state.game.clone();
+    let game_snapshot_before = ctx.app_state.as_ref().game.clone();
     let mut push_history_if_changed = true;
-
-    // For now, mark the app state as dirty for every action to simplify persistence; UI-only changes are acceptable to save.
-    ctx.effect.state_save_requested = true;
 
     ctx.ui_state.conflict_ghost = None;
 
     match action {
-        Action::SelectCell(pos) => ctx.app_state.selected_cell = Some(pos),
-        Action::ClearSelection => ctx.app_state.selected_cell = None,
+        Action::SelectCell(pos) => ctx.app_state.as_mut().selected_cell = Some(pos),
+        Action::ClearSelection => ctx.app_state.as_mut().selected_cell = None,
         Action::MoveSelection(move_direction) => {
-            let pos = ctx.app_state.selected_cell.get_or_insert(DEFAULT_POSITION);
+            let app_state = ctx.app_state.as_mut();
+            let pos = app_state.selected_cell.get_or_insert(DEFAULT_POSITION);
             let new_pos = match move_direction {
                 MoveDirection::Up => pos.up(),
                 MoveDirection::Down => pos.down(),
@@ -68,18 +53,18 @@ pub(crate) fn handle(
                 *pos = new_pos;
             }
         }
-        Action::ToggleInputMode => ctx.app_state.input_mode.toggle(),
+        Action::ToggleInputMode => ctx.app_state.as_mut().input_mode.toggle(),
         Action::RequestDigit { digit, swap } => ctx.request_digit(digit, swap),
         Action::ClearCell => ctx.clear_cell(),
         Action::AutoFillNotes { scope } => ctx.auto_fill_notes(scope),
         Action::CheckSolvability => ctx.check_solvability(),
         Action::Undo => {
             push_history_if_changed = false;
-            ctx.ui_state.undo(ctx.app_state);
+            ctx.ui_state.undo(ctx.app_state.as_mut());
         }
         Action::Redo => {
             push_history_if_changed = false;
-            ctx.ui_state.redo(ctx.app_state);
+            ctx.ui_state.redo(ctx.app_state.as_mut());
         }
         Action::OpenModal(modal_request) => {
             ctx.ui_state.active_modal = Some(modal_request);
@@ -96,37 +81,34 @@ pub(crate) fn handle(
             push_history_if_changed = false;
             ctx.reset_current_puzzle();
         }
-        Action::ApplyWorkResponse(response) => {
-            push_history_if_changed = false;
-            ctx.apply_work_response(response);
-        }
         Action::UpdateSettings(settings) => {
-            ctx.app_state.settings = settings;
+            ctx.app_state.as_mut().settings = settings;
         }
     }
 
-    if push_history_if_changed && ctx.app_state.game != game_snapshot_before {
-        ctx.ui_state.push_history(ctx.app_state);
+    if push_history_if_changed && ctx.app_state.as_ref().game != game_snapshot_before {
+        ctx.ui_state.push_history(ctx.app_state.as_ref());
     }
 }
 
 impl ActionContext<'_> {
     fn request_digit(&mut self, digit: Digit, swap: bool) {
-        if let Some(pos) = self.app_state.selected_cell {
-            match self.app_state.input_mode.swapped(swap) {
+        let app_state = self.app_state.as_mut();
+        if let Some(pos) = app_state.selected_cell {
+            match app_state.input_mode.swapped(swap) {
                 InputMode::Fill => {
-                    let options = self.app_state.input_digit_options();
+                    let options = app_state.input_digit_options();
                     if let Err(GameError::ConflictingDigit) =
-                        self.app_state.game.set_digit(pos, digit, &options)
+                        app_state.game.set_digit(pos, digit, &options)
                     {
-                        assert_eq!(self.app_state.rule_check_policy(), RuleCheckPolicy::Strict);
+                        assert_eq!(app_state.rule_check_policy(), RuleCheckPolicy::Strict);
                         self.ui_state.conflict_ghost = Some((pos, GhostType::Digit(digit)));
                     }
                 }
                 InputMode::Notes => {
-                    let policy = self.app_state.rule_check_policy();
+                    let policy = app_state.rule_check_policy();
                     if let Err(GameError::ConflictingDigit) =
-                        self.app_state.game.toggle_note(pos, digit, policy)
+                        app_state.game.toggle_note(pos, digit, policy)
                     {
                         assert_eq!(policy, RuleCheckPolicy::Strict);
                         self.ui_state.conflict_ghost = Some((pos, GhostType::Note(digit)));
@@ -137,8 +119,9 @@ impl ActionContext<'_> {
     }
 
     fn clear_cell(&mut self) {
-        if let Some(pos) = self.app_state.selected_cell {
-            let _ = self.app_state.game.clear_cell(pos);
+        let app_state = self.app_state.as_mut();
+        if let Some(pos) = app_state.selected_cell {
+            let _ = app_state.game.clear_cell(pos);
         }
     }
 
@@ -150,24 +133,22 @@ impl ActionContext<'_> {
         self.ui_state.flow.spawn(new_game_flow(handle));
     }
 
-    fn apply_work_response(&mut self, response: WorkResponse) {
-        work_actions::apply_work_response(self.app_state, self.ui_state, response);
-    }
-
     fn reset_current_puzzle(&mut self) {
-        self.app_state.reset_current_puzzle_state();
-        self.ui_state.reset_history(self.app_state);
+        let app_state = self.app_state.as_mut();
+        app_state.reset_current_puzzle_state();
+        self.ui_state.reset_history(app_state);
     }
 
     fn auto_fill_notes(&mut self, scope: NotesFillScope) {
+        let app_state = self.app_state.as_mut();
         match scope {
             NotesFillScope::Cell => {
-                if let Some(pos) = self.app_state.selected_cell {
-                    let _ = self.app_state.game.auto_fill_cell_notes(pos);
+                if let Some(pos) = app_state.selected_cell {
+                    let _ = app_state.game.auto_fill_cell_notes(pos);
                 }
             }
             NotesFillScope::AllCells => {
-                self.app_state.game.auto_fill_notes_all_cells();
+                app_state.game.auto_fill_notes_all_cells();
             }
         }
     }
@@ -178,7 +159,7 @@ impl ActionContext<'_> {
         }
 
         let handle = self.ui_state.flow.handle();
-        let request = work_actions::build_solvability_request(&self.app_state.game);
+        let request = work_actions::build_solvability_request(&self.app_state.as_ref().game);
         self.ui_state
             .flow
             .spawn(check_solvability_flow(handle, request));
@@ -190,7 +171,7 @@ mod tests {
     use numelace_core::{Digit, DigitGrid, Position};
     use numelace_game::{CellState, Game};
 
-    use super::{ActionEffect, handle};
+    use super::handle;
     use crate::{
         DEFAULT_MAX_HISTORY_LENGTH,
         action::{Action, ModalRequest, NotesFillScope},
@@ -239,19 +220,15 @@ mod tests {
         app_state.settings.assist.block_rule_violations = true;
 
         let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
-        let mut effect = ActionEffect::default();
 
         handle(
             &mut app_state,
             &mut ui_state,
-            &mut effect,
             Action::RequestDigit {
                 digit: Digit::D1,
                 swap: false,
             },
         );
-
-        assert!(effect.state_save_requested);
         assert_eq!(
             ui_state.conflict_ghost,
             Some((Position::new(0, 0), GhostType::Digit(Digit::D1)))
@@ -266,13 +243,11 @@ mod tests {
     fn auto_fill_cell_without_selection_is_noop() {
         let mut app_state = AppState::new(fixed_game());
         let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
-        let mut effect = ActionEffect::default();
         let before = app_state.game.clone();
 
         handle(
             &mut app_state,
             &mut ui_state,
-            &mut effect,
             Action::AutoFillNotes {
                 scope: NotesFillScope::Cell,
             },
@@ -290,14 +265,8 @@ mod tests {
             .notes
             .auto_fill_notes_on_new_or_reset = true;
         let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
-        let mut effect = ActionEffect::default();
 
-        handle(
-            &mut app_state,
-            &mut ui_state,
-            &mut effect,
-            Action::ResetCurrentPuzzle,
-        );
+        handle(&mut app_state, &mut ui_state, Action::ResetCurrentPuzzle);
 
         let any_notes = Position::ALL
             .into_iter()
@@ -310,12 +279,10 @@ mod tests {
         let mut app_state = AppState::new(fixed_game());
         app_state.selected_cell = Some(Position::new(0, 0));
         let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
-        let mut effect = ActionEffect::default();
 
         handle(
             &mut app_state,
             &mut ui_state,
-            &mut effect,
             Action::RequestDigit {
                 digit: Digit::D2,
                 swap: false,
@@ -325,7 +292,6 @@ mod tests {
         handle(
             &mut app_state,
             &mut ui_state,
-            &mut effect,
             Action::RequestDigit {
                 digit: Digit::D2,
                 swap: false,
@@ -346,16 +312,9 @@ mod tests {
         let mut app_state = AppState::new(fixed_game());
         let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
         ui_state.active_modal = Some(ModalRequest::NewGameConfirm(None));
-        let mut effect = ActionEffect::default();
 
-        handle(
-            &mut app_state,
-            &mut ui_state,
-            &mut effect,
-            Action::CloseModal,
-        );
+        handle(&mut app_state, &mut ui_state, Action::CloseModal);
 
         assert!(ui_state.active_modal.is_none());
-        assert!(effect.state_save_requested);
     }
 }

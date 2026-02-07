@@ -54,6 +54,7 @@ impl TryFrom<PersistedState> for AppState {
             selected_cell: value.selected_cell.map(Position::try_from).transpose()?,
             input_mode: value.input_mode.into(),
             settings: value.settings.into(),
+            dirty: false,
         })
     }
 }

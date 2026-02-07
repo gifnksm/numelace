@@ -19,8 +19,8 @@ use eframe::{
 use crate::{
     DEFAULT_MAX_HISTORY_LENGTH,
     action::{ActionRequestQueue, ModalRequest},
-    action_handler::{self, ActionEffect},
-    async_work,
+    action_handler::{self},
+    async_work::{self, work_actions},
     flow::SpinnerKind,
     game_factory,
     persistence::storage,
@@ -47,11 +47,12 @@ impl NumelaceApp {
         }
     }
 
-    fn apply_effect(&mut self, frame: &mut Frame, effect: ActionEffect) {
-        if effect.state_save_requested
+    fn apply_persistence(&mut self, frame: &mut Frame) {
+        if self.app_state.is_dirty()
             && let Some(storage) = frame.storage_mut()
         {
             self.save(storage);
+            self.app_state.clear_dirty();
         }
     }
 }
@@ -66,16 +67,16 @@ impl App for NumelaceApp {
     }
 
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
-        let mut effect = ActionEffect::default();
         let mut action_queue = ActionRequestQueue::default();
 
         self.ui_state.flow.poll(&mut action_queue);
-        action_handler::handle_all(
-            &mut self.app_state,
-            &mut self.ui_state,
-            &mut effect,
-            &mut action_queue,
-        );
+        {
+            let mut app_state = self.app_state.access();
+            for response in self.ui_state.flow.take_work_responses() {
+                work_actions::apply_work_response(&mut app_state, &mut self.ui_state, response);
+            }
+        }
+        action_handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);
 
         if self.ui_state.active_modal.is_none() && self.ui_state.flow.active_spinner().is_none() {
             ctx.input(|i| {
@@ -83,7 +84,6 @@ impl App for NumelaceApp {
                 action_handler::handle_all(
                     &mut self.app_state,
                     &mut self.ui_state,
-                    &mut effect,
                     &mut action_queue,
                 );
             });
@@ -139,13 +139,8 @@ impl App for NumelaceApp {
             }
         }
 
-        action_handler::handle_all(
-            &mut self.app_state,
-            &mut self.ui_state,
-            &mut effect,
-            &mut action_queue,
-        );
+        action_handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);
 
-        self.apply_effect(frame, effect);
+        self.apply_persistence(frame);
     }
 }

@@ -11,6 +11,7 @@ pub(crate) struct AppState {
     pub(crate) selected_cell: Option<Position>,
     pub(crate) input_mode: InputMode,
     pub(crate) settings: Settings,
+    pub(crate) dirty: bool,
 }
 
 impl AppState {
@@ -21,6 +22,7 @@ impl AppState {
             selected_cell: None,
             input_mode: InputMode::Fill,
             settings: Settings::default(),
+            dirty: false,
         }
     }
 
@@ -29,6 +31,19 @@ impl AppState {
         let mut state = Self::new(game);
         state.apply_new_game_settings();
         state
+    }
+
+    pub(crate) fn access(&mut self) -> AppStateAccess<'_> {
+        AppStateAccess { app_state: self }
+    }
+
+    #[must_use]
+    pub(crate) fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
+    pub(crate) fn clear_dirty(&mut self) {
+        self.dirty = false;
     }
 
     pub(crate) fn apply_new_game_settings(&mut self) {
@@ -68,6 +83,23 @@ impl AppState {
         InputDigitOptions::default()
             .rule_check_policy(self.rule_check_policy())
             .note_cleanup_policy(self.note_cleanup_policy())
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct AppStateAccess<'a> {
+    app_state: &'a mut AppState,
+}
+
+impl AppStateAccess<'_> {
+    #[must_use]
+    pub(crate) fn as_ref(&self) -> &AppState {
+        self.app_state
+    }
+
+    pub(crate) fn as_mut(&mut self) -> &mut AppState {
+        self.app_state.dirty = true;
+        self.app_state
     }
 }
 

@@ -1,9 +1,9 @@
-//! Centralized async work logic used by the action handler.
+//! Centralized async work logic used by the app loop and action handling.
 
 use numelace_core::DigitGrid;
 use numelace_game::Game;
 
-use crate::state::{AppState, UiState};
+use crate::state::{AppStateAccess, UiState};
 
 use super::{
     WorkError, WorkRequest, WorkResponse,
@@ -25,7 +25,7 @@ pub(crate) fn build_solvability_request(game: &Game) -> WorkRequest {
 
 /// Apply a completed background response, updating app state.
 pub(crate) fn apply_work_response(
-    app_state: &mut AppState,
+    app_state: &mut AppStateAccess<'_>,
     ui_state: &mut UiState,
     response: WorkResponse,
 ) {
@@ -43,7 +43,7 @@ pub(crate) fn apply_work_response(
 }
 
 fn apply_new_game_dto(
-    app_state: &mut AppState,
+    app_state: &mut AppStateAccess<'_>,
     ui_state: &mut UiState,
     dto: &NewGameDto,
 ) -> Result<(), WorkError> {
@@ -61,6 +61,7 @@ fn apply_new_game_dto(
     let game = Game::from_problem_filled_notes(&problem, &solution, &filled, &notes)
         .map_err(|_| WorkError::DeserializationFailed)?;
 
+    let app_state = app_state.as_mut();
     app_state.game = game;
     app_state.selected_cell = None;
     app_state.apply_new_game_settings();

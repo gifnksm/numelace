@@ -102,6 +102,14 @@ impl FlowExecutor {
             action_queue.request(action);
         }
     }
+
+    pub(crate) fn take_work_responses(&mut self) -> Vec<WorkResponse> {
+        self.state
+            .borrow_mut()
+            .pending_work_responses
+            .drain(..)
+            .collect()
+    }
 }
 
 /// Flow handle used by async flows to request actions and await events.
@@ -113,6 +121,13 @@ pub(crate) struct FlowHandle {
 impl FlowHandle {
     fn request_action(&self, action: Action) {
         self.state.borrow_mut().pending_actions.push(action);
+    }
+
+    fn queue_work_response(&self, response: WorkResponse) {
+        self.state
+            .borrow_mut()
+            .pending_work_responses
+            .push(response);
     }
 
     /// Await a new game confirmation dialog.
@@ -174,7 +189,7 @@ pub(crate) async fn new_game_flow(handle: FlowHandle) {
     if matches!(result, ConfirmResult::Confirmed) {
         let work = async_work::request(WorkRequest::GenerateNewGame);
         let response = handle.with_spinner(SpinnerKind::NewGame, work).await;
-        handle.request_action(Action::ApplyWorkResponse(response));
+        handle.queue_work_response(response);
     }
 }
 
@@ -186,7 +201,7 @@ pub(crate) async fn check_solvability_flow(handle: FlowHandle, request: WorkRequ
     let response = handle
         .with_spinner(SpinnerKind::CheckSolvability, work)
         .await;
-    handle.request_action(Action::ApplyWorkResponse(response.clone()));
+    handle.queue_work_response(response.clone());
 
     let WorkResponse::SolvabilityReady(state) = response else {
         return;
@@ -209,6 +224,7 @@ struct FlowTask {
 #[derive(Default)]
 struct FlowState {
     pending_actions: Vec<Action>,
+    pending_work_responses: Vec<WorkResponse>,
     active_spinner: Option<SpinnerKind>,
 }
 
