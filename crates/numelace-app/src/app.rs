@@ -19,8 +19,7 @@ use numelace_game::Game;
 
 use crate::{
     DEFAULT_MAX_HISTORY_LENGTH,
-    action::{ActionRequestQueue, ModalRequest},
-    action_handler,
+    action::{self, ActionRequestQueue, ModalRequest},
     flow_executor::SpinnerKind,
     game_factory,
     persistence::storage,
@@ -71,12 +70,12 @@ impl App for NumelaceApp {
         let mut action_queue = ActionRequestQueue::default();
 
         self.ui_state.flow.poll(&mut action_queue);
-        action_handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);
+        action::handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);
 
         if self.ui_state.active_modal.is_none() && self.ui_state.flow.active_spinner().is_none() {
             ctx.input(|i| {
                 ui::input::handle_input(i, &mut action_queue);
-                action_handler::handle_all(
+                action::handler::handle_all(
                     &mut self.app_state,
                     &mut self.ui_state,
                     &mut action_queue,
@@ -134,7 +133,7 @@ impl App for NumelaceApp {
             }
         }
 
-        action_handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);
+        action::handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);
 
         self.apply_persistence(frame);
     }

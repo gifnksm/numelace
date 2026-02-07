@@ -5,6 +5,8 @@ use numelace_generator::GeneratedPuzzle;
 
 use crate::state::{Settings, SolvabilityState};
 
+pub(crate) mod handler;
+
 #[derive(Debug)]
 pub(crate) enum Action {
     SelectCell(Position),

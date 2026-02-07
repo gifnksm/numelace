@@ -4,7 +4,6 @@
 pub(crate) const DEFAULT_MAX_HISTORY_LENGTH: usize = 200;
 
 pub(crate) mod action;
-pub(crate) mod action_handler;
 pub(crate) mod app;
 pub(crate) mod flow_executor;
 pub(crate) mod game_factory;
