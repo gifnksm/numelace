@@ -18,7 +18,6 @@ use platform::{WorkHandle, enqueue};
 pub(crate) mod new_game_dto;
 mod platform;
 pub(crate) mod solvability_dto;
-pub(crate) mod work_actions;
 
 use new_game_dto::NewGameDto;
 use solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto};

@@ -21,7 +21,7 @@ use crate::{
     DEFAULT_MAX_HISTORY_LENGTH,
     action::{ActionRequestQueue, ModalRequest},
     action_handler::{self},
-    async_work::{self, work_actions},
+    async_work::{self},
     flow::SpinnerKind,
     game_factory,
     persistence::storage,
@@ -72,12 +72,6 @@ impl App for NumelaceApp {
         let mut action_queue = ActionRequestQueue::default();
 
         self.ui_state.flow.poll(&mut action_queue);
-        {
-            let mut app_state = self.app_state.access();
-            for response in self.ui_state.flow.take_work_responses() {
-                work_actions::apply_work_response(&mut app_state, &mut self.ui_state, response);
-            }
-        }
         action_handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);
 
         if self.ui_state.active_modal.is_none() && self.ui_state.flow.active_spinner().is_none() {

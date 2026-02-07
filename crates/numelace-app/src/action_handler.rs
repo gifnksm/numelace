@@ -1,10 +1,10 @@
 use numelace_core::{Digit, Position};
-use numelace_game::{GameError, RuleCheckPolicy};
+use numelace_game::{Game, GameError, RuleCheckPolicy};
+use numelace_generator::GeneratedPuzzle;
 
 use crate::{
     action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
-    async_work::work_actions,
-    flow::{check_solvability_flow, new_game_flow},
+    flow,
     state::{AppState, AppStateAccess, GhostType, InputMode, UiState},
 };
 
@@ -72,6 +72,10 @@ pub(crate) fn handle(app_state: &mut AppState, ui_state: &mut UiState, action: A
         Action::CloseModal => {
             ctx.ui_state.active_modal = None;
         }
+        Action::NewGameReady(puzzle) => {
+            push_history_if_changed = false;
+            ctx.apply_new_game_puzzle(puzzle);
+        }
         Action::StartNewGameFlow => {
             push_history_if_changed = false;
             ctx.start_new_game_flow();
@@ -126,16 +130,22 @@ impl ActionContext<'_> {
     }
 
     fn start_new_game_flow(&mut self) {
-        if !self.ui_state.flow.is_idle() {
-            return;
-        }
-        let handle = self.ui_state.flow.handle();
-        self.ui_state.flow.spawn(new_game_flow(handle));
+        flow::spawn_new_game_flow(&mut self.ui_state.flow);
     }
 
     fn reset_current_puzzle(&mut self) {
         let app_state = self.app_state.as_mut();
         app_state.reset_current_puzzle_state();
+        self.ui_state.reset_history(app_state);
+    }
+
+    fn apply_new_game_puzzle(&mut self, puzzle: GeneratedPuzzle) {
+        let game = Game::new(puzzle);
+
+        let app_state = self.app_state.as_mut();
+        app_state.game = game;
+        app_state.selected_cell = None;
+        app_state.apply_new_game_settings();
         self.ui_state.reset_history(app_state);
     }
 
@@ -154,15 +164,7 @@ impl ActionContext<'_> {
     }
 
     fn check_solvability(&mut self) {
-        if !self.ui_state.flow.is_idle() {
-            return;
-        }
-
-        let handle = self.ui_state.flow.handle();
-        let request = work_actions::build_solvability_request(&self.app_state.as_ref().game);
-        self.ui_state
-            .flow
-            .spawn(check_solvability_flow(handle, request));
+        flow::spawn_check_solvability_flow(&mut self.ui_state.flow, &self.app_state.as_ref().game);
     }
 }
 

@@ -1,6 +1,7 @@
 use std::mem;
 
 use numelace_core::{Digit, Position};
+use numelace_generator::GeneratedPuzzle;
 
 use crate::state::{Settings, SolvabilityState};
 
@@ -20,6 +21,7 @@ pub(crate) enum Action {
     CloseModal,
     ResetCurrentPuzzle,
     UpdateSettings(Settings),
+    NewGameReady(GeneratedPuzzle),
     StartNewGameFlow,
 }
 

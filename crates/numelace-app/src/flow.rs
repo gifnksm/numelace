@@ -7,13 +7,18 @@ use std::{
 };
 
 use futures_channel::oneshot;
+use numelace_game::Game;
+use numelace_generator::GeneratedPuzzle;
 
 use crate::{
     action::{
         Action, ActionRequestQueue, ConfirmResponder, ConfirmResult, ModalRequest, NotesFillScope,
         SolvabilityDialogResult, SolvabilityResponder,
     },
-    async_work::{self, WorkRequest, WorkResponse, solvability_dto::SolvabilityStateDto},
+    async_work::{
+        self, WorkRequest, WorkResponse,
+        solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto},
+    },
     state::{SolvabilityState, SolvabilityStats},
 };
 
@@ -65,7 +70,7 @@ impl FlowExecutor {
 
     /// Returns true if no flows are currently running.
     #[must_use]
-    pub(crate) fn is_idle(&self) -> bool {
+    fn is_idle(&self) -> bool {
         self.tasks.is_empty()
     }
 
@@ -102,14 +107,6 @@ impl FlowExecutor {
             action_queue.request(action);
         }
     }
-
-    pub(crate) fn take_work_responses(&mut self) -> Vec<WorkResponse> {
-        self.state
-            .borrow_mut()
-            .pending_work_responses
-            .drain(..)
-            .collect()
-    }
 }
 
 /// Flow handle used by async flows to request actions and await events.
@@ -121,13 +118,6 @@ pub(crate) struct FlowHandle {
 impl FlowHandle {
     fn request_action(&self, action: Action) {
         self.state.borrow_mut().pending_actions.push(action);
-    }
-
-    fn queue_work_response(&self, response: WorkResponse) {
-        self.state
-            .borrow_mut()
-            .pending_work_responses
-            .push(response);
     }
 
     /// Await a new game confirmation dialog.
@@ -181,30 +171,73 @@ impl FlowHandle {
     }
 }
 
+/// Spawn a new game flow if no other flows are active.
+pub(crate) fn spawn_new_game_flow(executor: &mut FlowExecutor) {
+    if !executor.is_idle() {
+        return;
+    }
+    let handle = executor.handle();
+    executor.spawn(new_game_flow(handle));
+}
+
 /// Async flow for new game confirmation + work dispatch.
 ///
 /// On confirm, it runs the background request and awaits the response.
-pub(crate) async fn new_game_flow(handle: FlowHandle) {
+async fn new_game_flow(handle: FlowHandle) {
     let result = handle.confirm_new_game().await;
     if matches!(result, ConfirmResult::Confirmed) {
         let work = async_work::request(WorkRequest::GenerateNewGame);
         let response = handle.with_spinner(SpinnerKind::NewGame, work).await;
-        handle.queue_work_response(response);
+        match response {
+            WorkResponse::NewGameReady(dto) => {
+                let puzzle = GeneratedPuzzle::try_from(dto)
+                    .unwrap_or_else(|err| panic!("failed to deserialize new game dto: {err}"));
+                handle.request_action(Action::NewGameReady(puzzle));
+            }
+            WorkResponse::Error(err) => {
+                panic!("background work failed: {err}");
+            }
+            WorkResponse::SolvabilityReady(_) => {}
+        }
     }
+}
+
+/// Spawn a solvability check flow if no other flows are active.
+pub(crate) fn spawn_check_solvability_flow(executor: &mut FlowExecutor, game: &Game) {
+    if !executor.is_idle() {
+        return;
+    }
+    let handle = executor.handle();
+    let request = build_solvability_request(game);
+    executor.spawn(check_solvability_flow(handle, request));
+}
+
+fn build_solvability_request(game: &Game) -> WorkRequest {
+    let request = SolvabilityRequestDto {
+        with_user_notes: game.to_candidate_grid_with_notes().into(),
+        without_user_notes: game.to_candidate_grid().into(),
+    };
+
+    WorkRequest::CheckSolvability(request)
 }
 
 /// Async flow for solvability check work dispatch.
 ///
 /// Runs the background request and awaits the response.
-pub(crate) async fn check_solvability_flow(handle: FlowHandle, request: WorkRequest) {
+async fn check_solvability_flow(handle: FlowHandle, request: WorkRequest) {
     let work = async_work::request(request);
     let response = handle
         .with_spinner(SpinnerKind::CheckSolvability, work)
         .await;
-    handle.queue_work_response(response.clone());
 
-    let WorkResponse::SolvabilityReady(state) = response else {
-        return;
+    let state = match response {
+        WorkResponse::SolvabilityReady(state) => state,
+        WorkResponse::Error(err) => {
+            panic!("background work failed: {err}");
+        }
+        WorkResponse::NewGameReady(_) => {
+            return;
+        }
     };
 
     let state = map_solvability_state(state);
@@ -224,7 +257,6 @@ struct FlowTask {
 #[derive(Default)]
 struct FlowState {
     pending_actions: Vec<Action>,
-    pending_work_responses: Vec<WorkResponse>,
     active_spinner: Option<SpinnerKind>,
 }
 
