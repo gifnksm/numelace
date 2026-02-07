@@ -15,7 +15,7 @@ pub(crate) use platform::warm_up;
 use platform::{WorkHandle, enqueue};
 
 use self::tasks::{
-    GeneratedPuzzleDto, SolvabilityRequestDto, SolvabilityStateDto, SolvabilityUndoGridsDto,
+    CandidateGridPairDto, CandidateGridPairsDto, GeneratedPuzzleDto, SolvabilityStateDto,
     SolvabilityUndoScanResultDto,
 };
 
@@ -31,9 +31,9 @@ enum WorkRequest {
     /// Generate a Sudoku puzzle.
     GeneratePuzzle,
     /// Check solvability for a given puzzle state.
-    CheckSolvability(SolvabilityRequestDto),
+    CheckSolvability(CandidateGridPairDto),
     /// Scan undo history for a solvable state.
-    CheckSolvabilityUndoScan(SolvabilityUndoGridsDto),
+    CheckSolvabilityUndoScan(CandidateGridPairsDto),
 }
 
 /// A response produced by background work.
@@ -159,7 +159,7 @@ pub(crate) async fn request_generate_puzzle() -> Result<GeneratedPuzzleDto, Work
 
 /// Enqueue background work for solvability check and return the state.
 pub(crate) async fn request_solvability(
-    solvability_request: SolvabilityRequestDto,
+    solvability_request: CandidateGridPairDto,
 ) -> Result<SolvabilityStateDto, WorkError> {
     match request(WorkRequest::CheckSolvability(solvability_request)).await {
         WorkResponse::SolvabilityReady(state) => Ok(state),
@@ -169,7 +169,7 @@ pub(crate) async fn request_solvability(
 }
 
 pub(crate) async fn request_solvability_undo_scan(
-    undo_grids: SolvabilityUndoGridsDto,
+    undo_grids: CandidateGridPairsDto,
 ) -> Result<SolvabilityUndoScanResultDto, WorkError> {
     match request(WorkRequest::CheckSolvabilityUndoScan(undo_grids)).await {
         WorkResponse::SolvabilityUndoScanReady(result) => Ok(result),

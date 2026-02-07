@@ -4,24 +4,14 @@
 //! so they can be sent across worker boundaries. It also includes the solvability
 //! logic used by background tasks.
 
-use numelace_core::{CandidateGrid, Digit, DigitSet, Position};
+use numelace_core::CandidateGrid;
 use numelace_solver::BacktrackSolverStats;
 use serde::{Deserialize, Serialize};
 
-/// DTO containing candidate grids for solvability checks.
-///
-/// The task first checks the grid with user notes. If that is inconsistent or
-/// has no solution, it falls back to the grid that keeps only decided cells.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct SolvabilityRequestDto {
-    pub(crate) with_user_notes: SolvabilityGridDto,
-    pub(crate) without_user_notes: SolvabilityGridDto,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct SolvabilityUndoGridsDto {
-    pub(crate) grids: Vec<SolvabilityRequestDto>,
-}
+use crate::{
+    state::{SolvabilityState, SolvabilityStats},
+    worker::tasks::{CandidateGridDtoError, CandidateGridPairDto, CandidateGridPairsDto},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct SolvabilityUndoScanResultDto {
@@ -38,6 +28,22 @@ pub(crate) enum SolvabilityStateDto {
         with_user_notes: bool,
         stats: SolvabilityStatsDto,
     },
+}
+
+impl From<SolvabilityStateDto> for SolvabilityState {
+    fn from(value: SolvabilityStateDto) -> Self {
+        match value {
+            SolvabilityStateDto::Inconsistent => Self::Inconsistent,
+            SolvabilityStateDto::NoSolution => Self::NoSolution,
+            SolvabilityStateDto::Solvable {
+                with_user_notes,
+                stats,
+            } => Self::Solvable {
+                with_user_notes,
+                stats: stats.into(),
+            },
+        }
+    }
 }
 
 /// Compact solver statistics used by solvability results.
@@ -58,72 +64,20 @@ impl From<BacktrackSolverStats> for SolvabilityStatsDto {
     }
 }
 
-/// Compact candidate grid DTO.
-///
-/// Stores a 9-bit mask per cell, ordered by `Position::ALL`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct SolvabilityGridDto {
-    pub(crate) candidates: Vec<u16>,
-}
-
-impl From<CandidateGrid> for SolvabilityGridDto {
-    fn from(grid: CandidateGrid) -> Self {
-        let mut candidates = Vec::with_capacity(81);
-        for pos in Position::ALL {
-            let set = grid.candidates_at(pos);
-            candidates.push(set.bits());
+impl From<SolvabilityStatsDto> for SolvabilityStats {
+    fn from(stats: SolvabilityStatsDto) -> Self {
+        SolvabilityStats {
+            assumptions_len: stats.assumptions_len,
+            backtrack_count: stats.backtrack_count,
+            solved_without_assumptions: stats.solved_without_assumptions,
         }
-        Self { candidates }
     }
-}
-
-/// Converts a [`SolvabilityGridDto`] into a [`CandidateGrid`].
-///
-/// # Errors
-///
-/// Returns [`SolvabilityDtoError::InvalidCandidateLength`] if the candidate
-/// length does not match the expected 81 cells.
-///
-/// Returns [`SolvabilityDtoError::InvalidCandidateBits`] if any cell contains
-/// invalid bits outside the 9-bit candidate range.
-impl TryFrom<SolvabilityGridDto> for CandidateGrid {
-    type Error = SolvabilityDtoError;
-
-    fn try_from(dto: SolvabilityGridDto) -> Result<Self, Self::Error> {
-        if dto.candidates.len() != 81 {
-            return Err(SolvabilityDtoError::InvalidCandidateLength {
-                len: dto.candidates.len(),
-            });
-        }
-
-        let mut grid = CandidateGrid::new();
-        for (idx, pos) in Position::ALL.into_iter().enumerate() {
-            let bits = dto.candidates[idx];
-            let candidates = DigitSet::try_from_bits(bits)
-                .ok_or(SolvabilityDtoError::InvalidCandidateBits { pos, bits })?;
-            for digit in Digit::ALL {
-                if !candidates.contains(digit) {
-                    grid.remove_candidate(pos, digit);
-                }
-            }
-        }
-        Ok(grid)
-    }
-}
-
-/// Errors that can occur when converting solvability DTOs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display, derive_more::Error)]
-pub(crate) enum SolvabilityDtoError {
-    #[display("invalid candidate length: {len}")]
-    InvalidCandidateLength { len: usize },
-    #[display("invalid candidate bits for {pos:?}: {bits:#05x}")]
-    InvalidCandidateBits { pos: Position, bits: u16 },
 }
 
 /// Scan undo history grids to find the first solvable state.
 pub(crate) fn handle_solvability_undo_scan(
-    request: SolvabilityUndoGridsDto,
-) -> Result<SolvabilityUndoScanResultDto, SolvabilityDtoError> {
+    request: CandidateGridPairsDto,
+) -> Result<SolvabilityUndoScanResultDto, CandidateGridDtoError> {
     for (index, grids) in request.grids.into_iter().enumerate() {
         let with_user_notes: CandidateGrid = grids.with_user_notes.try_into()?;
         let without_user_notes: CandidateGrid = grids.without_user_notes.try_into()?;
@@ -156,8 +110,8 @@ pub(crate) fn handle_solvability_undo_scan(
 /// If the `with_user_notes` grid is inconsistent or unsolvable, the task retries
 /// with a grid that keeps only decided cells.
 pub(crate) fn handle_solvability_request(
-    request: SolvabilityRequestDto,
-) -> Result<SolvabilityStateDto, SolvabilityDtoError> {
+    request: CandidateGridPairDto,
+) -> Result<SolvabilityStateDto, CandidateGridDtoError> {
     let with_user_notes: CandidateGrid = request.with_user_notes.try_into()?;
     let without_user_notes: CandidateGrid = request.without_user_notes.try_into()?;
 

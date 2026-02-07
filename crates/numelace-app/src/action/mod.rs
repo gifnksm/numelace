@@ -1,9 +1,10 @@
 use std::mem;
 
 use numelace_core::{Digit, Position};
+use numelace_game::Game;
 use numelace_generator::GeneratedPuzzle;
 
-use crate::{state::Settings, worker::tasks::SolvabilityUndoGridsDto};
+use crate::state::Settings;
 
 pub(crate) mod flows;
 pub(crate) mod handler;
@@ -48,9 +49,7 @@ pub(crate) enum HistoryAction {
 
 #[derive(Debug)]
 pub(crate) enum StateQueryAction {
-    BuildSolvabilityUndoGrids {
-        responder: SolvabilityUndoGridsResponder,
-    },
+    BuildUndoGames { responder: UndoGamesResponder },
 }
 
 #[derive(Debug)]
@@ -157,7 +156,7 @@ pub(crate) enum AlertResult {
 pub(crate) type Responder<T> = futures_channel::oneshot::Sender<T>;
 pub(crate) type ConfirmResponder = Responder<ConfirmResult>;
 pub(crate) type AlertResponder = Responder<AlertResult>;
-pub(crate) type SolvabilityUndoGridsResponder = Responder<SolvabilityUndoGridsDto>;
+pub(crate) type UndoGamesResponder = Responder<Vec<Game>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ConfirmKind {

@@ -125,26 +125,20 @@ impl AppState {
     }
 
     #[must_use]
-    pub(crate) fn build_solvability_undo_grids(
-        &self,
-    ) -> Vec<crate::worker::tasks::SolvabilityRequestDto> {
+    pub(crate) fn build_undo_games(&self) -> Vec<Game> {
         let (problem, solution) = base_problem_and_solution(&self.game);
-        let mut grids = Vec::new();
-        for snapshot in self.history.iter_from_current() {
-            let Ok(game) = Game::from_problem_filled_notes(
-                &problem,
-                &solution,
-                &snapshot.filled,
-                &snapshot.notes,
-            ) else {
-                return Vec::new();
-            };
-            grids.push(crate::worker::tasks::SolvabilityRequestDto {
-                with_user_notes: game.to_candidate_grid_with_notes().into(),
-                without_user_notes: game.to_candidate_grid().into(),
-            });
-        }
-        grids
+        self.history
+            .iter_from_current()
+            .map(|snapshot| {
+                Game::from_problem_filled_notes(
+                    &problem,
+                    &solution,
+                    &snapshot.filled,
+                    &snapshot.notes,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap_or_default()
     }
 
     pub(crate) fn apply_history_state(&mut self, history_state: HistoryState) {

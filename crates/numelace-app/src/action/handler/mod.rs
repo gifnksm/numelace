@@ -154,9 +154,9 @@ impl HistoryAction {
 impl StateQueryAction {
     fn execute(self, app_state: &mut AppState, _ui_state: &mut UiState) {
         match self {
-            StateQueryAction::BuildSolvabilityUndoGrids { responder } => {
-                let grids = app_state.build_solvability_undo_grids();
-                let _ = responder.send(crate::worker::tasks::SolvabilityUndoGridsDto { grids });
+            StateQueryAction::BuildUndoGames { responder } => {
+                let games = app_state.build_undo_games();
+                let _ = responder.send(games);
             }
         }
     }
