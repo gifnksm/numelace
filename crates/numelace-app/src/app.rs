@@ -20,13 +20,12 @@ use numelace_game::Game;
 use crate::{
     DEFAULT_MAX_HISTORY_LENGTH,
     action::{ActionRequestQueue, ModalRequest},
-    action_handler::{self},
-    async_work::{self},
-    flow::SpinnerKind,
+    action_handler,
+    flow_executor::SpinnerKind,
     game_factory,
     persistence::storage,
     state::{AppState, UiState},
-    ui, view_model_builder,
+    ui, view_model_builder, worker,
 };
 
 #[derive(Debug)]
@@ -37,7 +36,7 @@ pub struct NumelaceApp {
 
 impl NumelaceApp {
     pub fn new(cc: &CreationContext<'_>) -> Self {
-        let _ = async_work::warm_up();
+        let _ = worker::warm_up();
         let app_state = cc.storage.and_then(storage::load_state).unwrap_or_else(|| {
             let puzzle = game_factory::generate_random_puzzle();
             AppState::new_with_settings_applied(Game::new(puzzle))

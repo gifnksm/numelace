@@ -1,10 +1,11 @@
+mod flows;
+
 use numelace_core::{Digit, Position};
 use numelace_game::{Game, GameError, RuleCheckPolicy};
 use numelace_generator::GeneratedPuzzle;
 
 use crate::{
     action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
-    flow,
     state::{AppState, AppStateAccess, GhostType, InputMode, UiState},
 };
 
@@ -130,7 +131,7 @@ impl ActionContext<'_> {
     }
 
     fn start_new_game_flow(&mut self) {
-        flow::spawn_new_game_flow(&mut self.ui_state.flow);
+        flows::spawn_new_game_flow(&mut self.ui_state.flow);
     }
 
     fn reset_current_puzzle(&mut self) {
@@ -164,7 +165,7 @@ impl ActionContext<'_> {
     }
 
     fn check_solvability(&mut self) {
-        flow::spawn_check_solvability_flow(&mut self.ui_state.flow, &self.app_state.as_ref().game);
+        flows::spawn_check_solvability_flow(&mut self.ui_state.flow, &self.app_state.as_ref().game);
     }
 }
 

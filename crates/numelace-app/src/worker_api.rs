@@ -1,1 +1,1 @@
-pub use crate::async_work::worker_api::{WorkRequest, WorkResponse};
+pub use crate::worker::worker_api::{WorkRequest, WorkResponse};

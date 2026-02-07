@@ -2,7 +2,7 @@ use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
 use crate::action::ModalRequest;
-use crate::flow::FlowExecutor;
+use crate::flow_executor::FlowExecutor;
 use crate::history::UndoRedoStack;
 
 #[derive(Debug)]

@@ -6,14 +6,14 @@ pub(crate) const DEFAULT_MAX_HISTORY_LENGTH: usize = 200;
 pub(crate) mod action;
 pub(crate) mod action_handler;
 pub(crate) mod app;
-pub(crate) mod async_work;
-pub(crate) mod flow;
+pub(crate) mod flow_executor;
 pub(crate) mod game_factory;
 pub(crate) mod history;
 pub(crate) mod persistence;
 pub(crate) mod state;
 pub(crate) mod ui;
 pub(crate) mod view_model_builder;
+pub(crate) mod worker;
 pub mod worker_api;
 
 pub use self::app::NumelaceApp;

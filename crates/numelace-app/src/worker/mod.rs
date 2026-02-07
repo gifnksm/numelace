@@ -1,4 +1,4 @@
-//! Async work module split by platform.
+//! Worker module split by platform.
 //!
 //! This module defines shared request/response types and delegates the
 //! implementation to platform-specific modules to keep `#[cfg]` usage

@@ -59,3 +59,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-07: Make modal requests carry typed responders — keeps modal responses type-safe without a shared enum.
 - 2026-02-07: Simplify async work by removing WorkFlow and routing work futures directly through flow — reduces duplicate polling and keeps work responses handled via actions.
 - 2026-02-07: Track app state dirtiness via mutable access and consume work responses in the flow executor — keeps persistence tied to real state mutations while avoiding extra action plumbing.
+- 2026-02-07: Rename `flow` to `flow_executor`, `async_work` to `worker`, and move UI flows into `action_handler/flows` — clarifies responsibilities while keeping the executor generic.
