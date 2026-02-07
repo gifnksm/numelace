@@ -10,6 +10,7 @@ use wasm_bindgen::{JsCast, closure::Closure};
 use web_sys::{Event, MessageEvent, Url, Worker};
 
 use super::super::{WorkError, WorkRequest, WorkResponse};
+use crate::version;
 
 /// A handle for polling background work completion.
 pub(crate) struct WorkHandle {
@@ -42,6 +43,8 @@ struct PendingSlot {
 struct SharedWorker {
     worker: Worker,
     pending: Rc<RefCell<VecDeque<PendingSlot>>>,
+    ready: Rc<RefCell<bool>>,
+    pending_requests: Rc<RefCell<VecDeque<WorkRequest>>>,
     _onmessage: Closure<dyn FnMut(MessageEvent)>,
     _onerror: Closure<dyn FnMut(Event)>,
 }
@@ -54,8 +57,50 @@ impl SharedWorker {
         let pending = Rc::new(RefCell::new(VecDeque::<PendingSlot>::new()));
         let pending_for_message = Rc::clone(&pending);
         let pending_for_error = Rc::clone(&pending);
+        let pending_for_error_for_message = Rc::clone(&pending);
+
+        let ready = Rc::new(RefCell::new(false));
+        let ready_for_message = Rc::clone(&ready);
+        let pending_requests = Rc::new(RefCell::new(VecDeque::<WorkRequest>::new()));
+        let pending_requests_for_message = Rc::clone(&pending_requests);
+        let worker_for_message = worker.clone();
 
         let onmessage = Closure::wrap(Box::new(move |event: MessageEvent| {
+            if !*ready_for_message.borrow() {
+                let Ok(worker_version) = serde_wasm_bindgen::from_value::<String>(event.data())
+                else {
+                    for slot in pending_for_error_for_message.borrow().iter() {
+                        *slot.error.borrow_mut() = Some(WorkError::DeserializationFailed);
+                    }
+                    return;
+                };
+                let app_version = version::build_version();
+                assert!(
+                    worker_version == app_version,
+                    "worker version mismatch: main={app_version}, worker={worker_version}"
+                );
+                *ready_for_message.borrow_mut() = true;
+                log::info!(
+                    "worker version handshake ok: main={app_version}, worker={worker_version}"
+                );
+
+                while let Some(request) = pending_requests_for_message.borrow_mut().pop_front() {
+                    let Ok(payload) = serde_wasm_bindgen::to_value(&request) else {
+                        for slot in pending_for_error_for_message.borrow().iter() {
+                            *slot.error.borrow_mut() = Some(WorkError::SerializationFailed);
+                        }
+                        return;
+                    };
+                    if worker_for_message.post_message(&payload).is_err() {
+                        for slot in pending_for_error_for_message.borrow().iter() {
+                            *slot.error.borrow_mut() = Some(WorkError::WorkerDisconnected);
+                        }
+                        return;
+                    }
+                }
+                return;
+            }
+
             let Some(slot) = pending_for_message.borrow_mut().pop_front() else {
                 return;
             };
@@ -83,6 +128,8 @@ impl SharedWorker {
         Ok(Self {
             worker,
             pending,
+            ready,
+            pending_requests,
             _onmessage: onmessage,
             _onerror: onerror,
         })
@@ -122,7 +169,6 @@ pub(crate) fn warm_up() -> Result<(), WorkError> {
 }
 
 /// Enqueues a background task and returns a handle for polling completion.
-#[expect(clippy::needless_pass_by_value)]
 pub(crate) fn enqueue(request: WorkRequest) -> Result<WorkHandle, WorkError> {
     let response = Rc::new(RefCell::new(None));
     let error = Rc::new(RefCell::new(None));
@@ -132,8 +178,12 @@ pub(crate) fn enqueue(request: WorkRequest) -> Result<WorkHandle, WorkError> {
     };
 
     with_worker(|worker| {
-        worker.send(&request)?;
         worker.pending.borrow_mut().push_back(slot);
+        if *worker.ready.borrow() {
+            worker.send(&request)?;
+        } else {
+            worker.pending_requests.borrow_mut().push_back(request);
+        }
 
         Ok(WorkHandle { response, error })
     })

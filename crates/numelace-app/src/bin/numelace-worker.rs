@@ -5,7 +5,10 @@
 
 #[cfg(target_arch = "wasm32")]
 mod wasm32 {
-    use numelace_app::worker_api::{WorkRequest, WorkResponse};
+    use numelace_app::{
+        version,
+        worker_api::{WorkRequest, WorkResponse},
+    };
     use wasm_bindgen::{JsCast, prelude::*};
     use web_sys::{DedicatedWorkerGlobalScope, MessageEvent};
 
@@ -26,6 +29,9 @@ mod wasm32 {
 
         global.set_onmessage(Some(onmessage.as_ref().unchecked_ref()));
         onmessage.forget();
+
+        let version = version::build_version();
+        let _ = global.post_message(&serde_wasm_bindgen::to_value(&version).unwrap());
     }
 }
 

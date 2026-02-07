@@ -11,6 +11,7 @@ pub(crate) mod history;
 pub(crate) mod persistence;
 pub(crate) mod state;
 pub(crate) mod ui;
+pub mod version;
 pub(crate) mod view_model_builder;
 pub(crate) mod worker;
 pub mod worker_api;
