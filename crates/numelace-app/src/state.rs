@@ -1,7 +1,7 @@
 use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
-use crate::action::{ModalResponder, WorkResponder};
+use crate::action::{ModalRequest, WorkResponder};
 use crate::async_work::{WorkError, WorkHandle};
 use crate::flow::FlowExecutor;
 use crate::history::UndoRedoStack;
@@ -178,14 +178,6 @@ impl GameSnapshot {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum ModalKind {
-    NewGameConfirm,
-    ResetCurrentPuzzleConfirm,
-    Settings,
-    CheckSolvabilityResult(SolvabilityState),
-}
-
-#[derive(Debug, Clone)]
 #[expect(dead_code)]
 pub(crate) struct SolvabilityStats {
     pub(crate) assumptions_len: usize,
@@ -217,8 +209,7 @@ pub(crate) struct WorkState {
 
 #[derive(Debug)]
 pub(crate) struct UiState {
-    pub(crate) active_modal: Option<ModalKind>,
-    pub(crate) modal_responder: Option<ModalResponder>,
+    pub(crate) active_modal: Option<ModalRequest>,
     pub(crate) conflict_ghost: Option<(Position, GhostType)>,
     pub(crate) work: WorkState,
     pub(crate) flow: FlowExecutor,
@@ -230,7 +221,6 @@ impl UiState {
     pub(crate) fn new(max_history_len: usize, init_state: &AppState) -> Self {
         let mut this = Self {
             active_modal: None,
-            modal_responder: None,
             conflict_ghost: None,
             work: WorkState::default(),
             flow: FlowExecutor::new(),

@@ -3,7 +3,7 @@ use std::mem;
 use numelace_core::{Digit, Position};
 
 use crate::async_work::{WorkRequest, WorkResponse};
-use crate::state::{ModalKind, Settings};
+use crate::state::{Settings, SolvabilityState};
 
 #[derive(Debug)]
 pub(crate) enum Action {
@@ -24,7 +24,6 @@ pub(crate) enum Action {
     ApplyWorkResponse(WorkResponse),
     UpdateSettings(Settings),
     StartNewGameFlow,
-    ModalResponse(ModalResponse),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -39,19 +38,19 @@ pub(crate) enum SolvabilityDialogResult {
     RebuildNotes,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ModalResponse {
-    Confirm(ConfirmResult),
-    Solvability(SolvabilityDialogResult),
-}
+pub(crate) type ConfirmResponder = futures_channel::oneshot::Sender<ConfirmResult>;
+pub(crate) type SolvabilityResponder = futures_channel::oneshot::Sender<SolvabilityDialogResult>;
 
 #[derive(Debug)]
-pub(crate) struct ModalRequest {
-    pub(crate) modal: ModalKind,
-    pub(crate) responder: Option<ModalResponder>,
+pub(crate) enum ModalRequest {
+    NewGameConfirm(Option<ConfirmResponder>),
+    CheckSolvabilityResult {
+        state: SolvabilityState,
+        responder: Option<SolvabilityResponder>,
+    },
+    Settings,
+    ResetCurrentPuzzleConfirm(Option<ConfirmResponder>),
 }
-
-pub(crate) type ModalResponder = futures_channel::oneshot::Sender<ModalResponse>;
 
 #[derive(Debug)]
 pub(crate) struct WorkRequestAction {

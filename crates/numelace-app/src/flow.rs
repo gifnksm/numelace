@@ -10,11 +10,11 @@ use futures_channel::oneshot;
 
 use crate::{
     action::{
-        Action, ActionRequestQueue, ConfirmResult, ModalRequest, ModalResponder, ModalResponse,
-        NotesFillScope, SolvabilityDialogResult, WorkRequestAction, WorkResponder,
+        Action, ActionRequestQueue, ConfirmResponder, ConfirmResult, ModalRequest, NotesFillScope,
+        SolvabilityDialogResult, SolvabilityResponder, WorkRequestAction, WorkResponder,
     },
     async_work::{WorkError, WorkRequest, WorkResponse, solvability_dto::SolvabilityStateDto},
-    state::{ModalKind, SolvabilityState, SolvabilityStats},
+    state::{SolvabilityState, SolvabilityStats},
 };
 
 /// Lightweight async flow executor for UI orchestration.
@@ -118,12 +118,15 @@ impl FlowHandle {
     /// Await a new game confirmation dialog.
     #[must_use]
     pub(crate) async fn confirm_new_game(&self) -> ConfirmResult {
-        match self
-            .await_modal(ModalKind::NewGameConfirm, ModalResponseKind::Confirm)
-            .await
-        {
-            ModalResponse::Confirm(result) => result,
-            ModalResponse::Solvability(_) => ConfirmResult::Cancelled,
+        let (responder, receiver): (ConfirmResponder, oneshot::Receiver<ConfirmResult>) =
+            oneshot::channel();
+        self.request_action(Action::OpenModal(ModalRequest::NewGameConfirm(Some(
+            responder,
+        ))));
+
+        match receiver.await {
+            Ok(result) => result,
+            Err(_) => ConfirmResult::Cancelled,
         }
     }
 
@@ -133,27 +136,18 @@ impl FlowHandle {
         &self,
         state: SolvabilityState,
     ) -> SolvabilityDialogResult {
-        let modal = ModalKind::CheckSolvabilityResult(state);
-        match self
-            .await_modal(modal, ModalResponseKind::Solvability)
-            .await
-        {
-            ModalResponse::Solvability(result) => result,
-            ModalResponse::Confirm(_) => SolvabilityDialogResult::Close,
-        }
-    }
-
-    /// Await a modal response from the UI.
-    #[must_use]
-    fn await_modal(&self, modal: ModalKind, expected: ModalResponseKind) -> ModalResponseFuture {
-        let (responder, receiver) = oneshot::channel();
-        ModalResponseFuture {
-            state: Rc::clone(&self.state),
-            modal,
-            expected,
+        let (responder, receiver): (
+            SolvabilityResponder,
+            oneshot::Receiver<SolvabilityDialogResult>,
+        ) = oneshot::channel();
+        self.request_action(Action::OpenModal(ModalRequest::CheckSolvabilityResult {
+            state,
             responder: Some(responder),
-            receiver,
-            started: false,
+        }));
+
+        match receiver.await {
+            Ok(result) => result,
+            Err(_) => SolvabilityDialogResult::Close,
         }
     }
 
@@ -233,58 +227,6 @@ struct FlowState {
 pub(crate) enum SpinnerKind {
     NewGame,
     CheckSolvability,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ModalResponseKind {
-    Confirm,
-    Solvability,
-}
-
-impl ModalResponseKind {
-    fn fallback_response(self) -> ModalResponse {
-        match self {
-            ModalResponseKind::Confirm => ModalResponse::Confirm(ConfirmResult::Cancelled),
-            ModalResponseKind::Solvability => {
-                ModalResponse::Solvability(SolvabilityDialogResult::Close)
-            }
-        }
-    }
-}
-
-/// Awaitable for modal responses.
-struct ModalResponseFuture {
-    state: Rc<RefCell<FlowState>>,
-    modal: ModalKind,
-    expected: ModalResponseKind,
-    responder: Option<ModalResponder>,
-    receiver: oneshot::Receiver<ModalResponse>,
-    started: bool,
-}
-
-impl Future for ModalResponseFuture {
-    type Output = ModalResponse;
-
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if !self.started {
-            self.started = true;
-            if let Some(responder) = self.responder.take() {
-                self.state
-                    .borrow_mut()
-                    .pending_actions
-                    .push(Action::OpenModal(ModalRequest {
-                        modal: self.modal.clone(),
-                        responder: Some(responder),
-                    }));
-            }
-        }
-
-        match Pin::new(&mut self.receiver).poll(cx) {
-            Poll::Ready(Ok(response)) => Poll::Ready(response),
-            Poll::Ready(Err(_)) => Poll::Ready(self.expected.fallback_response()),
-            Poll::Pending => Poll::Pending,
-        }
-    }
 }
 
 fn map_solvability_state(result: SolvabilityStateDto) -> SolvabilityState {

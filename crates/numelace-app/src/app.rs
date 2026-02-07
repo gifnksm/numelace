@@ -18,14 +18,14 @@ use eframe::{
 
 use crate::{
     DEFAULT_MAX_HISTORY_LENGTH,
-    action::ActionRequestQueue,
+    action::{ActionRequestQueue, ModalRequest},
     action_handler::{self, ActionEffect},
     async_work,
     async_work::work_flow::WorkFlow,
     flow::SpinnerKind,
     game_factory,
     persistence::storage,
-    state::{AppState, ModalKind, UiState},
+    state::{AppState, UiState},
     ui, view_model_builder,
 };
 
@@ -98,21 +98,25 @@ impl App for NumelaceApp {
             ui::game_screen::show(ui, &game_screen_vm, &mut action_queue);
         });
 
-        if let Some(modal_kind) = &self.ui_state.active_modal {
-            match modal_kind {
-                ModalKind::NewGameConfirm => {
-                    ui::dialogs::show_new_game_confirm(ctx, &mut action_queue);
+        if let Some(modal_request) = &mut self.ui_state.active_modal {
+            match modal_request {
+                ModalRequest::NewGameConfirm(responder) => {
+                    ui::dialogs::show_new_game_confirm(ctx, &mut action_queue, responder);
                 }
-                ModalKind::ResetCurrentPuzzleConfirm => {
-                    ui::dialogs::show_reset_current_puzzle_confirm(ctx, &mut action_queue);
+                ModalRequest::ResetCurrentPuzzleConfirm(responder) => {
+                    ui::dialogs::show_reset_current_puzzle_confirm(
+                        ctx,
+                        &mut action_queue,
+                        responder,
+                    );
                 }
-                ModalKind::Settings => {
+                ModalRequest::Settings => {
                     let settings_vm =
                         view_model_builder::build_settings_view_model(&self.app_state);
                     ui::settings::show(ctx, &settings_vm, &mut action_queue);
                 }
-                ModalKind::CheckSolvabilityResult(state) => {
-                    ui::dialogs::show_solvability(ctx, &mut action_queue, state);
+                ModalRequest::CheckSolvabilityResult { state, responder } => {
+                    ui::dialogs::show_solvability(ctx, &mut action_queue, state, responder);
                 }
             }
         }

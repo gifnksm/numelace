@@ -2,9 +2,7 @@ use numelace_core::{Digit, Position};
 use numelace_game::{GameError, RuleCheckPolicy};
 
 use crate::{
-    action::{
-        Action, ActionRequestQueue, ModalResponse, MoveDirection, NotesFillScope, WorkRequestAction,
-    },
+    action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope, WorkRequestAction},
     async_work::{WorkResponse, work_actions},
     flow::{check_solvability_flow, new_game_flow},
     state::{AppState, GhostType, InputMode, UiState},
@@ -84,21 +82,16 @@ pub(crate) fn handle(
             ctx.ui_state.redo(ctx.app_state);
         }
         Action::OpenModal(modal_request) => {
-            ctx.ui_state.active_modal = Some(modal_request.modal);
-            ctx.ui_state.modal_responder = modal_request.responder;
+            ctx.ui_state.active_modal = Some(modal_request);
         }
         Action::CloseModal => {
             ctx.ui_state.active_modal = None;
-            ctx.ui_state.modal_responder = None;
         }
         Action::StartNewGameFlow => {
             push_history_if_changed = false;
             ctx.start_new_game_flow();
         }
-        Action::ModalResponse(response) => {
-            push_history_if_changed = false;
-            ctx.handle_modal_response(response);
-        }
+
         Action::StartWork(request_action) => {
             push_history_if_changed = false;
             ctx.request_work(request_action);
@@ -165,12 +158,6 @@ impl ActionContext<'_> {
         self.ui_state.flow.spawn(new_game_flow(handle));
     }
 
-    fn handle_modal_response(&mut self, response: ModalResponse) {
-        if let Some(responder) = self.ui_state.modal_responder.take() {
-            let _ = responder.send(response);
-        }
-    }
-
     fn apply_work_response(&mut self, response: WorkResponse) {
         work_actions::apply_work_response(self.app_state, self.ui_state, response);
     }
@@ -214,8 +201,8 @@ mod tests {
     use super::{ActionEffect, handle};
     use crate::{
         DEFAULT_MAX_HISTORY_LENGTH,
-        action::{Action, NotesFillScope},
-        state::{AppState, GhostType, ModalKind, UiState},
+        action::{Action, ModalRequest, NotesFillScope},
+        state::{AppState, GhostType, UiState},
     };
 
     fn fixed_game() -> Game {
@@ -366,7 +353,7 @@ mod tests {
     fn close_new_game_confirm_clears_flag() {
         let mut app_state = AppState::new(fixed_game());
         let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
-        ui_state.active_modal = Some(ModalKind::NewGameConfirm);
+        ui_state.active_modal = Some(ModalRequest::NewGameConfirm(None));
         let mut effect = ActionEffect::default();
 
         handle(

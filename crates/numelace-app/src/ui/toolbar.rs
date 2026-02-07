@@ -2,7 +2,6 @@ use eframe::egui::{Button, Response, RichText, Sides, Ui, Vec2, widgets};
 
 use crate::{
     action::{Action, ActionRequestQueue, ModalRequest, NotesFillScope},
-    state::ModalKind,
     ui::{
         icon,
         layout::{ComponentUnits, LayoutScale},
@@ -54,17 +53,13 @@ pub(crate) fn show(
                 }
 
                 if button(ui, icon::ROTATE_CCW, "Reset Puzzle", true, cell_size).clicked() {
-                    action_queue.request(Action::OpenModal(ModalRequest {
-                        modal: ModalKind::ResetCurrentPuzzleConfirm,
-                        responder: None,
-                    }));
+                    action_queue.request(Action::OpenModal(
+                        ModalRequest::ResetCurrentPuzzleConfirm(None),
+                    ));
                 }
 
                 if button(ui, icon::GEAR_NO_HUB, "Settings", true, cell_size).clicked() {
-                    action_queue.request(Action::OpenModal(ModalRequest {
-                        modal: ModalKind::Settings,
-                        responder: None,
-                    }));
+                    action_queue.request(Action::OpenModal(ModalRequest::Settings));
                 }
 
                 if button(
