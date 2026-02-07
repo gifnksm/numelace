@@ -140,8 +140,9 @@ pub(crate) enum SolvabilityDialogResult {
     RebuildNotes,
 }
 
-pub(crate) type ConfirmResponder = futures_channel::oneshot::Sender<ConfirmResult>;
-pub(crate) type SolvabilityResponder = futures_channel::oneshot::Sender<SolvabilityDialogResult>;
+pub(crate) type Responder<T> = futures_channel::oneshot::Sender<T>;
+pub(crate) type ConfirmResponder = Responder<ConfirmResult>;
+pub(crate) type SolvabilityResponder = Responder<SolvabilityDialogResult>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ConfirmKind {

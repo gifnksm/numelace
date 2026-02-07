@@ -2,8 +2,8 @@ use eframe::egui::{Button, Context, Id, Modal, Response, RichText, Sides, Ui};
 
 use crate::{
     action::{
-        ActionRequestQueue, ConfirmKind, ConfirmResponder, ConfirmResult, SolvabilityDialogResult,
-        SolvabilityResponder, UiAction,
+        ActionRequestQueue, ConfirmKind, ConfirmResponder, ConfirmResult, Responder,
+        SolvabilityDialogResult, SolvabilityResponder, UiAction,
     },
     state::SolvabilityState,
     ui::icon,
@@ -58,15 +58,9 @@ fn disabled_button(ui: &mut Ui, label: String) {
     ui.add_enabled(false, Button::new(label));
 }
 
-fn send_confirm(responder: &mut Option<ConfirmResponder>, result: ConfirmResult) {
+fn send_response<T>(responder: &mut Option<Responder<T>>, response: T) {
     if let Some(responder) = responder.take() {
-        let _ = responder.send(result);
-    }
-}
-
-fn send_solvability(responder: &mut Option<SolvabilityResponder>, result: SolvabilityDialogResult) {
-    if let Some(responder) = responder.take() {
-        let _ = responder.send(result);
+        let _ = responder.send(response);
     }
 }
 
@@ -122,20 +116,20 @@ pub(crate) fn show_confirm(
                 true,
             );
             if confirm.clicked() {
-                send_confirm(responder, ConfirmResult::Confirmed);
+                send_response(responder, ConfirmResult::Confirmed);
                 ui.close();
             }
 
             let cancel = ui.button(format!("{} Cancel", icon::CANCEL));
             if cancel.clicked() {
-                send_confirm(responder, ConfirmResult::Cancelled);
+                send_response(responder, ConfirmResult::Cancelled);
                 ui.close();
             }
         },
     );
 
     if should_close {
-        send_confirm(responder, ConfirmResult::Cancelled);
+        send_response(responder, ConfirmResult::Cancelled);
         action_queue.request(UiAction::CloseModal.into());
     }
 }
@@ -177,14 +171,14 @@ fn show_solvability_inconsistent(
         |ui: &mut Ui| {
             disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
             if ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
-                send_solvability(responder, SolvabilityDialogResult::Close);
+                send_response(responder, SolvabilityDialogResult::Close);
                 ui.close();
             }
         },
     );
 
     if should_close {
-        send_solvability(responder, SolvabilityDialogResult::Close);
+        send_response(responder, SolvabilityDialogResult::Close);
         action_queue.request(UiAction::CloseModal.into());
     }
 }
@@ -204,14 +198,14 @@ fn show_solvability_no_solution(
         |ui: &mut Ui| {
             disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
             if ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
-                send_solvability(responder, SolvabilityDialogResult::Close);
+                send_response(responder, SolvabilityDialogResult::Close);
                 ui.close();
             }
         },
     );
 
     if should_close {
-        send_solvability(responder, SolvabilityDialogResult::Close);
+        send_response(responder, SolvabilityDialogResult::Close);
         action_queue.request(UiAction::CloseModal.into());
     }
 }
@@ -231,14 +225,14 @@ fn show_solvability_solvable(
         |ui: &mut Ui| {
             let ok = primary_button(ui, format!("{} OK", icon::CHECK), true);
             if ok.clicked() {
-                send_solvability(responder, SolvabilityDialogResult::Close);
+                send_response(responder, SolvabilityDialogResult::Close);
                 ui.close();
             }
         },
     );
 
     if should_close {
-        send_solvability(responder, SolvabilityDialogResult::Close);
+        send_response(responder, SolvabilityDialogResult::Close);
         action_queue.request(UiAction::CloseModal.into());
     }
 }
@@ -258,19 +252,19 @@ fn show_solvability_notes_maybe_incorrect(
         |ui: &mut Ui| {
             let rebuild = primary_button(ui, format!("{} Rebuild", icon::CHECK), true);
             if rebuild.clicked() {
-                send_solvability(responder, SolvabilityDialogResult::RebuildNotes);
+                send_response(responder, SolvabilityDialogResult::RebuildNotes);
                 ui.close();
             }
 
             if ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
-                send_solvability(responder, SolvabilityDialogResult::Close);
+                send_response(responder, SolvabilityDialogResult::Close);
                 ui.close();
             }
         },
     );
 
     if should_close {
-        send_solvability(responder, SolvabilityDialogResult::Close);
+        send_response(responder, SolvabilityDialogResult::Close);
         action_queue.request(UiAction::CloseModal.into());
     }
 }
