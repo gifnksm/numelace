@@ -3,7 +3,7 @@ use std::{
     future::Future,
     pin::Pin,
     rc::Rc,
-    task::{Context, RawWaker, RawWakerVTable, Waker},
+    task::{Context, Waker},
 };
 
 use crate::action::{Action, ActionRequestQueue};
@@ -65,8 +65,8 @@ impl FlowExecutor {
     pub(crate) fn poll(&mut self, action_queue: &mut ActionRequestQueue) {
         self.drain_actions(action_queue);
 
-        let waker = noop_waker();
-        let mut cx = Context::from_waker(&waker);
+        let waker = Waker::noop();
+        let mut cx = Context::from_waker(waker);
 
         let mut i = 0;
         while i < self.tasks.len() {
@@ -108,20 +108,4 @@ struct FlowTask {
 #[derive(Default)]
 struct FlowState {
     pending_actions: Vec<Action>,
-}
-
-fn noop_waker() -> Waker {
-    unsafe fn clone(_: *const ()) -> RawWaker {
-        RawWaker::new(std::ptr::null(), &VTABLE)
-    }
-
-    unsafe fn wake(_: *const ()) {}
-
-    unsafe fn wake_by_ref(_: *const ()) {}
-
-    unsafe fn drop(_: *const ()) {}
-
-    static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake_by_ref, drop);
-
-    unsafe { Waker::from_raw(RawWaker::new(std::ptr::null(), &VTABLE)) }
 }
