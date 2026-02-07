@@ -81,11 +81,13 @@ pub(crate) fn handle(
             push_history_if_changed = false;
             ctx.ui_state.redo(ctx.app_state);
         }
-        Action::OpenModal(modal) => {
-            ctx.ui_state.active_modal = Some(modal);
+        Action::OpenModal(modal_request) => {
+            ctx.ui_state.active_modal = Some(modal_request.modal);
+            ctx.ui_state.modal_responder = modal_request.responder;
         }
         Action::CloseModal => {
             ctx.ui_state.active_modal = None;
+            ctx.ui_state.modal_responder = None;
         }
         Action::StartNewGameFlow => {
             push_history_if_changed = false;
@@ -164,7 +166,9 @@ impl ActionContext<'_> {
     }
 
     fn handle_modal_response(&mut self, response: ModalResponse) {
-        self.ui_state.flow.resolve_modal_response(response);
+        if let Some(responder) = self.ui_state.modal_responder.take() {
+            let _ = responder.send(response);
+        }
     }
 
     fn apply_work_response(&mut self, response: WorkResponse) {

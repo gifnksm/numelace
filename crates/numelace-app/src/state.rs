@@ -1,6 +1,7 @@
 use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
+use crate::action::ModalResponder;
 use crate::async_work::{WorkError, WorkHandle, WorkKind};
 use crate::flow::FlowExecutor;
 use crate::history::UndoRedoStack;
@@ -212,6 +213,7 @@ pub(crate) struct WorkState {
 #[derive(Debug)]
 pub(crate) struct UiState {
     pub(crate) active_modal: Option<ModalKind>,
+    pub(crate) modal_responder: Option<ModalResponder>,
     pub(crate) conflict_ghost: Option<(Position, GhostType)>,
     pub(crate) work: WorkState,
     pub(crate) flow: FlowExecutor,
@@ -223,6 +225,7 @@ impl UiState {
     pub(crate) fn new(max_history_len: usize, init_state: &AppState) -> Self {
         let mut this = Self {
             active_modal: None,
+            modal_responder: None,
             conflict_ghost: None,
             work: WorkState::default(),
             flow: FlowExecutor::new(),

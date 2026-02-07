@@ -2,7 +2,7 @@ use eframe::egui::{InputState, Key};
 use numelace_core::Digit;
 
 use crate::{
-    action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
+    action::{Action, ActionRequestQueue, ModalRequest, MoveDirection, NotesFillScope},
     state::ModalKind,
 };
 
@@ -61,10 +61,19 @@ impl Shortcut {
 
 const SHORTCUTS: [Shortcut; 34] = [
     Shortcut::command(Key::N, Action::StartNewGameFlow),
-    Shortcut::command(Key::Comma, Action::OpenModal(ModalKind::Settings)),
+    Shortcut::command(
+        Key::Comma,
+        Action::OpenModal(ModalRequest {
+            modal: ModalKind::Settings,
+            responder: None,
+        }),
+    ),
     Shortcut::command_shift(
         Key::Backspace,
-        Action::OpenModal(ModalKind::ResetCurrentPuzzleConfirm),
+        Action::OpenModal(ModalRequest {
+            modal: ModalKind::ResetCurrentPuzzleConfirm,
+            responder: None,
+        }),
     ),
     Shortcut::command(Key::K, Action::CheckSolvability),
     Shortcut::command(Key::Z, Action::Undo),

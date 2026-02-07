@@ -98,8 +98,8 @@ impl App for NumelaceApp {
             ui::game_screen::show(ui, &game_screen_vm, &mut action_queue);
         });
 
-        if let Some(modal) = &self.ui_state.active_modal {
-            match modal {
+        if let Some(modal_kind) = &self.ui_state.active_modal {
+            match modal_kind {
                 ModalKind::NewGameConfirm => {
                     ui::dialogs::show_new_game_confirm(ctx, &mut action_queue);
                 }

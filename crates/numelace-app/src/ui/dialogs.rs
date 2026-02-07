@@ -37,12 +37,12 @@ fn show_dialog<Heading, Body, Buttons>(
     });
 
     if modal.should_close() {
-        action_queue.request(Action::CloseModal);
         if let Some(action) = on_close
             && !action_requested
         {
             action_queue.request(action);
         }
+        action_queue.request(Action::CloseModal);
     }
 }
 

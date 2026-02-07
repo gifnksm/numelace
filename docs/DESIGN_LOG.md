@@ -53,3 +53,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-06: Make async work awaitable via flow futures with a spinner wrapper — enables generic flow orchestration while reusing the async_work pipeline.
 - 2026-02-06: Route solvability result dialogs through flow awaitables — keeps modal handling consistent with flow-driven async UI.
 - 2026-02-06: Track in-flight work via `WorkKind` instead of per-task flags — keeps async work extensible without accumulating booleans.
+- 2026-02-07: Route modal flows through per-request oneshot responders — makes modal awaits local and supports concurrent flows.

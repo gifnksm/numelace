@@ -6,10 +6,12 @@ use std::{
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
 };
 
+use futures_channel::oneshot;
+
 use crate::{
     action::{
-        Action, ActionRequestQueue, ConfirmResult, ModalResponse, NotesFillScope,
-        SolvabilityDialogResult,
+        Action, ActionRequestQueue, ConfirmResult, ModalRequest, ModalResponder, ModalResponse,
+        NotesFillScope, SolvabilityDialogResult,
     },
     async_work::{WorkRequest, WorkResponse, solvability_dto::SolvabilityStateDto},
     state::{ModalKind, SolvabilityState, SolvabilityStats},
@@ -94,14 +96,6 @@ impl FlowExecutor {
         self.drain_actions(action_queue);
     }
 
-    pub(crate) fn resolve_modal_response(&mut self, response: ModalResponse) {
-        let mut state = self.state.borrow_mut();
-        state.modal_response = Some(response);
-        if let Some(waker) = state.modal_waker.take() {
-            waker.wake();
-        }
-    }
-
     /// Notify the flow executor that background work completed.
     ///
     /// This updates flow state so awaiting tasks can resume.
@@ -166,10 +160,13 @@ impl FlowHandle {
     /// Await a modal response from the UI.
     #[must_use]
     fn await_modal(&self, modal: ModalKind, expected: ModalResponseKind) -> ModalResponseFuture {
+        let (responder, receiver) = oneshot::channel();
         ModalResponseFuture {
             state: Rc::clone(&self.state),
             modal,
             expected,
+            responder: Some(responder),
+            receiver,
             started: false,
         }
     }
@@ -240,8 +237,6 @@ struct FlowTask {
 #[derive(Default)]
 struct FlowState {
     pending_actions: Vec<Action>,
-    modal_response: Option<ModalResponse>,
-    modal_waker: Option<Waker>,
 
     work_pending: bool,
     work_response: Option<WorkResponse>,
@@ -261,11 +256,24 @@ enum ModalResponseKind {
     Solvability,
 }
 
+impl ModalResponseKind {
+    fn fallback_response(self) -> ModalResponse {
+        match self {
+            ModalResponseKind::Confirm => ModalResponse::Confirm(ConfirmResult::Cancelled),
+            ModalResponseKind::Solvability => {
+                ModalResponse::Solvability(SolvabilityDialogResult::Close)
+            }
+        }
+    }
+}
+
 /// Awaitable for modal responses.
 struct ModalResponseFuture {
     state: Rc<RefCell<FlowState>>,
     modal: ModalKind,
     expected: ModalResponseKind,
+    responder: Option<ModalResponder>,
+    receiver: oneshot::Receiver<ModalResponse>,
     started: bool,
 }
 
@@ -275,32 +283,21 @@ impl Future for ModalResponseFuture {
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if !self.started {
             self.started = true;
-            self.state
-                .borrow_mut()
-                .pending_actions
-                .push(Action::OpenModal(self.modal.clone()));
+            if let Some(responder) = self.responder.take() {
+                self.state
+                    .borrow_mut()
+                    .pending_actions
+                    .push(Action::OpenModal(ModalRequest {
+                        modal: self.modal.clone(),
+                        responder: Some(responder),
+                    }));
+            }
         }
 
-        let mut state = self.state.borrow_mut();
-        if let Some(response) = state.modal_response.take() {
-            let matches_expected = matches!(
-                (self.expected, &response),
-                (ModalResponseKind::Confirm, ModalResponse::Confirm(_))
-                    | (
-                        ModalResponseKind::Solvability,
-                        ModalResponse::Solvability(_)
-                    )
-            );
-            if matches_expected {
-                Poll::Ready(response)
-            } else {
-                state.modal_response = Some(response);
-                state.modal_waker = Some(cx.waker().clone());
-                Poll::Pending
-            }
-        } else {
-            state.modal_waker = Some(cx.waker().clone());
-            Poll::Pending
+        match Pin::new(&mut self.receiver).poll(cx) {
+            Poll::Ready(Ok(response)) => Poll::Ready(response),
+            Poll::Ready(Err(_)) => Poll::Ready(self.expected.fallback_response()),
+            Poll::Pending => Poll::Pending,
         }
     }
 }

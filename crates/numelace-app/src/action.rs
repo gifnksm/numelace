@@ -5,7 +5,7 @@ use numelace_core::{Digit, Position};
 use crate::async_work::{WorkRequest, WorkResponse};
 use crate::state::{ModalKind, Settings};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) enum Action {
     SelectCell(Position),
     ClearSelection,
@@ -17,7 +17,7 @@ pub(crate) enum Action {
     CheckSolvability,
     Undo,
     Redo,
-    OpenModal(ModalKind),
+    OpenModal(ModalRequest),
     CloseModal,
     StartWork(WorkRequest),
     ResetCurrentPuzzle,
@@ -44,6 +44,14 @@ pub(crate) enum ModalResponse {
     Confirm(ConfirmResult),
     Solvability(SolvabilityDialogResult),
 }
+
+#[derive(Debug)]
+pub(crate) struct ModalRequest {
+    pub(crate) modal: ModalKind,
+    pub(crate) responder: Option<ModalResponder>,
+}
+
+pub(crate) type ModalResponder = futures_channel::oneshot::Sender<ModalResponse>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
 pub(crate) enum MoveDirection {
