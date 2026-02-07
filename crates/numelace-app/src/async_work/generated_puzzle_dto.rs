@@ -6,13 +6,13 @@ use serde::{Deserialize, Serialize};
 ///
 /// Uses compact 81-char string formats ('.' for empty, '1'..'9' for digits).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct NewGameDto {
+pub(crate) struct GeneratedPuzzleDto {
     pub(crate) seed: String,
     pub(crate) problem: String,
     pub(crate) solution: String,
 }
 
-impl From<GeneratedPuzzle> for NewGameDto {
+impl From<GeneratedPuzzle> for GeneratedPuzzleDto {
     fn from(puzzle: GeneratedPuzzle) -> Self {
         Self {
             seed: puzzle.seed.to_string(),
@@ -22,10 +22,10 @@ impl From<GeneratedPuzzle> for NewGameDto {
     }
 }
 
-impl TryFrom<NewGameDto> for GeneratedPuzzle {
+impl TryFrom<GeneratedPuzzleDto> for GeneratedPuzzle {
     type Error = String;
 
-    fn try_from(value: NewGameDto) -> Result<Self, Self::Error> {
+    fn try_from(value: GeneratedPuzzleDto) -> Result<Self, Self::Error> {
         let seed = value.seed.parse()?;
         let problem = value
             .problem

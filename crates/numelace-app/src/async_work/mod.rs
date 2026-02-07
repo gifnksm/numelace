@@ -15,27 +15,59 @@ use crate::game_factory;
 pub(crate) use platform::warm_up;
 use platform::{WorkHandle, enqueue};
 
-pub(crate) mod new_game_dto;
+pub(crate) mod generated_puzzle_dto;
 mod platform;
 pub(crate) mod solvability_dto;
 
-use new_game_dto::NewGameDto;
+use generated_puzzle_dto::GeneratedPuzzleDto;
 use solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto};
 
+pub(crate) mod worker_api {
+    use serde::{Deserialize, Serialize};
+
+    use super::{WorkRequest as InnerWorkRequest, WorkResponse as InnerWorkResponse};
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(transparent)]
+    pub struct WorkRequest(InnerWorkRequest);
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(transparent)]
+    pub struct WorkResponse(InnerWorkResponse);
+
+    impl WorkRequest {
+        #[must_use]
+        pub fn handle(self) -> WorkResponse {
+            WorkResponse(self.0.handle())
+        }
+    }
+
+    impl WorkResponse {
+        #[must_use]
+        pub fn deserialization_error() -> Self {
+            Self(InnerWorkResponse::Error(
+                super::WorkError::DeserializationFailed,
+            ))
+        }
+    }
+}
+
 /// A request that can be offloaded to a background worker.
+///
+/// Internal: prefer typed helpers like `request_generate_puzzle` and `request_solvability`.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub(crate) enum WorkRequest {
-    /// Generate a new Sudoku puzzle.
-    GenerateNewGame,
+enum WorkRequest {
+    /// Generate a Sudoku puzzle.
+    GeneratePuzzle,
     /// Check solvability for a given puzzle state.
     CheckSolvability(SolvabilityRequestDto),
 }
 
 /// A response produced by background work.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub(crate) enum WorkResponse {
-    /// New puzzle data ready for a fresh game.
-    NewGameReady(NewGameDto),
+enum WorkResponse {
+    /// Generated puzzle data ready for a fresh game.
+    GeneratedPuzzleReady(GeneratedPuzzleDto),
     /// Solvability result ready for display.
     SolvabilityReady(SolvabilityStateDto),
     /// An error occurred while performing background work.
@@ -43,43 +75,39 @@ pub(crate) enum WorkResponse {
 }
 
 /// Errors that can occur while scheduling or receiving background work.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, serde::Serialize, serde::Deserialize, derive_more::Display, derive_more::Error,
+)]
 pub(crate) enum WorkError {
     /// The worker URL was missing or invalid.
+    #[display("worker URL is missing")]
     WorkerUrlMissing,
     /// Failed to initialize the worker instance.
+    #[display("worker initialization failed")]
     WorkerInitFailed,
     /// Failed to serialize a request payload.
+    #[display("failed to serialize worker payload")]
     SerializationFailed,
     /// Failed to deserialize a response payload.
+    #[display("failed to deserialize worker payload")]
     DeserializationFailed,
     /// The background channel was disconnected unexpectedly.
+    #[display("worker disconnected")]
     WorkerDisconnected,
+    /// Received a response that does not match the request.
+    #[display("unexpected worker response")]
+    UnexpectedResponse,
 }
-
-impl std::fmt::Display for WorkError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            WorkError::WorkerUrlMissing => write!(f, "worker URL is missing"),
-            WorkError::WorkerInitFailed => write!(f, "worker initialization failed"),
-            WorkError::SerializationFailed => write!(f, "failed to serialize worker payload"),
-            WorkError::DeserializationFailed => write!(f, "failed to deserialize worker payload"),
-            WorkError::WorkerDisconnected => write!(f, "worker disconnected"),
-        }
-    }
-}
-
-impl std::error::Error for WorkError {}
 
 impl WorkRequest {
     /// Handle a request and produce the corresponding response.
     ///
     /// This keeps the request-to-response mapping centralized across backends.
     #[must_use]
-    pub(crate) fn handle(self) -> WorkResponse {
+    fn handle(self) -> WorkResponse {
         match self {
-            WorkRequest::GenerateNewGame => {
-                WorkResponse::NewGameReady(game_factory::generate_random_puzzle().into())
+            WorkRequest::GeneratePuzzle => {
+                WorkResponse::GeneratedPuzzleReady(game_factory::generate_random_puzzle().into())
             }
             WorkRequest::CheckSolvability(request) => handle_solvability_request(request),
         }
@@ -126,14 +154,14 @@ fn check_grid_solvability(
 }
 
 /// Future that resolves to a background work response.
-pub(crate) struct WorkResponseFuture {
+struct WorkResponseFuture {
     handle: Option<WorkHandle>,
     response: Option<WorkResponse>,
 }
 
 impl WorkResponseFuture {
     #[must_use]
-    pub(crate) fn new(result: Result<WorkHandle, WorkError>) -> Self {
+    fn new(result: Result<WorkHandle, WorkError>) -> Self {
         match result {
             Ok(handle) => Self {
                 handle: Some(handle),
@@ -169,6 +197,26 @@ impl Future for WorkResponseFuture {
 
 /// Enqueue background work and return a future for the response.
 #[must_use]
-pub(crate) fn request(request: WorkRequest) -> WorkResponseFuture {
+fn request(request: WorkRequest) -> WorkResponseFuture {
     WorkResponseFuture::new(enqueue(request))
+}
+
+/// Enqueue background work for a generated puzzle and return the DTO.
+pub(crate) async fn request_generate_puzzle() -> Result<GeneratedPuzzleDto, WorkError> {
+    match request(WorkRequest::GeneratePuzzle).await {
+        WorkResponse::GeneratedPuzzleReady(dto) => Ok(dto),
+        WorkResponse::Error(err) => Err(err),
+        WorkResponse::SolvabilityReady(_) => Err(WorkError::UnexpectedResponse),
+    }
+}
+
+/// Enqueue background work for solvability check and return the state.
+pub(crate) async fn request_solvability(
+    solvability_request: SolvabilityRequestDto,
+) -> Result<SolvabilityStateDto, WorkError> {
+    match request(WorkRequest::CheckSolvability(solvability_request)).await {
+        WorkResponse::SolvabilityReady(state) => Ok(state),
+        WorkResponse::Error(err) => Err(err),
+        WorkResponse::GeneratedPuzzleReady(_) => Err(WorkError::UnexpectedResponse),
+    }
 }

@@ -16,7 +16,7 @@ use crate::{
         SolvabilityDialogResult, SolvabilityResponder,
     },
     async_work::{
-        self, WorkRequest, WorkResponse,
+        self,
         solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto},
     },
     state::{SolvabilityState, SolvabilityStats},
@@ -186,19 +186,17 @@ pub(crate) fn spawn_new_game_flow(executor: &mut FlowExecutor) {
 async fn new_game_flow(handle: FlowHandle) {
     let result = handle.confirm_new_game().await;
     if matches!(result, ConfirmResult::Confirmed) {
-        let work = async_work::request(WorkRequest::GenerateNewGame);
+        let work = async_work::request_generate_puzzle();
         let response = handle.with_spinner(SpinnerKind::NewGame, work).await;
-        match response {
-            WorkResponse::NewGameReady(dto) => {
-                let puzzle = GeneratedPuzzle::try_from(dto)
-                    .unwrap_or_else(|err| panic!("failed to deserialize new game dto: {err}"));
-                handle.request_action(Action::NewGameReady(puzzle));
-            }
-            WorkResponse::Error(err) => {
+        let dto = match response {
+            Ok(dto) => dto,
+            Err(err) => {
                 panic!("background work failed: {err}");
             }
-            WorkResponse::SolvabilityReady(_) => {}
-        }
+        };
+        let puzzle = GeneratedPuzzle::try_from(dto)
+            .unwrap_or_else(|err| panic!("failed to deserialize generated puzzle dto: {err}"));
+        handle.request_action(Action::NewGameReady(puzzle));
     }
 }
 
@@ -212,31 +210,26 @@ pub(crate) fn spawn_check_solvability_flow(executor: &mut FlowExecutor, game: &G
     executor.spawn(check_solvability_flow(handle, request));
 }
 
-fn build_solvability_request(game: &Game) -> WorkRequest {
-    let request = SolvabilityRequestDto {
+fn build_solvability_request(game: &Game) -> SolvabilityRequestDto {
+    SolvabilityRequestDto {
         with_user_notes: game.to_candidate_grid_with_notes().into(),
         without_user_notes: game.to_candidate_grid().into(),
-    };
-
-    WorkRequest::CheckSolvability(request)
+    }
 }
 
 /// Async flow for solvability check work dispatch.
 ///
 /// Runs the background request and awaits the response.
-async fn check_solvability_flow(handle: FlowHandle, request: WorkRequest) {
-    let work = async_work::request(request);
+async fn check_solvability_flow(handle: FlowHandle, request: SolvabilityRequestDto) {
+    let work = async_work::request_solvability(request);
     let response = handle
         .with_spinner(SpinnerKind::CheckSolvability, work)
         .await;
 
     let state = match response {
-        WorkResponse::SolvabilityReady(state) => state,
-        WorkResponse::Error(err) => {
+        Ok(state) => state,
+        Err(err) => {
             panic!("background work failed: {err}");
-        }
-        WorkResponse::NewGameReady(_) => {
-            return;
         }
     };
 
