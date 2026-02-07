@@ -35,6 +35,7 @@ impl WorkFlow {
     pub(crate) fn record_error(work: &mut WorkState, err: WorkError) {
         work.pending = None;
         work.in_flight = None;
+        work.work_responder = None;
         work.last_error = Some(err);
     }
 
@@ -54,6 +55,7 @@ impl WorkFlow {
     pub(crate) fn finish_response(work: &mut WorkState, _response: &WorkResponse) {
         work.pending = None;
         work.in_flight = None;
+        work.work_responder = None;
         work.last_error = None;
     }
 }

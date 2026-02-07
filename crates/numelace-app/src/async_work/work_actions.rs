@@ -3,6 +3,7 @@
 use numelace_core::DigitGrid;
 use numelace_game::Game;
 
+use crate::action::WorkRequestAction;
 use crate::state::{AppState, UiState};
 
 use super::{
@@ -13,13 +14,18 @@ use super::{
 };
 
 /// Request background work using the async pipeline and panic on failure.
-#[expect(clippy::unnecessary_wraps, clippy::needless_pass_by_value)]
-pub(crate) fn request_work(request: WorkRequest, ui_state: &mut UiState) -> Result<(), WorkError> {
+#[expect(clippy::unnecessary_wraps)]
+pub(crate) fn request_work(
+    request_action: WorkRequestAction,
+    ui_state: &mut UiState,
+) -> Result<(), WorkError> {
     if WorkFlow::is_work_in_flight(&ui_state.work) {
         return Ok(());
     }
 
     ui_state.work.last_error = None;
+    ui_state.work.work_responder = Some(request_action.responder);
+    let request = request_action.request;
 
     match enqueue(request.clone()) {
         Ok(handle) => {

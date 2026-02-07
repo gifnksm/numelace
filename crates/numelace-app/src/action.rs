@@ -19,7 +19,7 @@ pub(crate) enum Action {
     Redo,
     OpenModal(ModalRequest),
     CloseModal,
-    StartWork(WorkRequest),
+    StartWork(WorkRequestAction),
     ResetCurrentPuzzle,
     ApplyWorkResponse(WorkResponse),
     UpdateSettings(Settings),
@@ -52,6 +52,14 @@ pub(crate) struct ModalRequest {
 }
 
 pub(crate) type ModalResponder = futures_channel::oneshot::Sender<ModalResponse>;
+
+#[derive(Debug)]
+pub(crate) struct WorkRequestAction {
+    pub(crate) request: WorkRequest,
+    pub(crate) responder: WorkResponder,
+}
+
+pub(crate) type WorkResponder = futures_channel::oneshot::Sender<WorkResponse>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
 pub(crate) enum MoveDirection {

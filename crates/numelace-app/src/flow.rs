@@ -11,9 +11,9 @@ use futures_channel::oneshot;
 use crate::{
     action::{
         Action, ActionRequestQueue, ConfirmResult, ModalRequest, ModalResponder, ModalResponse,
-        NotesFillScope, SolvabilityDialogResult,
+        NotesFillScope, SolvabilityDialogResult, WorkRequestAction, WorkResponder,
     },
-    async_work::{WorkRequest, WorkResponse, solvability_dto::SolvabilityStateDto},
+    async_work::{WorkError, WorkRequest, WorkResponse, solvability_dto::SolvabilityStateDto},
     state::{ModalKind, SolvabilityState, SolvabilityStats},
 };
 
@@ -96,20 +96,6 @@ impl FlowExecutor {
         self.drain_actions(action_queue);
     }
 
-    /// Notify the flow executor that background work completed.
-    ///
-    /// This updates flow state so awaiting tasks can resume.
-    pub(crate) fn record_work_response(&mut self, response: &WorkResponse) {
-        let mut state = self.state.borrow_mut();
-
-        if state.work_pending && state.work_response.is_none() {
-            state.work_response = Some(response.clone());
-            if let Some(waker) = state.work_waker.take() {
-                waker.wake();
-            }
-        }
-    }
-
     fn drain_actions(&mut self, action_queue: &mut ActionRequestQueue) {
         let mut state = self.state.borrow_mut();
         for action in state.pending_actions.drain(..) {
@@ -174,9 +160,12 @@ impl FlowHandle {
     /// Dispatch background work and await the response.
     #[must_use]
     pub(crate) fn await_work(&self, request: WorkRequest) -> WorkResponseFuture {
+        let (responder, receiver) = oneshot::channel();
         WorkResponseFuture {
             state: Rc::clone(&self.state),
             request,
+            responder: Some(responder),
+            receiver,
             started: false,
         }
     }
@@ -237,10 +226,6 @@ struct FlowTask {
 #[derive(Default)]
 struct FlowState {
     pending_actions: Vec<Action>,
-
-    work_pending: bool,
-    work_response: Option<WorkResponse>,
-    work_waker: Option<Waker>,
     active_spinner: Option<SpinnerKind>,
 }
 
@@ -324,6 +309,8 @@ fn map_solvability_state(result: SolvabilityStateDto) -> SolvabilityState {
 pub(crate) struct WorkResponseFuture {
     state: Rc<RefCell<FlowState>>,
     request: WorkRequest,
+    responder: Option<WorkResponder>,
+    receiver: oneshot::Receiver<WorkResponse>,
     started: bool,
 }
 
@@ -333,22 +320,21 @@ impl Future for WorkResponseFuture {
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if !self.started {
             self.started = true;
-            let mut state = self.state.borrow_mut();
-            state.work_pending = true;
-            state.work_response = None;
-            state.work_waker = None;
-            state
-                .pending_actions
-                .push(Action::StartWork(self.request.clone()));
+            if let Some(responder) = self.responder.take() {
+                self.state
+                    .borrow_mut()
+                    .pending_actions
+                    .push(Action::StartWork(WorkRequestAction {
+                        request: self.request.clone(),
+                        responder,
+                    }));
+            }
         }
 
-        let mut state = self.state.borrow_mut();
-        if let Some(response) = state.work_response.take() {
-            state.work_pending = false;
-            Poll::Ready(response)
-        } else {
-            state.work_waker = Some(cx.waker().clone());
-            Poll::Pending
+        match Pin::new(&mut self.receiver).poll(cx) {
+            Poll::Ready(Ok(response)) => Poll::Ready(response),
+            Poll::Ready(Err(_)) => Poll::Ready(WorkResponse::Error(WorkError::WorkerDisconnected)),
+            Poll::Pending => Poll::Pending,
         }
     }
 }

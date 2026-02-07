@@ -2,8 +2,10 @@ use numelace_core::{Digit, Position};
 use numelace_game::{GameError, RuleCheckPolicy};
 
 use crate::{
-    action::{Action, ActionRequestQueue, ModalResponse, MoveDirection, NotesFillScope},
-    async_work::{WorkRequest, WorkResponse, work_actions},
+    action::{
+        Action, ActionRequestQueue, ModalResponse, MoveDirection, NotesFillScope, WorkRequestAction,
+    },
+    async_work::{WorkResponse, work_actions},
     flow::{check_solvability_flow, new_game_flow},
     state::{AppState, GhostType, InputMode, UiState},
 };
@@ -97,9 +99,9 @@ pub(crate) fn handle(
             push_history_if_changed = false;
             ctx.handle_modal_response(response);
         }
-        Action::StartWork(request) => {
+        Action::StartWork(request_action) => {
             push_history_if_changed = false;
-            ctx.request_work(request);
+            ctx.request_work(request_action);
         }
         Action::ResetCurrentPuzzle => {
             push_history_if_changed = false;
@@ -151,8 +153,8 @@ impl ActionContext<'_> {
         }
     }
 
-    fn request_work(&mut self, request: WorkRequest) {
-        let _ = work_actions::request_work(request, self.ui_state);
+    fn request_work(&mut self, request_action: WorkRequestAction) {
+        let _ = work_actions::request_work(request_action, self.ui_state);
     }
 
     fn start_new_game_flow(&mut self) {
@@ -172,7 +174,9 @@ impl ActionContext<'_> {
     }
 
     fn apply_work_response(&mut self, response: WorkResponse) {
-        self.ui_state.flow.record_work_response(&response);
+        if let Some(responder) = self.ui_state.work.work_responder.take() {
+            let _ = responder.send(response.clone());
+        }
         work_actions::apply_work_response(self.app_state, self.ui_state, response);
     }
 

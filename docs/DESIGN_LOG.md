@@ -54,3 +54,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-06: Route solvability result dialogs through flow awaitables — keeps modal handling consistent with flow-driven async UI.
 - 2026-02-06: Track in-flight work via `WorkKind` instead of per-task flags — keeps async work extensible without accumulating booleans.
 - 2026-02-07: Route modal flows through per-request oneshot responders — makes modal awaits local and supports concurrent flows.
+- 2026-02-07: Route work requests through per-request responders — keeps background work awaits local and ready for concurrency.
