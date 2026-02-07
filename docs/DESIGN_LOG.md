@@ -64,3 +64,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-07: Drive spinner UI via `StartSpinner`/`StopSpinner` actions with per-flow IDs and UI-managed active list (oldest active shown) — keeps executor focused on flow orchestration and UI reactive to flow activity.
 - 2026-02-07: Persist undo/redo history using compact snapshots (filled digits + notes + selection) and reconstruct game state from problem/solution on restore — reduces memory/serialized size while keeping undo/redo reliable across sessions.
 - 2026-02-07: Move undo/redo history ownership into `AppState` (with UI delegation) — simplifies persistence and keeps history tied to core game state.
+- 2026-02-07: Show a solvability undo notice dialog with the number of steps undone — clarifies rollback impact for the user.

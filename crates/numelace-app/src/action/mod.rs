@@ -157,10 +157,16 @@ pub(crate) enum SolvabilityDialogResult {
     Undo,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SolvabilityUndoNoticeResult {
+    Close,
+}
+
 pub(crate) type Responder<T> = futures_channel::oneshot::Sender<T>;
 pub(crate) type ConfirmResponder = Responder<ConfirmResult>;
 pub(crate) type SolvabilityResponder = Responder<SolvabilityDialogResult>;
 pub(crate) type SolvabilityUndoGridsResponder = Responder<SolvabilityUndoGridsDto>;
+pub(crate) type SolvabilityUndoNoticeResponder = Responder<SolvabilityUndoNoticeResult>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ConfirmKind {
@@ -177,6 +183,10 @@ pub(crate) enum ModalRequest {
     CheckSolvabilityResult {
         state: SolvabilityState,
         responder: Option<SolvabilityResponder>,
+    },
+    SolvabilityUndoNotice {
+        steps: usize,
+        responder: Option<SolvabilityUndoNoticeResponder>,
     },
     Settings,
 }

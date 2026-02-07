@@ -3,7 +3,8 @@ use eframe::egui::{Context, Id, Modal, Response, RichText, Sides, Ui};
 use crate::{
     action::{
         ActionRequestQueue, ConfirmKind, ConfirmResponder, ConfirmResult, Responder,
-        SolvabilityDialogResult, SolvabilityResponder, UiAction,
+        SolvabilityDialogResult, SolvabilityResponder, SolvabilityUndoNoticeResponder,
+        SolvabilityUndoNoticeResult, UiAction,
     },
     state::SolvabilityState,
     ui::icon,
@@ -269,6 +270,36 @@ fn show_solvability_notes_maybe_incorrect(
 
     if should_close {
         send_response(responder, SolvabilityDialogResult::Close);
+        action_queue.request(UiAction::CloseModal.into());
+    }
+}
+
+pub(crate) fn show_solvability_undo_notice(
+    ctx: &Context,
+    action_queue: &mut ActionRequestQueue,
+    steps: usize,
+    responder: &mut Option<SolvabilityUndoNoticeResponder>,
+) {
+    let DialogResult { should_close } = show_dialog(
+        ctx,
+        Id::new("solvability_undo_notice"),
+        "Undo Complete",
+        |ui: &mut Ui| {
+            ui.label(format!(
+                "Undid {steps} step(s) to return to a solvable state."
+            ));
+        },
+        |ui: &mut Ui| {
+            let ok = primary_button(ui, format!("{} OK", icon::CHECK), true);
+            if ok.clicked() {
+                send_response(responder, SolvabilityUndoNoticeResult::Close);
+                ui.close();
+            }
+        },
+    );
+
+    if should_close {
+        send_response(responder, SolvabilityUndoNoticeResult::Close);
         action_queue.request(UiAction::CloseModal.into());
     }
 }

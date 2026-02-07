@@ -23,5 +23,8 @@ pub(crate) fn show(
         ModalRequest::CheckSolvabilityResult { state, responder } => {
             dialogs::show_solvability(ctx, action_queue, state, responder);
         }
+        ModalRequest::SolvabilityUndoNotice { steps, responder } => {
+            dialogs::show_solvability_undo_notice(ctx, action_queue, *steps, responder);
+        }
     }
 }

@@ -6,8 +6,8 @@ use crate::{
     action::{
         BoardMutationAction, ConfirmKind, ConfirmResponder, ConfirmResult, HistoryAction,
         ModalRequest, NotesFillScope, PuzzleLifecycleAction, SolvabilityDialogResult,
-        SolvabilityResponder, SolvabilityUndoGridsResponder, SpinnerKind, StateQueryAction,
-        UiAction, flows,
+        SolvabilityResponder, SolvabilityUndoGridsResponder, SolvabilityUndoNoticeResponder,
+        SolvabilityUndoNoticeResult, SpinnerKind, StateQueryAction, UiAction, flows,
     },
     flow_executor::{FlowExecutor, FlowHandle},
     state::{SolvabilityState, SolvabilityStats},
@@ -139,6 +139,28 @@ async fn await_solvability_dialog(
     }
 }
 
+async fn await_solvability_undo_notice(
+    handle: &FlowHandle,
+    steps: usize,
+) -> SolvabilityUndoNoticeResult {
+    let (responder, receiver): (
+        SolvabilityUndoNoticeResponder,
+        oneshot::Receiver<SolvabilityUndoNoticeResult>,
+    ) = oneshot::channel();
+    handle.request_action(
+        UiAction::OpenModal(ModalRequest::SolvabilityUndoNotice {
+            steps,
+            responder: Some(responder),
+        })
+        .into(),
+    );
+
+    match receiver.await {
+        Ok(result) => result,
+        Err(_) => SolvabilityUndoNoticeResult::Close,
+    }
+}
+
 async fn request_solvability_undo_grids(handle: &FlowHandle) -> Option<SolvabilityUndoGridsDto> {
     let (responder, receiver): (
         SolvabilityUndoGridsResponder,
@@ -170,6 +192,10 @@ async fn apply_solvability_undo_result(handle: &FlowHandle, result: SolvabilityU
     };
 
     handle.request_action(HistoryAction::UndoSteps(index).into());
+
+    if index > 0 {
+        let _ = await_solvability_undo_notice(handle, index).await;
+    }
 
     let state = map_solvability_state(result.state);
     if matches!(
