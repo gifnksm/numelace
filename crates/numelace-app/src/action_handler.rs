@@ -158,9 +158,7 @@ impl ActionContext<'_> {
     }
 
     fn start_new_game_flow(&mut self) {
-        if !self.ui_state.flow.is_idle()
-            || crate::async_work::work_flow::WorkFlow::is_work_in_flight(&self.ui_state.work)
-        {
+        if !self.ui_state.flow.is_idle() {
             return;
         }
         let handle = self.ui_state.flow.handle();
@@ -174,9 +172,6 @@ impl ActionContext<'_> {
     }
 
     fn apply_work_response(&mut self, response: WorkResponse) {
-        if let Some(responder) = self.ui_state.work.work_responder.take() {
-            let _ = responder.send(response.clone());
-        }
         work_actions::apply_work_response(self.app_state, self.ui_state, response);
     }
 
@@ -199,9 +194,7 @@ impl ActionContext<'_> {
     }
 
     fn check_solvability(&mut self) {
-        if !self.ui_state.flow.is_idle()
-            || crate::async_work::work_flow::WorkFlow::is_work_in_flight(&self.ui_state.work)
-        {
+        if !self.ui_state.flow.is_idle() {
             return;
         }
 

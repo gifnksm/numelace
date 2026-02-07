@@ -55,3 +55,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-06: Track in-flight work via `WorkKind` instead of per-task flags — keeps async work extensible without accumulating booleans.
 - 2026-02-07: Route modal flows through per-request oneshot responders — makes modal awaits local and supports concurrent flows.
 - 2026-02-07: Route work requests through per-request responders — keeps background work awaits local and ready for concurrency.
+- 2026-02-07: Allow multiple in-flight work entries — unblocks concurrent work execution.

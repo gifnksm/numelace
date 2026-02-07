@@ -5,6 +5,7 @@
 //! trigger a panic via the worker error handler.
 
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::rc::Rc;
 
 use wasm_bindgen::{JsCast, closure::Closure};
@@ -13,8 +14,6 @@ use web_sys::{Event, MessageEvent, Url, Worker};
 use super::super::{WorkError, WorkRequest, WorkResponse};
 
 /// A handle for polling background work completion.
-///
-/// Note: the WASM backend assumes a single in-flight request at a time.
 pub(crate) struct WorkHandle {
     response: Rc<RefCell<Option<WorkResponse>>>,
     error: Rc<RefCell<Option<WorkError>>>,
@@ -37,10 +36,14 @@ impl WorkHandle {
     }
 }
 
-struct SharedWorker {
-    worker: Worker,
+struct PendingSlot {
     response: Rc<RefCell<Option<WorkResponse>>>,
     error: Rc<RefCell<Option<WorkError>>>,
+}
+
+struct SharedWorker {
+    worker: Worker,
+    pending: Rc<RefCell<VecDeque<PendingSlot>>>,
     _onmessage: Closure<dyn FnMut(MessageEvent)>,
     _onerror: Closure<dyn FnMut(Event)>,
 }
@@ -50,27 +53,30 @@ impl SharedWorker {
         let worker_url = read_worker_url()?;
         let worker = Worker::new(&worker_url).map_err(|_| WorkError::WorkerInitFailed)?;
 
-        let response = Rc::new(RefCell::new(None));
-        let error = Rc::new(RefCell::new(None));
-
-        let response_cell = Rc::clone(&response);
-        let error_cell_for_message = Rc::clone(&error);
-        let error_cell_for_error = Rc::clone(&error);
+        let pending = Rc::new(RefCell::new(VecDeque::<PendingSlot>::new()));
+        let pending_for_message = Rc::clone(&pending);
+        let pending_for_error = Rc::clone(&pending);
 
         let onmessage = Closure::wrap(Box::new(move |event: MessageEvent| {
+            let Some(slot) = pending_for_message.borrow_mut().pop_front() else {
+                return;
+            };
+
             let value = event.data();
             match serde_wasm_bindgen::from_value::<WorkResponse>(value) {
                 Ok(resp) => {
-                    *response_cell.borrow_mut() = Some(resp);
+                    *slot.response.borrow_mut() = Some(resp);
                 }
                 Err(_) => {
-                    *error_cell_for_message.borrow_mut() = Some(WorkError::DeserializationFailed);
+                    *slot.error.borrow_mut() = Some(WorkError::DeserializationFailed);
                 }
             }
         }) as Box<dyn FnMut(MessageEvent)>);
 
         let onerror = Closure::wrap(Box::new(move |_event: Event| -> () {
-            *error_cell_for_error.borrow_mut() = Some(WorkError::WorkerDisconnected);
+            for slot in pending_for_error.borrow().iter() {
+                *slot.error.borrow_mut() = Some(WorkError::WorkerDisconnected);
+            }
         }) as Box<dyn FnMut(Event)>);
 
         worker.set_onmessage(Some(onmessage.as_ref().unchecked_ref()));
@@ -78,16 +84,10 @@ impl SharedWorker {
 
         Ok(Self {
             worker,
-            response,
-            error,
+            pending,
             _onmessage: onmessage,
             _onerror: onerror,
         })
-    }
-
-    fn reset(&mut self) {
-        *self.response.borrow_mut() = None;
-        *self.error.borrow_mut() = None;
     }
 
     fn send(&mut self, request: &WorkRequest) -> Result<(), WorkError> {
@@ -120,23 +120,24 @@ where
 
 /// Starts the shared worker without sending a request.
 pub(crate) fn warm_up() -> Result<(), WorkError> {
-    with_worker(|worker| {
-        worker.reset();
-        Ok(())
-    })
+    with_worker(|_worker| Ok(()))
 }
 
 /// Enqueues a background task and returns a handle for polling completion.
 #[expect(clippy::needless_pass_by_value)]
 pub(crate) fn enqueue(request: WorkRequest) -> Result<WorkHandle, WorkError> {
-    with_worker(|worker| {
-        worker.reset();
-        worker.send(&request)?;
+    let response = Rc::new(RefCell::new(None));
+    let error = Rc::new(RefCell::new(None));
+    let slot = PendingSlot {
+        response: Rc::clone(&response),
+        error: Rc::clone(&error),
+    };
 
-        Ok(WorkHandle {
-            response: Rc::clone(&worker.response),
-            error: Rc::clone(&worker.error),
-        })
+    with_worker(|worker| {
+        worker.send(&request)?;
+        worker.pending.borrow_mut().push_back(slot);
+
+        Ok(WorkHandle { response, error })
     })
 }
 

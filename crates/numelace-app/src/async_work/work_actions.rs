@@ -19,17 +19,13 @@ pub(crate) fn request_work(
     request_action: WorkRequestAction,
     ui_state: &mut UiState,
 ) -> Result<(), WorkError> {
-    if WorkFlow::is_work_in_flight(&ui_state.work) {
-        return Ok(());
-    }
-
     ui_state.work.last_error = None;
-    ui_state.work.work_responder = Some(request_action.responder);
     let request = request_action.request;
+    let responder = request_action.responder;
 
     match enqueue(request.clone()) {
         Ok(handle) => {
-            WorkFlow::start_request(&mut ui_state.work, &request, handle);
+            WorkFlow::start_request(&mut ui_state.work, handle, responder);
             Ok(())
         }
         Err(err) => {
