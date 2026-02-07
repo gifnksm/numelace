@@ -11,12 +11,13 @@ use std::{
     task::{Context, Poll},
 };
 
+pub(crate) use platform::warm_up;
+use platform::{WorkHandle, enqueue};
+
 use self::tasks::{
     GeneratedPuzzleDto, SolvabilityRequestDto, SolvabilityStateDto, SolvabilityUndoGridsDto,
     SolvabilityUndoScanResultDto,
 };
-pub(crate) use platform::warm_up;
-use platform::{WorkHandle, enqueue};
 
 pub(crate) mod api;
 mod platform;

@@ -605,11 +605,11 @@ impl Game {
 
 #[cfg(test)]
 mod tests {
-    use crate::NoteCleanupPolicy;
     use numelace_core::{Digit, DigitGrid, DigitSet, Position};
     use numelace_generator::PuzzleGenerator;
 
     use super::*;
+    use crate::NoteCleanupPolicy;
 
     const TEST_SOLUTION: &str =
         "185362947793148526246795183564239871931874265827516394318427659672951438459683712";

@@ -1,8 +1,7 @@
 use eframe::egui::Context;
 
-use crate::action::{ActionRequestQueue, ModalRequest};
-
 pub(crate) use self::settings::SettingsViewModel;
+use crate::action::{ActionRequestQueue, ModalRequest};
 
 mod dialogs;
 mod settings;

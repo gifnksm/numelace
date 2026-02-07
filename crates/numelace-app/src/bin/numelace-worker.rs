@@ -6,8 +6,7 @@
 #[cfg(target_arch = "wasm32")]
 mod wasm32 {
     use numelace_app::worker_api::{WorkRequest, WorkResponse};
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen::prelude::*;
+    use wasm_bindgen::{JsCast, prelude::*};
     use web_sys::{DedicatedWorkerGlobalScope, MessageEvent};
 
     /// Initializes the worker event loop for background requests.

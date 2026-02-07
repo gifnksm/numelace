@@ -3,8 +3,7 @@ use std::mem;
 use numelace_core::{Digit, Position};
 use numelace_generator::GeneratedPuzzle;
 
-use crate::state::Settings;
-use crate::worker::tasks::SolvabilityUndoGridsDto;
+use crate::{state::Settings, worker::tasks::SolvabilityUndoGridsDto};
 
 pub(crate) mod flows;
 pub(crate) mod handler;
@@ -232,9 +231,8 @@ impl ActionRequestQueue {
 
 #[cfg(test)]
 mod tests {
-    use crate::action::{AppAction, BoardMutationAction, InputModeAction};
-
     use super::{Action, ActionRequestQueue};
+    use crate::action::{AppAction, BoardMutationAction, InputModeAction};
 
     #[test]
     fn take_all_returns_actions_and_clears_queue() {

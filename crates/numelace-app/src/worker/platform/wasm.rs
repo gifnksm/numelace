@@ -4,9 +4,7 @@
 //! during background puzzle generation. Failures are treated as internal errors and
 //! trigger a panic via the worker error handler.
 
-use std::cell::RefCell;
-use std::collections::VecDeque;
-use std::rc::Rc;
+use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use wasm_bindgen::{JsCast, closure::Closure};
 use web_sys::{Event, MessageEvent, Url, Worker};

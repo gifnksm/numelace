@@ -4,10 +4,12 @@ use numelace_core::{DigitGrid, DigitGridParseError, Position, PositionNewError};
 use numelace_game::{CellState, Game, GameError};
 use serde::{Deserialize, Serialize};
 
-use crate::DEFAULT_MAX_HISTORY_LENGTH;
-use crate::state::{
-    AppState, AssistSettings, HighlightSettings, HistorySnapshot, HistoryState, InputMode,
-    NotesSettings, Settings,
+use crate::{
+    DEFAULT_MAX_HISTORY_LENGTH,
+    state::{
+        AppState, AssistSettings, HighlightSettings, HistorySnapshot, HistoryState, InputMode,
+        NotesSettings, Settings,
+    },
 };
 
 // DTO defaulting guidance:

@@ -3,10 +3,12 @@ use std::collections::VecDeque;
 use numelace_core::{Digit, DigitGrid, Position};
 use numelace_game::{CellState, Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
-use crate::DEFAULT_MAX_HISTORY_LENGTH;
-use crate::action::{ModalRequest, SpinnerId, SpinnerKind};
-use crate::flow_executor::FlowExecutor;
-use crate::history::UndoRedoStack;
+use crate::{
+    DEFAULT_MAX_HISTORY_LENGTH,
+    action::{ModalRequest, SpinnerId, SpinnerKind},
+    flow_executor::FlowExecutor,
+    history::UndoRedoStack,
+};
 
 // AppState holds persisted state (game/session + settings + history). It is serialized for resume.
 #[derive(Debug)]
