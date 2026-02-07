@@ -144,16 +144,6 @@ async fn check_solvability_flow(handle: FlowHandle, request: CandidateGridPairDt
     }
 }
 
-fn open_solvability_undo_not_found(handle: &FlowHandle) {
-    handle.request_action(
-        UiAction::OpenModal(ModalRequest::Alert {
-            kind: AlertKind::SolvabilityUndoNotFound,
-            responder: None,
-        })
-        .into(),
-    );
-}
-
 async fn request_undo_games(handle: &FlowHandle) -> Option<Vec<Game>> {
     let (responder, receiver) = oneshot::channel();
     handle.request_action(StateQueryAction::BuildUndoGames { responder }.into());
@@ -177,7 +167,7 @@ async fn handle_solvability_undo(handle: &FlowHandle) {
 
 async fn apply_solvability_undo_result(handle: &FlowHandle, result: SolvabilityUndoScanResultDto) {
     let Some(index) = result.index else {
-        open_solvability_undo_not_found(handle);
+        let _ = show_alert_dialog(handle, AlertKind::SolvabilityUndoNotFound).await;
         return;
     };
 
