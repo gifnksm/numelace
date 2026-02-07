@@ -4,8 +4,10 @@ use numelace_core::{DigitGrid, DigitGridParseError, Position, PositionNewError};
 use numelace_game::{CellState, Game, GameError};
 use serde::{Deserialize, Serialize};
 
+use crate::DEFAULT_MAX_HISTORY_LENGTH;
 use crate::state::{
-    AppState, AssistSettings, HighlightSettings, InputMode, NotesSettings, Settings,
+    AppState, AssistSettings, HighlightSettings, HistorySnapshot, HistoryState, InputMode,
+    NotesSettings, Settings,
 };
 
 // DTO defaulting guidance:
@@ -22,6 +24,8 @@ pub(crate) struct PersistedState {
     input_mode: InputModeDto,
     #[serde(default)]
     settings: SettingsDto,
+    #[serde(default)]
+    history: HistoryStateDto,
 }
 
 impl From<&AppState> for PersistedState {
@@ -31,6 +35,19 @@ impl From<&AppState> for PersistedState {
             selected_cell: value.selected_cell.map(PositionDto::from),
             input_mode: value.input_mode.into(),
             settings: SettingsDto::from(&value.settings),
+            history: value.history_state().into(),
+        }
+    }
+}
+
+impl PersistedState {
+    pub(crate) fn history_state(&self) -> HistoryState {
+        match HistoryState::try_from(self.history.clone()) {
+            Ok(history) => history,
+            Err(_) => HistoryState {
+                entries: Vec::new(),
+                cursor: 0,
+            },
         }
     }
 }
@@ -49,13 +66,15 @@ impl TryFrom<PersistedState> for AppState {
     type Error = AppStateConversionError;
 
     fn try_from(value: PersistedState) -> Result<Self, Self::Error> {
-        Ok(Self {
-            game: value.game.try_into()?,
-            selected_cell: value.selected_cell.map(Position::try_from).transpose()?,
-            input_mode: value.input_mode.into(),
-            settings: value.settings.into(),
-            dirty: false,
-        })
+        let history_state = value.history_state();
+        Ok(AppState::new_with_history(
+            value.game.try_into()?,
+            value.selected_cell.map(Position::try_from).transpose()?,
+            value.input_mode.into(),
+            value.settings.into(),
+            history_state,
+            DEFAULT_MAX_HISTORY_LENGTH,
+        ))
     }
 }
 
@@ -125,6 +144,74 @@ impl TryFrom<GameDto> for Game {
             &filled,
             &value.notes,
         )?)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub(crate) struct HistorySnapshotDto {
+    filled: String,
+    #[serde(default)]
+    notes: [[u16; 9]; 9],
+    #[serde(default)]
+    selected_cell: Option<PositionDto>,
+}
+
+impl From<HistorySnapshot> for HistorySnapshotDto {
+    fn from(value: HistorySnapshot) -> Self {
+        Self {
+            filled: value.filled.to_string(),
+            notes: value.notes,
+            selected_cell: value.selected_at_change.map(PositionDto::from),
+        }
+    }
+}
+
+impl TryFrom<HistorySnapshotDto> for HistorySnapshot {
+    type Error = AppStateConversionError;
+
+    fn try_from(value: HistorySnapshotDto) -> Result<Self, Self::Error> {
+        let filled: DigitGrid = value.filled.parse()?;
+        Ok(Self {
+            filled,
+            notes: value.notes,
+            selected_at_change: value.selected_cell.map(Position::try_from).transpose()?,
+        })
+    }
+}
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
+pub(crate) struct HistoryStateDto {
+    entries: Vec<HistorySnapshotDto>,
+    cursor: usize,
+}
+
+impl From<HistoryState> for HistoryStateDto {
+    fn from(value: HistoryState) -> Self {
+        Self {
+            entries: value
+                .entries
+                .into_iter()
+                .map(HistorySnapshotDto::from)
+                .collect(),
+            cursor: value.cursor,
+        }
+    }
+}
+
+impl TryFrom<HistoryStateDto> for HistoryState {
+    type Error = AppStateConversionError;
+
+    fn try_from(value: HistoryStateDto) -> Result<Self, Self::Error> {
+        let entries = value
+            .entries
+            .into_iter()
+            .map(HistorySnapshot::try_from)
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self {
+            entries,
+            cursor: value.cursor,
+        })
     }
 }
 

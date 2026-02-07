@@ -18,8 +18,8 @@ use crate::{
 };
 
 #[must_use]
-pub(crate) fn build_toolbar_vm(ui_state: &UiState) -> ToolbarViewModel {
-    ToolbarViewModel::new(ui_state.can_undo(), ui_state.can_redo())
+pub(crate) fn build_toolbar_vm(app_state: &AppState, _ui_state: &UiState) -> ToolbarViewModel {
+    ToolbarViewModel::new(app_state.can_undo(), app_state.can_redo())
 }
 
 fn build_grid(app_state: &AppState, ui_state: &UiState) -> Array81<GridCell, PositionSemantics> {
@@ -113,7 +113,7 @@ pub(crate) fn build_game_screen_view_model(
         GameStatus::InProgress
     };
     let status_line_vm = StatusLineViewModel::new(status);
-    let toolbar_vm = build_toolbar_vm(ui_state);
+    let toolbar_vm = build_toolbar_vm(app_state, ui_state);
 
     let grid = build_grid(app_state, ui_state);
     let grid_vm = GridViewModel::new(grid, &settings.assist.highlight);
@@ -150,7 +150,6 @@ mod tests {
 
     use super::build_grid;
     use crate::{
-        DEFAULT_MAX_HISTORY_LENGTH,
         state::{AppState, GhostType, UiState},
         ui::grid::GridVisualState,
     };
@@ -201,7 +200,7 @@ mod tests {
     fn build_grid_highlights_selected_conflict_and_same_digit() {
         let mut app_state = AppState::new(game_from_filled(&filled_with_conflict()));
         app_state.selected_cell = Some(Position::new(0, 0));
-        let ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
+        let ui_state = UiState::new();
 
         let grid = build_grid(&app_state, &ui_state);
 
@@ -235,7 +234,7 @@ mod tests {
     #[test]
     fn build_grid_applies_digit_ghost() {
         let app_state = AppState::new(game_from_filled(&blank_grid()));
-        let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
+        let mut ui_state = UiState::new();
         ui_state.conflict_ghost = Some((Position::new(3, 3), GhostType::Digit(Digit::D2)));
 
         let grid = build_grid(&app_state, &ui_state);

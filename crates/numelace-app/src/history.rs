@@ -12,7 +12,7 @@ impl<T> UndoRedoStack<T> {
     pub(crate) fn new(capacity: usize) -> Self {
         assert!(capacity > 0);
         Self {
-            stack: VecDeque::with_capacity(capacity),
+            stack: VecDeque::new(),
             capacity,
             cursor: 0,
         }
@@ -77,6 +77,32 @@ impl<T> UndoRedoStack<T> {
     #[must_use]
     pub(crate) fn current(&self) -> Option<&T> {
         self.stack.get(self.cursor)
+    }
+
+    #[must_use]
+    pub(crate) fn cursor(&self) -> usize {
+        self.cursor
+    }
+
+    #[must_use]
+    pub(crate) fn as_slices(&self) -> (&[T], &[T]) {
+        self.stack.as_slices()
+    }
+
+    pub(crate) fn restore_from_parts(&mut self, mut stack: VecDeque<T>, cursor: usize) {
+        if stack.len() > self.capacity {
+            let overflow = stack.len() - self.capacity;
+            for _ in 0..overflow {
+                stack.pop_front();
+            }
+            let adjusted_cursor = cursor.saturating_sub(overflow);
+            self.stack = stack;
+            self.cursor = adjusted_cursor.min(self.stack.len().saturating_sub(1));
+            return;
+        }
+
+        self.stack = stack;
+        self.cursor = cursor.min(self.stack.len().saturating_sub(1));
     }
 }
 

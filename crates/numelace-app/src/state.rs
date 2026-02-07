@@ -1,10 +1,14 @@
-use numelace_core::{Digit, Position};
-use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
+use std::collections::VecDeque;
 
+use numelace_core::{Digit, DigitGrid, Position};
+use numelace_game::{CellState, Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
+
+use crate::DEFAULT_MAX_HISTORY_LENGTH;
 use crate::action::{ModalRequest, SpinnerId, SpinnerKind};
 use crate::flow_executor::FlowExecutor;
 use crate::history::UndoRedoStack;
 
+// AppState holds persisted state (game/session + settings + history). It is serialized for resume.
 #[derive(Debug)]
 pub(crate) struct AppState {
     pub(crate) game: Game,
@@ -12,24 +16,50 @@ pub(crate) struct AppState {
     pub(crate) input_mode: InputMode,
     pub(crate) settings: Settings,
     pub(crate) dirty: bool,
+    history: UndoRedoStack<HistorySnapshot>,
 }
 
 impl AppState {
     #[must_use]
     pub(crate) fn new(game: Game) -> Self {
-        Self {
+        let mut state = Self {
             game,
             selected_cell: None,
             input_mode: InputMode::Fill,
             settings: Settings::default(),
             dirty: false,
-        }
+            history: UndoRedoStack::new(DEFAULT_MAX_HISTORY_LENGTH),
+        };
+        state.reset_history();
+        state
     }
 
     #[must_use]
     pub(crate) fn new_with_settings_applied(game: Game) -> Self {
         let mut state = Self::new(game);
         state.apply_new_game_settings();
+        state.reset_history();
+        state
+    }
+
+    #[must_use]
+    pub(crate) fn new_with_history(
+        game: Game,
+        selected_cell: Option<Position>,
+        input_mode: InputMode,
+        settings: Settings,
+        history_state: HistoryState,
+        max_history_len: usize,
+    ) -> Self {
+        let mut state = Self {
+            game,
+            selected_cell,
+            input_mode,
+            settings,
+            dirty: false,
+            history: UndoRedoStack::new(max_history_len),
+        };
+        state.apply_history_state(history_state);
         state
     }
 
@@ -75,6 +105,74 @@ impl AppState {
         InputDigitOptions::default()
             .rule_check_policy(self.rule_check_policy())
             .note_cleanup_policy(self.note_cleanup_policy())
+    }
+
+    pub(crate) fn reset_history(&mut self) {
+        self.history.clear();
+        self.history.push(HistorySnapshot::from_app_state(self));
+    }
+
+    #[must_use]
+    pub(crate) fn history_state(&self) -> HistoryState {
+        let (front, back) = self.history.as_slices();
+        let entries = front.iter().chain(back.iter()).cloned().collect::<Vec<_>>();
+        HistoryState {
+            entries,
+            cursor: self.history.cursor(),
+        }
+    }
+
+    pub(crate) fn apply_history_state(&mut self, history_state: HistoryState) {
+        let stack = VecDeque::from(history_state.entries);
+        self.history.restore_from_parts(stack, history_state.cursor);
+        if let Some(snapshot) = self.history.current().cloned() {
+            if !snapshot.apply_to(self) {
+                self.reset_history();
+            }
+        } else {
+            self.reset_history();
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn can_undo(&self) -> bool {
+        self.history.can_undo()
+    }
+
+    pub(crate) fn undo(&mut self) -> bool {
+        let Some(current) = self.history.current() else {
+            return false;
+        };
+        let change_location = current.selected_at_change;
+        if self.history.undo()
+            && let Some(snapshot) = self.history.current().cloned()
+            && snapshot.apply_to(self)
+        {
+            self.selected_cell = change_location;
+            true
+        } else {
+            false
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn can_redo(&self) -> bool {
+        self.history.can_redo()
+    }
+
+    pub(crate) fn redo(&mut self) -> bool {
+        if self.history.redo()
+            && let Some(snapshot) = self.history.current().cloned()
+            && snapshot.apply_to(self)
+        {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub(crate) fn push_history(&mut self) {
+        self.history.push(HistorySnapshot::from_app_state(self));
     }
 }
 
@@ -186,16 +284,59 @@ pub(crate) enum GhostType {
 }
 
 #[derive(Debug, Clone)]
-struct GameSnapshot {
-    game: Game,
-    selected_at_change: Option<Position>,
+pub(crate) struct HistorySnapshot {
+    pub(crate) filled: DigitGrid,
+    pub(crate) notes: [[u16; 9]; 9],
+    pub(crate) selected_at_change: Option<Position>,
 }
 
-impl GameSnapshot {
-    fn new(app_state: &AppState) -> Self {
+#[derive(Debug, Clone)]
+pub(crate) struct HistoryState {
+    pub(crate) entries: Vec<HistorySnapshot>,
+    pub(crate) cursor: usize,
+}
+
+fn base_problem_and_solution(game: &Game) -> (DigitGrid, DigitGrid) {
+    let mut problem = DigitGrid::new();
+    for pos in Position::ALL {
+        if let CellState::Given(digit) = game.cell(pos) {
+            problem.set(pos, Some(*digit));
+        }
+    }
+    (problem, game.solution().clone())
+}
+
+impl HistorySnapshot {
+    fn from_app_state(app_state: &AppState) -> Self {
+        let mut filled = DigitGrid::new();
+        let mut notes = [[0u16; 9]; 9];
+        for pos in Position::ALL {
+            match app_state.game.cell(pos) {
+                CellState::Filled(digit) => {
+                    filled.set(pos, Some(*digit));
+                }
+                CellState::Notes(digits) => {
+                    notes[usize::from(pos.y())][usize::from(pos.x())] = digits.bits();
+                }
+                CellState::Given(_) | CellState::Empty => {}
+            }
+        }
         Self {
-            game: app_state.game.clone(),
+            filled,
+            notes,
             selected_at_change: app_state.selected_cell,
+        }
+    }
+
+    fn apply_to(&self, app_state: &mut AppState) -> bool {
+        let (problem, solution) = base_problem_and_solution(&app_state.game);
+        match Game::from_problem_filled_notes(&problem, &solution, &self.filled, &self.notes) {
+            Ok(game) => {
+                app_state.game = game;
+                app_state.selected_cell = self.selected_at_change;
+                true
+            }
+            Err(_) => false,
         }
     }
 }
@@ -251,74 +392,24 @@ pub(crate) struct SpinnerEntry {
     pub(crate) kind: SpinnerKind,
 }
 
+// UiState holds ephemeral UI-only state (modals, spinners, ghosts). It is not persisted.
 #[derive(Debug)]
 pub(crate) struct UiState {
     pub(crate) active_modal: Option<ModalRequest>,
     pub(crate) conflict_ghost: Option<(Position, GhostType)>,
     pub(crate) executor: FlowExecutor,
     pub(crate) spinner_state: SpinnerState,
-    history: UndoRedoStack<GameSnapshot>,
 }
 
 impl UiState {
     #[must_use]
-    pub(crate) fn new(max_history_len: usize, init_state: &AppState) -> Self {
-        let mut this = Self {
+    pub(crate) fn new() -> Self {
+        Self {
             active_modal: None,
             conflict_ghost: None,
             executor: FlowExecutor::new(),
             spinner_state: SpinnerState::default(),
-            history: UndoRedoStack::new(max_history_len),
-        };
-        this.reset_history(init_state);
-        this
-    }
-
-    pub(crate) fn reset_history(&mut self, init_state: &AppState) {
-        self.history.clear();
-        self.history.push(GameSnapshot::new(init_state));
-    }
-
-    #[must_use]
-    pub(crate) fn can_undo(&self) -> bool {
-        self.history.can_undo()
-    }
-
-    pub(crate) fn undo(&mut self, app_state: &mut AppState) -> bool {
-        let Some(current) = self.history.current() else {
-            return false;
-        };
-        let change_location = current.selected_at_change;
-        if self.history.undo()
-            && let Some(snapshot) = self.history.current()
-        {
-            app_state.game = snapshot.game.clone();
-            app_state.selected_cell = change_location;
-            true
-        } else {
-            false
         }
-    }
-
-    #[must_use]
-    pub(crate) fn can_redo(&self) -> bool {
-        self.history.can_redo()
-    }
-
-    pub(crate) fn redo(&mut self, app_state: &mut AppState) -> bool {
-        if self.history.redo()
-            && let Some(snapshot) = self.history.current()
-        {
-            app_state.game = snapshot.game.clone();
-            app_state.selected_cell = snapshot.selected_at_change;
-            true
-        } else {
-            false
-        }
-    }
-
-    pub(crate) fn push_history(&mut self, app_state: &AppState) {
-        self.history.push(GameSnapshot::new(app_state));
     }
 }
 
@@ -327,7 +418,7 @@ mod tests {
     use numelace_core::{Digit, DigitGrid, Position};
     use numelace_game::{CellState, Game, InputDigitOptions};
 
-    use super::{AppState, UiState};
+    use super::AppState;
 
     fn fixed_game() -> Game {
         let problem: DigitGrid = "\
@@ -367,7 +458,6 @@ mod tests {
     #[test]
     fn undo_redo_restores_game_and_selection() {
         let mut app_state = AppState::new(fixed_game());
-        let mut ui_state = UiState::new(10, &app_state);
 
         app_state.selected_cell = Some(Position::new(0, 0));
         app_state
@@ -378,7 +468,7 @@ mod tests {
                 &InputDigitOptions::default(),
             )
             .unwrap();
-        ui_state.push_history(&app_state);
+        app_state.push_history();
 
         app_state.selected_cell = Some(Position::new(2, 0));
         app_state
@@ -389,9 +479,9 @@ mod tests {
                 &InputDigitOptions::default(),
             )
             .unwrap();
-        ui_state.push_history(&app_state);
+        app_state.push_history();
 
-        assert!(ui_state.undo(&mut app_state));
+        assert!(app_state.undo());
 
         assert!(matches!(
             app_state.game.cell(Position::new(0, 0)),
@@ -403,7 +493,7 @@ mod tests {
         ));
         assert_eq!(app_state.selected_cell, Some(Position::new(2, 0)));
 
-        assert!(ui_state.redo(&mut app_state));
+        assert!(app_state.redo());
 
         assert!(matches!(
             app_state.game.cell(Position::new(2, 0)),

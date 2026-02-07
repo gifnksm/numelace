@@ -115,33 +115,33 @@ impl BoardMutationAction {
             }
         }
         if app_state.game != game_snapshot {
-            ui_state.push_history(app_state);
+            app_state.push_history();
         }
     }
 }
 
 impl PuzzleLifecycleAction {
-    fn execute(self, app_state: &mut AppState, ui_state: &mut UiState) {
+    fn execute(self, app_state: &mut AppState, _ui_state: &mut UiState) {
         match self {
             PuzzleLifecycleAction::StartNewGame(puzzle) => {
                 let game = Game::new(puzzle);
                 app_state.game = game;
                 app_state.selected_cell = None;
                 app_state.apply_new_game_settings();
-                ui_state.reset_history(app_state);
+                app_state.reset_history();
             }
         }
     }
 }
 
 impl HistoryAction {
-    fn execute(self, app_state: &mut AppState, ui_state: &mut UiState) {
+    fn execute(self, app_state: &mut AppState, _ui_state: &mut UiState) {
         match self {
             HistoryAction::Undo => {
-                ui_state.undo(app_state);
+                app_state.undo();
             }
             HistoryAction::Redo => {
-                ui_state.redo(app_state);
+                app_state.redo();
             }
         }
     }
@@ -224,7 +224,6 @@ mod tests {
 
     use super::handle;
     use crate::{
-        DEFAULT_MAX_HISTORY_LENGTH,
         action::{BoardMutationAction, ConfirmKind, ModalRequest, NotesFillScope, UiAction},
         state::{AppState, GhostType, UiState},
     };
@@ -270,7 +269,7 @@ mod tests {
         app_state.selected_cell = Some(Position::new(0, 0));
         app_state.settings.assist.block_rule_violations = true;
 
-        let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
+        let mut ui_state = UiState::new();
 
         handle(
             &mut app_state,
@@ -294,7 +293,7 @@ mod tests {
     #[test]
     fn auto_fill_cell_without_selection_is_noop() {
         let mut app_state = AppState::new(fixed_game());
-        let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
+        let mut ui_state = UiState::new();
         let before = app_state.game.clone();
 
         handle(
@@ -317,7 +316,7 @@ mod tests {
             .assist
             .notes
             .auto_fill_notes_on_new_or_reset = true;
-        let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
+        let mut ui_state = UiState::new();
 
         handle(
             &mut app_state,
@@ -335,7 +334,7 @@ mod tests {
     fn same_digit_request_does_not_add_history_entry() {
         let mut app_state = AppState::new(fixed_game());
         app_state.selected_cell = Some(Position::new(0, 0));
-        let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
+        let mut ui_state = UiState::new();
 
         handle(
             &mut app_state,
@@ -357,9 +356,9 @@ mod tests {
             .into(),
         );
 
-        assert!(ui_state.can_undo());
-        assert!(ui_state.undo(&mut app_state));
-        assert!(!ui_state.can_undo());
+        assert!(app_state.can_undo());
+        assert!(app_state.undo());
+        assert!(!app_state.can_undo());
         assert!(matches!(
             app_state.game.cell(Position::new(0, 0)),
             CellState::Empty
@@ -369,7 +368,7 @@ mod tests {
     #[test]
     fn close_new_game_confirm_clears_flag() {
         let mut app_state = AppState::new(fixed_game());
-        let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
+        let mut ui_state = UiState::new();
         ui_state.active_modal = Some(ModalRequest::Confirm {
             kind: ConfirmKind::NewGame,
             responder: None,

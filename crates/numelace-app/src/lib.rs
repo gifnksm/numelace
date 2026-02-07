@@ -1,7 +1,7 @@
 //! Shared library module for the Numelace app crate.
 #![allow(missing_docs, clippy::missing_errors_doc, clippy::missing_panics_doc)]
 
-pub(crate) const DEFAULT_MAX_HISTORY_LENGTH: usize = 200;
+pub(crate) const DEFAULT_MAX_HISTORY_LENGTH: usize = 5000;
 
 pub(crate) mod action;
 pub(crate) mod app;
