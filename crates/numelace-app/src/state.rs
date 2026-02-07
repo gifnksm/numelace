@@ -255,7 +255,7 @@ pub(crate) struct SpinnerEntry {
 pub(crate) struct UiState {
     pub(crate) active_modal: Option<ModalRequest>,
     pub(crate) conflict_ghost: Option<(Position, GhostType)>,
-    pub(crate) flow: FlowExecutor,
+    pub(crate) executor: FlowExecutor,
     pub(crate) spinner_state: SpinnerState,
     history: UndoRedoStack<GameSnapshot>,
 }
@@ -266,7 +266,7 @@ impl UiState {
         let mut this = Self {
             active_modal: None,
             conflict_ghost: None,
-            flow: FlowExecutor::new(),
+            executor: FlowExecutor::new(),
             spinner_state: SpinnerState::default(),
             history: UndoRedoStack::new(max_history_len),
         };

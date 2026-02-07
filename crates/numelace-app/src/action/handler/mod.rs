@@ -107,7 +107,7 @@ impl BoardMutationAction {
                     app_state.game.auto_fill_notes_all_cells();
                 }
             },
-            BoardMutationAction::ResetCurrentInput => {
+            BoardMutationAction::ResetInputs => {
                 for pos in Position::ALL {
                     let _ = app_state.game.clear_cell(pos);
                 }
@@ -205,10 +205,13 @@ impl FlowAction {
     fn execute(self, app_state: &AppState, ui_state: &mut UiState) {
         match self {
             FlowAction::StartNewGame => {
-                flows::spawn_new_game_flow(&mut ui_state.flow);
+                flows::spawn_new_game_flow(&mut ui_state.executor);
+            }
+            FlowAction::ResetInputs => {
+                flows::spawn_reset_inputs_flow(&mut ui_state.executor);
             }
             FlowAction::CheckSolvability => {
-                flows::spawn_check_solvability_flow(&mut ui_state.flow, &app_state.game);
+                flows::spawn_check_solvability_flow(&mut ui_state.executor, &app_state.game);
             }
         }
     }
@@ -222,7 +225,7 @@ mod tests {
     use super::handle;
     use crate::{
         DEFAULT_MAX_HISTORY_LENGTH,
-        action::{BoardMutationAction, ModalRequest, NotesFillScope, UiAction},
+        action::{BoardMutationAction, ConfirmKind, ModalRequest, NotesFillScope, UiAction},
         state::{AppState, GhostType, UiState},
     };
 
@@ -319,7 +322,7 @@ mod tests {
         handle(
             &mut app_state,
             &mut ui_state,
-            BoardMutationAction::ResetCurrentInput.into(),
+            BoardMutationAction::ResetInputs.into(),
         );
 
         let any_notes = Position::ALL
@@ -367,7 +370,10 @@ mod tests {
     fn close_new_game_confirm_clears_flag() {
         let mut app_state = AppState::new(fixed_game());
         let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
-        ui_state.active_modal = Some(ModalRequest::NewGameConfirm(None));
+        ui_state.active_modal = Some(ModalRequest::Confirm {
+            kind: ConfirmKind::NewGame,
+            responder: None,
+        });
 
         handle(&mut app_state, &mut ui_state, UiAction::CloseModal.into());
 

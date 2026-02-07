@@ -2,8 +2,8 @@ use eframe::egui::{Button, Context, Id, Modal, Response, RichText, Sides, Ui};
 
 use crate::{
     action::{
-        ActionRequestQueue, BoardMutationAction, ConfirmResponder, ConfirmResult,
-        SolvabilityDialogResult, SolvabilityResponder, UiAction,
+        ActionRequestQueue, ConfirmKind, ConfirmResponder, ConfirmResult, SolvabilityDialogResult,
+        SolvabilityResponder, UiAction,
     },
     state::SolvabilityState,
     ui::icon,
@@ -11,12 +11,10 @@ use crate::{
 
 struct DialogResult {
     should_close: bool,
-    action_requested: bool,
 }
 
 fn show_dialog<Heading, Body, Buttons>(
     ctx: &Context,
-    action_queue: &mut ActionRequestQueue,
     id: Id,
     heading: Heading,
     body: Body,
@@ -25,9 +23,8 @@ fn show_dialog<Heading, Body, Buttons>(
 where
     Heading: Into<RichText>,
     Body: FnOnce(&mut Ui),
-    Buttons: FnOnce(&mut Ui, &mut ActionRequestQueue, &mut bool),
+    Buttons: FnOnce(&mut Ui),
 {
-    let mut action_requested = false;
     let modal = Modal::new(id).show(ctx, |ui| {
         ui.heading(heading);
         ui.add_space(4.0);
@@ -35,18 +32,11 @@ where
         body(ui);
         ui.add_space(8.0);
 
-        Sides::new().show(
-            ui,
-            |_ui| {},
-            |ui| {
-                buttons(ui, action_queue, &mut action_requested);
-            },
-        );
+        Sides::new().show(ui, |_ui| {}, buttons);
     });
 
     DialogResult {
         should_close: modal.should_close(),
-        action_requested,
     }
 }
 
@@ -80,33 +70,64 @@ fn send_solvability(responder: &mut Option<SolvabilityResponder>, result: Solvab
     }
 }
 
-pub(crate) fn show_new_game_confirm(
+impl ConfirmKind {
+    fn id(self) -> Id {
+        match self {
+            ConfirmKind::NewGame => Id::new("new_game_confirm"),
+            ConfirmKind::ResetInputs => Id::new("reset_inputs_confirm"),
+        }
+    }
+
+    fn heading(self) -> &'static str {
+        match self {
+            ConfirmKind::NewGame => "New Game?",
+            ConfirmKind::ResetInputs => "Reset Inputs?",
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            ConfirmKind::NewGame => "Start a new game? Current progress will be lost.",
+            ConfirmKind::ResetInputs => {
+                "Clear all your inputs and return to the initial puzzle state?"
+            }
+        }
+    }
+
+    fn confirm_label(self) -> &'static str {
+        match self {
+            ConfirmKind::NewGame => "New Game",
+            ConfirmKind::ResetInputs => "Reset Inputs",
+        }
+    }
+}
+
+pub(crate) fn show_confirm(
     ctx: &Context,
     action_queue: &mut ActionRequestQueue,
+    kind: ConfirmKind,
     responder: &mut Option<ConfirmResponder>,
 ) {
-    let DialogResult {
-        should_close,
-        action_requested,
-    } = show_dialog(
+    let DialogResult { should_close } = show_dialog(
         ctx,
-        action_queue,
-        Id::new("new_game_confirm"),
-        "New Game?",
+        kind.id(),
+        kind.heading(),
         |ui: &mut Ui| {
-            ui.label("Start a new game? Current progress will be lost.");
+            ui.label(kind.label());
         },
-        |ui: &mut Ui, _action_queue, action_requested| {
-            let confirm = primary_button(ui, format!("{} New Game", icon::CHECK), true);
+        |ui: &mut Ui| {
+            let confirm = primary_button(
+                ui,
+                format!("{} {}", icon::CHECK, kind.confirm_label()),
+                true,
+            );
             if confirm.clicked() {
-                *action_requested = true;
                 send_confirm(responder, ConfirmResult::Confirmed);
                 ui.close();
             }
 
             let cancel = ui.button(format!("{} Cancel", icon::CANCEL));
             if cancel.clicked() {
-                *action_requested = true;
                 send_confirm(responder, ConfirmResult::Cancelled);
                 ui.close();
             }
@@ -114,50 +135,7 @@ pub(crate) fn show_new_game_confirm(
     );
 
     if should_close {
-        if !action_requested {
-            send_confirm(responder, ConfirmResult::Cancelled);
-        }
-        action_queue.request(UiAction::CloseModal.into());
-    }
-}
-
-pub(crate) fn show_reset_current_puzzle_confirm(
-    ctx: &Context,
-    action_queue: &mut ActionRequestQueue,
-    responder: &mut Option<ConfirmResponder>,
-) {
-    let DialogResult {
-        should_close,
-        action_requested,
-    } = show_dialog(
-        ctx,
-        action_queue,
-        Id::new("reset_current_puzzle_confirm"),
-        "Reset Puzzle?",
-        |ui: &mut Ui| {
-            ui.label("Clear all your inputs and return to the initial puzzle state?");
-        },
-        |ui: &mut Ui, action_queue, action_requested| {
-            let confirm = primary_button(ui, format!("{} Reset", icon::CHECK), true);
-            if confirm.clicked() {
-                *action_requested = true;
-                send_confirm(responder, ConfirmResult::Confirmed);
-                action_queue.request(BoardMutationAction::ResetCurrentInput.into());
-                ui.close();
-            }
-
-            if ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
-                *action_requested = true;
-                send_confirm(responder, ConfirmResult::Cancelled);
-                ui.close();
-            }
-        },
-    );
-
-    if should_close {
-        if !action_requested {
-            send_confirm(responder, ConfirmResult::Cancelled);
-        }
+        send_confirm(responder, ConfirmResult::Cancelled);
         action_queue.request(UiAction::CloseModal.into());
     }
 }
@@ -189,21 +167,16 @@ fn show_solvability_inconsistent(
     action_queue: &mut ActionRequestQueue,
     responder: &mut Option<SolvabilityResponder>,
 ) {
-    let DialogResult {
-        should_close,
-        action_requested,
-    } = show_dialog(
+    let DialogResult { should_close } = show_dialog(
         ctx,
-        action_queue,
         Id::new("solvability_result"),
         "Board Inconsistent",
         |ui: &mut Ui| {
             ui.label("A conflict or a no-candidate cell was detected. We recommend undoing to the last consistent state.");
         },
-        |ui: &mut Ui, _action_queue, action_requested| {
+        |ui: &mut Ui| {
             disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
             if ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
-                *action_requested = true;
                 send_solvability(responder, SolvabilityDialogResult::Close);
                 ui.close();
             }
@@ -211,9 +184,7 @@ fn show_solvability_inconsistent(
     );
 
     if should_close {
-        if !action_requested {
-            send_solvability(responder, SolvabilityDialogResult::Close);
-        }
+        send_solvability(responder, SolvabilityDialogResult::Close);
         action_queue.request(UiAction::CloseModal.into());
     }
 }
@@ -223,21 +194,16 @@ fn show_solvability_no_solution(
     action_queue: &mut ActionRequestQueue,
     responder: &mut Option<SolvabilityResponder>,
 ) {
-    let DialogResult {
-        should_close,
-        action_requested,
-    } = show_dialog(
+    let DialogResult { should_close } = show_dialog(
         ctx,
-        action_queue,
         Id::new("solvability_result"),
         "No Solution Found",
         |ui: &mut Ui| {
             ui.label("No solution exists from the current state. We recommend undoing to the last solvable state.");
         },
-        |ui: &mut Ui, _action_queue, action_requested| {
+        |ui: &mut Ui| {
             disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
             if ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
-                *action_requested = true;
                 send_solvability(responder, SolvabilityDialogResult::Close);
                 ui.close();
             }
@@ -245,9 +211,7 @@ fn show_solvability_no_solution(
     );
 
     if should_close {
-        if !action_requested {
-            send_solvability(responder, SolvabilityDialogResult::Close);
-        }
+        send_solvability(responder, SolvabilityDialogResult::Close);
         action_queue.request(UiAction::CloseModal.into());
     }
 }
@@ -257,21 +221,16 @@ fn show_solvability_solvable(
     action_queue: &mut ActionRequestQueue,
     responder: &mut Option<SolvabilityResponder>,
 ) {
-    let DialogResult {
-        should_close,
-        action_requested,
-    } = show_dialog(
+    let DialogResult { should_close } = show_dialog(
         ctx,
-        action_queue,
         Id::new("solvability_result"),
         "Solvable",
         |ui: &mut Ui| {
             ui.label("A solution is still possible from the current state.");
         },
-        |ui: &mut Ui, _action_queue, action_requested| {
+        |ui: &mut Ui| {
             let ok = primary_button(ui, format!("{} OK", icon::CHECK), true);
             if ok.clicked() {
-                *action_requested = true;
                 send_solvability(responder, SolvabilityDialogResult::Close);
                 ui.close();
             }
@@ -279,9 +238,7 @@ fn show_solvability_solvable(
     );
 
     if should_close {
-        if !action_requested {
-            send_solvability(responder, SolvabilityDialogResult::Close);
-        }
+        send_solvability(responder, SolvabilityDialogResult::Close);
         action_queue.request(UiAction::CloseModal.into());
     }
 }
@@ -291,27 +248,21 @@ fn show_solvability_notes_maybe_incorrect(
     action_queue: &mut ActionRequestQueue,
     responder: &mut Option<SolvabilityResponder>,
 ) {
-    let DialogResult {
-        should_close,
-        action_requested,
-    } = show_dialog(
+    let DialogResult { should_close } = show_dialog(
         ctx,
-        action_queue,
         Id::new("solvability_result"),
         "Notes May Be Incorrect",
         |ui: &mut Ui| {
             ui.label("A solution exists when ignoring notes. Rebuild candidates now?");
         },
-        |ui: &mut Ui, _action_queue, action_requested| {
+        |ui: &mut Ui| {
             let rebuild = primary_button(ui, format!("{} Rebuild", icon::CHECK), true);
             if rebuild.clicked() {
-                *action_requested = true;
                 send_solvability(responder, SolvabilityDialogResult::RebuildNotes);
                 ui.close();
             }
 
             if ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
-                *action_requested = true;
                 send_solvability(responder, SolvabilityDialogResult::Close);
                 ui.close();
             }
@@ -319,9 +270,7 @@ fn show_solvability_notes_maybe_incorrect(
     );
 
     if should_close {
-        if !action_requested {
-            send_solvability(responder, SolvabilityDialogResult::Close);
-        }
+        send_solvability(responder, SolvabilityDialogResult::Close);
         action_queue.request(UiAction::CloseModal.into());
     }
 }

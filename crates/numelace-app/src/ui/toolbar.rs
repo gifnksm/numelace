@@ -55,10 +55,8 @@ pub(crate) fn show(
                     action_queue.request(FlowAction::StartNewGame.into());
                 }
 
-                if button(ui, icon::ROTATE_CCW, "Reset Puzzle", true, cell_size).clicked() {
-                    action_queue.request(
-                        UiAction::OpenModal(ModalRequest::ResetCurrentPuzzleConfirm(None)).into(),
-                    );
+                if button(ui, icon::ROTATE_CCW, "Reset Inputs", true, cell_size).clicked() {
+                    action_queue.request(FlowAction::ResetInputs.into());
                 }
 
                 if button(ui, icon::GEAR_NO_HUB, "Settings", true, cell_size).clicked() {

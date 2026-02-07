@@ -87,12 +87,7 @@ const SHORTCUTS: [Shortcut; 34] = [
         Key::Comma,
         Action::Ui(UiAction::OpenModal(ModalRequest::Settings)),
     ),
-    Shortcut::command_shift(
-        Key::Backspace,
-        Action::Ui(UiAction::OpenModal(
-            ModalRequest::ResetCurrentPuzzleConfirm(None),
-        )),
-    ),
+    Shortcut::command_shift(Key::Backspace, Action::Flow(FlowAction::ResetInputs)),
     Shortcut::command(Key::K, Action::Flow(FlowAction::CheckSolvability)),
     Shortcut::command(Key::Z, history_action(HistoryAction::Undo)),
     Shortcut::command(Key::Y, history_action(HistoryAction::Redo)),

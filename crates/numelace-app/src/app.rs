@@ -68,7 +68,7 @@ impl App for NumelaceApp {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
         let mut action_queue = ActionRequestQueue::default();
 
-        self.ui_state.flow.poll(&mut action_queue);
+        self.ui_state.executor.poll(&mut action_queue);
         action::handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);
 
         if self.ui_state.active_modal.is_none() && !self.ui_state.spinner_state.is_active() {

@@ -4,9 +4,9 @@ use numelace_generator::GeneratedPuzzle;
 
 use crate::{
     action::{
-        BoardMutationAction, ConfirmResponder, ConfirmResult, ModalRequest, NotesFillScope,
-        PuzzleLifecycleAction, SolvabilityDialogResult, SolvabilityResponder, SpinnerKind,
-        UiAction, flows,
+        BoardMutationAction, ConfirmKind, ConfirmResponder, ConfirmResult, ModalRequest,
+        NotesFillScope, PuzzleLifecycleAction, SolvabilityDialogResult, SolvabilityResponder,
+        SpinnerKind, UiAction, flows,
     },
     flow_executor::{FlowExecutor, FlowHandle},
     state::{SolvabilityState, SolvabilityStats},
@@ -15,6 +15,22 @@ use crate::{
         tasks::{SolvabilityRequestDto, SolvabilityStateDto},
     },
 };
+
+async fn show_confirm_dialog(handle: &FlowHandle, kind: ConfirmKind) -> ConfirmResult {
+    let (responder, receiver): (ConfirmResponder, oneshot::Receiver<ConfirmResult>) =
+        oneshot::channel();
+    handle.request_action(
+        UiAction::OpenModal(ModalRequest::Confirm {
+            kind,
+            responder: Some(responder),
+        })
+        .into(),
+    );
+    match receiver.await {
+        Ok(result) => result,
+        Err(_) => ConfirmResult::Cancelled,
+    }
+}
 
 /// Spawn a new game flow if no other flows are active.
 pub(crate) fn spawn_new_game_flow(executor: &mut FlowExecutor) {
@@ -29,33 +45,34 @@ pub(crate) fn spawn_new_game_flow(executor: &mut FlowExecutor) {
 ///
 /// On confirm, it runs the background request and awaits the response.
 async fn new_game_flow(handle: FlowHandle) {
-    let result = confirm_new_game(&handle).await;
-    if matches!(result, ConfirmResult::Confirmed) {
-        let work = worker::request_generate_puzzle();
-        let response = flows::with_spinner(&handle, SpinnerKind::NewGame, work).await;
-        let dto = match response {
-            Ok(dto) => dto,
-            Err(err) => {
-                panic!("background work failed: {err}");
-            }
-        };
-        let puzzle = GeneratedPuzzle::try_from(dto)
-            .unwrap_or_else(|err| panic!("failed to deserialize generated puzzle dto: {err}"));
-        handle.request_action(PuzzleLifecycleAction::StartNewGame(puzzle).into());
+    let result = show_confirm_dialog(&handle, ConfirmKind::NewGame).await;
+    match result {
+        ConfirmResult::Cancelled => return,
+        ConfirmResult::Confirmed => {}
     }
+    let work = worker::request_generate_puzzle();
+    let response = flows::with_spinner(&handle, SpinnerKind::NewGame, work).await;
+    let dto = response.unwrap();
+    let puzzle = GeneratedPuzzle::try_from(dto)
+        .unwrap_or_else(|err| panic!("failed to deserialize generated puzzle dto: {err}"));
+    handle.request_action(PuzzleLifecycleAction::StartNewGame(puzzle).into());
 }
 
-/// Await a new game confirmation dialog.
-async fn confirm_new_game(handle: &FlowHandle) -> ConfirmResult {
-    let (responder, receiver): (ConfirmResponder, oneshot::Receiver<ConfirmResult>) =
-        oneshot::channel();
-    handle
-        .request_action(UiAction::OpenModal(ModalRequest::NewGameConfirm(Some(responder))).into());
-
-    match receiver.await {
-        Ok(result) => result,
-        Err(_) => ConfirmResult::Cancelled,
+pub(crate) fn spawn_reset_inputs_flow(executor: &mut FlowExecutor) {
+    if !executor.is_idle() {
+        return;
     }
+    let handle = executor.handle();
+    executor.spawn(reset_inputs_flow(handle));
+}
+
+async fn reset_inputs_flow(handle: FlowHandle) {
+    let result = show_confirm_dialog(&handle, ConfirmKind::ResetInputs).await;
+    match result {
+        ConfirmResult::Cancelled => return,
+        ConfirmResult::Confirmed => {}
+    }
+    handle.request_action(BoardMutationAction::ResetInputs.into());
 }
 
 /// Spawn a solvability check flow if no other flows are active.
@@ -73,15 +90,9 @@ pub(crate) fn spawn_check_solvability_flow(executor: &mut FlowExecutor, game: &G
 /// Runs the background request and awaits the response.
 async fn check_solvability_flow(handle: FlowHandle, request: SolvabilityRequestDto) {
     let work = worker::request_solvability(request);
-    let response = flows::with_spinner(&handle, SpinnerKind::CheckSolvability, work).await;
-
-    let state = match response {
-        Ok(state) => state,
-        Err(err) => {
-            panic!("background work failed: {err}");
-        }
-    };
-
+    let state = flows::with_spinner(&handle, SpinnerKind::CheckSolvability, work)
+        .await
+        .unwrap();
     let state = map_solvability_state(state);
     let dialog_result = await_solvability_dialog(&handle, state).await;
 

@@ -14,11 +14,8 @@ pub(crate) fn show(
     settings_vm: &SettingsViewModel,
 ) {
     match modal_request {
-        ModalRequest::NewGameConfirm(responder) => {
-            dialogs::show_new_game_confirm(ctx, action_queue, responder);
-        }
-        ModalRequest::ResetCurrentPuzzleConfirm(responder) => {
-            dialogs::show_reset_current_puzzle_confirm(ctx, action_queue, responder);
+        ModalRequest::Confirm { kind, responder } => {
+            dialogs::show_confirm(ctx, action_queue, *kind, responder);
         }
         ModalRequest::Settings => {
             settings::show(ctx, settings_vm, action_queue);

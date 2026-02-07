@@ -30,7 +30,7 @@ pub(crate) enum BoardMutationAction {
     RequestDigit { digit: Digit, swap: bool },
     ClearCell,
     AutoFillNotes { scope: NotesFillScope },
-    ResetCurrentInput,
+    ResetInputs,
 }
 
 #[derive(Debug)]
@@ -72,6 +72,7 @@ pub(crate) enum UiAction {
 #[derive(Debug)]
 pub(crate) enum FlowAction {
     StartNewGame,
+    ResetInputs,
     CheckSolvability,
 }
 
@@ -127,7 +128,7 @@ pub(crate) enum SpinnerKind {
     CheckSolvability,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ConfirmResult {
     Confirmed,
     Cancelled,
@@ -142,15 +143,23 @@ pub(crate) enum SolvabilityDialogResult {
 pub(crate) type ConfirmResponder = futures_channel::oneshot::Sender<ConfirmResult>;
 pub(crate) type SolvabilityResponder = futures_channel::oneshot::Sender<SolvabilityDialogResult>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ConfirmKind {
+    NewGame,
+    ResetInputs,
+}
+
 #[derive(Debug)]
 pub(crate) enum ModalRequest {
-    NewGameConfirm(Option<ConfirmResponder>),
+    Confirm {
+        kind: ConfirmKind,
+        responder: Option<ConfirmResponder>,
+    },
     CheckSolvabilityResult {
         state: SolvabilityState,
         responder: Option<SolvabilityResponder>,
     },
     Settings,
-    ResetCurrentPuzzleConfirm(Option<ConfirmResponder>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
