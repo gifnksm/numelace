@@ -303,3 +303,28 @@ pub(crate) fn show_solvability_undo_notice(
         action_queue.request(UiAction::CloseModal.into());
     }
 }
+
+pub(crate) fn show_solvability_undo_not_found(
+    ctx: &Context,
+    action_queue: &mut ActionRequestQueue,
+) {
+    let DialogResult { should_close } = show_dialog(
+        ctx,
+        Id::new("solvability_undo_not_found"),
+        "No Solution Found",
+        |ui: &mut Ui| {
+            ui.label("Undo did not find a solvable state.");
+        },
+        |ui: &mut Ui| {
+            let ok = primary_button(ui, format!("{} OK", icon::CHECK), true);
+            if ok.clicked() {
+                ui.close();
+                action_queue.request(UiAction::CloseModal.into());
+            }
+        },
+    );
+
+    if should_close {
+        action_queue.request(UiAction::CloseModal.into());
+    }
+}

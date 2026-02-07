@@ -188,6 +188,7 @@ pub(crate) enum ModalRequest {
         steps: usize,
         responder: Option<SolvabilityUndoNoticeResponder>,
     },
+    SolvabilityUndoNotFound,
     Settings,
 }
 

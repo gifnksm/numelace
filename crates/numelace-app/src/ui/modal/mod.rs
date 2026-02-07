@@ -26,5 +26,8 @@ pub(crate) fn show(
         ModalRequest::SolvabilityUndoNotice { steps, responder } => {
             dialogs::show_solvability_undo_notice(ctx, action_queue, *steps, responder);
         }
+        ModalRequest::SolvabilityUndoNotFound => {
+            dialogs::show_solvability_undo_not_found(ctx, action_queue);
+        }
     }
 }

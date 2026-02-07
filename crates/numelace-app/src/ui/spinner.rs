@@ -14,9 +14,10 @@ pub(crate) fn show(ctx: &Context, spinner: SpinnerKind) {
         }
         SpinnerKind::CheckSolvability => {
             Modal::new(Id::new("checking_solvability")).show(ctx, |ui| {
-                ui.heading("Checking...");
+                ui.heading("Checking Solvability...");
                 ui.add(Spinner::new());
-                ui.label("Checking solvability...");
+                ui.label("Please wait while we analyze the current board.");
+                ui.label("This may take a few seconds.");
             });
         }
     }

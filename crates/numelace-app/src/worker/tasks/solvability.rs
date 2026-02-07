@@ -8,16 +8,19 @@ use numelace_core::{CandidateGrid, Digit, DigitSet, Position};
 use numelace_solver::BacktrackSolverStats;
 use serde::{Deserialize, Serialize};
 
-/// DTO containing a candidate grid for solvability checks.
+/// DTO containing candidate grids for solvability checks.
 ///
-/// The task first checks the provided grid (with user notes). If that is
-/// inconsistent or has no solution, it falls back to a grid that keeps only
-/// decided cells.
-pub(crate) type SolvabilityRequestDto = SolvabilityGridDto;
+/// The task first checks the grid with user notes. If that is inconsistent or
+/// has no solution, it falls back to the grid that keeps only decided cells.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct SolvabilityRequestDto {
+    pub(crate) with_user_notes: SolvabilityGridDto,
+    pub(crate) without_user_notes: SolvabilityGridDto,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct SolvabilityUndoGridsDto {
-    pub(crate) grids: Vec<SolvabilityGridDto>,
+    pub(crate) grids: Vec<SolvabilityRequestDto>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -121,9 +124,9 @@ pub(crate) enum SolvabilityDtoError {
 pub(crate) fn handle_solvability_undo_scan(
     request: SolvabilityUndoGridsDto,
 ) -> Result<SolvabilityUndoScanResultDto, SolvabilityDtoError> {
-    for (index, grid_dto) in request.grids.into_iter().enumerate() {
-        let with_user_notes: CandidateGrid = grid_dto.try_into()?;
-        let without_user_notes = without_user_notes_grid(&with_user_notes);
+    for (index, grids) in request.grids.into_iter().enumerate() {
+        let with_user_notes: CandidateGrid = grids.with_user_notes.try_into()?;
+        let without_user_notes: CandidateGrid = grids.without_user_notes.try_into()?;
 
         let with_state = check_grid_solvability(with_user_notes, true);
         if matches!(with_state, SolvabilityStateDto::Solvable { .. }) {
@@ -155,8 +158,8 @@ pub(crate) fn handle_solvability_undo_scan(
 pub(crate) fn handle_solvability_request(
     request: SolvabilityRequestDto,
 ) -> Result<SolvabilityStateDto, SolvabilityDtoError> {
-    let with_user_notes: CandidateGrid = request.try_into()?;
-    let without_user_notes = without_user_notes_grid(&with_user_notes);
+    let with_user_notes: CandidateGrid = request.with_user_notes.try_into()?;
+    let without_user_notes: CandidateGrid = request.without_user_notes.try_into()?;
 
     let first_result = check_grid_solvability(with_user_notes, true);
     let result = if matches!(
@@ -169,11 +172,6 @@ pub(crate) fn handle_solvability_request(
     };
 
     Ok(result)
-}
-
-fn without_user_notes_grid(grid: &CandidateGrid) -> CandidateGrid {
-    let decided_grid = grid.to_digit_grid();
-    CandidateGrid::from_digit_grid(&decided_grid)
 }
 
 fn check_grid_solvability(grid: CandidateGrid, with_user_notes: bool) -> SolvabilityStateDto {

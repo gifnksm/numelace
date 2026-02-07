@@ -161,6 +161,10 @@ async fn await_solvability_undo_notice(
     }
 }
 
+fn open_solvability_undo_not_found(handle: &FlowHandle) {
+    handle.request_action(UiAction::OpenModal(ModalRequest::SolvabilityUndoNotFound).into());
+}
+
 async fn request_solvability_undo_grids(handle: &FlowHandle) -> Option<SolvabilityUndoGridsDto> {
     let (responder, receiver): (
         SolvabilityUndoGridsResponder,
@@ -188,6 +192,7 @@ async fn handle_solvability_undo(handle: &FlowHandle) {
 
 async fn apply_solvability_undo_result(handle: &FlowHandle, result: SolvabilityUndoScanResultDto) {
     let Some(index) = result.index else {
+        open_solvability_undo_not_found(handle);
         return;
     };
 
@@ -218,7 +223,10 @@ async fn apply_solvability_undo_result(handle: &FlowHandle, result: SolvabilityU
 }
 
 fn build_solvability_request(game: &Game) -> SolvabilityRequestDto {
-    game.to_candidate_grid_with_notes().into()
+    SolvabilityRequestDto {
+        with_user_notes: game.to_candidate_grid_with_notes().into(),
+        without_user_notes: game.to_candidate_grid().into(),
+    }
 }
 
 fn map_solvability_state(result: SolvabilityStateDto) -> SolvabilityState {

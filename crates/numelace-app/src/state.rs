@@ -125,7 +125,7 @@ impl AppState {
     #[must_use]
     pub(crate) fn build_solvability_undo_grids(
         &self,
-    ) -> Vec<crate::worker::tasks::SolvabilityGridDto> {
+    ) -> Vec<crate::worker::tasks::SolvabilityRequestDto> {
         let (problem, solution) = base_problem_and_solution(&self.game);
         let mut grids = Vec::new();
         for snapshot in self.history.iter_from_current() {
@@ -137,7 +137,10 @@ impl AppState {
             ) else {
                 return Vec::new();
             };
-            grids.push(game.to_candidate_grid_with_notes().into());
+            grids.push(crate::worker::tasks::SolvabilityRequestDto {
+                with_user_notes: game.to_candidate_grid_with_notes().into(),
+                without_user_notes: game.to_candidate_grid().into(),
+            });
         }
         grids
     }
