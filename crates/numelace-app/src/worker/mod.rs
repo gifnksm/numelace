@@ -11,46 +11,13 @@ use std::{
     task::{Context, Poll},
 };
 
-use crate::game_factory;
+use self::tasks::{GeneratedPuzzleDto, SolvabilityRequestDto, SolvabilityStateDto};
 pub(crate) use platform::warm_up;
 use platform::{WorkHandle, enqueue};
 
-pub(crate) mod generated_puzzle_dto;
+pub(crate) mod api;
 mod platform;
-pub(crate) mod solvability_dto;
-
-use generated_puzzle_dto::GeneratedPuzzleDto;
-use solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto};
-
-pub(crate) mod worker_api {
-    use serde::{Deserialize, Serialize};
-
-    use super::{WorkRequest as InnerWorkRequest, WorkResponse as InnerWorkResponse};
-
-    #[derive(Deserialize, Serialize)]
-    #[serde(transparent)]
-    pub struct WorkRequest(InnerWorkRequest);
-
-    #[derive(Deserialize, Serialize)]
-    #[serde(transparent)]
-    pub struct WorkResponse(InnerWorkResponse);
-
-    impl WorkRequest {
-        #[must_use]
-        pub fn handle(self) -> WorkResponse {
-            WorkResponse(self.0.handle())
-        }
-    }
-
-    impl WorkResponse {
-        #[must_use]
-        pub fn deserialization_error() -> Self {
-            Self(InnerWorkResponse::Error(
-                super::WorkError::DeserializationFailed,
-            ))
-        }
-    }
-}
+pub(crate) mod tasks;
 
 /// A request that can be offloaded to a background worker.
 ///
@@ -107,49 +74,15 @@ impl WorkRequest {
     fn handle(self) -> WorkResponse {
         match self {
             WorkRequest::GeneratePuzzle => {
-                WorkResponse::GeneratedPuzzleReady(game_factory::generate_random_puzzle().into())
+                WorkResponse::GeneratedPuzzleReady(tasks::generate_puzzle())
             }
-            WorkRequest::CheckSolvability(request) => handle_solvability_request(request),
+            WorkRequest::CheckSolvability(request) => {
+                match tasks::handle_solvability_request(request) {
+                    Ok(result) => WorkResponse::SolvabilityReady(result),
+                    Err(_) => WorkResponse::Error(WorkError::DeserializationFailed),
+                }
+            }
         }
-    }
-}
-
-fn handle_solvability_request(request: SolvabilityRequestDto) -> WorkResponse {
-    let Ok(with_user_notes) = request.with_user_notes.try_into() else {
-        return WorkResponse::Error(WorkError::DeserializationFailed);
-    };
-    let Ok(without_user_notes) = request.without_user_notes.try_into() else {
-        return WorkResponse::Error(WorkError::DeserializationFailed);
-    };
-
-    let first_result = check_grid_solvability(with_user_notes, true);
-    let result = if matches!(
-        first_result,
-        SolvabilityStateDto::Inconsistent | SolvabilityStateDto::NoSolution
-    ) {
-        check_grid_solvability(without_user_notes, false)
-    } else {
-        first_result
-    };
-
-    WorkResponse::SolvabilityReady(result)
-}
-
-fn check_grid_solvability(
-    grid: numelace_core::CandidateGrid,
-    with_user_notes: bool,
-) -> SolvabilityStateDto {
-    if grid.check_consistency().is_err() {
-        return SolvabilityStateDto::Inconsistent;
-    }
-
-    let solver = numelace_solver::BacktrackSolver::with_all_techniques();
-    match solver.solve(grid).map(|mut sol| sol.next()) {
-        Ok(Some((_grid, stats))) => SolvabilityStateDto::Solvable {
-            with_user_notes,
-            stats: stats.into(),
-        },
-        Ok(None) | Err(_) => SolvabilityStateDto::NoSolution,
     }
 }
 

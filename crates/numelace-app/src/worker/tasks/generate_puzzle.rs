@@ -2,6 +2,8 @@ use numelace_core::DigitGrid;
 use numelace_generator::GeneratedPuzzle;
 use serde::{Deserialize, Serialize};
 
+use crate::game_factory;
+
 /// DTO for communicating newly generated Sudoku puzzles over worker boundaries.
 ///
 /// Uses compact 81-char string formats ('.' for empty, '1'..'9' for digits).
@@ -41,4 +43,8 @@ impl TryFrom<GeneratedPuzzleDto> for GeneratedPuzzle {
             solution,
         })
     }
+}
+
+pub(crate) fn generate_puzzle() -> GeneratedPuzzleDto {
+    game_factory::generate_random_puzzle().into()
 }

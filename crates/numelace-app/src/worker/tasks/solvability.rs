@@ -1,17 +1,16 @@
-//! DTOs for solvability checks and candidate grid conversion helpers.
+//! Solvability task logic and DTOs.
 //!
 //! This module provides compact, serializable representations of candidate grids
-//! so they can be sent across worker boundaries. It also includes a solvability
-//! result DTO that mirrors the app-level solvability states.
-
-use serde::{Deserialize, Serialize};
+//! so they can be sent across worker boundaries. It also includes the solvability
+//! logic used by background tasks.
 
 use numelace_core::{CandidateGrid, Digit, DigitSet, Position};
 use numelace_solver::BacktrackSolverStats;
+use serde::{Deserialize, Serialize};
 
 /// DTO containing two candidate grids for solvability checks.
 ///
-/// The flow first checks `with_user_notes`, and if that is inconsistent or has
+/// The task first checks `with_user_notes`, and if that is inconsistent or has
 /// no solution, it falls back to `without_user_notes`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct SolvabilityRequestDto {
@@ -108,4 +107,42 @@ pub(crate) enum SolvabilityDtoError {
     InvalidCandidateLength { len: usize },
     #[display("invalid candidate bits for {pos:?}: {bits:#05x}")]
     InvalidCandidateBits { pos: Position, bits: u16 },
+}
+
+/// Runs solvability logic with fallback between user notes and raw candidates.
+///
+/// If the `with_user_notes` grid is inconsistent or unsolvable, the task retries
+/// with `without_user_notes`.
+pub(crate) fn handle_solvability_request(
+    request: SolvabilityRequestDto,
+) -> Result<SolvabilityStateDto, SolvabilityDtoError> {
+    let with_user_notes = request.with_user_notes.try_into()?;
+    let without_user_notes = request.without_user_notes.try_into()?;
+
+    let first_result = check_grid_solvability(with_user_notes, true);
+    let result = if matches!(
+        first_result,
+        SolvabilityStateDto::Inconsistent | SolvabilityStateDto::NoSolution
+    ) {
+        check_grid_solvability(without_user_notes, false)
+    } else {
+        first_result
+    };
+
+    Ok(result)
+}
+
+fn check_grid_solvability(grid: CandidateGrid, with_user_notes: bool) -> SolvabilityStateDto {
+    if grid.check_consistency().is_err() {
+        return SolvabilityStateDto::Inconsistent;
+    }
+
+    let solver = numelace_solver::BacktrackSolver::with_all_techniques();
+    match solver.solve(grid).map(|mut sol| sol.next()) {
+        Ok(Some((_grid, stats))) => SolvabilityStateDto::Solvable {
+            with_user_notes,
+            stats: stats.into(),
+        },
+        Ok(None) | Err(_) => SolvabilityStateDto::NoSolution,
+    }
 }

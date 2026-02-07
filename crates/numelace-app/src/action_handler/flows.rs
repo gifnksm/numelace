@@ -9,10 +9,8 @@ use crate::{
     },
     flow_executor::{FlowExecutor, FlowHandle, SpinnerKind},
     state::{SolvabilityState, SolvabilityStats},
-    worker::{
-        self,
-        solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto},
-    },
+    worker,
+    worker::tasks::{SolvabilityRequestDto, SolvabilityStateDto},
 };
 
 /// Spawn a new game flow if no other flows are active.
@@ -22,16 +20,6 @@ pub(crate) fn spawn_new_game_flow(executor: &mut FlowExecutor) {
     }
     let handle = executor.handle();
     executor.spawn(new_game_flow(handle));
-}
-
-/// Spawn a solvability check flow if no other flows are active.
-pub(crate) fn spawn_check_solvability_flow(executor: &mut FlowExecutor, game: &Game) {
-    if !executor.is_idle() {
-        return;
-    }
-    let handle = executor.handle();
-    let request = build_solvability_request(game);
-    executor.spawn(check_solvability_flow(handle, request));
 }
 
 /// Async flow for new game confirmation + work dispatch.
@@ -52,6 +40,30 @@ async fn new_game_flow(handle: FlowHandle) {
             .unwrap_or_else(|err| panic!("failed to deserialize generated puzzle dto: {err}"));
         handle.request_action(Action::NewGameReady(puzzle));
     }
+}
+
+/// Await a new game confirmation dialog.
+async fn confirm_new_game(handle: &FlowHandle) -> ConfirmResult {
+    let (responder, receiver): (ConfirmResponder, oneshot::Receiver<ConfirmResult>) =
+        oneshot::channel();
+    handle.request_action(Action::OpenModal(ModalRequest::NewGameConfirm(Some(
+        responder,
+    ))));
+
+    match receiver.await {
+        Ok(result) => result,
+        Err(_) => ConfirmResult::Cancelled,
+    }
+}
+
+/// Spawn a solvability check flow if no other flows are active.
+pub(crate) fn spawn_check_solvability_flow(executor: &mut FlowExecutor, game: &Game) {
+    if !executor.is_idle() {
+        return;
+    }
+    let handle = executor.handle();
+    let request = build_solvability_request(game);
+    executor.spawn(check_solvability_flow(handle, request));
 }
 
 /// Async flow for solvability check work dispatch.
@@ -77,20 +89,6 @@ async fn check_solvability_flow(handle: FlowHandle, request: SolvabilityRequestD
         handle.request_action(Action::AutoFillNotes {
             scope: NotesFillScope::AllCells,
         });
-    }
-}
-
-/// Await a new game confirmation dialog.
-async fn confirm_new_game(handle: &FlowHandle) -> ConfirmResult {
-    let (responder, receiver): (ConfirmResponder, oneshot::Receiver<ConfirmResult>) =
-        oneshot::channel();
-    handle.request_action(Action::OpenModal(ModalRequest::NewGameConfirm(Some(
-        responder,
-    ))));
-
-    match receiver.await {
-        Ok(result) => result,
-        Err(_) => ConfirmResult::Cancelled,
     }
 }
 
