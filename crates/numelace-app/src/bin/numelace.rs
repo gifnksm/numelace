@@ -33,8 +33,25 @@ fn main() -> eframe::Result<()> {
 }
 
 #[cfg(target_arch = "wasm32")]
+fn install_panic_alert_hook() {
+    let previous = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic_info| {
+        previous(panic_info);
+
+        let message = panic_info.to_string();
+        if let Some(window) = web_sys::window() {
+            let _ = window.alert_with_message(&format!(
+                "Numelace has crashed.\n\n{message}\n\nClearing cache and reloading may fix the issue.\n\nSee the developer console for details."
+            ));
+        }
+    }));
+}
+
+#[cfg(target_arch = "wasm32")]
 fn main() {
     use eframe::wasm_bindgen::JsCast as _;
+
+    install_panic_alert_hook();
 
     // Redirect `log` message to `console.log` and friends:
     eframe::WebLogger::init(log::LevelFilter::Debug).ok();
