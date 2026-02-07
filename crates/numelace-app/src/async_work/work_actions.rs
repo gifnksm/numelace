@@ -3,37 +3,13 @@
 use numelace_core::DigitGrid;
 use numelace_game::Game;
 
-use crate::action::WorkRequestAction;
 use crate::state::{AppState, UiState};
 
 use super::{
-    WorkError, WorkRequest, WorkResponse, enqueue,
+    WorkError, WorkRequest, WorkResponse,
     new_game_dto::NewGameDto,
     solvability_dto::{SolvabilityGridDto, SolvabilityRequestDto},
-    work_flow::WorkFlow,
 };
-
-/// Request background work using the async pipeline and panic on failure.
-#[expect(clippy::unnecessary_wraps)]
-pub(crate) fn request_work(
-    request_action: WorkRequestAction,
-    ui_state: &mut UiState,
-) -> Result<(), WorkError> {
-    ui_state.work.last_error = None;
-    let request = request_action.request;
-    let responder = request_action.responder;
-
-    match enqueue(request.clone()) {
-        Ok(handle) => {
-            WorkFlow::start_request(&mut ui_state.work, handle, responder);
-            Ok(())
-        }
-        Err(err) => {
-            WorkFlow::record_error(&mut ui_state.work, err.clone());
-            panic!("background work failed: {err}");
-        }
-    }
-}
 
 /// Build a solvability request for background work.
 pub(crate) fn build_solvability_request(game: &Game) -> WorkRequest {
@@ -53,18 +29,14 @@ pub(crate) fn apply_work_response(
     ui_state: &mut UiState,
     response: WorkResponse,
 ) {
-    WorkFlow::finish_response(&mut ui_state.work, &response);
-
     match response {
         WorkResponse::NewGameReady(dto) => {
             if let Err(err) = apply_new_game_dto(app_state, ui_state, &dto) {
-                ui_state.work.last_error = Some(err.clone());
                 panic!("failed to apply new game response: {err}");
             }
         }
         WorkResponse::SolvabilityReady(_result) => {}
         WorkResponse::Error(err) => {
-            ui_state.work.last_error = Some(err.clone());
             panic!("background work failed: {err}");
         }
     }

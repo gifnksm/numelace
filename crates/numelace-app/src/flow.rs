@@ -11,9 +11,9 @@ use futures_channel::oneshot;
 use crate::{
     action::{
         Action, ActionRequestQueue, ConfirmResponder, ConfirmResult, ModalRequest, NotesFillScope,
-        SolvabilityDialogResult, SolvabilityResponder, WorkRequestAction, WorkResponder,
+        SolvabilityDialogResult, SolvabilityResponder,
     },
-    async_work::{WorkError, WorkRequest, WorkResponse, solvability_dto::SolvabilityStateDto},
+    async_work::{self, WorkRequest, WorkResponse, solvability_dto::SolvabilityStateDto},
     state::{SolvabilityState, SolvabilityStats},
 };
 
@@ -151,19 +151,6 @@ impl FlowHandle {
         }
     }
 
-    /// Dispatch background work and await the response.
-    #[must_use]
-    pub(crate) fn await_work(&self, request: WorkRequest) -> WorkResponseFuture {
-        let (responder, receiver) = oneshot::channel();
-        WorkResponseFuture {
-            state: Rc::clone(&self.state),
-            request,
-            responder: Some(responder),
-            receiver,
-            started: false,
-        }
-    }
-
     /// Wrap a future with a flow-driven spinner.
     #[must_use]
     fn with_spinner<F>(&self, kind: SpinnerKind, future: F) -> WithSpinnerFuture<F>
@@ -185,8 +172,9 @@ impl FlowHandle {
 pub(crate) async fn new_game_flow(handle: FlowHandle) {
     let result = handle.confirm_new_game().await;
     if matches!(result, ConfirmResult::Confirmed) {
-        let work = handle.await_work(WorkRequest::GenerateNewGame);
-        let _ = handle.with_spinner(SpinnerKind::NewGame, work).await;
+        let work = async_work::request(WorkRequest::GenerateNewGame);
+        let response = handle.with_spinner(SpinnerKind::NewGame, work).await;
+        handle.request_action(Action::ApplyWorkResponse(response));
     }
 }
 
@@ -194,10 +182,11 @@ pub(crate) async fn new_game_flow(handle: FlowHandle) {
 ///
 /// Runs the background request and awaits the response.
 pub(crate) async fn check_solvability_flow(handle: FlowHandle, request: WorkRequest) {
-    let work = handle.await_work(request);
+    let work = async_work::request(request);
     let response = handle
         .with_spinner(SpinnerKind::CheckSolvability, work)
         .await;
+    handle.request_action(Action::ApplyWorkResponse(response.clone()));
 
     let WorkResponse::SolvabilityReady(state) = response else {
         return;
@@ -244,40 +233,6 @@ fn map_solvability_state(result: SolvabilityStateDto) -> SolvabilityState {
                 solved_without_assumptions: stats.solved_without_assumptions,
             },
         },
-    }
-}
-
-/// Awaitable for background work responses.
-pub(crate) struct WorkResponseFuture {
-    state: Rc<RefCell<FlowState>>,
-    request: WorkRequest,
-    responder: Option<WorkResponder>,
-    receiver: oneshot::Receiver<WorkResponse>,
-    started: bool,
-}
-
-impl Future for WorkResponseFuture {
-    type Output = WorkResponse;
-
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if !self.started {
-            self.started = true;
-            if let Some(responder) = self.responder.take() {
-                self.state
-                    .borrow_mut()
-                    .pending_actions
-                    .push(Action::StartWork(WorkRequestAction {
-                        request: self.request.clone(),
-                        responder,
-                    }));
-            }
-        }
-
-        match Pin::new(&mut self.receiver).poll(cx) {
-            Poll::Ready(Ok(response)) => Poll::Ready(response),
-            Poll::Ready(Err(_)) => Poll::Ready(WorkResponse::Error(WorkError::WorkerDisconnected)),
-            Poll::Pending => Poll::Pending,
-        }
     }
 }
 

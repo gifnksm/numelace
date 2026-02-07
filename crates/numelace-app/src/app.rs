@@ -21,7 +21,6 @@ use crate::{
     action::{ActionRequestQueue, ModalRequest},
     action_handler::{self, ActionEffect},
     async_work,
-    async_work::work_flow::WorkFlow,
     flow::SpinnerKind,
     game_factory,
     persistence::storage,
@@ -70,7 +69,6 @@ impl App for NumelaceApp {
         let mut effect = ActionEffect::default();
         let mut action_queue = ActionRequestQueue::default();
 
-        WorkFlow::poll_and_queue(&mut self.ui_state.work, &mut action_queue);
         self.ui_state.flow.poll(&mut action_queue);
         action_handler::handle_all(
             &mut self.app_state,

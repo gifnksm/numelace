@@ -2,7 +2,7 @@ use numelace_core::{Digit, Position};
 use numelace_game::{GameError, RuleCheckPolicy};
 
 use crate::{
-    action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope, WorkRequestAction},
+    action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
     async_work::{WorkResponse, work_actions},
     flow::{check_solvability_flow, new_game_flow},
     state::{AppState, GhostType, InputMode, UiState},
@@ -92,10 +92,6 @@ pub(crate) fn handle(
             ctx.start_new_game_flow();
         }
 
-        Action::StartWork(request_action) => {
-            push_history_if_changed = false;
-            ctx.request_work(request_action);
-        }
         Action::ResetCurrentPuzzle => {
             push_history_if_changed = false;
             ctx.reset_current_puzzle();
@@ -144,10 +140,6 @@ impl ActionContext<'_> {
         if let Some(pos) = self.app_state.selected_cell {
             let _ = self.app_state.game.clear_cell(pos);
         }
-    }
-
-    fn request_work(&mut self, request_action: WorkRequestAction) {
-        let _ = work_actions::request_work(request_action, self.ui_state);
     }
 
     fn start_new_game_flow(&mut self) {

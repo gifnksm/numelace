@@ -1,8 +1,7 @@
 use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
-use crate::action::{ModalRequest, WorkResponder};
-use crate::async_work::{WorkError, WorkHandle};
+use crate::action::ModalRequest;
 use crate::flow::FlowExecutor;
 use crate::history::UndoRedoStack;
 
@@ -196,22 +195,9 @@ pub(crate) enum SolvabilityState {
 }
 
 #[derive(Debug)]
-pub(crate) struct WorkEntry {
-    pub(crate) handle: WorkHandle,
-    pub(crate) responder: WorkResponder,
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct WorkState {
-    pub(crate) in_flight: Vec<WorkEntry>,
-    pub(crate) last_error: Option<WorkError>,
-}
-
-#[derive(Debug)]
 pub(crate) struct UiState {
     pub(crate) active_modal: Option<ModalRequest>,
     pub(crate) conflict_ghost: Option<(Position, GhostType)>,
-    pub(crate) work: WorkState,
     pub(crate) flow: FlowExecutor,
     history: UndoRedoStack<GameSnapshot>,
 }
@@ -222,7 +208,6 @@ impl UiState {
         let mut this = Self {
             active_modal: None,
             conflict_ghost: None,
-            work: WorkState::default(),
             flow: FlowExecutor::new(),
             history: UndoRedoStack::new(max_history_len),
         };

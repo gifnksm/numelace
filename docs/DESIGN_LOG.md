@@ -57,3 +57,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-07: Route work requests through per-request responders — keeps background work awaits local and ready for concurrency.
 - 2026-02-07: Allow multiple in-flight work entries — unblocks concurrent work execution.
 - 2026-02-07: Make modal requests carry typed responders — keeps modal responses type-safe without a shared enum.
+- 2026-02-07: Simplify async work by removing WorkFlow and routing work futures directly through flow — reduces duplicate polling and keeps work responses handled via actions.

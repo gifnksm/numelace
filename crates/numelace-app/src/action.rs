@@ -2,7 +2,7 @@ use std::mem;
 
 use numelace_core::{Digit, Position};
 
-use crate::async_work::{WorkRequest, WorkResponse};
+use crate::async_work::WorkResponse;
 use crate::state::{Settings, SolvabilityState};
 
 #[derive(Debug)]
@@ -19,7 +19,6 @@ pub(crate) enum Action {
     Redo,
     OpenModal(ModalRequest),
     CloseModal,
-    StartWork(WorkRequestAction),
     ResetCurrentPuzzle,
     ApplyWorkResponse(WorkResponse),
     UpdateSettings(Settings),
@@ -51,14 +50,6 @@ pub(crate) enum ModalRequest {
     Settings,
     ResetCurrentPuzzleConfirm(Option<ConfirmResponder>),
 }
-
-#[derive(Debug)]
-pub(crate) struct WorkRequestAction {
-    pub(crate) request: WorkRequest,
-    pub(crate) responder: WorkResponder,
-}
-
-pub(crate) type WorkResponder = futures_channel::oneshot::Sender<WorkResponse>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
 pub(crate) enum MoveDirection {

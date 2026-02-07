@@ -5,13 +5,20 @@
 //! centralized. The `native` module uses threads/channels, while the
 //! `wasm` module uses a Web Worker with message passing.
 
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+};
+
 use crate::game_factory;
+pub(crate) use platform::warm_up;
+use platform::{WorkHandle, enqueue};
 
 pub(crate) mod new_game_dto;
 mod platform;
 pub(crate) mod solvability_dto;
 pub(crate) mod work_actions;
-pub(crate) mod work_flow;
 
 use new_game_dto::NewGameDto;
 use solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto, SolvabilityStatsDto};
@@ -119,4 +126,50 @@ fn check_grid_solvability(
     }
 }
 
-pub(crate) use platform::{WorkHandle, enqueue, warm_up};
+/// Future that resolves to a background work response.
+pub(crate) struct WorkResponseFuture {
+    handle: Option<WorkHandle>,
+    response: Option<WorkResponse>,
+}
+
+impl WorkResponseFuture {
+    #[must_use]
+    pub(crate) fn new(result: Result<WorkHandle, WorkError>) -> Self {
+        match result {
+            Ok(handle) => Self {
+                handle: Some(handle),
+                response: None,
+            },
+            Err(err) => Self {
+                handle: None,
+                response: Some(WorkResponse::Error(err)),
+            },
+        }
+    }
+}
+
+impl Future for WorkResponseFuture {
+    type Output = WorkResponse;
+
+    fn poll(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if let Some(response) = self.response.take() {
+            return Poll::Ready(response);
+        }
+
+        let Some(handle) = self.handle.as_mut() else {
+            return Poll::Ready(WorkResponse::Error(WorkError::WorkerDisconnected));
+        };
+
+        match handle.poll() {
+            Ok(Some(response)) => Poll::Ready(response),
+            Ok(None) => Poll::Pending,
+            Err(err) => Poll::Ready(WorkResponse::Error(err)),
+        }
+    }
+}
+
+/// Enqueue background work and return a future for the response.
+#[must_use]
+pub(crate) fn request(request: WorkRequest) -> WorkResponseFuture {
+    WorkResponseFuture::new(enqueue(request))
+}
