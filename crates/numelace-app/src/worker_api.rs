@@ -11,7 +11,7 @@ pub struct WorkResponse(async_work::WorkResponse);
 
 impl WorkRequest {
     #[must_use]
-    pub fn handle(&self) -> WorkResponse {
+    pub fn handle(self) -> WorkResponse {
         WorkResponse(self.0.handle())
     }
 }

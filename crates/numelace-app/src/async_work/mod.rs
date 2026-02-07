@@ -21,7 +21,7 @@ pub(crate) mod solvability_dto;
 pub(crate) mod work_actions;
 
 use new_game_dto::NewGameDto;
-use solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto, SolvabilityStatsDto};
+use solvability_dto::{SolvabilityRequestDto, SolvabilityStateDto};
 
 /// A request that can be offloaded to a background worker.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -77,21 +77,21 @@ impl WorkRequest {
     ///
     /// This keeps the request-to-response mapping centralized across backends.
     #[must_use]
-    pub(crate) fn handle(&self) -> WorkResponse {
+    pub(crate) fn handle(self) -> WorkResponse {
         match self {
             WorkRequest::GenerateNewGame => {
-                WorkResponse::NewGameReady(game_factory::generate_new_game_dto())
+                WorkResponse::NewGameReady(game_factory::generate_random_puzzle().into())
             }
             WorkRequest::CheckSolvability(request) => handle_solvability_request(request),
         }
     }
 }
 
-fn handle_solvability_request(request: &SolvabilityRequestDto) -> WorkResponse {
-    let Ok(with_user_notes) = request.with_user_notes.to_candidate_grid() else {
+fn handle_solvability_request(request: SolvabilityRequestDto) -> WorkResponse {
+    let Ok(with_user_notes) = request.with_user_notes.try_into() else {
         return WorkResponse::Error(WorkError::DeserializationFailed);
     };
-    let Ok(without_user_notes) = request.without_user_notes.to_candidate_grid() else {
+    let Ok(without_user_notes) = request.without_user_notes.try_into() else {
         return WorkResponse::Error(WorkError::DeserializationFailed);
     };
 
@@ -120,7 +120,7 @@ fn check_grid_solvability(
     match solver.solve(grid).map(|mut sol| sol.next()) {
         Ok(Some((_grid, stats))) => SolvabilityStateDto::Solvable {
             with_user_notes,
-            stats: SolvabilityStatsDto::from_stats(&stats),
+            stats: stats.into(),
         },
         Ok(None) | Err(_) => SolvabilityStateDto::NoSolution,
     }

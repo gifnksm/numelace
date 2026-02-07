@@ -15,6 +15,7 @@ use eframe::{
     App, CreationContext, Frame, Storage,
     egui::{CentralPanel, Context, Id, Modal, Spinner},
 };
+use numelace_game::Game;
 
 use crate::{
     DEFAULT_MAX_HISTORY_LENGTH,
@@ -38,7 +39,8 @@ impl NumelaceApp {
     pub fn new(cc: &CreationContext<'_>) -> Self {
         let _ = async_work::warm_up();
         let app_state = cc.storage.and_then(storage::load_state).unwrap_or_else(|| {
-            AppState::new_with_settings_applied(game_factory::generate_random_game())
+            let puzzle = game_factory::generate_random_puzzle();
+            AppState::new_with_settings_applied(Game::new(puzzle))
         });
         let ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
         Self {

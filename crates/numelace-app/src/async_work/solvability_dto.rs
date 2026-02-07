@@ -38,9 +38,8 @@ pub(crate) struct SolvabilityStatsDto {
     pub(crate) solved_without_assumptions: bool,
 }
 
-impl SolvabilityStatsDto {
-    #[must_use]
-    pub(crate) fn from_stats(stats: &BacktrackSolverStats) -> Self {
+impl From<BacktrackSolverStats> for SolvabilityStatsDto {
+    fn from(stats: BacktrackSolverStats) -> Self {
         Self {
             assumptions_len: stats.assumptions().len(),
             backtrack_count: stats.backtrack_count(),
@@ -57,10 +56,8 @@ pub(crate) struct SolvabilityGridDto {
     pub(crate) candidates: Vec<u16>,
 }
 
-impl SolvabilityGridDto {
-    /// Builds a DTO from a [`CandidateGrid`].
-    #[must_use]
-    pub(crate) fn from_candidate_grid(grid: &CandidateGrid) -> Self {
+impl From<CandidateGrid> for SolvabilityGridDto {
+    fn from(grid: CandidateGrid) -> Self {
         let mut candidates = Vec::with_capacity(81);
         for pos in Position::ALL {
             let set = grid.candidates_at(pos);
@@ -68,26 +65,30 @@ impl SolvabilityGridDto {
         }
         Self { candidates }
     }
+}
 
-    /// Converts this DTO into a [`CandidateGrid`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SolvabilityDtoError::InvalidCandidateLength`] if the candidate
-    /// length does not match the expected 81 cells.
-    ///
-    /// Returns [`SolvabilityDtoError::InvalidCandidateBits`] if any cell contains
-    /// invalid bits outside the 9-bit candidate range.
-    pub(crate) fn to_candidate_grid(&self) -> Result<CandidateGrid, SolvabilityDtoError> {
-        if self.candidates.len() != 81 {
+/// Converts a [`SolvabilityGridDto`] into a [`CandidateGrid`].
+///
+/// # Errors
+///
+/// Returns [`SolvabilityDtoError::InvalidCandidateLength`] if the candidate
+/// length does not match the expected 81 cells.
+///
+/// Returns [`SolvabilityDtoError::InvalidCandidateBits`] if any cell contains
+/// invalid bits outside the 9-bit candidate range.
+impl TryFrom<SolvabilityGridDto> for CandidateGrid {
+    type Error = SolvabilityDtoError;
+
+    fn try_from(dto: SolvabilityGridDto) -> Result<Self, Self::Error> {
+        if dto.candidates.len() != 81 {
             return Err(SolvabilityDtoError::InvalidCandidateLength {
-                len: self.candidates.len(),
+                len: dto.candidates.len(),
             });
         }
 
         let mut grid = CandidateGrid::new();
         for (idx, pos) in Position::ALL.into_iter().enumerate() {
-            let bits = self.candidates[idx];
+            let bits = dto.candidates[idx];
             let candidates = DigitSet::try_from_bits(bits)
                 .ok_or(SolvabilityDtoError::InvalidCandidateBits { pos, bits })?;
             for digit in Digit::ALL {
