@@ -1,7 +1,10 @@
 use eframe::egui::{InputState, Key};
 use numelace_core::Digit;
 
-use crate::action::{Action, ActionRequestQueue, ModalRequest, MoveDirection, NotesFillScope};
+use crate::action::{
+    Action, ActionRequestQueue, AppAction, BoardMutationAction, FlowAction, HistoryAction,
+    InputModeAction, ModalRequest, MoveDirection, NotesFillScope, SelectionAction, UiAction,
+};
 
 struct Trigger {
     key: Key,
@@ -48,44 +51,80 @@ impl Shortcut {
     const fn digit(key: Key, digit: Digit, command: bool) -> Self {
         Self::new(
             Trigger::new(key, command, false),
-            Action::RequestDigit {
-                digit,
-                swap: command,
-            },
+            Action::App(AppAction::BoardMutation(
+                BoardMutationAction::RequestDigit {
+                    digit,
+                    swap: command,
+                },
+            )),
         )
     }
 }
 
+const fn board_mutation_action(action: BoardMutationAction) -> Action {
+    Action::App(AppAction::BoardMutation(action))
+}
+
+const fn history_action(action: HistoryAction) -> Action {
+    Action::App(AppAction::History(action))
+}
+
+const fn selection_action(action: SelectionAction) -> Action {
+    Action::App(AppAction::Selection(action))
+}
+
+const fn move_selection_action(direction: MoveDirection) -> Action {
+    selection_action(SelectionAction::MoveSelection(direction))
+}
+
+const fn input_mode_action(action: InputModeAction) -> Action {
+    Action::App(AppAction::InputMode(action))
+}
+
 const SHORTCUTS: [Shortcut; 34] = [
-    Shortcut::command(Key::N, Action::StartNewGameFlow),
-    Shortcut::command(Key::Comma, Action::OpenModal(ModalRequest::Settings)),
+    Shortcut::command(Key::N, Action::Flow(FlowAction::StartNewGame)),
+    Shortcut::command(
+        Key::Comma,
+        Action::Ui(UiAction::OpenModal(ModalRequest::Settings)),
+    ),
     Shortcut::command_shift(
         Key::Backspace,
-        Action::OpenModal(ModalRequest::ResetCurrentPuzzleConfirm(None)),
+        Action::Ui(UiAction::OpenModal(
+            ModalRequest::ResetCurrentPuzzleConfirm(None),
+        )),
     ),
-    Shortcut::command(Key::K, Action::CheckSolvability),
-    Shortcut::command(Key::Z, Action::Undo),
-    Shortcut::command(Key::Y, Action::Redo),
-    Shortcut::plain(Key::ArrowUp, Action::MoveSelection(MoveDirection::Up)),
-    Shortcut::plain(Key::ArrowDown, Action::MoveSelection(MoveDirection::Down)),
-    Shortcut::plain(Key::ArrowLeft, Action::MoveSelection(MoveDirection::Left)),
-    Shortcut::plain(Key::ArrowRight, Action::MoveSelection(MoveDirection::Right)),
-    Shortcut::plain(Key::Escape, Action::ClearSelection),
-    Shortcut::plain(Key::S, Action::ToggleInputMode),
+    Shortcut::command(Key::K, Action::Flow(FlowAction::CheckSolvability)),
+    Shortcut::command(Key::Z, history_action(HistoryAction::Undo)),
+    Shortcut::command(Key::Y, history_action(HistoryAction::Redo)),
+    Shortcut::plain(Key::ArrowUp, move_selection_action(MoveDirection::Up)),
+    Shortcut::plain(Key::ArrowDown, move_selection_action(MoveDirection::Down)),
+    Shortcut::plain(Key::ArrowLeft, move_selection_action(MoveDirection::Left)),
+    Shortcut::plain(Key::ArrowRight, move_selection_action(MoveDirection::Right)),
+    Shortcut::plain(
+        Key::Escape,
+        selection_action(SelectionAction::ClearSelection),
+    ),
+    Shortcut::plain(Key::S, input_mode_action(InputModeAction::ToggleInputMode)),
     Shortcut::plain(
         Key::A,
-        Action::AutoFillNotes {
+        board_mutation_action(BoardMutationAction::AutoFillNotes {
             scope: NotesFillScope::Cell,
-        },
+        }),
     ),
     Shortcut::shift(
         Key::A,
-        Action::AutoFillNotes {
+        board_mutation_action(BoardMutationAction::AutoFillNotes {
             scope: NotesFillScope::AllCells,
-        },
+        }),
     ),
-    Shortcut::plain(Key::Delete, Action::ClearCell),
-    Shortcut::plain(Key::Backspace, Action::ClearCell),
+    Shortcut::plain(
+        Key::Delete,
+        board_mutation_action(BoardMutationAction::ClearCell),
+    ),
+    Shortcut::plain(
+        Key::Backspace,
+        board_mutation_action(BoardMutationAction::ClearCell),
+    ),
     Shortcut::digit(Key::Num1, Digit::D1, true),
     Shortcut::digit(Key::Num1, Digit::D1, false),
     Shortcut::digit(Key::Num2, Digit::D2, true),

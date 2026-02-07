@@ -52,14 +52,6 @@ impl AppState {
         }
     }
 
-    pub(crate) fn reset_current_puzzle_state(&mut self) {
-        for pos in Position::ALL {
-            let _ = self.game.clear_cell(pos);
-        }
-        self.selected_cell = None;
-        self.apply_new_game_settings();
-    }
-
     #[must_use]
     pub(crate) fn rule_check_policy(&self) -> RuleCheckPolicy {
         if self.settings.assist.block_rule_violations {

@@ -1,11 +1,14 @@
 mod flows;
 
-use numelace_core::{Digit, Position};
+use numelace_core::Position;
 use numelace_game::{Game, GameError, RuleCheckPolicy};
-use numelace_generator::GeneratedPuzzle;
 
 use crate::{
-    action::{Action, ActionRequestQueue, MoveDirection, NotesFillScope},
+    action::{
+        Action, ActionRequestQueue, AppAction, BoardMutationAction, FlowAction, HistoryAction,
+        InputModeAction, NotesFillScope, PuzzleLifecycleAction, SelectionAction, SettingsAction,
+        UiAction,
+    },
     state::{AppState, AppStateAccess, GhostType, InputMode, UiState},
 };
 
@@ -26,152 +29,188 @@ pub(crate) fn handle_all(
 }
 
 pub(crate) fn handle(app_state: &mut AppState, ui_state: &mut UiState, action: Action) {
-    const DEFAULT_POSITION: Position = Position::new(0, 0);
-
     let mut ctx = ActionContext {
         app_state: app_state.access(),
         ui_state,
     };
-
-    let game_snapshot_before = ctx.app_state.as_ref().game.clone();
-    let mut push_history_if_changed = true;
-
     ctx.ui_state.conflict_ghost = None;
-
-    match action {
-        Action::SelectCell(pos) => ctx.app_state.as_mut().selected_cell = Some(pos),
-        Action::ClearSelection => ctx.app_state.as_mut().selected_cell = None,
-        Action::MoveSelection(move_direction) => {
-            let app_state = ctx.app_state.as_mut();
-            let pos = app_state.selected_cell.get_or_insert(DEFAULT_POSITION);
-            let new_pos = match move_direction {
-                MoveDirection::Up => pos.up(),
-                MoveDirection::Down => pos.down(),
-                MoveDirection::Left => pos.left(),
-                MoveDirection::Right => pos.right(),
-            };
-            if let Some(new_pos) = new_pos {
-                *pos = new_pos;
-            }
-        }
-        Action::ToggleInputMode => ctx.app_state.as_mut().input_mode.toggle(),
-        Action::RequestDigit { digit, swap } => ctx.request_digit(digit, swap),
-        Action::ClearCell => ctx.clear_cell(),
-        Action::AutoFillNotes { scope } => ctx.auto_fill_notes(scope),
-        Action::CheckSolvability => ctx.check_solvability(),
-        Action::Undo => {
-            push_history_if_changed = false;
-            ctx.ui_state.undo(ctx.app_state.as_mut());
-        }
-        Action::Redo => {
-            push_history_if_changed = false;
-            ctx.ui_state.redo(ctx.app_state.as_mut());
-        }
-        Action::OpenModal(modal_request) => {
-            ctx.ui_state.active_modal = Some(modal_request);
-        }
-        Action::CloseModal => {
-            ctx.ui_state.active_modal = None;
-        }
-        Action::NewGameReady(puzzle) => {
-            push_history_if_changed = false;
-            ctx.apply_new_game_puzzle(puzzle);
-        }
-        Action::StartSpinner { id, kind } => {
-            ctx.ui_state.spinner_state.start(id, kind);
-        }
-        Action::StopSpinner { id } => {
-            ctx.ui_state.spinner_state.stop(id);
-        }
-        Action::StartNewGameFlow => {
-            push_history_if_changed = false;
-            ctx.start_new_game_flow();
-        }
-
-        Action::ResetCurrentPuzzle => {
-            push_history_if_changed = false;
-            ctx.reset_current_puzzle();
-        }
-        Action::UpdateSettings(settings) => {
-            ctx.app_state.as_mut().settings = settings;
-        }
-    }
-
-    if push_history_if_changed && ctx.app_state.as_ref().game != game_snapshot_before {
-        ctx.ui_state.push_history(ctx.app_state.as_ref());
-    }
+    ctx.handle_action(action);
 }
 
 impl ActionContext<'_> {
-    fn request_digit(&mut self, digit: Digit, swap: bool) {
-        let app_state = self.app_state.as_mut();
-        if let Some(pos) = app_state.selected_cell {
-            match app_state.input_mode.swapped(swap) {
-                InputMode::Fill => {
-                    let options = app_state.input_digit_options();
-                    if let Err(GameError::ConflictingDigit) =
-                        app_state.game.set_digit(pos, digit, &options)
-                    {
-                        assert_eq!(app_state.rule_check_policy(), RuleCheckPolicy::Strict);
-                        self.ui_state.conflict_ghost = Some((pos, GhostType::Digit(digit)));
-                    }
-                }
-                InputMode::Notes => {
-                    let policy = app_state.rule_check_policy();
-                    if let Err(GameError::ConflictingDigit) =
-                        app_state.game.toggle_note(pos, digit, policy)
-                    {
-                        assert_eq!(policy, RuleCheckPolicy::Strict);
-                        self.ui_state.conflict_ghost = Some((pos, GhostType::Note(digit)));
-                    }
-                }
+    fn handle_action(&mut self, action: Action) {
+        match action {
+            Action::App(action) => action.execute(self.app_state.as_mut(), self.ui_state),
+            Action::Ui(action) => action.execute(self.ui_state),
+            Action::Flow(action) => action.execute(self.app_state.as_ref(), self.ui_state),
+        }
+    }
+}
+
+impl AppAction {
+    fn execute(self, app_state: &mut AppState, ui_state: &mut UiState) {
+        match self {
+            AppAction::BoardMutation(action) => {
+                action.execute(app_state, ui_state);
             }
+            AppAction::PuzzleLifecycle(action) => {
+                action.execute(app_state, ui_state);
+            }
+            AppAction::History(action) => action.execute(app_state, ui_state),
+            AppAction::Selection(action) => action.execute(app_state),
+            AppAction::InputMode(action) => action.execute(app_state),
+            AppAction::Settings(action) => action.execute(app_state),
         }
     }
+}
 
-    fn clear_cell(&mut self) {
-        let app_state = self.app_state.as_mut();
-        if let Some(pos) = app_state.selected_cell {
-            let _ = app_state.game.clear_cell(pos);
-        }
-    }
-
-    fn start_new_game_flow(&mut self) {
-        flows::spawn_new_game_flow(&mut self.ui_state.flow);
-    }
-
-    fn reset_current_puzzle(&mut self) {
-        let app_state = self.app_state.as_mut();
-        app_state.reset_current_puzzle_state();
-        self.ui_state.reset_history(app_state);
-    }
-
-    fn apply_new_game_puzzle(&mut self, puzzle: GeneratedPuzzle) {
-        let game = Game::new(puzzle);
-
-        let app_state = self.app_state.as_mut();
-        app_state.game = game;
-        app_state.selected_cell = None;
-        app_state.apply_new_game_settings();
-        self.ui_state.reset_history(app_state);
-    }
-
-    fn auto_fill_notes(&mut self, scope: NotesFillScope) {
-        let app_state = self.app_state.as_mut();
-        match scope {
-            NotesFillScope::Cell => {
+impl BoardMutationAction {
+    fn execute(self, app_state: &mut AppState, ui_state: &mut UiState) {
+        let game_snapshot = app_state.game.clone();
+        match self {
+            BoardMutationAction::RequestDigit { digit, swap } => {
                 if let Some(pos) = app_state.selected_cell {
-                    let _ = app_state.game.auto_fill_cell_notes(pos);
+                    match app_state.input_mode.swapped(swap) {
+                        InputMode::Fill => {
+                            let options = app_state.input_digit_options();
+                            if let Err(GameError::ConflictingDigit) =
+                                app_state.game.set_digit(pos, digit, &options)
+                            {
+                                assert_eq!(app_state.rule_check_policy(), RuleCheckPolicy::Strict);
+                                ui_state.conflict_ghost = Some((pos, GhostType::Digit(digit)));
+                            }
+                        }
+                        InputMode::Notes => {
+                            let policy = app_state.rule_check_policy();
+                            if let Err(GameError::ConflictingDigit) =
+                                app_state.game.toggle_note(pos, digit, policy)
+                            {
+                                assert_eq!(policy, RuleCheckPolicy::Strict);
+                                ui_state.conflict_ghost = Some((pos, GhostType::Note(digit)));
+                            }
+                        }
+                    }
                 }
             }
-            NotesFillScope::AllCells => {
-                app_state.game.auto_fill_notes_all_cells();
+            BoardMutationAction::ClearCell => {
+                if let Some(pos) = app_state.selected_cell {
+                    let _ = app_state.game.clear_cell(pos);
+                }
+            }
+            BoardMutationAction::AutoFillNotes { scope } => match scope {
+                NotesFillScope::Cell => {
+                    if let Some(pos) = app_state.selected_cell {
+                        let _ = app_state.game.auto_fill_cell_notes(pos);
+                    }
+                }
+                NotesFillScope::AllCells => {
+                    app_state.game.auto_fill_notes_all_cells();
+                }
+            },
+            BoardMutationAction::ResetCurrentInput => {
+                for pos in Position::ALL {
+                    let _ = app_state.game.clear_cell(pos);
+                }
+                app_state.apply_new_game_settings();
+            }
+        }
+        if app_state.game != game_snapshot {
+            ui_state.push_history(app_state);
+        }
+    }
+}
+
+impl PuzzleLifecycleAction {
+    fn execute(self, app_state: &mut AppState, ui_state: &mut UiState) {
+        match self {
+            PuzzleLifecycleAction::StartNewGame(puzzle) => {
+                let game = Game::new(puzzle);
+                app_state.game = game;
+                app_state.selected_cell = None;
+                app_state.apply_new_game_settings();
+                ui_state.reset_history(app_state);
             }
         }
     }
+}
 
-    fn check_solvability(&mut self) {
-        flows::spawn_check_solvability_flow(&mut self.ui_state.flow, &self.app_state.as_ref().game);
+impl HistoryAction {
+    fn execute(self, app_state: &mut AppState, ui_state: &mut UiState) {
+        match self {
+            HistoryAction::Undo => {
+                ui_state.undo(app_state);
+            }
+            HistoryAction::Redo => {
+                ui_state.redo(app_state);
+            }
+        }
+    }
+}
+
+impl SelectionAction {
+    fn execute(self, app_state: &mut AppState) {
+        const DEFAULT_POSITION: Position = Position::new(0, 0);
+
+        match self {
+            SelectionAction::SelectCell(pos) => app_state.selected_cell = Some(pos),
+            SelectionAction::ClearSelection => app_state.selected_cell = None,
+            SelectionAction::MoveSelection(move_direction) => {
+                let pos = app_state.selected_cell.get_or_insert(DEFAULT_POSITION);
+                if let Some(new_pos) = move_direction.apply_to(*pos) {
+                    *pos = new_pos;
+                }
+            }
+        }
+    }
+}
+
+impl InputModeAction {
+    fn execute(self, app_state: &mut AppState) {
+        match self {
+            InputModeAction::ToggleInputMode => app_state.input_mode.toggle(),
+        }
+    }
+}
+
+impl SettingsAction {
+    fn execute(self, app_state: &mut AppState) {
+        match self {
+            SettingsAction::UpdateSettings(settings) => {
+                app_state.settings = settings;
+            }
+        }
+    }
+}
+
+impl UiAction {
+    fn execute(self, ui_state: &mut UiState) {
+        match self {
+            UiAction::OpenModal(modal_request) => {
+                ui_state.active_modal = Some(modal_request);
+            }
+            UiAction::CloseModal => {
+                ui_state.active_modal = None;
+            }
+            UiAction::StartSpinner { id, kind } => {
+                ui_state.spinner_state.start(id, kind);
+            }
+            UiAction::StopSpinner { id } => {
+                ui_state.spinner_state.stop(id);
+            }
+        }
+    }
+}
+
+impl FlowAction {
+    fn execute(self, app_state: &AppState, ui_state: &mut UiState) {
+        match self {
+            FlowAction::StartNewGame => {
+                flows::spawn_new_game_flow(&mut ui_state.flow);
+            }
+            FlowAction::CheckSolvability => {
+                flows::spawn_check_solvability_flow(&mut ui_state.flow, &app_state.game);
+            }
+        }
     }
 }
 
@@ -183,7 +222,7 @@ mod tests {
     use super::handle;
     use crate::{
         DEFAULT_MAX_HISTORY_LENGTH,
-        action::{Action, ModalRequest, NotesFillScope},
+        action::{BoardMutationAction, ModalRequest, NotesFillScope, UiAction},
         state::{AppState, GhostType, UiState},
     };
 
@@ -233,10 +272,11 @@ mod tests {
         handle(
             &mut app_state,
             &mut ui_state,
-            Action::RequestDigit {
+            BoardMutationAction::RequestDigit {
                 digit: Digit::D1,
                 swap: false,
-            },
+            }
+            .into(),
         );
         assert_eq!(
             ui_state.conflict_ghost,
@@ -257,9 +297,10 @@ mod tests {
         handle(
             &mut app_state,
             &mut ui_state,
-            Action::AutoFillNotes {
+            BoardMutationAction::AutoFillNotes {
                 scope: NotesFillScope::Cell,
-            },
+            }
+            .into(),
         );
 
         assert_eq!(app_state.game, before);
@@ -275,7 +316,11 @@ mod tests {
             .auto_fill_notes_on_new_or_reset = true;
         let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
 
-        handle(&mut app_state, &mut ui_state, Action::ResetCurrentPuzzle);
+        handle(
+            &mut app_state,
+            &mut ui_state,
+            BoardMutationAction::ResetCurrentInput.into(),
+        );
 
         let any_notes = Position::ALL
             .into_iter()
@@ -292,19 +337,21 @@ mod tests {
         handle(
             &mut app_state,
             &mut ui_state,
-            Action::RequestDigit {
+            BoardMutationAction::RequestDigit {
                 digit: Digit::D2,
                 swap: false,
-            },
+            }
+            .into(),
         );
 
         handle(
             &mut app_state,
             &mut ui_state,
-            Action::RequestDigit {
+            BoardMutationAction::RequestDigit {
                 digit: Digit::D2,
                 swap: false,
-            },
+            }
+            .into(),
         );
 
         assert!(ui_state.can_undo());
@@ -322,7 +369,7 @@ mod tests {
         let mut ui_state = UiState::new(DEFAULT_MAX_HISTORY_LENGTH, &app_state);
         ui_state.active_modal = Some(ModalRequest::NewGameConfirm(None));
 
-        handle(&mut app_state, &mut ui_state, Action::CloseModal);
+        handle(&mut app_state, &mut ui_state, UiAction::CloseModal.into());
 
         assert!(ui_state.active_modal.is_none());
     }

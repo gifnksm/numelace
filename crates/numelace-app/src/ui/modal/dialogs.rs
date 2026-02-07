@@ -2,8 +2,8 @@ use eframe::egui::{Button, Context, Id, Modal, Response, RichText, Sides, Ui};
 
 use crate::{
     action::{
-        Action, ActionRequestQueue, ConfirmResponder, ConfirmResult, SolvabilityDialogResult,
-        SolvabilityResponder,
+        ActionRequestQueue, BoardMutationAction, ConfirmResponder, ConfirmResult,
+        SolvabilityDialogResult, SolvabilityResponder, UiAction,
     },
     state::SolvabilityState,
     ui::icon,
@@ -117,7 +117,7 @@ pub(crate) fn show_new_game_confirm(
         if !action_requested {
             send_confirm(responder, ConfirmResult::Cancelled);
         }
-        action_queue.request(Action::CloseModal);
+        action_queue.request(UiAction::CloseModal.into());
     }
 }
 
@@ -142,7 +142,7 @@ pub(crate) fn show_reset_current_puzzle_confirm(
             if confirm.clicked() {
                 *action_requested = true;
                 send_confirm(responder, ConfirmResult::Confirmed);
-                action_queue.request(Action::ResetCurrentPuzzle);
+                action_queue.request(BoardMutationAction::ResetCurrentInput.into());
                 ui.close();
             }
 
@@ -158,7 +158,7 @@ pub(crate) fn show_reset_current_puzzle_confirm(
         if !action_requested {
             send_confirm(responder, ConfirmResult::Cancelled);
         }
-        action_queue.request(Action::CloseModal);
+        action_queue.request(UiAction::CloseModal.into());
     }
 }
 
@@ -214,7 +214,7 @@ fn show_solvability_inconsistent(
         if !action_requested {
             send_solvability(responder, SolvabilityDialogResult::Close);
         }
-        action_queue.request(Action::CloseModal);
+        action_queue.request(UiAction::CloseModal.into());
     }
 }
 
@@ -248,7 +248,7 @@ fn show_solvability_no_solution(
         if !action_requested {
             send_solvability(responder, SolvabilityDialogResult::Close);
         }
-        action_queue.request(Action::CloseModal);
+        action_queue.request(UiAction::CloseModal.into());
     }
 }
 
@@ -282,7 +282,7 @@ fn show_solvability_solvable(
         if !action_requested {
             send_solvability(responder, SolvabilityDialogResult::Close);
         }
-        action_queue.request(Action::CloseModal);
+        action_queue.request(UiAction::CloseModal.into());
     }
 }
 
@@ -322,6 +322,6 @@ fn show_solvability_notes_maybe_incorrect(
         if !action_requested {
             send_solvability(responder, SolvabilityDialogResult::Close);
         }
-        action_queue.request(Action::CloseModal);
+        action_queue.request(UiAction::CloseModal.into());
     }
 }

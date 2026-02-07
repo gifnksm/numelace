@@ -7,7 +7,7 @@ use std::{
 use portable_atomic::AtomicU64;
 
 use crate::{
-    action::{Action, SpinnerId, SpinnerKind},
+    action::{SpinnerId, SpinnerKind, UiAction},
     flow_executor::FlowHandle,
 };
 
@@ -65,10 +65,13 @@ where
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         if !self.started {
             self.started = true;
-            self.handle.request_action(Action::StartSpinner {
-                id: self.id,
-                kind: self.kind,
-            });
+            self.handle.request_action(
+                UiAction::StartSpinner {
+                    id: self.id,
+                    kind: self.kind,
+                }
+                .into(),
+            );
         }
 
         let result = self.inner.as_mut().poll(cx);
@@ -76,7 +79,7 @@ where
         if result.is_ready() {
             self.stopped = true;
             self.handle
-                .request_action(Action::StopSpinner { id: self.id });
+                .request_action(UiAction::StopSpinner { id: self.id }.into());
         }
 
         result
@@ -90,7 +93,7 @@ where
     fn drop(&mut self) {
         if self.started && !self.stopped {
             self.handle
-                .request_action(Action::StopSpinner { id: self.id });
+                .request_action(UiAction::StopSpinner { id: self.id }.into());
         }
     }
 }

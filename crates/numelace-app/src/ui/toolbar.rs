@@ -1,7 +1,10 @@
 use eframe::egui::{Button, Response, RichText, Sides, Ui, Vec2, widgets};
 
 use crate::{
-    action::{Action, ActionRequestQueue, ModalRequest, NotesFillScope},
+    action::{
+        ActionRequestQueue, BoardMutationAction, FlowAction, HistoryAction, ModalRequest,
+        NotesFillScope, UiAction,
+    },
     ui::{
         icon,
         layout::{ComponentUnits, LayoutScale},
@@ -39,27 +42,27 @@ pub(crate) fn show(
         |ui| {
             ui.horizontal(|ui| {
                 if button(ui, icon::ARROW_UNDO, "Undo", vm.can_undo, cell_size).clicked() {
-                    action_queue.request(Action::Undo);
+                    action_queue.request(HistoryAction::Undo.into());
                 }
 
                 if button(ui, icon::ARROW_REDO, "Redo", vm.can_redo, cell_size).clicked() {
-                    action_queue.request(Action::Redo);
+                    action_queue.request(HistoryAction::Redo.into());
                 }
 
                 ui.separator();
 
                 if button(ui, icon::PLUS, "New Game", true, cell_size).clicked() {
-                    action_queue.request(Action::StartNewGameFlow);
+                    action_queue.request(FlowAction::StartNewGame.into());
                 }
 
                 if button(ui, icon::ROTATE_CCW, "Reset Puzzle", true, cell_size).clicked() {
-                    action_queue.request(Action::OpenModal(
-                        ModalRequest::ResetCurrentPuzzleConfirm(None),
-                    ));
+                    action_queue.request(
+                        UiAction::OpenModal(ModalRequest::ResetCurrentPuzzleConfirm(None)).into(),
+                    );
                 }
 
                 if button(ui, icon::GEAR_NO_HUB, "Settings", true, cell_size).clicked() {
-                    action_queue.request(Action::OpenModal(ModalRequest::Settings));
+                    action_queue.request(UiAction::OpenModal(ModalRequest::Settings).into());
                 }
 
                 if button(
@@ -71,9 +74,12 @@ pub(crate) fn show(
                 )
                 .clicked()
                 {
-                    action_queue.request(Action::AutoFillNotes {
-                        scope: NotesFillScope::AllCells,
-                    });
+                    action_queue.request(
+                        BoardMutationAction::AutoFillNotes {
+                            scope: NotesFillScope::AllCells,
+                        }
+                        .into(),
+                    );
                 }
 
                 if button(
@@ -85,7 +91,7 @@ pub(crate) fn show(
                 )
                 .clicked()
                 {
-                    action_queue.request(Action::CheckSolvability);
+                    action_queue.request(FlowAction::CheckSolvability.into());
                 }
             });
         },

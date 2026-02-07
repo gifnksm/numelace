@@ -4,13 +4,16 @@ use numelace_generator::GeneratedPuzzle;
 
 use crate::{
     action::{
-        Action, ConfirmResponder, ConfirmResult, ModalRequest, NotesFillScope,
-        SolvabilityDialogResult, SolvabilityResponder, SpinnerKind, flows,
+        BoardMutationAction, ConfirmResponder, ConfirmResult, ModalRequest, NotesFillScope,
+        PuzzleLifecycleAction, SolvabilityDialogResult, SolvabilityResponder, SpinnerKind,
+        UiAction, flows,
     },
     flow_executor::{FlowExecutor, FlowHandle},
     state::{SolvabilityState, SolvabilityStats},
-    worker,
-    worker::tasks::{SolvabilityRequestDto, SolvabilityStateDto},
+    worker::{
+        self,
+        tasks::{SolvabilityRequestDto, SolvabilityStateDto},
+    },
 };
 
 /// Spawn a new game flow if no other flows are active.
@@ -38,7 +41,7 @@ async fn new_game_flow(handle: FlowHandle) {
         };
         let puzzle = GeneratedPuzzle::try_from(dto)
             .unwrap_or_else(|err| panic!("failed to deserialize generated puzzle dto: {err}"));
-        handle.request_action(Action::NewGameReady(puzzle));
+        handle.request_action(PuzzleLifecycleAction::StartNewGame(puzzle).into());
     }
 }
 
@@ -46,9 +49,8 @@ async fn new_game_flow(handle: FlowHandle) {
 async fn confirm_new_game(handle: &FlowHandle) -> ConfirmResult {
     let (responder, receiver): (ConfirmResponder, oneshot::Receiver<ConfirmResult>) =
         oneshot::channel();
-    handle.request_action(Action::OpenModal(ModalRequest::NewGameConfirm(Some(
-        responder,
-    ))));
+    handle
+        .request_action(UiAction::OpenModal(ModalRequest::NewGameConfirm(Some(responder))).into());
 
     match receiver.await {
         Ok(result) => result,
@@ -84,9 +86,12 @@ async fn check_solvability_flow(handle: FlowHandle, request: SolvabilityRequestD
     let dialog_result = await_solvability_dialog(&handle, state).await;
 
     if matches!(dialog_result, SolvabilityDialogResult::RebuildNotes) {
-        handle.request_action(Action::AutoFillNotes {
-            scope: NotesFillScope::AllCells,
-        });
+        handle.request_action(
+            BoardMutationAction::AutoFillNotes {
+                scope: NotesFillScope::AllCells,
+            }
+            .into(),
+        );
     }
 }
 
@@ -99,10 +104,13 @@ async fn await_solvability_dialog(
         SolvabilityResponder,
         oneshot::Receiver<SolvabilityDialogResult>,
     ) = oneshot::channel();
-    handle.request_action(Action::OpenModal(ModalRequest::CheckSolvabilityResult {
-        state,
-        responder: Some(responder),
-    }));
+    handle.request_action(
+        UiAction::OpenModal(ModalRequest::CheckSolvabilityResult {
+            state,
+            responder: Some(responder),
+        })
+        .into(),
+    );
 
     match receiver.await {
         Ok(result) => result,

@@ -1,7 +1,7 @@
 use eframe::egui::{CollapsingHeader, Context, Id, Modal, ScrollArea, Sides, widgets};
 
 use crate::{
-    action::{Action, ActionRequestQueue},
+    action::{ActionRequestQueue, SettingsAction, UiAction},
     state::{AssistSettings, HighlightSettings, NotesSettings, Settings},
     ui::icon,
 };
@@ -93,10 +93,10 @@ pub(crate) fn show(ctx: &Context, vm: &SettingsViewModel, action_queue: &mut Act
             },
         );
         if changed {
-            action_queue.request(Action::UpdateSettings(settings));
+            action_queue.request(SettingsAction::UpdateSettings(settings).into());
         }
     });
     if modal.should_close() {
-        action_queue.request(Action::CloseModal);
+        action_queue.request(UiAction::CloseModal.into());
     }
 }

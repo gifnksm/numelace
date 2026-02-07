@@ -7,7 +7,7 @@ use numelace_core::{Digit, containers::Array9, index::DigitSemantics};
 use numelace_game::{InputBlockReason, InputOperation};
 
 use crate::{
-    action::{Action, ActionRequestQueue, NotesFillScope},
+    action::{ActionRequestQueue, BoardMutationAction, InputModeAction, NotesFillScope},
     ui::{
         icon,
         layout::{ComponentUnits, LayoutScale},
@@ -159,27 +159,33 @@ pub(crate) fn show(
                                     &vm.digit_states[digit],
                                     visuals,
                                 ) {
-                                    action_queue.request(Action::RequestDigit {
-                                        digit,
-                                        swap: swap_input_mode,
-                                    });
+                                    action_queue.request(
+                                        BoardMutationAction::RequestDigit {
+                                            digit,
+                                            swap: swap_input_mode,
+                                        }
+                                        .into(),
+                                    );
                                 }
                             }
                             Some(ButtonType::ClearCell) => {
                                 if show_clear_button(ui, button_size, vm.has_removable_input) {
-                                    action_queue.request(Action::ClearCell);
+                                    action_queue.request(BoardMutationAction::ClearCell.into());
                                 }
                             }
                             Some(ButtonType::AutoFillNotes) => {
                                 if show_auto_fill_button(ui, button_size, vm.auto_fill_capability) {
-                                    action_queue.request(Action::AutoFillNotes {
-                                        scope: NotesFillScope::Cell,
-                                    });
+                                    action_queue.request(
+                                        BoardMutationAction::AutoFillNotes {
+                                            scope: NotesFillScope::Cell,
+                                        }
+                                        .into(),
+                                    );
                                 }
                             }
                             Some(ButtonType::ToggleInputMode) => {
                                 if show_toggle_input_mode_button(ui, button_size, vm.notes_mode) {
-                                    action_queue.request(Action::ToggleInputMode);
+                                    action_queue.request(InputModeAction::ToggleInputMode.into());
                                 }
                             }
                             None => {
