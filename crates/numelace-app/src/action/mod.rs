@@ -3,7 +3,7 @@ use std::mem;
 use numelace_core::{Digit, Position};
 use numelace_generator::GeneratedPuzzle;
 
-use crate::state::{Settings, SolvabilityState};
+use crate::state::Settings;
 use crate::worker::tasks::SolvabilityUndoGridsDto;
 
 pub(crate) mod flows;
@@ -144,34 +144,37 @@ pub(crate) enum SpinnerKind {
     CheckSolvability,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
 pub(crate) enum ConfirmResult {
     Confirmed,
     Cancelled,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum SolvabilityDialogResult {
-    Close,
-    RebuildNotes,
-    Undo,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum SolvabilityUndoNoticeResult {
-    Close,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
+pub(crate) enum AlertResult {
+    Ok,
 }
 
 pub(crate) type Responder<T> = futures_channel::oneshot::Sender<T>;
 pub(crate) type ConfirmResponder = Responder<ConfirmResult>;
-pub(crate) type SolvabilityResponder = Responder<SolvabilityDialogResult>;
+pub(crate) type AlertResponder = Responder<AlertResult>;
 pub(crate) type SolvabilityUndoGridsResponder = Responder<SolvabilityUndoGridsDto>;
-pub(crate) type SolvabilityUndoNoticeResponder = Responder<SolvabilityUndoNoticeResult>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ConfirmKind {
     NewGame,
     ResetInputs,
+    SolvabilityInconsistent,
+    SolvabilityNoSolution,
+    SolvabilityNotesMaybeIncorrect,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[expect(clippy::enum_variant_names)]
+pub(crate) enum AlertKind {
+    SolvabilitySolvable,
+    SolvabilityUndoNotice { steps: usize },
+    SolvabilityUndoNotFound,
 }
 
 #[derive(Debug)]
@@ -180,15 +183,10 @@ pub(crate) enum ModalRequest {
         kind: ConfirmKind,
         responder: Option<ConfirmResponder>,
     },
-    CheckSolvabilityResult {
-        state: SolvabilityState,
-        responder: Option<SolvabilityResponder>,
+    Alert {
+        kind: AlertKind,
+        responder: Option<AlertResponder>,
     },
-    SolvabilityUndoNotice {
-        steps: usize,
-        responder: Option<SolvabilityUndoNoticeResponder>,
-    },
-    SolvabilityUndoNotFound,
     Settings,
 }
 

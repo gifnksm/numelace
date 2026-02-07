@@ -17,17 +17,11 @@ pub(crate) fn show(
         ModalRequest::Confirm { kind, responder } => {
             dialogs::show_confirm(ctx, action_queue, *kind, responder);
         }
+        ModalRequest::Alert { kind, responder } => {
+            dialogs::show_alert(ctx, action_queue, *kind, responder);
+        }
         ModalRequest::Settings => {
             settings::show(ctx, settings_vm, action_queue);
-        }
-        ModalRequest::CheckSolvabilityResult { state, responder } => {
-            dialogs::show_solvability(ctx, action_queue, state, responder);
-        }
-        ModalRequest::SolvabilityUndoNotice { steps, responder } => {
-            dialogs::show_solvability_undo_notice(ctx, action_queue, *steps, responder);
-        }
-        ModalRequest::SolvabilityUndoNotFound => {
-            dialogs::show_solvability_undo_not_found(ctx, action_queue);
         }
     }
 }

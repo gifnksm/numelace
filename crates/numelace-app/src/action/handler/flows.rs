@@ -4,10 +4,9 @@ use numelace_generator::GeneratedPuzzle;
 
 use crate::{
     action::{
-        BoardMutationAction, ConfirmKind, ConfirmResponder, ConfirmResult, HistoryAction,
-        ModalRequest, NotesFillScope, PuzzleLifecycleAction, SolvabilityDialogResult,
-        SolvabilityResponder, SolvabilityUndoGridsResponder, SolvabilityUndoNoticeResponder,
-        SolvabilityUndoNoticeResult, SpinnerKind, StateQueryAction, UiAction, flows,
+        AlertKind, AlertResponder, AlertResult, BoardMutationAction, ConfirmKind, ConfirmResponder,
+        ConfirmResult, HistoryAction, ModalRequest, NotesFillScope, PuzzleLifecycleAction,
+        SolvabilityUndoGridsResponder, SpinnerKind, StateQueryAction, UiAction, flows,
     },
     flow_executor::{FlowExecutor, FlowHandle},
     state::{SolvabilityState, SolvabilityStats},
@@ -36,6 +35,22 @@ async fn show_confirm_dialog(handle: &FlowHandle, kind: ConfirmKind) -> ConfirmR
     }
 }
 
+async fn show_alert_dialog(handle: &FlowHandle, kind: AlertKind) -> AlertResult {
+    let (responder, receiver): (AlertResponder, oneshot::Receiver<AlertResult>) =
+        oneshot::channel();
+    handle.request_action(
+        UiAction::OpenModal(ModalRequest::Alert {
+            kind,
+            responder: Some(responder),
+        })
+        .into(),
+    );
+    match receiver.await {
+        Ok(result) => result,
+        Err(_) => AlertResult::Ok,
+    }
+}
+
 /// Spawn a new game flow if no other flows are active.
 pub(crate) fn spawn_new_game_flow(executor: &mut FlowExecutor) {
     if !executor.is_idle() {
@@ -50,9 +65,8 @@ pub(crate) fn spawn_new_game_flow(executor: &mut FlowExecutor) {
 /// On confirm, it runs the background request and awaits the response.
 async fn new_game_flow(handle: FlowHandle) {
     let result = show_confirm_dialog(&handle, ConfirmKind::NewGame).await;
-    match result {
-        ConfirmResult::Cancelled => return,
-        ConfirmResult::Confirmed => {}
+    if !result.is_confirmed() {
+        return;
     }
     let work = worker::request_generate_puzzle();
     let response = flows::with_spinner(&handle, SpinnerKind::NewGame, work).await;
@@ -72,9 +86,8 @@ pub(crate) fn spawn_reset_inputs_flow(executor: &mut FlowExecutor) {
 
 async fn reset_inputs_flow(handle: FlowHandle) {
     let result = show_confirm_dialog(&handle, ConfirmKind::ResetInputs).await;
-    match result {
-        ConfirmResult::Cancelled => return,
-        ConfirmResult::Confirmed => {}
+    if !result.is_confirmed() {
+        return;
     }
     handle.request_action(BoardMutationAction::ResetInputs.into());
 }
@@ -98,71 +111,52 @@ async fn check_solvability_flow(handle: FlowHandle, request: SolvabilityRequestD
         .await
         .unwrap();
     let state = map_solvability_state(state);
-    let dialog_result = await_solvability_dialog(&handle, state).await;
 
-    match dialog_result {
-        SolvabilityDialogResult::RebuildNotes => {
-            handle.request_action(
-                BoardMutationAction::AutoFillNotes {
-                    scope: NotesFillScope::AllCells,
-                }
-                .into(),
-            );
+    match state {
+        SolvabilityState::Inconsistent => {
+            let result = show_confirm_dialog(&handle, ConfirmKind::SolvabilityInconsistent).await;
+            if result.is_confirmed() {
+                handle_solvability_undo(&handle).await;
+            }
         }
-        SolvabilityDialogResult::Undo => {
-            handle_solvability_undo(&handle).await;
+        SolvabilityState::NoSolution => {
+            let result = show_confirm_dialog(&handle, ConfirmKind::SolvabilityNoSolution).await;
+            if result.is_confirmed() {
+                handle_solvability_undo(&handle).await;
+            }
         }
-        SolvabilityDialogResult::Close => {}
-    }
-}
-
-/// Await the solvability result dialog.
-async fn await_solvability_dialog(
-    handle: &FlowHandle,
-    state: SolvabilityState,
-) -> SolvabilityDialogResult {
-    let (responder, receiver): (
-        SolvabilityResponder,
-        oneshot::Receiver<SolvabilityDialogResult>,
-    ) = oneshot::channel();
-    handle.request_action(
-        UiAction::OpenModal(ModalRequest::CheckSolvabilityResult {
-            state,
-            responder: Some(responder),
-        })
-        .into(),
-    );
-
-    match receiver.await {
-        Ok(result) => result,
-        Err(_) => SolvabilityDialogResult::Close,
-    }
-}
-
-async fn await_solvability_undo_notice(
-    handle: &FlowHandle,
-    steps: usize,
-) -> SolvabilityUndoNoticeResult {
-    let (responder, receiver): (
-        SolvabilityUndoNoticeResponder,
-        oneshot::Receiver<SolvabilityUndoNoticeResult>,
-    ) = oneshot::channel();
-    handle.request_action(
-        UiAction::OpenModal(ModalRequest::SolvabilityUndoNotice {
-            steps,
-            responder: Some(responder),
-        })
-        .into(),
-    );
-
-    match receiver.await {
-        Ok(result) => result,
-        Err(_) => SolvabilityUndoNoticeResult::Close,
+        SolvabilityState::Solvable {
+            with_user_notes: true,
+            stats: _stats,
+        } => {
+            let _ = show_alert_dialog(&handle, AlertKind::SolvabilitySolvable).await;
+        }
+        SolvabilityState::Solvable {
+            with_user_notes: false,
+            stats: _stats,
+        } => {
+            let result =
+                show_confirm_dialog(&handle, ConfirmKind::SolvabilityNotesMaybeIncorrect).await;
+            if result.is_confirmed() {
+                handle.request_action(
+                    BoardMutationAction::AutoFillNotes {
+                        scope: NotesFillScope::AllCells,
+                    }
+                    .into(),
+                );
+            }
+        }
     }
 }
 
 fn open_solvability_undo_not_found(handle: &FlowHandle) {
-    handle.request_action(UiAction::OpenModal(ModalRequest::SolvabilityUndoNotFound).into());
+    handle.request_action(
+        UiAction::OpenModal(ModalRequest::Alert {
+            kind: AlertKind::SolvabilityUndoNotFound,
+            responder: None,
+        })
+        .into(),
+    );
 }
 
 async fn request_solvability_undo_grids(handle: &FlowHandle) -> Option<SolvabilityUndoGridsDto> {
@@ -199,7 +193,7 @@ async fn apply_solvability_undo_result(handle: &FlowHandle, result: SolvabilityU
     handle.request_action(HistoryAction::UndoSteps(index).into());
 
     if index > 0 {
-        let _ = await_solvability_undo_notice(handle, index).await;
+        let _ = show_alert_dialog(handle, AlertKind::SolvabilityUndoNotice { steps: index }).await;
     }
 
     let state = map_solvability_state(result.state);
@@ -210,8 +204,8 @@ async fn apply_solvability_undo_result(handle: &FlowHandle, result: SolvabilityU
             stats: _,
         }
     ) {
-        let dialog_result = await_solvability_dialog(handle, state).await;
-        if matches!(dialog_result, SolvabilityDialogResult::RebuildNotes) {
+        let result = show_confirm_dialog(handle, ConfirmKind::SolvabilityNotesMaybeIncorrect).await;
+        if result.is_confirmed() {
             handle.request_action(
                 BoardMutationAction::AutoFillNotes {
                     scope: NotesFillScope::AllCells,
