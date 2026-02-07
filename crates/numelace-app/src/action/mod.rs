@@ -5,6 +5,7 @@ use numelace_generator::GeneratedPuzzle;
 
 use crate::state::{Settings, SolvabilityState};
 
+pub(crate) mod flows;
 pub(crate) mod handler;
 
 #[derive(Debug)]
@@ -24,10 +25,28 @@ pub(crate) enum Action {
     ResetCurrentPuzzle,
     UpdateSettings(Settings),
     NewGameReady(GeneratedPuzzle),
+    StartSpinner { id: SpinnerId, kind: SpinnerKind },
+    StopSpinner { id: SpinnerId },
     StartNewGameFlow,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct SpinnerId(u64);
+
+impl SpinnerId {
+    #[must_use]
+    pub(crate) fn new(value: u64) -> Self {
+        Self(value)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SpinnerKind {
+    NewGame,
+    CheckSolvability,
+}
+
+#[derive(Debug)]
 pub(crate) enum ConfirmResult {
     Confirmed,
     Cancelled,

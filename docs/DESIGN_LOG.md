@@ -61,3 +61,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-07: Track app state dirtiness via mutable access and consume work responses in the flow executor — keeps persistence tied to real state mutations while avoiding extra action plumbing.
 - 2026-02-07: Rename `flow` to `flow_executor`, `async_work` to `worker`, and move UI flows into `action_handler/flows` — clarifies responsibilities while keeping the executor generic.
 - 2026-02-07: Move worker tasks under `worker/tasks` and split `worker/api` out of the worker module — clarifies worker responsibilities and API surface.
+- 2026-02-07: Drive spinner UI via `StartSpinner`/`StopSpinner` actions with per-flow IDs and UI-managed active list (oldest active shown) — keeps executor focused on flow orchestration and UI reactive to flow activity.

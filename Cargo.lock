@@ -2265,6 +2265,7 @@ dependencies = [
  "numelace-game",
  "numelace-generator",
  "numelace-solver",
+ "portable-atomic",
  "serde",
  "serde-wasm-bindgen",
  "wasm-bindgen",

@@ -77,6 +77,12 @@ pub(crate) fn handle(app_state: &mut AppState, ui_state: &mut UiState, action: A
             push_history_if_changed = false;
             ctx.apply_new_game_puzzle(puzzle);
         }
+        Action::StartSpinner { id, kind } => {
+            ctx.ui_state.spinner_state.start(id, kind);
+        }
+        Action::StopSpinner { id } => {
+            ctx.ui_state.spinner_state.stop(id);
+        }
         Action::StartNewGameFlow => {
             push_history_if_changed = false;
             ctx.start_new_game_flow();

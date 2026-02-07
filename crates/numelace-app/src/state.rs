@@ -1,7 +1,7 @@
 use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
-use crate::action::ModalRequest;
+use crate::action::{ModalRequest, SpinnerId, SpinnerKind};
 use crate::flow_executor::FlowExecutor;
 use crate::history::UndoRedoStack;
 
@@ -226,11 +226,45 @@ pub(crate) enum SolvabilityState {
     },
 }
 
+#[derive(Debug, Default)]
+pub(crate) struct SpinnerState {
+    active: Vec<SpinnerEntry>,
+}
+
+impl SpinnerState {
+    pub(crate) fn start(&mut self, id: SpinnerId, kind: SpinnerKind) {
+        self.active.push(SpinnerEntry { id, kind });
+    }
+
+    pub(crate) fn stop(&mut self, id: SpinnerId) {
+        if let Some(index) = self.active.iter().position(|entry| entry.id == id) {
+            self.active.remove(index);
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn is_active(&self) -> bool {
+        !self.active.is_empty()
+    }
+
+    #[must_use]
+    pub(crate) fn active_kind(&self) -> Option<SpinnerKind> {
+        self.active.first().map(|entry| entry.kind)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct SpinnerEntry {
+    pub(crate) id: SpinnerId,
+    pub(crate) kind: SpinnerKind,
+}
+
 #[derive(Debug)]
 pub(crate) struct UiState {
     pub(crate) active_modal: Option<ModalRequest>,
     pub(crate) conflict_ghost: Option<(Position, GhostType)>,
     pub(crate) flow: FlowExecutor,
+    pub(crate) spinner_state: SpinnerState,
     history: UndoRedoStack<GameSnapshot>,
 }
 
@@ -241,6 +275,7 @@ impl UiState {
             active_modal: None,
             conflict_ghost: None,
             flow: FlowExecutor::new(),
+            spinner_state: SpinnerState::default(),
             history: UndoRedoStack::new(max_history_len),
         };
         this.reset_history(init_state);

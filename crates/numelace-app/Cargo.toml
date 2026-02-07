@@ -22,6 +22,7 @@ derive_more = { workspace = true, features = ["error", "display", "from"] }
 eframe = { workspace = true, features = ["persistence"] }
 egui_extras.workspace = true
 futures-channel.workspace = true
+portable-atomic.workspace = true
 log.workspace = true
 numelace-core.workspace = true
 numelace-game.workspace = true

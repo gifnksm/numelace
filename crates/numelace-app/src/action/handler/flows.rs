@@ -5,9 +5,9 @@ use numelace_generator::GeneratedPuzzle;
 use crate::{
     action::{
         Action, ConfirmResponder, ConfirmResult, ModalRequest, NotesFillScope,
-        SolvabilityDialogResult, SolvabilityResponder,
+        SolvabilityDialogResult, SolvabilityResponder, SpinnerKind, flows,
     },
-    flow_executor::{FlowExecutor, FlowHandle, SpinnerKind},
+    flow_executor::{FlowExecutor, FlowHandle},
     state::{SolvabilityState, SolvabilityStats},
     worker,
     worker::tasks::{SolvabilityRequestDto, SolvabilityStateDto},
@@ -29,7 +29,7 @@ async fn new_game_flow(handle: FlowHandle) {
     let result = confirm_new_game(&handle).await;
     if matches!(result, ConfirmResult::Confirmed) {
         let work = worker::request_generate_puzzle();
-        let response = handle.with_spinner(SpinnerKind::NewGame, work).await;
+        let response = flows::with_spinner(&handle, SpinnerKind::NewGame, work).await;
         let dto = match response {
             Ok(dto) => dto,
             Err(err) => {
@@ -71,9 +71,7 @@ pub(crate) fn spawn_check_solvability_flow(executor: &mut FlowExecutor, game: &G
 /// Runs the background request and awaits the response.
 async fn check_solvability_flow(handle: FlowHandle, request: SolvabilityRequestDto) {
     let work = worker::request_solvability(request);
-    let response = handle
-        .with_spinner(SpinnerKind::CheckSolvability, work)
-        .await;
+    let response = flows::with_spinner(&handle, SpinnerKind::CheckSolvability, work).await;
 
     let state = match response {
         Ok(state) => state,

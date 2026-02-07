@@ -3,7 +3,7 @@ use std::{
     future::Future,
     pin::Pin,
     rc::Rc,
-    task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
+    task::{Context, RawWaker, RawWakerVTable, Waker},
 };
 
 use crate::action::{Action, ActionRequestQueue};
@@ -46,12 +46,6 @@ impl FlowExecutor {
         FlowHandle {
             state: Rc::clone(&self.state),
         }
-    }
-
-    /// Returns the active spinner (if any) for flow-driven UI feedback.
-    #[must_use]
-    pub(crate) fn active_spinner(&self) -> Option<SpinnerKind> {
-        self.state.borrow().active_spinner
     }
 
     /// Returns true if no flows are currently running.
@@ -105,20 +99,6 @@ impl FlowHandle {
     pub(crate) fn request_action(&self, action: Action) {
         self.state.borrow_mut().pending_actions.push(action);
     }
-
-    /// Wrap a future with a flow-driven spinner.
-    #[must_use]
-    pub(crate) fn with_spinner<F>(&self, kind: SpinnerKind, future: F) -> WithSpinnerFuture<F>
-    where
-        F: Future,
-    {
-        WithSpinnerFuture {
-            state: Rc::clone(&self.state),
-            kind,
-            started: false,
-            inner: Box::pin(future),
-        }
-    }
 }
 
 struct FlowTask {
@@ -128,49 +108,6 @@ struct FlowTask {
 #[derive(Default)]
 struct FlowState {
     pending_actions: Vec<Action>,
-    active_spinner: Option<SpinnerKind>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum SpinnerKind {
-    NewGame,
-    CheckSolvability,
-}
-
-/// Awaitable wrapper that toggles a flow spinner while the inner future runs.
-pub(crate) struct WithSpinnerFuture<F>
-where
-    F: Future,
-{
-    state: Rc<RefCell<FlowState>>,
-    kind: SpinnerKind,
-    started: bool,
-    inner: Pin<Box<F>>,
-}
-
-impl<F> Future for WithSpinnerFuture<F>
-where
-    F: Future,
-{
-    type Output = F::Output;
-
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if !self.started {
-            self.started = true;
-            self.state.borrow_mut().active_spinner = Some(self.kind);
-        }
-
-        let result = self.inner.as_mut().poll(cx);
-
-        if result.is_ready() {
-            let mut state = self.state.borrow_mut();
-            if state.active_spinner == Some(self.kind) {
-                state.active_spinner = None;
-            }
-        }
-
-        result
-    }
 }
 
 fn noop_waker() -> Waker {
