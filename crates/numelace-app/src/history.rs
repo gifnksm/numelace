@@ -80,6 +80,11 @@ impl<T> UndoRedoStack<T> {
     }
 
     #[must_use]
+    pub(crate) fn iter_from_current(&self) -> impl DoubleEndedIterator<Item = &T> {
+        self.stack.iter().take(self.cursor + 1).rev()
+    }
+
+    #[must_use]
     pub(crate) fn cursor(&self) -> usize {
         self.cursor
     }

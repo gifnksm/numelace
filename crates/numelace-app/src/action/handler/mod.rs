@@ -7,7 +7,7 @@ use crate::{
     action::{
         Action, ActionRequestQueue, AppAction, BoardMutationAction, FlowAction, HistoryAction,
         InputModeAction, NotesFillScope, PuzzleLifecycleAction, SelectionAction, SettingsAction,
-        UiAction,
+        StateQueryAction, UiAction,
     },
     state::{AppState, AppStateAccess, GhostType, InputMode, UiState},
 };
@@ -57,6 +57,7 @@ impl AppAction {
                 action.execute(app_state, ui_state);
             }
             AppAction::History(action) => action.execute(app_state, ui_state),
+            AppAction::StateQuery(action) => action.execute(app_state, ui_state),
             AppAction::Selection(action) => action.execute(app_state),
             AppAction::InputMode(action) => action.execute(app_state),
             AppAction::Settings(action) => action.execute(app_state),
@@ -140,8 +141,22 @@ impl HistoryAction {
             HistoryAction::Undo => {
                 app_state.undo();
             }
+            HistoryAction::UndoSteps(steps) => {
+                app_state.undo_steps(steps);
+            }
             HistoryAction::Redo => {
                 app_state.redo();
+            }
+        }
+    }
+}
+
+impl StateQueryAction {
+    fn execute(self, app_state: &mut AppState, _ui_state: &mut UiState) {
+        match self {
+            StateQueryAction::BuildSolvabilityUndoGrids { responder } => {
+                let grids = app_state.build_solvability_undo_grids();
+                let _ = responder.send(crate::worker::tasks::SolvabilityUndoGridsDto { grids });
             }
         }
     }

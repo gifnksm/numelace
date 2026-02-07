@@ -4,6 +4,7 @@ use numelace_core::{Digit, Position};
 use numelace_generator::GeneratedPuzzle;
 
 use crate::state::{Settings, SolvabilityState};
+use crate::worker::tasks::SolvabilityUndoGridsDto;
 
 pub(crate) mod flows;
 pub(crate) mod handler;
@@ -20,6 +21,7 @@ pub(crate) enum AppAction {
     BoardMutation(BoardMutationAction),
     PuzzleLifecycle(PuzzleLifecycleAction),
     History(HistoryAction),
+    StateQuery(StateQueryAction),
     Selection(SelectionAction),
     InputMode(InputModeAction),
     Settings(SettingsAction),
@@ -41,7 +43,15 @@ pub(crate) enum PuzzleLifecycleAction {
 #[derive(Debug)]
 pub(crate) enum HistoryAction {
     Undo,
+    UndoSteps(usize),
     Redo,
+}
+
+#[derive(Debug)]
+pub(crate) enum StateQueryAction {
+    BuildSolvabilityUndoGrids {
+        responder: SolvabilityUndoGridsResponder,
+    },
 }
 
 #[derive(Debug)]
@@ -94,6 +104,12 @@ impl From<HistoryAction> for Action {
     }
 }
 
+impl From<StateQueryAction> for Action {
+    fn from(action: StateQueryAction) -> Self {
+        Action::App(action.into())
+    }
+}
+
 impl From<SelectionAction> for Action {
     fn from(action: SelectionAction) -> Self {
         Action::App(action.into())
@@ -138,11 +154,13 @@ pub(crate) enum ConfirmResult {
 pub(crate) enum SolvabilityDialogResult {
     Close,
     RebuildNotes,
+    Undo,
 }
 
 pub(crate) type Responder<T> = futures_channel::oneshot::Sender<T>;
 pub(crate) type ConfirmResponder = Responder<ConfirmResult>;
 pub(crate) type SolvabilityResponder = Responder<SolvabilityDialogResult>;
+pub(crate) type SolvabilityUndoGridsResponder = Responder<SolvabilityUndoGridsDto>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ConfirmKind {

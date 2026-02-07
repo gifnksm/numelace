@@ -4,15 +4,19 @@ use numelace_generator::GeneratedPuzzle;
 
 use crate::{
     action::{
-        BoardMutationAction, ConfirmKind, ConfirmResponder, ConfirmResult, ModalRequest,
-        NotesFillScope, PuzzleLifecycleAction, SolvabilityDialogResult, SolvabilityResponder,
-        SpinnerKind, UiAction, flows,
+        BoardMutationAction, ConfirmKind, ConfirmResponder, ConfirmResult, HistoryAction,
+        ModalRequest, NotesFillScope, PuzzleLifecycleAction, SolvabilityDialogResult,
+        SolvabilityResponder, SolvabilityUndoGridsResponder, SpinnerKind, StateQueryAction,
+        UiAction, flows,
     },
     flow_executor::{FlowExecutor, FlowHandle},
     state::{SolvabilityState, SolvabilityStats},
     worker::{
         self,
-        tasks::{SolvabilityRequestDto, SolvabilityStateDto},
+        tasks::{
+            SolvabilityRequestDto, SolvabilityStateDto, SolvabilityUndoGridsDto,
+            SolvabilityUndoScanResultDto,
+        },
     },
 };
 
@@ -96,13 +100,19 @@ async fn check_solvability_flow(handle: FlowHandle, request: SolvabilityRequestD
     let state = map_solvability_state(state);
     let dialog_result = await_solvability_dialog(&handle, state).await;
 
-    if matches!(dialog_result, SolvabilityDialogResult::RebuildNotes) {
-        handle.request_action(
-            BoardMutationAction::AutoFillNotes {
-                scope: NotesFillScope::AllCells,
-            }
-            .into(),
-        );
+    match dialog_result {
+        SolvabilityDialogResult::RebuildNotes => {
+            handle.request_action(
+                BoardMutationAction::AutoFillNotes {
+                    scope: NotesFillScope::AllCells,
+                }
+                .into(),
+            );
+        }
+        SolvabilityDialogResult::Undo => {
+            handle_solvability_undo(&handle).await;
+        }
+        SolvabilityDialogResult::Close => {}
     }
 }
 
@@ -129,11 +139,60 @@ async fn await_solvability_dialog(
     }
 }
 
-fn build_solvability_request(game: &Game) -> SolvabilityRequestDto {
-    SolvabilityRequestDto {
-        with_user_notes: game.to_candidate_grid_with_notes().into(),
-        without_user_notes: game.to_candidate_grid().into(),
+async fn request_solvability_undo_grids(handle: &FlowHandle) -> Option<SolvabilityUndoGridsDto> {
+    let (responder, receiver): (
+        SolvabilityUndoGridsResponder,
+        oneshot::Receiver<SolvabilityUndoGridsDto>,
+    ) = oneshot::channel();
+    handle.request_action(StateQueryAction::BuildSolvabilityUndoGrids { responder }.into());
+
+    receiver.await.ok()
+}
+
+async fn handle_solvability_undo(handle: &FlowHandle) {
+    let Some(grids) = request_solvability_undo_grids(handle).await else {
+        return;
+    };
+    if grids.grids.is_empty() {
+        return;
     }
+
+    let work = worker::request_solvability_undo_scan(grids);
+    let result = flows::with_spinner(handle, SpinnerKind::CheckSolvability, work)
+        .await
+        .unwrap();
+    apply_solvability_undo_result(handle, result).await;
+}
+
+async fn apply_solvability_undo_result(handle: &FlowHandle, result: SolvabilityUndoScanResultDto) {
+    let Some(index) = result.index else {
+        return;
+    };
+
+    handle.request_action(HistoryAction::UndoSteps(index).into());
+
+    let state = map_solvability_state(result.state);
+    if matches!(
+        state,
+        SolvabilityState::Solvable {
+            with_user_notes: false,
+            stats: _,
+        }
+    ) {
+        let dialog_result = await_solvability_dialog(handle, state).await;
+        if matches!(dialog_result, SolvabilityDialogResult::RebuildNotes) {
+            handle.request_action(
+                BoardMutationAction::AutoFillNotes {
+                    scope: NotesFillScope::AllCells,
+                }
+                .into(),
+            );
+        }
+    }
+}
+
+fn build_solvability_request(game: &Game) -> SolvabilityRequestDto {
+    game.to_candidate_grid_with_notes().into()
 }
 
 fn map_solvability_state(result: SolvabilityStateDto) -> SolvabilityState {

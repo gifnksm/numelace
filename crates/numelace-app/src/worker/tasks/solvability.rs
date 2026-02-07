@@ -8,14 +8,22 @@ use numelace_core::{CandidateGrid, Digit, DigitSet, Position};
 use numelace_solver::BacktrackSolverStats;
 use serde::{Deserialize, Serialize};
 
-/// DTO containing two candidate grids for solvability checks.
+/// DTO containing a candidate grid for solvability checks.
 ///
-/// The task first checks `with_user_notes`, and if that is inconsistent or has
-/// no solution, it falls back to `without_user_notes`.
+/// The task first checks the provided grid (with user notes). If that is
+/// inconsistent or has no solution, it falls back to a grid that keeps only
+/// decided cells.
+pub(crate) type SolvabilityRequestDto = SolvabilityGridDto;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct SolvabilityRequestDto {
-    pub(crate) with_user_notes: SolvabilityGridDto,
-    pub(crate) without_user_notes: SolvabilityGridDto,
+pub(crate) struct SolvabilityUndoGridsDto {
+    pub(crate) grids: Vec<SolvabilityGridDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct SolvabilityUndoScanResultDto {
+    pub(crate) index: Option<usize>,
+    pub(crate) state: SolvabilityStateDto,
 }
 
 /// DTO representing solvability results across worker boundaries.
@@ -109,15 +117,46 @@ pub(crate) enum SolvabilityDtoError {
     InvalidCandidateBits { pos: Position, bits: u16 },
 }
 
+/// Scan undo history grids to find the first solvable state.
+pub(crate) fn handle_solvability_undo_scan(
+    request: SolvabilityUndoGridsDto,
+) -> Result<SolvabilityUndoScanResultDto, SolvabilityDtoError> {
+    for (index, grid_dto) in request.grids.into_iter().enumerate() {
+        let with_user_notes: CandidateGrid = grid_dto.try_into()?;
+        let without_user_notes = without_user_notes_grid(&with_user_notes);
+
+        let with_state = check_grid_solvability(with_user_notes, true);
+        if matches!(with_state, SolvabilityStateDto::Solvable { .. }) {
+            return Ok(SolvabilityUndoScanResultDto {
+                index: Some(index),
+                state: with_state,
+            });
+        }
+
+        let without_state = check_grid_solvability(without_user_notes, false);
+        if matches!(without_state, SolvabilityStateDto::Solvable { .. }) {
+            return Ok(SolvabilityUndoScanResultDto {
+                index: Some(index),
+                state: without_state,
+            });
+        }
+    }
+
+    Ok(SolvabilityUndoScanResultDto {
+        index: None,
+        state: SolvabilityStateDto::NoSolution,
+    })
+}
+
 /// Runs solvability logic with fallback between user notes and raw candidates.
 ///
 /// If the `with_user_notes` grid is inconsistent or unsolvable, the task retries
-/// with `without_user_notes`.
+/// with a grid that keeps only decided cells.
 pub(crate) fn handle_solvability_request(
     request: SolvabilityRequestDto,
 ) -> Result<SolvabilityStateDto, SolvabilityDtoError> {
-    let with_user_notes = request.with_user_notes.try_into()?;
-    let without_user_notes = request.without_user_notes.try_into()?;
+    let with_user_notes: CandidateGrid = request.try_into()?;
+    let without_user_notes = without_user_notes_grid(&with_user_notes);
 
     let first_result = check_grid_solvability(with_user_notes, true);
     let result = if matches!(
@@ -130,6 +169,11 @@ pub(crate) fn handle_solvability_request(
     };
 
     Ok(result)
+}
+
+fn without_user_notes_grid(grid: &CandidateGrid) -> CandidateGrid {
+    let decided_grid = grid.to_digit_grid();
+    CandidateGrid::from_digit_grid(&decided_grid)
 }
 
 fn check_grid_solvability(grid: CandidateGrid, with_user_notes: bool) -> SolvabilityStateDto {

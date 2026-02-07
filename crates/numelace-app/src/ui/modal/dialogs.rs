@@ -1,4 +1,4 @@
-use eframe::egui::{Button, Context, Id, Modal, Response, RichText, Sides, Ui};
+use eframe::egui::{Context, Id, Modal, Response, RichText, Sides, Ui};
 
 use crate::{
     action::{
@@ -52,10 +52,6 @@ fn primary_button(ui: &mut Ui, label: String, request_focus: bool) -> Response {
         request_focus_if_none(ui, &response);
     }
     response
-}
-
-fn disabled_button(ui: &mut Ui, label: String) {
-    ui.add_enabled(false, Button::new(label));
 }
 
 fn send_response<T>(responder: &mut Option<Responder<T>>, response: T) {
@@ -169,7 +165,11 @@ fn show_solvability_inconsistent(
             ui.label("A conflict or a no-candidate cell was detected. We recommend undoing to the last consistent state.");
         },
         |ui: &mut Ui| {
-            disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
+            let undo = primary_button(ui, format!("{} Undo", icon::ARROW_UNDO), true);
+            if undo.clicked() {
+                send_response(responder, SolvabilityDialogResult::Undo);
+                ui.close();
+            }
             if ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
                 send_response(responder, SolvabilityDialogResult::Close);
                 ui.close();
@@ -196,7 +196,11 @@ fn show_solvability_no_solution(
             ui.label("No solution exists from the current state. We recommend undoing to the last solvable state.");
         },
         |ui: &mut Ui| {
-            disabled_button(ui, format!("{} Undo (coming soon)", icon::ARROW_UNDO));
+            let undo = primary_button(ui, format!("{} Undo", icon::ARROW_UNDO), true);
+            if undo.clicked() {
+                send_response(responder, SolvabilityDialogResult::Undo);
+                ui.close();
+            }
             if ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
                 send_response(responder, SolvabilityDialogResult::Close);
                 ui.close();

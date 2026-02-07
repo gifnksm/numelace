@@ -122,6 +122,26 @@ impl AppState {
         }
     }
 
+    #[must_use]
+    pub(crate) fn build_solvability_undo_grids(
+        &self,
+    ) -> Vec<crate::worker::tasks::SolvabilityGridDto> {
+        let (problem, solution) = base_problem_and_solution(&self.game);
+        let mut grids = Vec::new();
+        for snapshot in self.history.iter_from_current() {
+            let Ok(game) = Game::from_problem_filled_notes(
+                &problem,
+                &solution,
+                &snapshot.filled,
+                &snapshot.notes,
+            ) else {
+                return Vec::new();
+            };
+            grids.push(game.to_candidate_grid_with_notes().into());
+        }
+        grids
+    }
+
     pub(crate) fn apply_history_state(&mut self, history_state: HistoryState) {
         let stack = VecDeque::from(history_state.entries);
         self.history.restore_from_parts(stack, history_state.cursor);
@@ -153,6 +173,21 @@ impl AppState {
         } else {
             false
         }
+    }
+
+    pub(crate) fn undo_steps(&mut self, steps: usize) -> bool {
+        if steps == 0 {
+            return true;
+        }
+        let mut undone = 0;
+        for _ in 0..steps {
+            if self.undo() {
+                undone += 1;
+            } else {
+                break;
+            }
+        }
+        undone > 0
     }
 
     #[must_use]

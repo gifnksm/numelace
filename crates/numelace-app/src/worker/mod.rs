@@ -11,7 +11,10 @@ use std::{
     task::{Context, Poll},
 };
 
-use self::tasks::{GeneratedPuzzleDto, SolvabilityRequestDto, SolvabilityStateDto};
+use self::tasks::{
+    GeneratedPuzzleDto, SolvabilityRequestDto, SolvabilityStateDto, SolvabilityUndoGridsDto,
+    SolvabilityUndoScanResultDto,
+};
 pub(crate) use platform::warm_up;
 use platform::{WorkHandle, enqueue};
 
@@ -28,6 +31,8 @@ enum WorkRequest {
     GeneratePuzzle,
     /// Check solvability for a given puzzle state.
     CheckSolvability(SolvabilityRequestDto),
+    /// Scan undo history for a solvable state.
+    CheckSolvabilityUndoScan(SolvabilityUndoGridsDto),
 }
 
 /// A response produced by background work.
@@ -37,6 +42,8 @@ enum WorkResponse {
     GeneratedPuzzleReady(GeneratedPuzzleDto),
     /// Solvability result ready for display.
     SolvabilityReady(SolvabilityStateDto),
+    /// Undo scan result ready for display.
+    SolvabilityUndoScanReady(SolvabilityUndoScanResultDto),
     /// An error occurred while performing background work.
     Error(WorkError),
 }
@@ -79,6 +86,12 @@ impl WorkRequest {
             WorkRequest::CheckSolvability(request) => {
                 match tasks::handle_solvability_request(request) {
                     Ok(result) => WorkResponse::SolvabilityReady(result),
+                    Err(_) => WorkResponse::Error(WorkError::DeserializationFailed),
+                }
+            }
+            WorkRequest::CheckSolvabilityUndoScan(request) => {
+                match tasks::handle_solvability_undo_scan(request) {
+                    Ok(result) => WorkResponse::SolvabilityUndoScanReady(result),
                     Err(_) => WorkResponse::Error(WorkError::DeserializationFailed),
                 }
             }
@@ -139,7 +152,7 @@ pub(crate) async fn request_generate_puzzle() -> Result<GeneratedPuzzleDto, Work
     match request(WorkRequest::GeneratePuzzle).await {
         WorkResponse::GeneratedPuzzleReady(dto) => Ok(dto),
         WorkResponse::Error(err) => Err(err),
-        WorkResponse::SolvabilityReady(_) => Err(WorkError::UnexpectedResponse),
+        _ => Err(WorkError::UnexpectedResponse),
     }
 }
 
@@ -150,6 +163,16 @@ pub(crate) async fn request_solvability(
     match request(WorkRequest::CheckSolvability(solvability_request)).await {
         WorkResponse::SolvabilityReady(state) => Ok(state),
         WorkResponse::Error(err) => Err(err),
-        WorkResponse::GeneratedPuzzleReady(_) => Err(WorkError::UnexpectedResponse),
+        _ => Err(WorkError::UnexpectedResponse),
+    }
+}
+
+pub(crate) async fn request_solvability_undo_scan(
+    undo_grids: SolvabilityUndoGridsDto,
+) -> Result<SolvabilityUndoScanResultDto, WorkError> {
+    match request(WorkRequest::CheckSolvabilityUndoScan(undo_grids)).await {
+        WorkResponse::SolvabilityUndoScanReady(result) => Ok(result),
+        WorkResponse::Error(err) => Err(err),
+        _ => Err(WorkError::UnexpectedResponse),
     }
 }
