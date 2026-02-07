@@ -4,17 +4,56 @@ use std::{
     task::{Context, Poll},
 };
 
+use futures_channel::oneshot;
+use numelace_game::Game;
 use portable_atomic::AtomicU64;
 
 use crate::{
-    action::{SpinnerId, SpinnerKind, UiAction},
-    flow_executor::FlowHandle,
+    action::{
+        AlertKind, AlertResult, ConfirmKind, ConfirmResult, ModalRequest, SpinnerId, SpinnerKind,
+        StateQueryAction, UiAction,
+    },
+    flow::FlowHandle,
 };
 
-static NEXT_SPINNER_ID: AtomicU64 = AtomicU64::new(1);
+pub(super) async fn show_confirm_dialog(handle: &FlowHandle, kind: ConfirmKind) -> ConfirmResult {
+    let (responder, receiver) = oneshot::channel();
+    handle.request_action(
+        UiAction::OpenModal(ModalRequest::Confirm {
+            kind,
+            responder: Some(responder),
+        })
+        .into(),
+    );
+    match receiver.await {
+        Ok(result) => result,
+        Err(_) => ConfirmResult::Cancelled,
+    }
+}
+
+pub(super) async fn show_alert_dialog(handle: &FlowHandle, kind: AlertKind) -> AlertResult {
+    let (responder, receiver) = oneshot::channel();
+    handle.request_action(
+        UiAction::OpenModal(ModalRequest::Alert {
+            kind,
+            responder: Some(responder),
+        })
+        .into(),
+    );
+    match receiver.await {
+        Ok(result) => result,
+        Err(_) => AlertResult::Ok,
+    }
+}
+
+pub(super) async fn request_undo_games(handle: &FlowHandle) -> Option<Vec<Game>> {
+    let (responder, receiver) = oneshot::channel();
+    handle.request_action(StateQueryAction::BuildUndoGames { responder }.into());
+    receiver.await.ok()
+}
 
 #[must_use]
-pub(crate) fn with_spinner<F>(
+pub(super) fn with_spinner<F>(
     handle: &FlowHandle,
     kind: SpinnerKind,
     future: F,
@@ -26,7 +65,7 @@ where
 }
 
 /// Awaitable wrapper that toggles a flow spinner while the inner future runs.
-pub(crate) struct WithSpinnerFuture<F>
+pub(super) struct WithSpinnerFuture<F>
 where
     F: Future,
 {
@@ -43,7 +82,9 @@ where
     F: Future,
 {
     #[must_use]
-    pub(crate) fn new(handle: FlowHandle, kind: SpinnerKind, future: F) -> Self {
+    fn new(handle: FlowHandle, kind: SpinnerKind, future: F) -> Self {
+        static NEXT_SPINNER_ID: AtomicU64 = AtomicU64::new(1);
+
         let id = SpinnerId::new(NEXT_SPINNER_ID.fetch_add(1, portable_atomic::Ordering::Relaxed));
         Self {
             handle,

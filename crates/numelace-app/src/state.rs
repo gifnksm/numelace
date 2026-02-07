@@ -6,7 +6,7 @@ use numelace_game::{CellState, Game, InputDigitOptions, NoteCleanupPolicy, RuleC
 use crate::{
     DEFAULT_MAX_HISTORY_LENGTH,
     action::{ModalRequest, SpinnerId, SpinnerKind},
-    flow_executor::FlowExecutor,
+    flow::FlowExecutor,
     history::UndoRedoStack,
 };
 

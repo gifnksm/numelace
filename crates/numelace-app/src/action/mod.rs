@@ -6,7 +6,6 @@ use numelace_generator::GeneratedPuzzle;
 
 use crate::state::Settings;
 
-pub(crate) mod flows;
 pub(crate) mod handler;
 
 #[derive(Debug, derive_more::From)]

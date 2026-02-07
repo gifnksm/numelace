@@ -1,5 +1,3 @@
-mod flows;
-
 use numelace_core::Position;
 use numelace_game::{Game, GameError, RuleCheckPolicy};
 
@@ -9,6 +7,7 @@ use crate::{
         InputModeAction, NotesFillScope, PuzzleLifecycleAction, SelectionAction, SettingsAction,
         StateQueryAction, UiAction,
     },
+    flow,
     state::{AppState, AppStateAccess, GhostType, InputMode, UiState},
 };
 
@@ -220,13 +219,13 @@ impl FlowAction {
     fn execute(self, app_state: &AppState, ui_state: &mut UiState) {
         match self {
             FlowAction::StartNewGame => {
-                flows::spawn_new_game_flow(&mut ui_state.executor);
+                flow::tasks::spawn_new_game_flow(&mut ui_state.executor);
             }
             FlowAction::ResetInputs => {
-                flows::spawn_reset_inputs_flow(&mut ui_state.executor);
+                flow::tasks::spawn_reset_inputs_flow(&mut ui_state.executor);
             }
             FlowAction::CheckSolvability => {
-                flows::spawn_check_solvability_flow(&mut ui_state.executor, &app_state.game);
+                flow::tasks::spawn_check_solvability_flow(&mut ui_state.executor, &app_state.game);
             }
         }
     }
