@@ -40,6 +40,7 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] Check Solvability UI + dialog + shortcut (Ctrl+K)
   - [X] Hint stage 1 highlight (condition cells)
   - [X] Hint stage 2 technique + condition pairs
+  - [ ] Hint stage 2 short rationale text
   - [ ] Hint stage 3 apply step + ghost eliminations
   - [X] Rollback flow for inconsistent boards
 

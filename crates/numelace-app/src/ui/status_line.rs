@@ -51,7 +51,7 @@ pub(crate) fn show(ui: &mut Ui, vm: &StatusLineViewModel, scale: &LayoutScale) {
                         format!("{} Hint: Focus on the highlighted area.", icon::LIGHTBULB)
                     }
                     HintStage::Stage2 => {
-                        format!("{} Hint: {}", icon::LIGHTBULB, hint.step.technique_name())
+                        format!("{} Hint: {}.", icon::LIGHTBULB, hint.step.technique_name())
                     }
                     HintStage::Stage3 => {
                         format!("{} Hint: This step will make progress.", icon::LIGHTBULB)

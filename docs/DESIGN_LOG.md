@@ -70,3 +70,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-09: Hint flow prompts to rebuild notes when a hint exists only without notes and clears hint state afterward — keeps hint UX aligned with solvability checks and avoids misleading memo-based hints.
 - 2026-02-09: Hint stage 1 uses corner marks for highlighting — avoids background conflicts with same-digit highlights and keeps selection visibility.
 - 2026-02-09: Hint stage 2 highlights condition digits with pill backgrounds — keeps digit-level emphasis distinct from stage 1 region marking.
+- 2026-02-10: Hint stage 3 uses preview/apply sub-steps with mandatory preview visuals (hint-colored outline + digits/notes) and distinct status-line messaging — makes confirmation explicit before applying progress.
