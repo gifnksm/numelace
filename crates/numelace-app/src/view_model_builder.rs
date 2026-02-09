@@ -6,7 +6,7 @@ use numelace_core::{
 use numelace_game::CellState;
 
 use crate::{
-    state::{AppState, GhostType, UiState},
+    state::{AppState, GhostType, HintStage, UiState},
     ui::{
         game_screen::GameScreenViewModel,
         grid::{GridCell, GridViewModel, GridVisualState, NoteVisualState},
@@ -46,7 +46,33 @@ fn build_grid(app_state: &AppState, ui_state: &UiState) -> Array81<GridCell, Pos
 
     if let Some(hint_state) = &ui_state.hint_state {
         for pos in hint_state.step.condition_cells() {
-            grid[pos].visual_state.insert(GridVisualState::HINT);
+            grid[pos]
+                .visual_state
+                .insert(GridVisualState::HINT_CONDITION_CELL);
+        }
+
+        if matches!(hint_state.stage, HintStage::Stage2) {
+            for (positions, digits) in hint_state.step.condition_digit_cells() {
+                for pos in positions {
+                    if let Some(cell_digit) = grid[pos].content.as_digit()
+                        && digits.contains(cell_digit)
+                    {
+                        grid[pos]
+                            .visual_state
+                            .insert(GridVisualState::HINT_CONDITION_DIGIT);
+                    }
+                    if let Some(notes) = grid[pos].content.as_notes() {
+                        for digit in digits {
+                            if notes.contains(digit) {
+                                grid[pos]
+                                    .note_visual_state
+                                    .hint_condition_digit
+                                    .insert(digit);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -104,10 +130,10 @@ fn build_grid(app_state: &AppState, ui_state: &UiState) -> Array81<GridCell, Pos
 }
 
 #[must_use]
-pub(crate) fn build_game_screen_view_model(
+pub(crate) fn build_game_screen_view_model<'a>(
     app_state: &AppState,
-    ui_state: &UiState,
-) -> GameScreenViewModel {
+    ui_state: &'a UiState,
+) -> GameScreenViewModel<'a> {
     let game = &app_state.game;
     let selected_cell = app_state.selected_cell;
     let settings = &app_state.settings;
@@ -115,6 +141,8 @@ pub(crate) fn build_game_screen_view_model(
 
     let status = if app_state.game.is_solved() {
         GameStatus::Solved
+    } else if let Some(hint_state) = &ui_state.hint_state {
+        GameStatus::Hint(hint_state)
     } else {
         GameStatus::InProgress
     };
@@ -300,12 +328,12 @@ mod tests {
         assert!(
             grid[Position::new(2, 2)]
                 .visual_state
-                .contains(GridVisualState::HINT)
+                .contains(GridVisualState::HINT_CONDITION_CELL)
         );
         assert!(
             !grid[Position::new(3, 3)]
                 .visual_state
-                .contains(GridVisualState::HINT)
+                .contains(GridVisualState::HINT_CONDITION_CELL)
         );
     }
 }

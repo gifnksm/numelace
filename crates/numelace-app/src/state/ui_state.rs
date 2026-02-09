@@ -30,16 +30,15 @@ impl UiState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[expect(dead_code)]
 pub(crate) enum HintStage {
     Stage1,
     Stage2,
+    #[expect(dead_code)]
     Stage3,
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct HintState {
-    #[expect(dead_code)]
     pub(crate) stage: HintStage,
     pub(crate) step: BoxedTechniqueStep,
 }

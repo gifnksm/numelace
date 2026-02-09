@@ -17,18 +17,18 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub(crate) struct GameScreenViewModel {
+pub(crate) struct GameScreenViewModel<'a> {
     pub(crate) toolbar: ToolbarViewModel,
-    pub(crate) status_line: StatusLineViewModel,
+    pub(crate) status_line: StatusLineViewModel<'a>,
     pub(crate) grid: GridViewModel,
     pub(crate) keypad: KeypadViewModel,
 }
 
-impl GameScreenViewModel {
+impl<'a> GameScreenViewModel<'a> {
     #[must_use]
     pub(crate) fn new(
         toolbar: ToolbarViewModel,
-        status_line: StatusLineViewModel,
+        status_line: StatusLineViewModel<'a>,
         grid: GridViewModel,
         keypad: KeypadViewModel,
     ) -> Self {

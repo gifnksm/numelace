@@ -32,43 +32,59 @@ pub(crate) fn spawn_hint_flow(
 }
 
 async fn hint_flow(handle: FlowHandle, request: HintRequest) {
-    if request.hint_state.is_some() {
-        return;
-    }
+    match request.hint_state {
+        None => {
+            let result = find_hint_step(&request.game);
 
-    let result = find_hint_step(&request.game);
-
-    match result {
-        Ok(Some((true, step))) => {
+            match result {
+                Ok(Some((true, step))) => {
+                    let hint_state = HintState {
+                        stage: HintStage::Stage1,
+                        step,
+                    };
+                    handle.request_action(UiAction::SetHintState(Some(hint_state)).into());
+                }
+                Ok(Some((false, _step))) => {
+                    let result =
+                        helpers::show_confirm_dialog(&handle, ConfirmKind::HintNotesMaybeIncorrect)
+                            .await;
+                    if result.is_confirmed() {
+                        handle.request_action(
+                            BoardMutationAction::AutoFillNotes {
+                                scope: NotesFillScope::AllCells,
+                            }
+                            .into(),
+                        );
+                    }
+                    handle.request_action(UiAction::SetHintState(None).into());
+                }
+                Ok(None) => {
+                    handle.request_action(UiAction::ClearHintState.into());
+                    let _ = helpers::show_alert_dialog(&handle, AlertKind::HintStuckNoStep).await;
+                }
+                Err(SolverError::Inconsistent(_)) => {
+                    let result =
+                        helpers::show_confirm_dialog(&handle, ConfirmKind::HintInconsistent).await;
+                    if result.is_confirmed() {
+                        handle_hint_undo(&handle).await;
+                    }
+                }
+            }
+        }
+        Some(HintState {
+            stage: HintStage::Stage1,
+            step,
+        }) => {
             let hint_state = HintState {
-                stage: HintStage::Stage1,
+                stage: HintStage::Stage2,
                 step,
             };
             handle.request_action(UiAction::SetHintState(Some(hint_state)).into());
         }
-        Ok(Some((false, _step))) => {
-            let result =
-                helpers::show_confirm_dialog(&handle, ConfirmKind::HintNotesMaybeIncorrect).await;
-            if result.is_confirmed() {
-                handle.request_action(
-                    BoardMutationAction::AutoFillNotes {
-                        scope: NotesFillScope::AllCells,
-                    }
-                    .into(),
-                );
-            }
-            handle.request_action(UiAction::SetHintState(None).into());
-        }
-        Ok(None) => {
-            handle.request_action(UiAction::ClearHintState.into());
-            let _ = helpers::show_alert_dialog(&handle, AlertKind::HintStuckNoStep).await;
-        }
-        Err(SolverError::Inconsistent(_)) => {
-            let result = helpers::show_confirm_dialog(&handle, ConfirmKind::HintInconsistent).await;
-            if result.is_confirmed() {
-                handle_hint_undo(&handle).await;
-            }
-        }
+        Some(HintState {
+            stage: HintStage::Stage2 | HintStage::Stage3,
+            ..
+        }) => {}
     }
 }
 

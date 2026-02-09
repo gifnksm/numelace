@@ -1,24 +1,28 @@
 use eframe::egui::{Align, Label, RichText, Ui, Vec2, Widget as _};
 
-use crate::ui::{
-    icon,
-    layout::{ComponentUnits, LayoutScale},
+use crate::{
+    state::{HintStage, HintState},
+    ui::{
+        icon,
+        layout::{ComponentUnits, LayoutScale},
+    },
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum GameStatus {
+#[derive(Debug, Clone)]
+pub(crate) enum GameStatus<'a> {
     InProgress,
     Solved,
+    Hint(&'a HintState),
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct StatusLineViewModel {
-    status: GameStatus,
+pub(crate) struct StatusLineViewModel<'a> {
+    status: GameStatus<'a>,
 }
 
-impl StatusLineViewModel {
+impl<'a> StatusLineViewModel<'a> {
     #[must_use]
-    pub(crate) fn new(status: GameStatus) -> Self {
+    pub(crate) fn new(status: GameStatus<'a>) -> Self {
         Self { status }
     }
 }
@@ -39,6 +43,20 @@ pub(crate) fn show(ui: &mut Ui, vm: &StatusLineViewModel, scale: &LayoutScale) {
             ),
             GameStatus::Solved => (
                 format!("{} Solved! Congratulations!", icon::TROPHY),
+                ui.visuals().warn_fg_color,
+            ),
+            GameStatus::Hint(hint) => (
+                match hint.stage {
+                    HintStage::Stage1 => {
+                        format!("{} Hint: Focus on the highlighted area.", icon::LIGHTBULB)
+                    }
+                    HintStage::Stage2 => {
+                        format!("{} Hint: {}", icon::LIGHTBULB, hint.step.technique_name())
+                    }
+                    HintStage::Stage3 => {
+                        format!("{} Hint: This step will make progress.", icon::LIGHTBULB)
+                    }
+                },
                 ui.visuals().warn_fg_color,
             ),
         };

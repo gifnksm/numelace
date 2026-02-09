@@ -16,11 +16,13 @@ pub(crate) struct GridPalette {
 
     pub(crate) note_bg_same_digit: Color32,
     pub(crate) note_bg_house_same_digit: Color32,
+    pub(crate) note_bg_hint: Color32,
 
     pub(crate) border_inactive: Color32,
     pub(crate) border_selected: Color32,
     pub(crate) border_same_digit: Color32,
     pub(crate) border_conflict: Color32,
+    pub(crate) border_hint: Color32,
 
     pub(crate) text_normal: Color32,
     pub(crate) text_given: Color32,
@@ -54,10 +56,10 @@ impl GridPalette {
                     Color32::from_gray(210), // base: widgets.hovered.bg_fill = (220, 220, 220) (light)
                 )
             };
-        let cell_bg_hint = if visuals.dark_mode {
-            Color32::from_rgb(20, 110, 80)
+        let hint_accent = if visuals.dark_mode {
+            Color32::from_rgb(255, 165, 0)
         } else {
-            Color32::from_rgb(200, 240, 220)
+            Color32::from_rgb(255, 110, 0)
         };
 
         Self {
@@ -66,15 +68,17 @@ impl GridPalette {
             cell_bg_same_digit: cell_bg_selected,
             cell_bg_house_selected,
             cell_bg_house_same_digit,
-            cell_bg_hint,
+            cell_bg_hint: hint_accent,
 
             note_bg_same_digit: cell_bg_selected,
             note_bg_house_same_digit,
+            note_bg_hint: hint_accent,
 
             border_inactive: visuals.widgets.inactive.fg_stroke.color, // dark=(180, 180, 180) light=(60, 60, 60)
             border_selected: visuals.selection.stroke.color, // dark=(192, 222, 255) light=(0, 83, 125)
             border_same_digit: visuals.selection.stroke.color,
             border_conflict: visuals.error_fg_color, // dark/light=(255, 0, 0)
+            border_hint: hint_accent,
 
             text_normal: visuals.text_color(), // dark=(140, 140, 140) light=(80, 80, 80)
             text_given: visuals.strong_text_color(), // dark=(255, 255, 255) light=(0, 0, 0)

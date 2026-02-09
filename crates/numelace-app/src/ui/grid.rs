@@ -24,7 +24,8 @@ bitflags::bitflags! {
         const HOUSE_SAME_DIGIT = 0b0000_1000;
         const CONFLICT = 0b0001_0000;
         const GHOST = 0b0010_0000;
-        const HINT = 0b0100_0000;
+        const HINT_CONDITION_CELL = 0b0100_0000;
+        const HINT_CONDITION_DIGIT = 0b1000_0000;
     }
 }
 
@@ -40,6 +41,7 @@ pub(crate) struct NoteVisualState {
     pub(crate) same_digit: DigitSet,
     pub(crate) conflict: DigitSet,
     pub(crate) ghost: DigitSet,
+    pub(crate) hint_condition_digit: DigitSet,
 }
 
 impl NoteVisualState {
@@ -49,6 +51,7 @@ impl NoteVisualState {
             same_digit,
             conflict,
             ghost,
+            hint_condition_digit,
         } = self;
         let mut vs = GridVisualState::empty();
         if same_digit.contains(digit) {
@@ -59,6 +62,9 @@ impl NoteVisualState {
         }
         if ghost.contains(digit) {
             vs |= GridVisualState::GHOST;
+        }
+        if hint_condition_digit.contains(digit) {
+            vs |= GridVisualState::HINT_CONDITION_DIGIT;
         }
         vs
     }
@@ -76,7 +82,9 @@ impl GridViewModel {
         grid: Array81<GridCell, PositionSemantics>,
         highlight_settings: &HighlightSettings,
     ) -> Self {
-        let mut enabled_highlights = GridVisualState::SELECTED | GridVisualState::HINT;
+        let mut enabled_highlights = GridVisualState::SELECTED
+            | GridVisualState::HINT_CONDITION_CELL
+            | GridVisualState::HINT_CONDITION_DIGIT;
         let HighlightSettings {
             same_digit,
             house_selected,
@@ -156,10 +164,6 @@ impl EffectiveGridVisualState {
     }
 
     fn cell_fill_color(self, palette: &GridPalette) -> Color32 {
-        // Hint highlight takes priority over other visual states.
-        if self.0.intersects(GridVisualState::HINT) {
-            return palette.cell_bg_hint;
-        }
         if self.0.intersects(GridVisualState::SELECTED) {
             return palette.cell_bg_selected;
         }
@@ -176,6 +180,9 @@ impl EffectiveGridVisualState {
     }
 
     fn note_fill_color(self, palette: &GridPalette) -> Option<Color32> {
+        if self.0.intersects(GridVisualState::HINT_CONDITION_DIGIT) {
+            return Some(palette.note_bg_hint);
+        }
         if self.0.intersects(GridVisualState::SAME_DIGIT) {
             return Some(palette.note_bg_same_digit);
         }
@@ -261,6 +268,18 @@ pub(crate) fn show(
 
             painter.rect_filled(cell_rect, 0.0, vs.cell_fill_color(palette));
 
+            painter.rect_stroke(
+                cell_rect,
+                0.0,
+                vs.cell_border(palette, cell_size),
+                StrokeKind::Inside,
+            );
+
+            if vs.0.intersects(GridVisualState::HINT_CONDITION_CELL) {
+                let hint_stroke = Stroke::new(base_border * 3.0, palette.border_hint);
+                draw_hint_corners(painter, cell_rect, hint_stroke);
+            }
+
             if let Some(digits) = cell.content.as_notes() {
                 let notes_rect = cell_rect.shrink(base_border);
                 draw_notes(
@@ -272,6 +291,14 @@ pub(crate) fn show(
                     palette,
                 );
             } else if let Some(digit) = cell.content.as_digit() {
+                if vs.0.intersects(GridVisualState::HINT_CONDITION_DIGIT) {
+                    draw_hint_digit_pill(
+                        painter,
+                        cell_rect.center(),
+                        cell_size,
+                        palette.cell_bg_hint,
+                    );
+                }
                 painter.text(
                     cell_rect.center(),
                     Align2::CENTER_CENTER,
@@ -280,13 +307,6 @@ pub(crate) fn show(
                     vs.text_color(cell.content.is_given(), palette),
                 );
             }
-
-            painter.rect_stroke(
-                cell_rect,
-                0.0,
-                vs.cell_border(palette, cell_size),
-                StrokeKind::Inside,
-            );
 
             let response = ui.interact(cell_rect, ui.id().with((x, y)), Sense::click());
             if response.clicked() {
@@ -342,6 +362,58 @@ fn draw_box_borders(painter: &Painter, inner_rect: Rect, cell_size: f32, stroke:
     }
 }
 
+fn draw_hint_digit_pill(painter: &Painter, center: Pos2, cell_size: f32, color: Color32) {
+    let size = cell_size * 0.55;
+    let rect = Rect::from_center_size(center, Vec2::splat(size));
+    painter.rect_filled(rect, size * 0.2, color);
+}
+
+fn draw_hint_corners(painter: &Painter, rect: Rect, stroke: Stroke) {
+    let corner_len = rect.width().min(rect.height()) * 0.25;
+    let thickness = stroke.width.max(1.0);
+    let min = rect.min;
+    let max = rect.max;
+
+    let top_left_h = Rect::from_min_size(min, Vec2::new(corner_len, thickness));
+    let top_left_v = Rect::from_min_size(min, Vec2::new(thickness, corner_len));
+
+    let top_right_h = Rect::from_min_size(
+        Pos2::new(max.x - corner_len, min.y),
+        Vec2::new(corner_len, thickness),
+    );
+    let top_right_v = Rect::from_min_size(
+        Pos2::new(max.x - thickness, min.y),
+        Vec2::new(thickness, corner_len),
+    );
+
+    let bottom_left_h = Rect::from_min_size(
+        Pos2::new(min.x, max.y - thickness),
+        Vec2::new(corner_len, thickness),
+    );
+    let bottom_left_v = Rect::from_min_size(
+        Pos2::new(min.x, max.y - corner_len),
+        Vec2::new(thickness, corner_len),
+    );
+
+    let bottom_right_h = Rect::from_min_size(
+        Pos2::new(max.x - corner_len, max.y - thickness),
+        Vec2::new(corner_len, thickness),
+    );
+    let bottom_right_v = Rect::from_min_size(
+        Pos2::new(max.x - thickness, max.y - corner_len),
+        Vec2::new(thickness, corner_len),
+    );
+
+    painter.rect_filled(top_left_h, 0.0, stroke.color);
+    painter.rect_filled(top_left_v, 0.0, stroke.color);
+    painter.rect_filled(top_right_h, 0.0, stroke.color);
+    painter.rect_filled(top_right_v, 0.0, stroke.color);
+    painter.rect_filled(bottom_left_h, 0.0, stroke.color);
+    painter.rect_filled(bottom_left_v, 0.0, stroke.color);
+    painter.rect_filled(bottom_right_h, 0.0, stroke.color);
+    painter.rect_filled(bottom_right_v, 0.0, stroke.color);
+}
+
 fn draw_notes(
     painter: &Painter,
     vm: &GridViewModel,
@@ -369,7 +441,12 @@ fn draw_notes(
         if let Some(fill_color) = vs.note_fill_color(palette) {
             let fill_rect =
                 Rect::from_center_size(center, Vec2::splat(f32::min(cell_w, cell_h)) * 0.9);
-            painter.rect_filled(fill_rect, 0.0, fill_color);
+            let rounding = if vs.0.intersects(GridVisualState::HINT_CONDITION_DIGIT) {
+                fill_rect.width() * 0.5
+            } else {
+                0.0
+            };
+            painter.rect_filled(fill_rect, rounding, fill_color);
         }
         painter.text(
             center,
@@ -378,20 +455,5 @@ fn draw_notes(
             note_font.clone(),
             text_color,
         );
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use eframe::egui::Visuals;
-
-    #[test]
-    fn hint_fill_color_overrides_selected() {
-        let visuals = Visuals::dark();
-        let palette = GridPalette::from_visuals(&visuals);
-        let state = EffectiveGridVisualState(GridVisualState::HINT | GridVisualState::SELECTED);
-
-        assert_eq!(state.cell_fill_color(&palette), palette.cell_bg_hint);
     }
 }
