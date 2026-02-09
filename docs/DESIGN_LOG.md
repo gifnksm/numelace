@@ -67,3 +67,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-07: Show a solvability undo notice dialog with the number of steps undone — clarifies rollback impact for the user.
 - 2026-02-07: Consolidate modal dialogs into confirm/alert kinds while keeping typed responses — reduces modal variants without sacrificing type safety.
 - 2026-02-07: Restructure flow code into an independent `flow` module with executor, helpers, and tasks — makes flow independence explicit and mirrors worker organization.
+- 2026-02-09: Hint flow prompts to rebuild notes when a hint exists only without notes and clears hint state afterward — keeps hint UX aligned with solvability checks and avoids misleading memo-based hints.

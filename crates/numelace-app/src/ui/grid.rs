@@ -24,6 +24,7 @@ bitflags::bitflags! {
         const HOUSE_SAME_DIGIT = 0b0000_1000;
         const CONFLICT = 0b0001_0000;
         const GHOST = 0b0010_0000;
+        const HINT = 0b0100_0000;
     }
 }
 
@@ -75,7 +76,7 @@ impl GridViewModel {
         grid: Array81<GridCell, PositionSemantics>,
         highlight_settings: &HighlightSettings,
     ) -> Self {
-        let mut enabled_highlights = GridVisualState::SELECTED;
+        let mut enabled_highlights = GridVisualState::SELECTED | GridVisualState::HINT;
         let HighlightSettings {
             same_digit,
             house_selected,
@@ -155,6 +156,10 @@ impl EffectiveGridVisualState {
     }
 
     fn cell_fill_color(self, palette: &GridPalette) -> Color32 {
+        // Hint highlight takes priority over other visual states.
+        if self.0.intersects(GridVisualState::HINT) {
+            return palette.cell_bg_hint;
+        }
         if self.0.intersects(GridVisualState::SELECTED) {
             return palette.cell_bg_selected;
         }
@@ -373,5 +378,20 @@ fn draw_notes(
             note_font.clone(),
             text_color,
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use eframe::egui::Visuals;
+
+    #[test]
+    fn hint_fill_color_overrides_selected() {
+        let visuals = Visuals::dark();
+        let palette = GridPalette::from_visuals(&visuals);
+        let state = EffectiveGridVisualState(GridVisualState::HINT | GridVisualState::SELECTED);
+
+        assert_eq!(state.cell_fill_color(&palette), palette.cell_bg_hint);
     }
 }

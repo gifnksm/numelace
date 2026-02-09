@@ -4,7 +4,7 @@ use numelace_core::{Digit, Position};
 use numelace_game::Game;
 use numelace_generator::GeneratedPuzzle;
 
-use crate::state::Settings;
+use crate::state::{HintState, Settings};
 
 pub(crate) mod handler;
 
@@ -74,6 +74,8 @@ pub(crate) enum UiAction {
     CloseModal,
     StartSpinner { id: SpinnerId, kind: SpinnerKind },
     StopSpinner { id: SpinnerId },
+    SetHintState(Option<HintState>),
+    ClearHintState,
 }
 
 #[derive(Debug)]
@@ -81,6 +83,7 @@ pub(crate) enum FlowAction {
     StartNewGame,
     ResetInputs,
     CheckSolvability,
+    Hint,
 }
 
 impl From<BoardMutationAction> for Action {
@@ -164,14 +167,18 @@ pub(crate) enum ConfirmKind {
     SolvabilityInconsistent,
     SolvabilityNoSolution,
     SolvabilityNotesMaybeIncorrect,
+    HintInconsistent,
+    HintNotesMaybeIncorrect,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[expect(clippy::enum_variant_names)]
 pub(crate) enum AlertKind {
     SolvabilitySolvable,
     SolvabilityUndoNotice { steps: usize },
     SolvabilityUndoNotFound,
+    HintUndoNotice { steps: usize },
+    HintStuckNoStep,
+    HintStuckAfterRollback,
 }
 
 #[derive(Debug)]

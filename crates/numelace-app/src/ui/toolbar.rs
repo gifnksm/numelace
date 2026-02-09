@@ -77,6 +77,18 @@ pub(crate) fn show(
                 {
                     action_queue.request(FlowAction::CheckSolvability.into());
                 }
+
+                if button(
+                    ui,
+                    icon::LIGHTBULB,
+                    "Get a hint (stage 1).",
+                    true,
+                    cell_size,
+                )
+                .clicked()
+                {
+                    action_queue.request(FlowAction::Hint.into());
+                }
             });
 
             ui.separator();

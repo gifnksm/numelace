@@ -81,7 +81,7 @@ const fn input_mode_action(action: InputModeAction) -> Action {
     Action::App(AppAction::InputMode(action))
 }
 
-const SHORTCUTS: [Shortcut; 34] = [
+const SHORTCUTS: [Shortcut; 35] = [
     Shortcut::command(Key::N, Action::Flow(FlowAction::StartNewGame)),
     Shortcut::command(
         Key::Comma,
@@ -89,6 +89,7 @@ const SHORTCUTS: [Shortcut; 34] = [
     ),
     Shortcut::command_shift(Key::Backspace, Action::Flow(FlowAction::ResetInputs)),
     Shortcut::command(Key::K, Action::Flow(FlowAction::CheckSolvability)),
+    Shortcut::command(Key::J, Action::Flow(FlowAction::Hint)),
     Shortcut::command(Key::Z, history_action(HistoryAction::Undo)),
     Shortcut::command(Key::Y, history_action(HistoryAction::Redo)),
     Shortcut::plain(Key::ArrowUp, move_selection_action(MoveDirection::Up)),

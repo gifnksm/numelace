@@ -115,13 +115,14 @@ impl BoardMutationAction {
             }
         }
         if app_state.game != game_snapshot {
+            ui_state.hint_state = None;
             app_state.push_history();
         }
     }
 }
 
 impl PuzzleLifecycleAction {
-    fn execute(self, app_state: &mut AppState, _ui_state: &mut UiState) {
+    fn execute(self, app_state: &mut AppState, ui_state: &mut UiState) {
         match self {
             PuzzleLifecycleAction::StartNewGame(puzzle) => {
                 let game = Game::new(puzzle);
@@ -129,13 +130,15 @@ impl PuzzleLifecycleAction {
                 app_state.selected_cell = None;
                 app_state.apply_new_game_settings();
                 app_state.reset_history();
+                ui_state.hint_state = None;
             }
         }
     }
 }
 
 impl HistoryAction {
-    fn execute(self, app_state: &mut AppState, _ui_state: &mut UiState) {
+    fn execute(self, app_state: &mut AppState, ui_state: &mut UiState) {
+        ui_state.hint_state = None;
         match self {
             HistoryAction::Undo => {
                 app_state.undo();
@@ -211,6 +214,12 @@ impl UiAction {
             UiAction::StopSpinner { id } => {
                 ui_state.spinner_state.stop(id);
             }
+            UiAction::SetHintState(hint_state) => {
+                ui_state.hint_state = hint_state;
+            }
+            UiAction::ClearHintState => {
+                ui_state.hint_state = None;
+            }
         }
     }
 }
@@ -226,6 +235,13 @@ impl FlowAction {
             }
             FlowAction::CheckSolvability => {
                 flow::tasks::spawn_check_solvability_flow(&mut ui_state.executor, &app_state.game);
+            }
+            FlowAction::Hint => {
+                flow::tasks::spawn_hint_flow(
+                    &mut ui_state.executor,
+                    &app_state.game,
+                    ui_state.hint_state.clone(),
+                );
             }
         }
     }

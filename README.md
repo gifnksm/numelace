@@ -58,6 +58,7 @@ Planned features are tracked in docs/BACKLOG.md.
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Backspace</kbd>: reset inputs (confirmation shown).
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>,</kbd>: open settings.
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd>: check solvability.
+  - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>J</kbd>: hint (stage 1).
 
 ### Mouse
 
@@ -69,7 +70,7 @@ Planned features are tracked in docs/BACKLOG.md.
   - Per-digit counts: show how many of each digit are already placed.
   - Notes mode indicators: digit buttons show note add/remove actions.
 - **Toolbar**
-  - Undo, Redo, Auto-fill notes (all cells), Check Solvability, New Game, Reset Inputs, Settings buttons.
+  - Undo, Redo, Auto-fill notes (all cells), Check Solvability, Hint, New Game, Reset Inputs, Settings buttons.
   - Theme switch (Light/Dark/System).
 
 ## Project Structure

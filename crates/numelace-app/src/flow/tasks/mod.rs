@@ -6,8 +6,9 @@ use crate::{
     worker,
 };
 
-pub(crate) use self::solvability::*;
+pub(crate) use self::{hint::*, solvability::*};
 
+mod hint;
 mod solvability;
 
 /// Spawn a new game flow if no other flows are active.

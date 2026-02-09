@@ -561,7 +561,7 @@ impl Game {
     #[must_use]
     pub fn verify_hint_step<T>(&self, step: &T) -> bool
     where
-        T: TechniqueStep,
+        T: TechniqueStep + ?Sized,
     {
         for app in step.application() {
             if let TechniqueApplication::Placement { position, digit } = app

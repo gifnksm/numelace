@@ -107,6 +107,20 @@ impl ConfirmKind {
                 confirm_label: "Rebuild",
                 confirm_icon: icon::CHECK,
             },
+            ConfirmKind::HintInconsistent => ConfirmDialogSpec {
+                id: Id::new("hint_inconsistent"),
+                heading: "Board Inconsistent",
+                label: "A conflict or a no-candidate cell was detected. We recommend undoing to the last consistent state.",
+                confirm_label: "Undo",
+                confirm_icon: icon::ARROW_UNDO,
+            },
+            ConfirmKind::HintNotesMaybeIncorrect => ConfirmDialogSpec {
+                id: Id::new("hint_notes_maybe_incorrect"),
+                heading: "Notes May Be Incorrect",
+                label: "A hint exists when ignoring notes. Rebuild candidates now?",
+                confirm_label: "Rebuild",
+                confirm_icon: icon::CHECK,
+            },
         }
     }
 }
@@ -139,6 +153,26 @@ impl AlertKind {
                 id: Id::new("solvability_undo_not_found"),
                 heading: "No Solution Found",
                 body: Cow::Borrowed("Undo did not find a solvable state."),
+                ok_label: "OK",
+            },
+            AlertKind::HintUndoNotice { steps } => AlertDialogSpec {
+                id: Id::new("hint_undo_notice"),
+                heading: "Undo Complete",
+                body: Cow::Owned(format!(
+                    "Undid {steps} step(s) to return to a consistent state."
+                )),
+                ok_label: "OK",
+            },
+            AlertKind::HintStuckNoStep => AlertDialogSpec {
+                id: Id::new("hint_stuck_no_step"),
+                heading: "No Hint Found",
+                body: Cow::Borrowed("No applicable techniques found from the current state."),
+                ok_label: "OK",
+            },
+            AlertKind::HintStuckAfterRollback => AlertDialogSpec {
+                id: Id::new("hint_stuck_after_rollback"),
+                heading: "No Hint Found",
+                body: Cow::Borrowed("The conflict was resolved, but no next step is available."),
                 ok_label: "OK",
             },
         }

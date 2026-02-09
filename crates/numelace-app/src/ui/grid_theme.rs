@@ -12,6 +12,7 @@ pub(crate) struct GridPalette {
     pub(crate) cell_bg_same_digit: Color32,
     pub(crate) cell_bg_house_selected: Color32,
     pub(crate) cell_bg_house_same_digit: Color32,
+    pub(crate) cell_bg_hint: Color32,
 
     pub(crate) note_bg_same_digit: Color32,
     pub(crate) note_bg_house_same_digit: Color32,
@@ -53,6 +54,11 @@ impl GridPalette {
                     Color32::from_gray(210), // base: widgets.hovered.bg_fill = (220, 220, 220) (light)
                 )
             };
+        let cell_bg_hint = if visuals.dark_mode {
+            Color32::from_rgb(20, 110, 80)
+        } else {
+            Color32::from_rgb(200, 240, 220)
+        };
 
         Self {
             cell_bg_default: visuals.text_edit_bg_color(), // dark=(10, 10, 10) light=(255, 255, 255)
@@ -60,6 +66,7 @@ impl GridPalette {
             cell_bg_same_digit: cell_bg_selected,
             cell_bg_house_selected,
             cell_bg_house_same_digit,
+            cell_bg_hint,
 
             note_bg_same_digit: cell_bg_selected,
             note_bg_house_same_digit,

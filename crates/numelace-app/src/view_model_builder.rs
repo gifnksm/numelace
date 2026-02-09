@@ -44,6 +44,12 @@ fn build_grid(app_state: &AppState, ui_state: &UiState) -> Array81<GridCell, Pos
         }
     }
 
+    if let Some(hint_state) = &ui_state.hint_state {
+        for pos in hint_state.step.condition_cells() {
+            grid[pos].visual_state.insert(GridVisualState::HINT);
+        }
+    }
+
     let selected_cell = app_state.selected_cell;
     let selected_digit = selected_cell.and_then(|pos| grid[pos].content.as_digit());
 
@@ -145,12 +151,13 @@ pub(crate) fn build_settings_view_model(app_state: &AppState) -> SettingsViewMod
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{Digit, DigitGrid, Position};
+    use numelace_core::{Digit, DigitGrid, DigitPositions, DigitSet, Position};
     use numelace_game::{CellState, Game};
+    use numelace_solver::technique::{BoxedTechniqueStep, TechniqueApplication, TechniqueStep};
 
     use super::build_grid;
     use crate::{
-        state::{AppState, GhostType, UiState},
+        state::{AppState, GhostType, HintStage, HintState, UiState},
         ui::grid::GridVisualState,
     };
 
@@ -194,6 +201,33 @@ mod tests {
                 .unwrap();
         let notes = [[0u16; 9]; 9];
         Game::from_problem_filled_notes(&problem, &solution, filled, &notes).unwrap()
+    }
+
+    #[derive(Debug, Clone)]
+    struct HintTestStep {
+        positions: DigitPositions,
+    }
+
+    impl TechniqueStep for HintTestStep {
+        fn technique_name(&self) -> &'static str {
+            "HintTest"
+        }
+
+        fn clone_box(&self) -> BoxedTechniqueStep {
+            Box::new(self.clone())
+        }
+
+        fn condition_cells(&self) -> DigitPositions {
+            self.positions
+        }
+
+        fn condition_digit_cells(&self) -> Vec<(DigitPositions, DigitSet)> {
+            Vec::new()
+        }
+
+        fn application(&self) -> Vec<TechniqueApplication> {
+            Vec::new()
+        }
     }
 
     #[test]
@@ -247,6 +281,31 @@ mod tests {
             grid[Position::new(3, 3)]
                 .visual_state
                 .contains(GridVisualState::GHOST)
+        );
+    }
+
+    #[test]
+    fn build_grid_highlights_hint_cells() {
+        let app_state = AppState::new(game_from_filled(&blank_grid()));
+        let mut ui_state = UiState::new();
+        let positions = DigitPositions::from_elem(Position::new(2, 2));
+        let step: BoxedTechniqueStep = Box::new(HintTestStep { positions });
+        ui_state.hint_state = Some(HintState {
+            stage: HintStage::Stage1,
+            step,
+        });
+
+        let grid = build_grid(&app_state, &ui_state);
+
+        assert!(
+            grid[Position::new(2, 2)]
+                .visual_state
+                .contains(GridVisualState::HINT)
+        );
+        assert!(
+            !grid[Position::new(3, 3)]
+                .visual_state
+                .contains(GridVisualState::HINT)
         );
     }
 }

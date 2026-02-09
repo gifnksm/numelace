@@ -1,4 +1,5 @@
 use numelace_core::{Digit, Position};
+use numelace_solver::technique::BoxedTechniqueStep;
 
 use crate::{
     action::{ModalRequest, SpinnerId, SpinnerKind},
@@ -10,6 +11,7 @@ use crate::{
 pub(crate) struct UiState {
     pub(crate) active_modal: Option<ModalRequest>,
     pub(crate) conflict_ghost: Option<(Position, GhostType)>,
+    pub(crate) hint_state: Option<HintState>,
     pub(crate) executor: FlowExecutor,
     pub(crate) spinner_state: SpinnerState,
 }
@@ -20,10 +22,26 @@ impl UiState {
         Self {
             active_modal: None,
             conflict_ghost: None,
+            hint_state: None,
             executor: FlowExecutor::new(),
             spinner_state: SpinnerState::default(),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[expect(dead_code)]
+pub(crate) enum HintStage {
+    Stage1,
+    Stage2,
+    Stage3,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct HintState {
+    #[expect(dead_code)]
+    pub(crate) stage: HintStage,
+    pub(crate) step: BoxedTechniqueStep,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
