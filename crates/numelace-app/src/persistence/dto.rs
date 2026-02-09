@@ -1,15 +1,12 @@
-use std::fmt::Write;
+use std::{fmt::Write, num::NonZero};
 
 use numelace_core::{DigitGrid, DigitGridParseError, Position, PositionNewError};
 use numelace_game::{CellState, Game, GameError};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    DEFAULT_MAX_HISTORY_LENGTH,
-    state::{
-        AppState, AssistSettings, HighlightSettings, HistorySnapshot, HistoryState, InputMode,
-        NotesSettings, Settings,
-    },
+use crate::state::{
+    AppState, AssistSettings, HighlightSettings, History, HistorySnapshot, InputMode,
+    NotesSettings, Settings,
 };
 
 // DTO defaulting guidance:
@@ -27,7 +24,7 @@ pub(crate) struct PersistedState {
     #[serde(default)]
     settings: SettingsDto,
     #[serde(default)]
-    history: HistoryStateDto,
+    history: HistoryDto,
 }
 
 impl From<&AppState> for PersistedState {
@@ -37,19 +34,7 @@ impl From<&AppState> for PersistedState {
             selected_cell: value.selected_cell.map(PositionDto::from),
             input_mode: value.input_mode.into(),
             settings: SettingsDto::from(&value.settings),
-            history: value.history_state().into(),
-        }
-    }
-}
-
-impl PersistedState {
-    pub(crate) fn history_state(&self) -> HistoryState {
-        match HistoryState::try_from(self.history.clone()) {
-            Ok(history) => history,
-            Err(_) => HistoryState {
-                entries: Vec::new(),
-                cursor: 0,
-            },
+            history: HistoryDto::from(value.history()),
         }
     }
 }
@@ -68,14 +53,12 @@ impl TryFrom<PersistedState> for AppState {
     type Error = AppStateConversionError;
 
     fn try_from(value: PersistedState) -> Result<Self, Self::Error> {
-        let history_state = value.history_state();
-        Ok(AppState::new_with_history(
+        Ok(AppState::from_parts(
             value.game.try_into()?,
             value.selected_cell.map(Position::try_from).transpose()?,
             value.input_mode.into(),
             value.settings.into(),
-            history_state,
-            DEFAULT_MAX_HISTORY_LENGTH,
+            value.history.try_into()?,
         ))
     }
 }
@@ -158,8 +141,8 @@ pub(crate) struct HistorySnapshotDto {
     selected_cell: Option<PositionDto>,
 }
 
-impl From<HistorySnapshot> for HistorySnapshotDto {
-    fn from(value: HistorySnapshot) -> Self {
+impl From<&HistorySnapshot> for HistorySnapshotDto {
+    fn from(value: &HistorySnapshot) -> Self {
         Self {
             filled: value.filled.to_string(),
             notes: value.notes,
@@ -181,39 +164,41 @@ impl TryFrom<HistorySnapshotDto> for HistorySnapshot {
     }
 }
 
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default)]
-pub(crate) struct HistoryStateDto {
+pub(crate) struct HistoryDto {
+    #[serde(default = "History::default_capacity")]
+    capacity: NonZero<usize>,
     entries: Vec<HistorySnapshotDto>,
     cursor: usize,
 }
 
-impl From<HistoryState> for HistoryStateDto {
-    fn from(value: HistoryState) -> Self {
+impl Default for HistoryDto {
+    fn default() -> Self {
+        Self::from(&History::default())
+    }
+}
+
+impl From<&History> for HistoryDto {
+    fn from(value: &History) -> Self {
         Self {
-            entries: value
-                .entries
-                .into_iter()
-                .map(HistorySnapshotDto::from)
-                .collect(),
-            cursor: value.cursor,
+            capacity: value.capacity(),
+            entries: value.entries().map(Into::into).collect(),
+            cursor: value.cursor(),
         }
     }
 }
 
-impl TryFrom<HistoryStateDto> for HistoryState {
+impl TryFrom<HistoryDto> for History {
     type Error = AppStateConversionError;
 
-    fn try_from(value: HistoryStateDto) -> Result<Self, Self::Error> {
+    fn try_from(value: HistoryDto) -> Result<Self, Self::Error> {
         let entries = value
             .entries
             .into_iter()
             .map(HistorySnapshot::try_from)
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(Self {
-            entries,
-            cursor: value.cursor,
-        })
+        Ok(Self::from_parts(value.capacity, entries, value.cursor))
     }
 }
 

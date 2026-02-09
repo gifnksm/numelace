@@ -5,10 +5,9 @@ use crate::{
         AlertKind, BoardMutationAction, ConfirmKind, HistoryAction, NotesFillScope, SpinnerKind,
     },
     flow::{FlowExecutor, FlowHandle, helpers},
-    state::SolvabilityState,
     worker::{
         self,
-        tasks::{CandidateGridPairDto, SolvabilityUndoScanResultDto},
+        tasks::{CandidateGridPairDto, SolvabilityResultDto, SolvabilityUndoScanResultDto},
     },
 };
 
@@ -30,30 +29,29 @@ async fn check_solvability_flow(handle: FlowHandle, request: CandidateGridPairDt
     let state = helpers::with_spinner(&handle, SpinnerKind::CheckSolvability, work)
         .await
         .unwrap();
-    let state = state.into();
 
     match state {
-        SolvabilityState::Inconsistent => {
+        SolvabilityResultDto::Inconsistent => {
             let result =
                 helpers::show_confirm_dialog(&handle, ConfirmKind::SolvabilityInconsistent).await;
             if result.is_confirmed() {
                 handle_solvability_undo(&handle).await;
             }
         }
-        SolvabilityState::NoSolution => {
+        SolvabilityResultDto::NoSolution => {
             let result =
                 helpers::show_confirm_dialog(&handle, ConfirmKind::SolvabilityNoSolution).await;
             if result.is_confirmed() {
                 handle_solvability_undo(&handle).await;
             }
         }
-        SolvabilityState::Solvable {
+        SolvabilityResultDto::Solvable {
             with_user_notes: true,
             stats: _stats,
         } => {
             let _ = helpers::show_alert_dialog(&handle, AlertKind::SolvabilitySolvable).await;
         }
-        SolvabilityState::Solvable {
+        SolvabilityResultDto::Solvable {
             with_user_notes: false,
             stats: _stats,
         } => {
@@ -101,10 +99,10 @@ async fn apply_solvability_undo_result(handle: &FlowHandle, result: SolvabilityU
                 .await;
     }
 
-    let state = result.state.into();
+    let state = result.state;
     if matches!(
         state,
-        SolvabilityState::Solvable {
+        SolvabilityResultDto::Solvable {
             with_user_notes: false,
             stats: _,
         }

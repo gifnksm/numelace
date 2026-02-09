@@ -8,20 +8,17 @@ use numelace_core::CandidateGrid;
 use numelace_solver::BacktrackSolverStats;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    state::{SolvabilityState, SolvabilityStats},
-    worker::tasks::{CandidateGridDtoError, CandidateGridPairDto, CandidateGridPairsDto},
-};
+use crate::worker::tasks::{CandidateGridDtoError, CandidateGridPairDto, CandidateGridPairsDto};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct SolvabilityUndoScanResultDto {
-    pub(crate) index: Option<usize>,
-    pub(crate) state: SolvabilityStateDto,
+pub(crate) struct SolvabilityStatsDto {
+    pub(crate) assumptions_len: usize,
+    pub(crate) backtrack_count: usize,
+    pub(crate) solved_without_assumptions: bool,
 }
 
-/// DTO representing solvability results across worker boundaries.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) enum SolvabilityStateDto {
+pub(crate) enum SolvabilityResultDto {
     Inconsistent,
     NoSolution,
     Solvable {
@@ -30,28 +27,10 @@ pub(crate) enum SolvabilityStateDto {
     },
 }
 
-impl From<SolvabilityStateDto> for SolvabilityState {
-    fn from(value: SolvabilityStateDto) -> Self {
-        match value {
-            SolvabilityStateDto::Inconsistent => Self::Inconsistent,
-            SolvabilityStateDto::NoSolution => Self::NoSolution,
-            SolvabilityStateDto::Solvable {
-                with_user_notes,
-                stats,
-            } => Self::Solvable {
-                with_user_notes,
-                stats: stats.into(),
-            },
-        }
-    }
-}
-
-/// Compact solver statistics used by solvability results.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct SolvabilityStatsDto {
-    pub(crate) assumptions_len: usize,
-    pub(crate) backtrack_count: usize,
-    pub(crate) solved_without_assumptions: bool,
+pub(crate) struct SolvabilityUndoScanResultDto {
+    pub(crate) index: Option<usize>,
+    pub(crate) state: SolvabilityResultDto,
 }
 
 impl From<BacktrackSolverStats> for SolvabilityStatsDto {
@@ -60,16 +39,6 @@ impl From<BacktrackSolverStats> for SolvabilityStatsDto {
             assumptions_len: stats.assumptions().len(),
             backtrack_count: stats.backtrack_count(),
             solved_without_assumptions: stats.solved_without_assumptions(),
-        }
-    }
-}
-
-impl From<SolvabilityStatsDto> for SolvabilityStats {
-    fn from(stats: SolvabilityStatsDto) -> Self {
-        SolvabilityStats {
-            assumptions_len: stats.assumptions_len,
-            backtrack_count: stats.backtrack_count,
-            solved_without_assumptions: stats.solved_without_assumptions,
         }
     }
 }
@@ -83,7 +52,7 @@ pub(crate) fn handle_solvability_undo_scan(
         let without_user_notes: CandidateGrid = grids.without_user_notes.try_into()?;
 
         let with_state = check_grid_solvability(with_user_notes, true);
-        if matches!(with_state, SolvabilityStateDto::Solvable { .. }) {
+        if matches!(with_state, SolvabilityResultDto::Solvable { .. }) {
             return Ok(SolvabilityUndoScanResultDto {
                 index: Some(index),
                 state: with_state,
@@ -91,7 +60,7 @@ pub(crate) fn handle_solvability_undo_scan(
         }
 
         let without_state = check_grid_solvability(without_user_notes, false);
-        if matches!(without_state, SolvabilityStateDto::Solvable { .. }) {
+        if matches!(without_state, SolvabilityResultDto::Solvable { .. }) {
             return Ok(SolvabilityUndoScanResultDto {
                 index: Some(index),
                 state: without_state,
@@ -101,7 +70,7 @@ pub(crate) fn handle_solvability_undo_scan(
 
     Ok(SolvabilityUndoScanResultDto {
         index: None,
-        state: SolvabilityStateDto::NoSolution,
+        state: SolvabilityResultDto::NoSolution,
     })
 }
 
@@ -111,14 +80,14 @@ pub(crate) fn handle_solvability_undo_scan(
 /// with a grid that keeps only decided cells.
 pub(crate) fn handle_solvability_request(
     request: CandidateGridPairDto,
-) -> Result<SolvabilityStateDto, CandidateGridDtoError> {
+) -> Result<SolvabilityResultDto, CandidateGridDtoError> {
     let with_user_notes: CandidateGrid = request.with_user_notes.try_into()?;
     let without_user_notes: CandidateGrid = request.without_user_notes.try_into()?;
 
     let first_result = check_grid_solvability(with_user_notes, true);
     let result = if matches!(
         first_result,
-        SolvabilityStateDto::Inconsistent | SolvabilityStateDto::NoSolution
+        SolvabilityResultDto::Inconsistent | SolvabilityResultDto::NoSolution
     ) {
         check_grid_solvability(without_user_notes, false)
     } else {
@@ -128,17 +97,17 @@ pub(crate) fn handle_solvability_request(
     Ok(result)
 }
 
-fn check_grid_solvability(grid: CandidateGrid, with_user_notes: bool) -> SolvabilityStateDto {
+fn check_grid_solvability(grid: CandidateGrid, with_user_notes: bool) -> SolvabilityResultDto {
     if grid.check_consistency().is_err() {
-        return SolvabilityStateDto::Inconsistent;
+        return SolvabilityResultDto::Inconsistent;
     }
 
     let solver = numelace_solver::BacktrackSolver::with_all_techniques();
     match solver.solve(grid).map(|mut sol| sol.next()) {
-        Ok(Some((_grid, stats))) => SolvabilityStateDto::Solvable {
+        Ok(Some((_grid, stats))) => SolvabilityResultDto::Solvable {
             with_user_notes,
             stats: stats.into(),
         },
-        Ok(None) | Err(_) => SolvabilityStateDto::NoSolution,
+        Ok(None) | Err(_) => SolvabilityResultDto::NoSolution,
     }
 }

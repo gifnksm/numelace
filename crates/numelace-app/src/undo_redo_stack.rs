@@ -1,21 +1,38 @@
-use std::collections::VecDeque;
+use std::{
+    collections::{VecDeque, vec_deque},
+    num::NonZero,
+};
 
 #[derive(Debug, Clone)]
 pub(crate) struct UndoRedoStack<T> {
     stack: VecDeque<T>,
-    capacity: usize,
+    capacity: NonZero<usize>,
     cursor: usize,
 }
 
 impl<T> UndoRedoStack<T> {
     #[must_use]
-    pub(crate) fn new(capacity: usize) -> Self {
-        assert!(capacity > 0);
+    pub(crate) fn new(capacity: NonZero<usize>) -> Self {
         Self {
             stack: VecDeque::new(),
             capacity,
             cursor: 0,
         }
+    }
+
+    #[must_use]
+    pub(crate) fn capacity(&self) -> NonZero<usize> {
+        self.capacity
+    }
+
+    #[must_use]
+    pub(crate) fn cursor(&self) -> usize {
+        self.cursor
+    }
+
+    #[must_use]
+    pub(crate) fn entries(&self) -> vec_deque::Iter<'_, T> {
+        self.stack.iter()
     }
 
     pub(crate) fn push(&mut self, item: T) {
@@ -30,7 +47,7 @@ impl<T> UndoRedoStack<T> {
             self.stack.truncate(truncate_len);
         }
 
-        if self.stack.len() == self.capacity {
+        if self.stack.len() == self.capacity.get() {
             self.stack.pop_front();
             if self.cursor > 0 {
                 self.cursor -= 1;
@@ -84,19 +101,9 @@ impl<T> UndoRedoStack<T> {
         self.stack.iter().take(self.cursor + 1).rev()
     }
 
-    #[must_use]
-    pub(crate) fn cursor(&self) -> usize {
-        self.cursor
-    }
-
-    #[must_use]
-    pub(crate) fn as_slices(&self) -> (&[T], &[T]) {
-        self.stack.as_slices()
-    }
-
     pub(crate) fn restore_from_parts(&mut self, mut stack: VecDeque<T>, cursor: usize) {
-        if stack.len() > self.capacity {
-            let overflow = stack.len() - self.capacity;
+        if stack.len() > self.capacity.get() {
+            let overflow = stack.len() - self.capacity.get();
             for _ in 0..overflow {
                 stack.pop_front();
             }
@@ -113,11 +120,13 @@ impl<T> UndoRedoStack<T> {
 
 #[cfg(test)]
 mod tests {
+    use std::num::NonZero;
+
     use super::UndoRedoStack;
 
     #[test]
     fn undo_redo_roundtrip() {
-        let mut history = UndoRedoStack::new(10);
+        let mut history = UndoRedoStack::new(NonZero::new(10).unwrap());
         history.push(1);
         history.push(2);
         history.push(3);
@@ -136,7 +145,7 @@ mod tests {
 
     #[test]
     fn redo_clears_after_push() {
-        let mut history = UndoRedoStack::new(10);
+        let mut history = UndoRedoStack::new(NonZero::new(10).unwrap());
         history.push(1);
         history.push(2);
         history.push(3);
@@ -154,7 +163,7 @@ mod tests {
 
     #[test]
     fn capacity_drops_oldest_and_adjusts_cursor() {
-        let mut history = UndoRedoStack::new(3);
+        let mut history = UndoRedoStack::new(NonZero::new(3).unwrap());
         history.push(1);
         history.push(2);
         history.push(3);
@@ -170,7 +179,7 @@ mod tests {
 
     #[test]
     fn undo_redo_stops_at_bounds() {
-        let mut history = UndoRedoStack::new(10);
+        let mut history = UndoRedoStack::new(NonZero::new(10).unwrap());
         history.push(1);
         history.push(2);
         history.push(3);
@@ -190,7 +199,7 @@ mod tests {
 
     #[test]
     fn empty_history_returns_none_and_false() {
-        let mut history: UndoRedoStack<i32> = UndoRedoStack::new(5);
+        let mut history: UndoRedoStack<i32> = UndoRedoStack::new(NonZero::new(5).unwrap());
 
         assert_eq!(history.current(), None);
         assert!(!history.undo());
@@ -200,7 +209,7 @@ mod tests {
 
     #[test]
     fn clear_resets_history_state() {
-        let mut history = UndoRedoStack::new(5);
+        let mut history = UndoRedoStack::new(NonZero::new(5).unwrap());
         history.push(1);
         history.push(2);
         history.push(3);

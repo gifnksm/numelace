@@ -15,7 +15,7 @@ pub(crate) use platform::warm_up;
 use platform::{WorkHandle, enqueue};
 
 use self::tasks::{
-    CandidateGridPairDto, CandidateGridPairsDto, GeneratedPuzzleDto, SolvabilityStateDto,
+    CandidateGridPairDto, CandidateGridPairsDto, GeneratedPuzzleDto, SolvabilityResultDto,
     SolvabilityUndoScanResultDto,
 };
 
@@ -42,7 +42,7 @@ enum WorkResponse {
     /// Generated puzzle data ready for a fresh game.
     GeneratedPuzzleReady(GeneratedPuzzleDto),
     /// Solvability result ready for display.
-    SolvabilityReady(SolvabilityStateDto),
+    SolvabilityReady(SolvabilityResultDto),
     /// Undo scan result ready for display.
     SolvabilityUndoScanReady(SolvabilityUndoScanResultDto),
     /// An error occurred while performing background work.
@@ -160,7 +160,7 @@ pub(crate) async fn request_generate_puzzle() -> Result<GeneratedPuzzleDto, Work
 /// Enqueue background work for solvability check and return the state.
 pub(crate) async fn request_solvability(
     solvability_request: CandidateGridPairDto,
-) -> Result<SolvabilityStateDto, WorkError> {
+) -> Result<SolvabilityResultDto, WorkError> {
     match request(WorkRequest::CheckSolvability(solvability_request)).await {
         WorkResponse::SolvabilityReady(state) => Ok(state),
         WorkResponse::Error(err) => Err(err),
