@@ -175,6 +175,12 @@ impl AlertKind {
                 body: Cow::Borrowed("The conflict was resolved, but no next step is available."),
                 ok_label: "OK",
             },
+            AlertKind::HintInconsistentAfterRollback => AlertDialogSpec {
+                id: Id::new("hint_inconsistent_after_rollback"),
+                heading: "No Hint Found",
+                body: Cow::Borrowed("Undo did not find a consistent state."),
+                ok_label: "OK",
+            },
         }
     }
 }

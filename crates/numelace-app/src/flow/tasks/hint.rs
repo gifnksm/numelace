@@ -44,20 +44,7 @@ async fn hint_flow(handle: FlowHandle, request: HintRequest) {
                     };
                     handle.request_action(UiAction::SetHintState(Some(hint_state)).into());
                 }
-                Ok(Some((false, _step))) => {
-                    let result =
-                        helpers::show_confirm_dialog(&handle, ConfirmKind::HintNotesMaybeIncorrect)
-                            .await;
-                    if result.is_confirmed() {
-                        handle.request_action(
-                            BoardMutationAction::AutoFillNotes {
-                                scope: NotesFillScope::AllCells,
-                            }
-                            .into(),
-                        );
-                    }
-                    handle.request_action(UiAction::SetHintState(None).into());
-                }
+                Ok(Some((false, _step))) => handle_hint_notes_maybe_incorrect(&handle).await,
                 Ok(None) => {
                     handle.request_action(UiAction::ClearHintState.into());
                     let _ = helpers::show_alert_dialog(&handle, AlertKind::HintStuckNoStep).await;
@@ -86,6 +73,19 @@ async fn hint_flow(handle: FlowHandle, request: HintRequest) {
             ..
         }) => {}
     }
+}
+
+async fn handle_hint_notes_maybe_incorrect(handle: &FlowHandle) {
+    let result = helpers::show_confirm_dialog(handle, ConfirmKind::HintNotesMaybeIncorrect).await;
+    if result.is_confirmed() {
+        handle.request_action(
+            BoardMutationAction::AutoFillNotes {
+                scope: NotesFillScope::AllCells,
+            }
+            .into(),
+        );
+    }
+    handle.request_action(UiAction::SetHintState(None).into());
 }
 
 fn find_hint_step(game: &Game) -> Result<Option<(bool, BoxedTechniqueStep)>, SolverError> {
@@ -122,14 +122,17 @@ async fn handle_hint_undo(handle: &FlowHandle) {
 }
 
 enum HintRollbackOutcome {
-    Step {
+    FoundWithNotes {
         index: usize,
         step: BoxedTechniqueStep,
     },
-    Stuck {
+    FoundWithoutNotes {
         index: usize,
     },
-    NotFound,
+    StuckButConsistent {
+        index: usize,
+    },
+    Inconsistent,
 }
 
 fn scan_hint_rollback(games: &[Game]) -> HintRollbackOutcome {
@@ -137,8 +140,9 @@ fn scan_hint_rollback(games: &[Game]) -> HintRollbackOutcome {
 
     for (index, game) in games.iter().enumerate() {
         match find_hint_step(game) {
-            Ok(Some((true, step))) => return HintRollbackOutcome::Step { index, step },
-            Ok(Some((false, _)) | None) => {
+            Ok(Some((true, step))) => return HintRollbackOutcome::FoundWithNotes { index, step },
+            Ok(Some((false, _))) => return HintRollbackOutcome::FoundWithoutNotes { index },
+            Ok(None) => {
                 if first_consistent_index.is_none() {
                     first_consistent_index = Some(index);
                 }
@@ -147,15 +151,16 @@ fn scan_hint_rollback(games: &[Game]) -> HintRollbackOutcome {
         }
     }
 
-    match first_consistent_index {
-        Some(index) => HintRollbackOutcome::Stuck { index },
-        None => HintRollbackOutcome::NotFound,
+    if let Some(index) = first_consistent_index {
+        return HintRollbackOutcome::StuckButConsistent { index };
     }
+
+    HintRollbackOutcome::Inconsistent
 }
 
 async fn apply_hint_rollback_result(handle: &FlowHandle, outcome: HintRollbackOutcome) {
     match outcome {
-        HintRollbackOutcome::Step { index, step } => {
+        HintRollbackOutcome::FoundWithNotes { index, step } => {
             handle.request_action(HistoryAction::UndoSteps(index).into());
 
             if index > 0 {
@@ -170,7 +175,18 @@ async fn apply_hint_rollback_result(handle: &FlowHandle, outcome: HintRollbackOu
             };
             handle.request_action(UiAction::SetHintState(Some(hint_state)).into());
         }
-        HintRollbackOutcome::Stuck { index } => {
+        HintRollbackOutcome::FoundWithoutNotes { index } => {
+            handle.request_action(HistoryAction::UndoSteps(index).into());
+
+            if index > 0 {
+                let _ =
+                    helpers::show_alert_dialog(handle, AlertKind::HintUndoNotice { steps: index })
+                        .await;
+            }
+
+            handle_hint_notes_maybe_incorrect(handle).await;
+        }
+        HintRollbackOutcome::StuckButConsistent { index } => {
             handle.request_action(HistoryAction::UndoSteps(index).into());
 
             if index > 0 {
@@ -181,8 +197,9 @@ async fn apply_hint_rollback_result(handle: &FlowHandle, outcome: HintRollbackOu
 
             let _ = helpers::show_alert_dialog(handle, AlertKind::HintStuckAfterRollback).await;
         }
-        HintRollbackOutcome::NotFound => {
-            let _ = helpers::show_alert_dialog(handle, AlertKind::SolvabilityUndoNotFound).await;
+        HintRollbackOutcome::Inconsistent => {
+            let _ =
+                helpers::show_alert_dialog(handle, AlertKind::HintInconsistentAfterRollback).await;
         }
     }
 }

@@ -179,6 +179,7 @@ pub(crate) enum AlertKind {
     HintUndoNotice { steps: usize },
     HintStuckNoStep,
     HintStuckAfterRollback,
+    HintInconsistentAfterRollback,
 }
 
 #[derive(Debug)]
