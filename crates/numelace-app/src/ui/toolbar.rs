@@ -49,20 +49,6 @@ pub(crate) fn show(
                     action_queue.request(HistoryAction::Redo.into());
                 }
 
-                ui.separator();
-
-                if button(ui, icon::PLUS, "New Game", true, cell_size).clicked() {
-                    action_queue.request(FlowAction::StartNewGame.into());
-                }
-
-                if button(ui, icon::ROTATE_CCW, "Reset Inputs", true, cell_size).clicked() {
-                    action_queue.request(FlowAction::ResetInputs.into());
-                }
-
-                if button(ui, icon::GEAR_NO_HUB, "Settings", true, cell_size).clicked() {
-                    action_queue.request(UiAction::OpenModal(ModalRequest::Settings).into());
-                }
-
                 if button(
                     ui,
                     icon::LETTER_UPPER_A,
@@ -92,6 +78,20 @@ pub(crate) fn show(
                     action_queue.request(FlowAction::CheckSolvability.into());
                 }
             });
+
+            ui.separator();
+
+            if button(ui, icon::PLUS, "New Game", true, cell_size).clicked() {
+                action_queue.request(FlowAction::StartNewGame.into());
+            }
+
+            if button(ui, icon::ROTATE_CCW, "Reset Inputs", true, cell_size).clicked() {
+                action_queue.request(FlowAction::ResetInputs.into());
+            }
+
+            if button(ui, icon::GEAR_NO_HUB, "Settings", true, cell_size).clicked() {
+                action_queue.request(UiAction::OpenModal(ModalRequest::Settings).into());
+            }
         },
         |ui| {
             widgets::global_theme_preference_switch(ui);

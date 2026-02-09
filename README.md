@@ -69,7 +69,7 @@ Planned features are tracked in docs/BACKLOG.md.
   - Per-digit counts: show how many of each digit are already placed.
   - Notes mode indicators: digit buttons show note add/remove actions.
 - **Toolbar**
-  - Undo, Redo, New Game, Reset Inputs, Settings, Auto-fill notes (all cells), Check Solvability buttons.
+  - Undo, Redo, Auto-fill notes (all cells), Check Solvability, New Game, Reset Inputs, Settings buttons.
   - Theme switch (Light/Dark/System).
 
 ## Project Structure
