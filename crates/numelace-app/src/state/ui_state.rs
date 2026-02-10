@@ -29,7 +29,7 @@ impl UiState {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum HintStage {
     Stage1,
     Stage2,
