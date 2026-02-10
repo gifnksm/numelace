@@ -56,6 +56,7 @@ fn apply_hint_visuals(grid: &mut Array81<GridCell, PositionSemantics>, hint_stat
             }
             grid[pos].content = CellState::Notes(notes);
             grid[pos].note_visual_state.ghost |= notes;
+            grid[pos].note_visual_state.hint_temporary |= notes;
         }
     }
 

@@ -17,15 +17,16 @@ use crate::{
 
 bitflags::bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub(crate) struct GridVisualState: u8 {
-        const SELECTED = 0b0000_0001;
-        const SAME_DIGIT = 0b0000_0010;
-        const HOUSE_SELECTED = 0b0000_0100;
-        const HOUSE_SAME_DIGIT = 0b0000_1000;
-        const CONFLICT = 0b0001_0000;
-        const GHOST = 0b0010_0000;
-        const HINT_CONDITION_CELL = 0b0100_0000;
-        const HINT_CONDITION_DIGIT = 0b1000_0000;
+    pub(crate) struct GridVisualState: u16 {
+        const SELECTED = 0x0001;
+        const SAME_DIGIT = 0x0002;
+        const HOUSE_SELECTED = 0x0004;
+        const HOUSE_SAME_DIGIT = 0x0008;
+        const CONFLICT = 0x0010;
+        const GHOST = 0x0020;
+        const HINT_CONDITION_CELL = 0x0040;
+        const HINT_CONDITION_DIGIT = 0x0080;
+        const HINT_TEMPORARY = 0x0100;
     }
 }
 
@@ -42,6 +43,7 @@ pub(crate) struct NoteVisualState {
     pub(crate) conflict: DigitSet,
     pub(crate) ghost: DigitSet,
     pub(crate) hint_condition_digit: DigitSet,
+    pub(crate) hint_temporary: DigitSet,
 }
 
 impl NoteVisualState {
@@ -52,6 +54,7 @@ impl NoteVisualState {
             conflict,
             ghost,
             hint_condition_digit,
+            hint_temporary,
         } = self;
         let mut vs = GridVisualState::empty();
         if same_digit.contains(digit) {
@@ -65,6 +68,9 @@ impl NoteVisualState {
         }
         if hint_condition_digit.contains(digit) {
             vs |= GridVisualState::HINT_CONDITION_DIGIT;
+        }
+        if hint_temporary.contains(digit) {
+            vs |= GridVisualState::HINT_TEMPORARY;
         }
         vs
     }
