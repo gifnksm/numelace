@@ -46,25 +46,29 @@ This backlog is the single source of truth for tasks and ideas.
 
 ### Application features
 
-- [X] Digit count/tally display (per digit)
-- [X] Digit count integrated number pad/buttons (mouse-only input)
-- [X] Light/Dark mode toggle
-- [X] Mouse-only input (number pad/buttons)
-- [X] New Game confirmation dialog
-- [ ] Input discoverability (make shortcuts/keybinds easier to find; format TBD)
-- [ ] Simpler digit input system (e.g., flick-style overlay input; needs idea exploration)
-- [ ] Toolbar improvements (avoid overflow; theme toggle should scale with screen and be consistent/easy to tap)
-- [ ] UI clarity & visual polish (general improvements; details TBD)
-- [X] Keypad buttons show which action will occur for notes (add/remove)
-- [X] Feature toggles UI for (optional) assists
-- [X] UI ViewModel-based split/refactor
-- [X] App logic refactor for testability (action extraction + action_handler + view_model_builder split)
-- [X] Auto-save and resume (board state + settings)
-- [X] WASM build (run in web browser)
-- [X] Publish web build via GitHub Actions + GitHub Pages
-- [X] Replace template app icons with Numelace branding
-- [X] Smartphone UI optimization (touch targets, layout adjustments, modal sizing)
-- [X] Settings modal (front-and-center modal with close button + outside click)
+- UI improvements (umbrella)
+  - [ ] Input discoverability (make shortcuts/keybinds easier to find; format TBD)
+  - [ ] Simpler digit input system (e.g., flick-style overlay input; needs idea exploration)
+  - [ ] Toolbar improvements (avoid overflow; theme toggle should scale with screen and be consistent/easy to tap)
+  - [ ] UI clarity & visual polish (layout/spacing/contrast/icon consistency)
+  - [X] Light/Dark mode toggle
+  - [X] Mouse-only input (number pad/buttons)
+  - [X] Digit count/tally display (per digit)
+  - [X] Digit count integrated number pad/buttons (mouse-only input)
+  - [X] Keypad buttons show which action will occur for notes (add/remove)
+  - [X] Feature toggles UI for (optional) assists
+  - [X] Smartphone UI optimization (touch targets, layout adjustments, modal sizing)
+  - [X] Settings modal (front-and-center modal with close button + outside click)
+  - [X] New Game confirmation dialog
+- App architecture & refactoring (umbrella)
+  - [X] UI ViewModel-based split/refactor
+  - [X] App logic refactor for testability (action extraction + action_handler + view_model_builder split)
+- State & persistence (umbrella)
+  - [X] Auto-save and resume (board state + settings)
+- Platform & distribution (umbrella)
+  - [X] WASM build (run in web browser)
+  - [X] Publish web build via GitHub Actions + GitHub Pages
+  - [X] Replace template app icons with Numelace branding
 
 ## Bugs / Fixes
 
