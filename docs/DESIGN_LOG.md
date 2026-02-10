@@ -72,3 +72,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-09: Hint stage 2 highlights condition digits with pill backgrounds — keeps digit-level emphasis distinct from stage 1 region marking.
 - 2026-02-10: Hint stage 3 uses preview/apply sub-steps with mandatory preview visuals (hint-colored outline + digits/notes) and distinct status-line messaging — makes confirmation explicit before applying progress.
 - 2026-02-10: Hint state is defined as user-visible presentation, so post-apply feedback may remain briefly while board highlights clear — aligns UX feedback with stage transitions.
+- 2026-02-11: Hint flow special-cases naked single detection using Game state to avoid elimination-gated misses while keeping other techniques solver-driven — prevents hint stalling without broad solver API changes.

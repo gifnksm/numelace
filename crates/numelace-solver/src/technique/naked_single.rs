@@ -41,6 +41,21 @@ impl NakedSingle {
     pub const fn new() -> Self {
         NakedSingle
     }
+
+    /// Builds a naked single step for a decided position, without gating on eliminations.
+    ///
+    /// This is useful for hint systems that need to recognize valid placements even
+    /// when no candidate elimination would occur in peers.
+    #[must_use]
+    pub fn build_step(grid: &CandidateGrid, pos: Position) -> Option<BoxedTechniqueStep> {
+        let digit = grid.candidates_at(pos).as_single()?;
+        let mut affected_pos = (DigitPositions::ROW_POSITIONS[pos.y()]
+            | DigitPositions::COLUMN_POSITIONS[pos.x()]
+            | DigitPositions::BOX_POSITIONS[pos.box_index()])
+            & grid.digit_positions(digit);
+        affected_pos.remove(pos);
+        Some(Box::new(NakedSingleStep::new(pos, digit, affected_pos)))
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -225,8 +240,17 @@ mod tests {
         );
 
         let applications = step.application();
-        assert_eq!(applications.len(), 1);
+        assert_eq!(applications.len(), 2);
         match applications[0] {
+            TechniqueApplication::Placement { position, digit } => {
+                assert_eq!(position, Position::new(0, 0));
+                assert_eq!(digit, Digit::D5);
+            }
+            TechniqueApplication::CandidateElimination { .. } => {
+                panic!("expected placement step first");
+            }
+        }
+        match applications[1] {
             TechniqueApplication::CandidateElimination { positions, digits } => {
                 assert!(!positions.contains(Position::new(0, 0)));
                 assert!(positions.contains(Position::new(1, 0)));
@@ -234,7 +258,9 @@ mod tests {
                 assert!(positions.contains(Position::new(1, 1)));
                 assert_eq!(digits, DigitSet::from_elem(Digit::D5));
             }
-            TechniqueApplication::Placement { .. } => panic!("expected candidate elimination step"),
+            TechniqueApplication::Placement { .. } => {
+                panic!("expected candidate elimination step second");
+            }
         }
 
         TechniqueTester::new(grid)

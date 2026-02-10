@@ -1,5 +1,9 @@
-use numelace_game::Game;
-use numelace_solver::{SolverError, TechniqueSolver, technique::BoxedTechniqueStep};
+use numelace_core::{CandidateGrid, ConsistencyError, Position};
+use numelace_game::{CellState, Game};
+use numelace_solver::{
+    SolverError, TechniqueSolver,
+    technique::{BoxedTechniqueStep, NakedSingle},
+};
 
 use crate::{
     action::{
@@ -12,6 +16,14 @@ use crate::{
 struct HintRequest {
     game: Game,
     hint_state: Option<HintState>,
+}
+
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_more::From)]
+enum HintStepError {
+    #[display("inconsistency detected: {_0}")]
+    Inconsistent(#[from] ConsistencyError),
+    #[display("hint step conflicts with solution")]
+    SolutionMismatch,
 }
 
 /// Spawn a hint flow if no other flows are active.
@@ -53,7 +65,7 @@ async fn hint_flow(handle: FlowHandle, request: HintRequest) {
                     handle.request_action(UiAction::ClearHintState.into());
                     let _ = helpers::show_alert_dialog(&handle, AlertKind::HintStuckNoStep).await;
                 }
-                Err(SolverError::Inconsistent(_)) => {
+                Err(HintStepError::Inconsistent(_) | HintStepError::SolutionMismatch) => {
                     let result =
                         helpers::show_confirm_dialog(&handle, ConfirmKind::HintInconsistent).await;
                     if result.is_confirmed() {
@@ -96,21 +108,71 @@ async fn handle_hint_notes_maybe_incorrect(handle: &FlowHandle) {
     handle.request_action(UiAction::SetHintState(None).into());
 }
 
-fn find_hint_step(game: &Game) -> Result<Option<(bool, BoxedTechniqueStep)>, SolverError> {
+fn find_naked_single_hint(game: &Game, grid: &CandidateGrid) -> Option<BoxedTechniqueStep> {
+    // Naked single hints must consider placement validity even when no eliminations occur.
+    // The solver's NakedSingle::find_step intentionally gates on eliminations, which can
+    // skip valid placements once peers already lack that candidate.
+    for pos in Position::ALL {
+        match game.cell(pos) {
+            CellState::Empty | CellState::Notes(_) => {
+                // Empty/notes cells are valid hint targets.
+            }
+            CellState::Given(_) | CellState::Filled(_) => continue,
+        }
+
+        let Some(step) = NakedSingle::build_step(grid, pos) else {
+            continue;
+        };
+
+        return Some(step);
+    }
+
+    None
+}
+
+fn find_hint_step_from_grid(
+    game: &Game,
+    grid: &CandidateGrid,
+    solver: &TechniqueSolver,
+) -> Result<Option<BoxedTechniqueStep>, HintStepError> {
+    grid.check_consistency()?;
+
+    if let Some(step) = find_naked_single_hint(game, grid) {
+        if game.verify_hint_step(step.as_ref()) {
+            return Ok(Some(step));
+        }
+        return Err(HintStepError::SolutionMismatch);
+    }
+
+    let step = solver.find_step(grid).map_err(|err| match err {
+        SolverError::Inconsistent(consistency) => HintStepError::Inconsistent(consistency),
+    })?;
+
+    match step {
+        Some(step) => {
+            if game.verify_hint_step(step.as_ref()) {
+                return Ok(Some(step));
+            }
+            Err(HintStepError::SolutionMismatch)
+        }
+        None => Ok(None),
+    }
+}
+
+fn find_hint_step(game: &Game) -> Result<Option<(bool, BoxedTechniqueStep)>, HintStepError> {
     let solver = TechniqueSolver::with_all_techniques();
     let grid_with_notes = game.to_candidate_grid_with_notes();
-    match solver.find_step(&grid_with_notes) {
-        Ok(Some(step)) if game.verify_hint_step(step.as_ref()) => {
-            return Ok(Some((true, step)));
-        }
-        Ok(_) | Err(SolverError::Inconsistent(_)) => {}
+
+    // Notes-derived grids can be stale; treat inconsistency or solution mismatch as a signal
+    // to fall back to the no-notes grid before surfacing an error.
+    match find_hint_step_from_grid(game, &grid_with_notes, &solver) {
+        Ok(Some(step_with_notes)) => return Ok(Some((true, step_with_notes))),
+        Ok(None) | Err(HintStepError::Inconsistent(_) | HintStepError::SolutionMismatch) => {}
     }
 
     let grid = game.to_candidate_grid();
-    let step = solver.find_step(&grid)?;
-    if let Some(step) = step
-        && game.verify_hint_step(step.as_ref())
-    {
+
+    if let Some(step) = find_hint_step_from_grid(game, &grid, &solver)? {
         return Ok(Some((false, step)));
     }
 
@@ -155,7 +217,7 @@ fn scan_hint_rollback(games: &[Game]) -> HintRollbackOutcome {
                     first_consistent_index = Some(index);
                 }
             }
-            Err(SolverError::Inconsistent(_)) => {}
+            Err(HintStepError::Inconsistent(_) | HintStepError::SolutionMismatch) => {}
         }
     }
 
