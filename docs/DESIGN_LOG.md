@@ -73,3 +73,6 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-10: Hint stage 3 uses preview/apply sub-steps with mandatory preview visuals (hint-colored outline + digits/notes) and distinct status-line messaging — makes confirmation explicit before applying progress.
 - 2026-02-10: Hint state is defined as user-visible presentation, so post-apply feedback may remain briefly while board highlights clear — aligns UX feedback with stage transitions.
 - 2026-02-11: Hint flow special-cases naked single detection using Game state to avoid elimination-gated misses while keeping other techniques solver-driven — prevents hint stalling without broad solver API changes.
+- 2026-02-11: Hint system uses memo-backed candidates with a notes-first fallback to no-notes when inconsistent or mismatched — keeps hints aligned with player notes while recovering from stale memo states.
+- 2026-02-11: Hint progression advances in stages (focus area → technique + condition pairs → preview → apply) and resets on board mutations — preserves discovery while ensuring hint visuals are tied to a stable step.
+- 2026-02-11: Hint inconsistencies prompt undo-driven rollback to a consistent state, with distinct “no hint found” messaging after rollback — guides recovery without masking board errors.

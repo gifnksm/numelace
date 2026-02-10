@@ -28,7 +28,7 @@ Planned features are tracked in docs/BACKLOG.md.
 - Platforms: Desktop + Web/WASM
 - Persistence: auto-save and resume
 - UI: on-screen keypad, theme switch, settings modal
-- Tools: solvability check
+- Tools: solvability check, hint system
 
 ## Controls
 

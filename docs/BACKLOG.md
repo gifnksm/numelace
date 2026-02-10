@@ -35,12 +35,11 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] For selected cell
   - [X] For all cells
   - [X] Auto-fill notes on new game/reset (optional)
-- [ ] Hint system (incremental)
+- [X] Hint system (incremental)
   - [X] Core flow wiring (candidate grid + inconsistency check)
   - [X] Check Solvability UI + dialog + shortcut (Ctrl+K)
   - [X] Hint stage 1 highlight (condition cells)
   - [X] Hint stage 2 technique + condition pairs
-  - [ ] Hint stage 2 short rationale text
   - [X] Hint stage 3 apply step + ghost eliminations
   - [X] Rollback flow for inconsistent boards
 
