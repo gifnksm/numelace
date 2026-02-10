@@ -271,6 +271,53 @@ impl EffectiveGridVisualState {
         let base_width = f32::max(cell_size * CELL_BORDER_WIDTH_BASE_RATIO, 1.0);
         Stroke::new(base_width * ratio, color)
     }
+
+    fn hint_corner_border(self, palette: &GridPalette, base_border: f32) -> Option<Stroke> {
+        if self.0.intersects(GridVisualState::HINT_CONDITION_CELL) {
+            return Some(Stroke::new(
+                base_border * 3.0,
+                palette.border_hint_condition,
+            ));
+        }
+        if self.0.intersects(
+            GridVisualState::HINT_APPLICATION_ELIMINATION
+                | GridVisualState::HINT_APPLICATION_PLACEMENT,
+        ) {
+            return Some(Stroke::new(
+                base_border * 1.0,
+                palette.border_hint_application,
+            ));
+        }
+        None
+    }
+
+    fn hint_digit_pill_color(self, palette: &GridPalette) -> Option<Color32> {
+        if self.0.contains(GridVisualState::HINT_CONDITION_DIGIT) {
+            return Some(palette.cell_bg_hint);
+        }
+        None
+    }
+
+    fn note_fill_rounding(self, rect: Rect) -> f32 {
+        if self.0.intersects(GridVisualState::HINT_CONDITION_DIGIT) {
+            rect.width() * 0.5
+        } else {
+            0.0
+        }
+    }
+
+    fn note_elimination_stroke(self, rect: Rect, palette: &GridPalette) -> Option<Stroke> {
+        if self
+            .0
+            .intersects(GridVisualState::HINT_APPLICATION_ELIMINATION)
+        {
+            return Some(Stroke::new(
+                rect.width() * 0.08,
+                palette.border_hint_condition,
+            ));
+        }
+        None
+    }
 }
 
 pub(crate) fn show(
@@ -311,24 +358,11 @@ pub(crate) fn show(
             let cell_max = cell_min + Vec2::splat(cell_size);
             let cell_rect = Rect::from_min_max(cell_min, cell_max);
 
-            painter.rect_filled(cell_rect, 0.0, vs.cell_fill_color(palette));
+            draw_cell_fill(painter, cell_rect, vs.cell_fill_color(palette));
+            draw_cell_border(painter, cell_rect, vs.cell_border(palette, cell_size));
 
-            painter.rect_stroke(
-                cell_rect,
-                0.0,
-                vs.cell_border(palette, cell_size),
-                StrokeKind::Inside,
-            );
-
-            if vs.0.intersects(GridVisualState::HINT_CONDITION_CELL) {
-                let hint_stroke = Stroke::new(base_border * 3.0, palette.border_hint_condition);
-                draw_hint_corners(painter, cell_rect, hint_stroke);
-            } else if vs.0.intersects(
-                GridVisualState::HINT_APPLICATION_ELIMINATION
-                    | GridVisualState::HINT_APPLICATION_PLACEMENT,
-            ) {
-                let hint_stroke = Stroke::new(base_border * 1.0, palette.border_hint_application);
-                draw_hint_corners(painter, cell_rect, hint_stroke);
+            if let Some(stroke) = vs.hint_corner_border(palette, base_border) {
+                draw_hint_corners(painter, cell_rect, stroke);
             }
 
             if let Some(digits) = cell.content.as_notes() {
@@ -342,19 +376,14 @@ pub(crate) fn show(
                     palette,
                 );
             } else if let Some(digit) = cell.content.as_digit() {
-                if vs.0.contains(GridVisualState::HINT_CONDITION_DIGIT) {
-                    draw_hint_digit_pill(
-                        painter,
-                        cell_rect.center(),
-                        cell_size,
-                        palette.cell_bg_hint,
-                    );
+                if let Some(color) = vs.hint_digit_pill_color(palette) {
+                    draw_hint_digit_pill(painter, cell_rect.center(), cell_size, color);
                 }
-                painter.text(
+                draw_cell_digit(
+                    painter,
                     cell_rect.center(),
-                    Align2::CENTER_CENTER,
-                    digit.as_str(),
-                    FontId::proportional(cell_size * 0.8),
+                    cell_size,
+                    digit,
                     vs.text_color(cell.content.is_given(), palette),
                 );
             }
@@ -367,6 +396,24 @@ pub(crate) fn show(
     }
 
     draw_box_borders(painter, inner_rect, cell_size, thick_border);
+}
+
+fn draw_cell_fill(painter: &Painter, rect: Rect, color: Color32) {
+    painter.rect_filled(rect, 0.0, color);
+}
+
+fn draw_cell_border(painter: &Painter, rect: Rect, stroke: Stroke) {
+    painter.rect_stroke(rect, 0.0, stroke, StrokeKind::Inside);
+}
+
+fn draw_cell_digit(painter: &Painter, center: Pos2, cell_size: f32, digit: Digit, color: Color32) {
+    painter.text(
+        center,
+        Align2::CENTER_CENTER,
+        digit.as_str(),
+        FontId::proportional(cell_size * 0.8),
+        color,
+    );
 }
 
 fn draw_outer_border(painter: &Painter, rect: Rect, stroke: Stroke) {
@@ -491,18 +538,10 @@ fn draw_notes(
         let text_color = vs.text_color(false, palette);
         let fill_rect = Rect::from_center_size(center, Vec2::splat(f32::min(cell_w, cell_h)) * 0.9);
         if let Some(fill_color) = vs.note_fill_color(palette) {
-            let rounding = if vs.0.intersects(GridVisualState::HINT_CONDITION_DIGIT) {
-                fill_rect.width() * 0.5
-            } else {
-                0.0
-            };
+            let rounding = vs.note_fill_rounding(fill_rect);
             painter.rect_filled(fill_rect, rounding, fill_color);
         }
-        if vs
-            .0
-            .intersects(GridVisualState::HINT_APPLICATION_ELIMINATION)
-        {
-            let stroke = Stroke::new(fill_rect.width() * 0.08, palette.border_hint_condition);
+        if let Some(stroke) = vs.note_elimination_stroke(fill_rect, palette) {
             let offset = fill_rect.width() * 0.15;
             let start = Pos2::new(fill_rect.left() + offset, fill_rect.top() + offset);
             let end = Pos2::new(fill_rect.right() - offset, fill_rect.bottom() - offset);
