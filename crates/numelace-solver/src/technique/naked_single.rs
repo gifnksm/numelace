@@ -81,10 +81,16 @@ impl TechniqueStep for NakedSingleStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![TechniqueApplication::CandidateElimination {
-            positions: self.affected_positions,
-            digits: DigitSet::from_elem(self.digit),
-        }]
+        vec![
+            TechniqueApplication::Placement {
+                position: self.position,
+                digit: self.digit,
+            },
+            TechniqueApplication::CandidateElimination {
+                positions: self.affected_positions,
+                digits: DigitSet::from_elem(self.digit),
+            },
+        ]
     }
 }
 
@@ -101,9 +107,10 @@ impl Technique for NakedSingle {
         let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
             for pos in grid.digit_positions(digit) & decided_cells {
-                let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.y()]
+                let mut affected_pos = (DigitPositions::ROW_POSITIONS[pos.y()]
                     | DigitPositions::COLUMN_POSITIONS[pos.x()]
-                    | DigitPositions::BOX_POSITIONS[pos.box_index()];
+                    | DigitPositions::BOX_POSITIONS[pos.box_index()])
+                    & grid.digit_positions(digit);
                 affected_pos.remove(pos);
                 if grid.would_remove_candidate_with_mask_change(affected_pos, digit) {
                     return Ok(Some(Box::new(NakedSingleStep::new(

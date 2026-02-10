@@ -3,6 +3,7 @@ use std::mem;
 use numelace_core::{Digit, Position};
 use numelace_game::Game;
 use numelace_generator::GeneratedPuzzle;
+use numelace_solver::technique::BoxedTechniqueStep;
 
 use crate::state::{HintState, Settings};
 
@@ -32,6 +33,7 @@ pub(crate) enum BoardMutationAction {
     ClearCell,
     AutoFillNotes { scope: NotesFillScope },
     ResetInputs,
+    ApplyTechniqueStep(BoxedTechniqueStep),
 }
 
 #[derive(Debug)]

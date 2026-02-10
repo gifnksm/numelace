@@ -562,6 +562,15 @@ impl Game {
 
     fn apply_candidate_elimination(&mut self, positions: DigitPositions, digits: DigitSet) {
         for pos in positions {
+            if self.grid[pos].is_empty() {
+                let mut digits = DigitSet::FULL;
+                for peer_pos in pos.house_peers() {
+                    if let Some(digit) = self.grid[peer_pos].as_digit() {
+                        digits.remove(digit);
+                    }
+                }
+                self.grid[pos].set_notes(digits);
+            }
             for digit in digits {
                 self.grid[pos].drop_note_digit(digit);
             }
@@ -600,7 +609,7 @@ impl Game {
         options: &InputDigitOptions,
     ) -> Result<(), GameError>
     where
-        T: TechniqueStep,
+        T: TechniqueStep + ?Sized,
     {
         for app in step.application() {
             match app {

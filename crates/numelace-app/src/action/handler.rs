@@ -113,6 +113,10 @@ impl BoardMutationAction {
                 }
                 app_state.apply_new_game_settings();
             }
+            BoardMutationAction::ApplyTechniqueStep(step) => {
+                let options = &app_state.input_digit_options();
+                let _ = app_state.game.apply_technique_step(step.as_ref(), options);
+            }
         }
         if app_state.game != game_snapshot {
             ui_state.hint_state = None;

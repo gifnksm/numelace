@@ -53,8 +53,11 @@ pub(crate) fn show(ui: &mut Ui, vm: &StatusLineViewModel, scale: &LayoutScale) {
                     HintStage::Stage2 => {
                         format!("{} Hint: {}.", icon::LIGHTBULB, hint.step.technique_name())
                     }
-                    HintStage::Stage3 => {
+                    HintStage::Stage3Preview => {
                         format!("{} Hint: This step will make progress.", icon::LIGHTBULB)
+                    }
+                    HintStage::Stage3Apply => {
+                        format!("{} Hint: Applied.", icon::LIGHTBULB)
                     }
                 },
                 ui.visuals().warn_fg_color,

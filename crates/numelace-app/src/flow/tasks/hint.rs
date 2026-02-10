@@ -33,7 +33,11 @@ pub(crate) fn spawn_hint_flow(
 
 async fn hint_flow(handle: FlowHandle, request: HintRequest) {
     match request.hint_state {
-        None => {
+        None
+        | Some(HintState {
+            stage: HintStage::Stage3Apply,
+            ..
+        }) => {
             let result = find_hint_step(&request.game);
 
             match result {
@@ -58,20 +62,24 @@ async fn hint_flow(handle: FlowHandle, request: HintRequest) {
                 }
             }
         }
-        Some(HintState {
-            stage: HintStage::Stage1,
-            step,
-        }) => {
-            let hint_state = HintState {
-                stage: HintStage::Stage2,
-                step,
-            };
-            handle.request_action(UiAction::SetHintState(Some(hint_state)).into());
-        }
-        Some(HintState {
-            stage: HintStage::Stage2 | HintStage::Stage3,
-            ..
-        }) => {}
+        Some(mut hint_state) => match hint_state.stage {
+            HintStage::Stage1 => {
+                hint_state.stage = HintStage::Stage2;
+                handle.request_action(UiAction::SetHintState(Some(hint_state)).into());
+            }
+            HintStage::Stage2 => {
+                hint_state.stage = HintStage::Stage3Preview;
+                handle.request_action(UiAction::SetHintState(Some(hint_state)).into());
+            }
+            HintStage::Stage3Preview => {
+                handle.request_action(
+                    BoardMutationAction::ApplyTechniqueStep(hint_state.step.clone()).into(),
+                );
+                hint_state.stage = HintStage::Stage3Apply;
+                handle.request_action(UiAction::SetHintState(Some(hint_state)).into());
+            }
+            HintStage::Stage3Apply => unreachable!(),
+        },
     }
 }
 

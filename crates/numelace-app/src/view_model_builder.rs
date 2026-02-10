@@ -4,6 +4,7 @@ use numelace_core::{
     index::PositionSemantics,
 };
 use numelace_game::CellState;
+use numelace_solver::technique::TechniqueApplication;
 
 use crate::{
     state::{AppState, GhostType, HintStage, HintState, UiState},
@@ -22,6 +23,21 @@ pub(crate) fn build_toolbar_vm(app_state: &AppState, _ui_state: &UiState) -> Too
     ToolbarViewModel::new(app_state.can_undo(), app_state.can_redo())
 }
 
+fn fill_notes_for_empty_cell(
+    grid: &mut Array81<GridCell, PositionSemantics>,
+    pos: Position,
+) -> DigitSet {
+    assert!(grid[pos].content.is_empty());
+    let mut notes = DigitSet::FULL;
+    for peer_pos in pos.house_peers() {
+        if let Some(digit) = grid[peer_pos].content.as_digit() {
+            notes.remove(digit);
+        }
+    }
+    grid[pos].content = CellState::Notes(notes);
+    notes
+}
+
 fn apply_conflict_ghost(
     grid: &mut Array81<GridCell, PositionSemantics>,
     pos: Position,
@@ -30,7 +46,7 @@ fn apply_conflict_ghost(
     match ghost {
         GhostType::Digit(digit) => {
             grid[pos].content = CellState::Filled(digit);
-            grid[pos].visual_state.insert(GridVisualState::GHOST);
+            grid[pos].visual_state |= GridVisualState::GHOST;
         }
         GhostType::Note(digit) => {
             let mut notes = grid[pos].content.as_notes().unwrap_or_default();
@@ -41,23 +57,63 @@ fn apply_conflict_ghost(
     }
 }
 
-fn apply_hint_visuals(grid: &mut Array81<GridCell, PositionSemantics>, hint_state: &HintState) {
-    for pos in hint_state.step.condition_cells() {
-        grid[pos]
-            .visual_state
-            .insert(GridVisualState::HINT_CONDITION_CELL);
+fn apply_hint_ghost(grid: &mut Array81<GridCell, PositionSemantics>, hint_state: &HintState) {
+    if hint_state.stage >= HintStage::Stage3Apply {
+        return;
+    }
 
+    for pos in hint_state.step.condition_cells() {
         if grid[pos].content.is_empty() {
-            let mut notes = DigitSet::FULL;
-            for peer_pos in pos.house_peers() {
-                if let Some(digit) = grid[peer_pos].content.as_digit() {
-                    notes.remove(digit);
+            let notes = fill_notes_for_empty_cell(grid, pos);
+            grid[pos].note_visual_state.ghost |= notes;
+            grid[pos].note_visual_state.hint_condition_temporary |= notes;
+        }
+    }
+
+    if hint_state.stage >= HintStage::Stage3Preview {
+        for app in hint_state.step.application() {
+            match app {
+                TechniqueApplication::Placement { position, digit } => {
+                    if grid[position].content.as_digit() != Some(digit) {
+                        grid[position].content = CellState::Filled(digit);
+                        grid[position].visual_state |= GridVisualState::GHOST;
+                    }
+                    grid[position].visual_state |= GridVisualState::HINT_APPLICATION_PLACEMENT;
+                }
+                TechniqueApplication::CandidateElimination { positions, digits } => {
+                    for pos in positions {
+                        if grid[pos].content.is_empty() {
+                            let notes = fill_notes_for_empty_cell(grid, pos);
+                            grid[pos].note_visual_state.ghost |= notes;
+                            grid[pos].note_visual_state.hint_application_temporary |= notes;
+                        }
+                        for digit in digits {
+                            if let Some(mut notes) = grid[pos].content.as_notes()
+                                && !notes.contains(digit)
+                            {
+                                notes.insert(digit);
+                                grid[pos].content = CellState::Notes(notes);
+                                grid[pos].note_visual_state.ghost.insert(digit);
+                            }
+                            grid[pos]
+                                .note_visual_state
+                                .hint_application_elimination
+                                .insert(digit);
+                        }
+                    }
                 }
             }
-            grid[pos].content = CellState::Notes(notes);
-            grid[pos].note_visual_state.ghost |= notes;
-            grid[pos].note_visual_state.hint_temporary |= notes;
         }
+    }
+}
+
+fn apply_hint_visuals(grid: &mut Array81<GridCell, PositionSemantics>, hint_state: &HintState) {
+    if hint_state.stage >= HintStage::Stage3Apply {
+        return;
+    }
+
+    for pos in hint_state.step.condition_cells() {
+        grid[pos].visual_state |= GridVisualState::HINT_CONDITION_CELL;
     }
 
     if hint_state.stage >= HintStage::Stage2 {
@@ -66,9 +122,7 @@ fn apply_hint_visuals(grid: &mut Array81<GridCell, PositionSemantics>, hint_stat
                 if let Some(cell_digit) = grid[pos].content.as_digit()
                     && digits.contains(cell_digit)
                 {
-                    grid[pos]
-                        .visual_state
-                        .insert(GridVisualState::HINT_CONDITION_DIGIT);
+                    grid[pos].visual_state |= GridVisualState::HINT_CONDITION_DIGIT;
                 }
                 if let Some(notes) = grid[pos].content.as_notes() {
                     for digit in digits {
@@ -83,55 +137,72 @@ fn apply_hint_visuals(grid: &mut Array81<GridCell, PositionSemantics>, hint_stat
             }
         }
     }
-}
 
-fn apply_selection_highlights(grid: &mut Array81<GridCell, PositionSemantics>, pos: Position) {
-    grid[pos].visual_state.insert(GridVisualState::SELECTED);
-    for house_pos in pos.house_positions() {
-        grid[house_pos]
-            .visual_state
-            .insert(GridVisualState::HOUSE_SELECTED);
-    }
-}
-
-fn apply_peer_highlights(
-    grid: &mut Array81<GridCell, PositionSemantics>,
-    selected_digit: Option<Digit>,
-) {
-    for pos in Position::ALL {
-        let cell_digit = grid[pos].content.as_digit();
-        let cell_notes = grid[pos].content.as_notes();
-
-        // Highlight conflicts in the same house.
-        if let Some(digit) = cell_digit {
-            for peer_pos in pos.house_peers() {
-                let peer_digit = grid[peer_pos].content.as_digit();
-                let peer_notes = grid[peer_pos].content.as_notes();
-                if peer_digit == Some(digit) {
-                    grid[peer_pos]
-                        .visual_state
-                        .insert(GridVisualState::CONFLICT);
+    if hint_state.stage >= HintStage::Stage3Preview {
+        for app in hint_state.step.application() {
+            match app {
+                TechniqueApplication::Placement { position, digit: _ } => {
+                    grid[position].visual_state |= GridVisualState::HINT_APPLICATION_PLACEMENT;
                 }
-                if peer_notes.is_some_and(|notes| notes.contains(digit)) {
-                    grid[peer_pos].note_visual_state.conflict.insert(digit);
+                TechniqueApplication::CandidateElimination { positions, digits } => {
+                    for pos in positions {
+                        grid[pos].visual_state |= GridVisualState::HINT_APPLICATION_ELIMINATION;
+                        for digit in digits {
+                            grid[pos]
+                                .note_visual_state
+                                .hint_application_elimination
+                                .insert(digit);
+                        }
+                    }
                 }
             }
         }
+    }
+}
 
-        // Highlight same digits and notes as the selected cell.
-        if let Some(digit) = selected_digit {
-            if cell_digit == Some(digit) {
-                grid[pos].visual_state.insert(GridVisualState::SAME_DIGIT);
-                for house_pos in pos.house_positions() {
-                    grid[house_pos]
-                        .visual_state
-                        .insert(GridVisualState::HOUSE_SAME_DIGIT);
-                }
-            }
+fn apply_selection_highlights(grid: &mut Array81<GridCell, PositionSemantics>, pos: Position) {
+    grid[pos].visual_state |= GridVisualState::SELECTED;
+    for house_pos in pos.house_positions() {
+        grid[house_pos].visual_state |= GridVisualState::HOUSE_SELECTED;
+    }
+}
 
-            if cell_notes.is_some_and(|notes| notes.contains(digit)) {
-                grid[pos].note_visual_state.same_digit.insert(digit);
+fn apply_conflict_highlights(grid: &mut Array81<GridCell, PositionSemantics>) {
+    for pos in Position::ALL {
+        let Some(digit) = grid[pos].content.as_digit() else {
+            continue;
+        };
+
+        for peer_pos in pos.house_peers() {
+            if grid[peer_pos].content.as_digit() == Some(digit) {
+                grid[peer_pos].visual_state |= GridVisualState::CONFLICT;
             }
+            if grid[peer_pos]
+                .content
+                .as_notes()
+                .is_some_and(|notes| notes.contains(digit))
+            {
+                grid[peer_pos].note_visual_state.conflict.insert(digit);
+            }
+        }
+    }
+}
+
+fn apply_selected_digit_highlights(grid: &mut Array81<GridCell, PositionSemantics>, digit: Digit) {
+    for pos in Position::ALL {
+        if grid[pos].content.as_digit() == Some(digit) {
+            grid[pos].visual_state |= GridVisualState::SAME_DIGIT;
+            for house_pos in pos.house_positions() {
+                grid[house_pos].visual_state |= GridVisualState::HOUSE_SAME_DIGIT;
+            }
+        }
+
+        if grid[pos]
+            .content
+            .as_notes()
+            .is_some_and(|notes| notes.contains(digit))
+        {
+            grid[pos].note_visual_state.same_digit.insert(digit);
         }
     }
 }
@@ -146,18 +217,20 @@ fn build_grid(app_state: &AppState, ui_state: &UiState) -> Array81<GridCell, Pos
     if let Some((pos, ghost)) = ui_state.conflict_ghost {
         apply_conflict_ghost(&mut grid, pos, ghost);
     }
+
     if let Some(hint_state) = &ui_state.hint_state {
+        apply_hint_ghost(&mut grid, hint_state);
         apply_hint_visuals(&mut grid, hint_state);
     }
 
+    apply_conflict_highlights(&mut grid);
+
     if let Some(pos) = app_state.selected_cell {
         apply_selection_highlights(&mut grid, pos);
+        if let Some(digit) = grid[pos].content.as_digit() {
+            apply_selected_digit_highlights(&mut grid, digit);
+        }
     }
-
-    let selected_digit = app_state
-        .selected_cell
-        .and_then(|pos| grid[pos].content.as_digit());
-    apply_peer_highlights(&mut grid, selected_digit);
 
     grid
 }

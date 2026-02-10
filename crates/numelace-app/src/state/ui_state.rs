@@ -33,8 +33,8 @@ impl UiState {
 pub(crate) enum HintStage {
     Stage1,
     Stage2,
-    #[expect(dead_code)]
-    Stage3,
+    Stage3Preview,
+    Stage3Apply,
 }
 
 #[derive(Debug, Clone)]

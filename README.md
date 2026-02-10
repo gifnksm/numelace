@@ -58,7 +58,7 @@ Planned features are tracked in docs/BACKLOG.md.
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Backspace</kbd>: reset inputs (confirmation shown).
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>,</kbd>: open settings.
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>K</kbd>: check solvability.
-  - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>J</kbd>: hint (stage 1).
+  - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>J</kbd>: hint (press repeatedly to reveal details and apply the next step).
 
 ### Mouse
 

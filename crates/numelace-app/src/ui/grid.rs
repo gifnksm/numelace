@@ -26,7 +26,10 @@ bitflags::bitflags! {
         const GHOST = 0x0020;
         const HINT_CONDITION_CELL = 0x0040;
         const HINT_CONDITION_DIGIT = 0x0080;
-        const HINT_TEMPORARY = 0x0100;
+        const HINT_CONDITION_TEMPORARY = 0x0100;
+        const HINT_APPLICATION_PLACEMENT = 0x0200;
+        const HINT_APPLICATION_ELIMINATION = 0x0400;
+        const HINT_APPLICATION_TEMPORARY = 0x0800;
     }
 }
 
@@ -43,7 +46,9 @@ pub(crate) struct NoteVisualState {
     pub(crate) conflict: DigitSet,
     pub(crate) ghost: DigitSet,
     pub(crate) hint_condition_digit: DigitSet,
-    pub(crate) hint_temporary: DigitSet,
+    pub(crate) hint_condition_temporary: DigitSet,
+    pub(crate) hint_application_elimination: DigitSet,
+    pub(crate) hint_application_temporary: DigitSet,
 }
 
 impl NoteVisualState {
@@ -54,7 +59,9 @@ impl NoteVisualState {
             conflict,
             ghost,
             hint_condition_digit,
-            hint_temporary,
+            hint_condition_temporary,
+            hint_application_elimination,
+            hint_application_temporary,
         } = self;
         let mut vs = GridVisualState::empty();
         if same_digit.contains(digit) {
@@ -69,8 +76,14 @@ impl NoteVisualState {
         if hint_condition_digit.contains(digit) {
             vs |= GridVisualState::HINT_CONDITION_DIGIT;
         }
-        if hint_temporary.contains(digit) {
-            vs |= GridVisualState::HINT_TEMPORARY;
+        if hint_condition_temporary.contains(digit) {
+            vs |= GridVisualState::HINT_CONDITION_TEMPORARY;
+        }
+        if hint_application_elimination.contains(digit) {
+            vs |= GridVisualState::HINT_APPLICATION_ELIMINATION;
+        }
+        if hint_application_temporary.contains(digit) {
+            vs |= GridVisualState::HINT_APPLICATION_TEMPORARY;
         }
         vs
     }
@@ -90,7 +103,11 @@ impl GridViewModel {
     ) -> Self {
         let mut enabled_highlights = GridVisualState::SELECTED
             | GridVisualState::HINT_CONDITION_CELL
-            | GridVisualState::HINT_CONDITION_DIGIT;
+            | GridVisualState::HINT_CONDITION_DIGIT
+            | GridVisualState::HINT_CONDITION_TEMPORARY
+            | GridVisualState::HINT_APPLICATION_PLACEMENT
+            | GridVisualState::HINT_APPLICATION_ELIMINATION
+            | GridVisualState::HINT_APPLICATION_TEMPORARY;
         let HighlightSettings {
             same_digit,
             house_selected,
@@ -159,6 +176,12 @@ struct EffectiveGridVisualState(GridVisualState);
 
 impl EffectiveGridVisualState {
     fn text_color(self, is_given: bool, palette: &GridPalette) -> Color32 {
+        if self
+            .0
+            .intersects(GridVisualState::HINT_APPLICATION_PLACEMENT)
+        {
+            return palette.text_normal;
+        }
         if self.0.intersects(GridVisualState::CONFLICT) {
             return palette.text_conflict;
         }
@@ -172,6 +195,12 @@ impl EffectiveGridVisualState {
     fn cell_fill_color(self, palette: &GridPalette) -> Color32 {
         if self.0.intersects(GridVisualState::SELECTED) {
             return palette.cell_bg_selected;
+        }
+        if self
+            .0
+            .intersects(GridVisualState::HINT_APPLICATION_PLACEMENT)
+        {
+            return palette.cell_bg_hint_application;
         }
         if self.0.intersects(GridVisualState::SAME_DIGIT) {
             return palette.cell_bg_same_digit;
@@ -188,6 +217,16 @@ impl EffectiveGridVisualState {
     fn note_fill_color(self, palette: &GridPalette) -> Option<Color32> {
         if self.0.intersects(GridVisualState::HINT_CONDITION_DIGIT) {
             return Some(palette.note_bg_hint);
+        }
+
+        if self
+            .0
+            .intersects(GridVisualState::HINT_APPLICATION_TEMPORARY)
+        {
+            return Some(palette.note_bg_hint_application);
+        }
+        if self.0.intersects(GridVisualState::HINT_CONDITION_TEMPORARY) {
+            return Some(palette.note_bg_hint_temporary);
         }
         if self.0.intersects(GridVisualState::SAME_DIGIT) {
             return Some(palette.note_bg_same_digit);
@@ -282,7 +321,13 @@ pub(crate) fn show(
             );
 
             if vs.0.intersects(GridVisualState::HINT_CONDITION_CELL) {
-                let hint_stroke = Stroke::new(base_border * 3.0, palette.border_hint);
+                let hint_stroke = Stroke::new(base_border * 3.0, palette.border_hint_condition);
+                draw_hint_corners(painter, cell_rect, hint_stroke);
+            } else if vs.0.intersects(
+                GridVisualState::HINT_APPLICATION_ELIMINATION
+                    | GridVisualState::HINT_APPLICATION_PLACEMENT,
+            ) {
+                let hint_stroke = Stroke::new(base_border * 1.0, palette.border_hint_application);
                 draw_hint_corners(painter, cell_rect, hint_stroke);
             }
 
@@ -297,7 +342,7 @@ pub(crate) fn show(
                     palette,
                 );
             } else if let Some(digit) = cell.content.as_digit() {
-                if vs.0.intersects(GridVisualState::HINT_CONDITION_DIGIT) {
+                if vs.0.contains(GridVisualState::HINT_CONDITION_DIGIT) {
                     draw_hint_digit_pill(
                         painter,
                         cell_rect.center(),
@@ -444,15 +489,24 @@ fn draw_notes(
         let center = rect.min + Vec2::new((x + 0.5) * cell_w, (y + 0.5) * cell_h);
         let vs = vm.effective_visual_state(note_visual_state.digit_highlight(digit));
         let text_color = vs.text_color(false, palette);
+        let fill_rect = Rect::from_center_size(center, Vec2::splat(f32::min(cell_w, cell_h)) * 0.9);
         if let Some(fill_color) = vs.note_fill_color(palette) {
-            let fill_rect =
-                Rect::from_center_size(center, Vec2::splat(f32::min(cell_w, cell_h)) * 0.9);
             let rounding = if vs.0.intersects(GridVisualState::HINT_CONDITION_DIGIT) {
                 fill_rect.width() * 0.5
             } else {
                 0.0
             };
             painter.rect_filled(fill_rect, rounding, fill_color);
+        }
+        if vs
+            .0
+            .intersects(GridVisualState::HINT_APPLICATION_ELIMINATION)
+        {
+            let stroke = Stroke::new(fill_rect.width() * 0.08, palette.border_hint_condition);
+            let offset = fill_rect.width() * 0.15;
+            let start = Pos2::new(fill_rect.left() + offset, fill_rect.top() + offset);
+            let end = Pos2::new(fill_rect.right() - offset, fill_rect.bottom() - offset);
+            painter.line_segment([start, end], stroke);
         }
         painter.text(
             center,
