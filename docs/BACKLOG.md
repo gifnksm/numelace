@@ -52,6 +52,8 @@ This backlog is the single source of truth for tasks and ideas.
 - [X] Mouse-only input (number pad/buttons)
 - [X] New Game confirmation dialog
 - [ ] Input discoverability (make shortcuts/keybinds easier to find; format TBD)
+- [ ] Simpler digit input system (e.g., flick-style overlay input; needs idea exploration)
+- [ ] Toolbar improvements (avoid overflow; theme toggle should scale with screen and be consistent/easy to tap)
 - [ ] UI clarity & visual polish (general improvements; details TBD)
 - [X] Keypad buttons show which action will occur for notes (add/remove)
 - [X] Feature toggles UI for (optional) assists
