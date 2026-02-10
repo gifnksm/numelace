@@ -7,7 +7,7 @@ use crate::{
     },
 };
 
-const NAME: &str = "hidden singles";
+const NAME: &str = "hidden single";
 
 /// A technique that finds digits that can only go in one position within a house.
 ///

@@ -425,7 +425,7 @@ mod tests {
         assert!(result.is_ok());
         assert!(result.unwrap());
         assert_eq!(stats.total_steps, 1);
-        assert_eq!(stats.count("naked singles"), 1);
+        assert_eq!(stats.count("naked single"), 1);
     }
 
     #[test]
@@ -445,8 +445,8 @@ mod tests {
 
         assert_eq!(stats.total_steps, 1);
         assert!(stats.has_progress());
-        assert_eq!(stats.count("naked singles"), 1);
-        assert_eq!(stats.count("hidden singles"), 0);
+        assert_eq!(stats.count("naked single"), 1);
+        assert_eq!(stats.count("hidden single"), 0);
     }
 
     #[test]
@@ -486,7 +486,7 @@ mod tests {
         );
         assert!(stats.has_progress());
         // The naked single technique should have been applied
-        assert!(stats.count("naked singles") >= 1 || stats.count("hidden singles") >= 1);
+        assert!(stats.count("naked single") >= 1 || stats.count("hidden single") >= 1);
     }
 
     #[test]
@@ -516,13 +516,13 @@ mod tests {
     fn test_stats_count_method() {
         let mut stats = TechniqueSolverStats::new();
 
-        assert_eq!(stats.count("naked singles"), 0);
+        assert_eq!(stats.count("naked single"), 0);
 
-        *stats.applications.entry("naked singles").or_default() += 1;
-        assert_eq!(stats.count("naked singles"), 1);
+        *stats.applications.entry("naked single").or_default() += 1;
+        assert_eq!(stats.count("naked single"), 1);
 
-        *stats.applications.entry("naked singles").or_default() += 2;
-        assert_eq!(stats.count("naked singles"), 3);
+        *stats.applications.entry("naked single").or_default() += 2;
+        assert_eq!(stats.count("naked single"), 3);
 
         assert_eq!(stats.count("nonexistent"), 0);
     }

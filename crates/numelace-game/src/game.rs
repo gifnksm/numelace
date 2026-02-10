@@ -195,7 +195,7 @@ impl Game {
 
     /// Returns a candidate grid derived from givens and filled digits.
     ///
-    /// Notes are ignored and treated as unconstrained candidates.
+    /// Notes are ignored; empty cells exclude digits already present in peers.
     #[must_use]
     pub fn to_candidate_grid(&self) -> CandidateGrid {
         let mut candidate_grid = CandidateGrid::new();
@@ -204,7 +204,14 @@ impl Game {
                 CellState::Given(digit) | CellState::Filled(digit) => {
                     candidate_grid.place(pos, *digit);
                 }
-                CellState::Notes(_) | CellState::Empty => {}
+                CellState::Notes(_) => {}
+                CellState::Empty => {
+                    for peer_pos in pos.house_peers() {
+                        if let Some(digit) = self.grid[peer_pos].as_digit() {
+                            candidate_grid.remove_candidate(pos, digit);
+                        }
+                    }
+                }
             }
         }
         candidate_grid
@@ -213,7 +220,7 @@ impl Game {
     /// Returns a candidate grid derived from givens, filled digits, and notes.
     ///
     /// Notes are treated as the authoritative candidate set for that cell, while empty
-    /// cells keep all candidates.
+    /// cells exclude digits already present in peers.
     #[must_use]
     pub fn to_candidate_grid_with_notes(&self) -> CandidateGrid {
         let mut candidate_grid = CandidateGrid::new();
@@ -229,7 +236,13 @@ impl Game {
                         }
                     }
                 }
-                CellState::Empty => {}
+                CellState::Empty => {
+                    for peer_pos in pos.house_peers() {
+                        if let Some(digit) = self.grid[peer_pos].as_digit() {
+                            candidate_grid.remove_candidate(pos, digit);
+                        }
+                    }
+                }
             }
         }
         candidate_grid

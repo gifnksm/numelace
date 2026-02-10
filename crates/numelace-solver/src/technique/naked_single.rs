@@ -6,7 +6,7 @@ use crate::{
     technique::{BoxedTechniqueStep, Technique, TechniqueStep},
 };
 
-const NAME: &str = "naked singles";
+const NAME: &str = "naked single";
 
 /// A technique that finds cells with only one remaining candidate and propagates constraints.
 ///
