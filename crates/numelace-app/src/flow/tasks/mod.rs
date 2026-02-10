@@ -1,12 +1,11 @@
 use numelace_generator::GeneratedPuzzle;
 
+pub(crate) use self::{hint::*, solvability::*};
 use crate::{
     action::{BoardMutationAction, ConfirmKind, PuzzleLifecycleAction, SpinnerKind},
     flow::{FlowExecutor, FlowHandle, helpers},
     worker,
 };
-
-pub(crate) use self::{hint::*, solvability::*};
 
 mod hint;
 mod solvability;
