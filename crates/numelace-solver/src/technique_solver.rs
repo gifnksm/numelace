@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
-use numelace_core::CandidateGrid;
-
 use crate::{
     SolverError,
-    technique::{self, BoxedTechnique, BoxedTechniqueStep},
+    technique::{self, BoxedTechnique, BoxedTechniqueStep, TechniqueGrid},
 };
 
 /// Statistics collected during technique-based solving.
@@ -15,11 +13,10 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use numelace_core::CandidateGrid;
-/// use numelace_solver::{TechniqueSolver, TechniqueSolverStats};
+/// use numelace_solver::{TechniqueSolver, TechniqueSolverStats, technique::TechniqueGrid};
 ///
 /// let solver = TechniqueSolver::with_all_techniques();
-/// let mut grid = CandidateGrid::new();
+/// let mut grid = TechniqueGrid::new();
 ///
 /// let (solved, stats) = solver.solve(&mut grid)?;
 /// println!("Total steps: {}", stats.total_steps());
@@ -97,11 +94,10 @@ impl TechniqueSolverStats {
 /// # Examples
 ///
 /// ```
-/// use numelace_core::CandidateGrid;
-/// use numelace_solver::TechniqueSolver;
+/// use numelace_solver::{TechniqueSolver, technique::TechniqueGrid};
 ///
 /// let solver = TechniqueSolver::with_all_techniques();
-/// let mut grid = CandidateGrid::new();
+/// let mut grid = TechniqueGrid::new();
 ///
 /// // Solve completely
 /// let (solved, stats) = solver.solve(&mut grid)?;
@@ -116,11 +112,10 @@ impl TechniqueSolverStats {
 /// # Step-by-step solving
 ///
 /// ```
-/// use numelace_core::CandidateGrid;
-/// use numelace_solver::{TechniqueSolver, TechniqueSolverStats};
+/// use numelace_solver::{TechniqueSolver, TechniqueSolverStats, technique::TechniqueGrid};
 ///
 /// let solver = TechniqueSolver::with_all_techniques();
-/// let mut grid = CandidateGrid::new();
+/// let mut grid = TechniqueGrid::new();
 /// let mut stats = TechniqueSolverStats::new();
 ///
 /// while solver.step(&mut grid, &mut stats)? {
@@ -230,11 +225,10 @@ impl TechniqueSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_core::CandidateGrid;
-    /// use numelace_solver::{TechniqueSolver, TechniqueSolverStats};
+    /// use numelace_solver::{TechniqueSolver, TechniqueSolverStats, technique::TechniqueGrid};
     ///
     /// let solver = TechniqueSolver::with_all_techniques();
-    /// let mut grid = CandidateGrid::new();
+    /// let mut grid = TechniqueGrid::new();
     /// let mut stats = TechniqueSolverStats::new();
     ///
     /// if solver.step(&mut grid, &mut stats)? {
@@ -246,7 +240,7 @@ impl TechniqueSolver {
     /// ```
     pub fn step(
         &self,
-        grid: &mut CandidateGrid,
+        grid: &mut TechniqueGrid,
         stats: &mut TechniqueSolverStats,
     ) -> Result<bool, SolverError> {
         grid.check_consistency()?;
@@ -271,7 +265,7 @@ impl TechniqueSolver {
     /// Returns [`SolverError::Inconsistent`] if the grid is inconsistent.
     pub fn find_step(
         &self,
-        grid: &CandidateGrid,
+        grid: &TechniqueGrid,
     ) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         grid.check_consistency()?;
         for technique in &self.techniques {
@@ -306,11 +300,10 @@ impl TechniqueSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_core::CandidateGrid;
-    /// use numelace_solver::TechniqueSolver;
+    /// use numelace_solver::{TechniqueSolver, technique::TechniqueGrid};
     ///
     /// let solver = TechniqueSolver::with_all_techniques();
-    /// let mut grid = CandidateGrid::new();
+    /// let mut grid = TechniqueGrid::new();
     ///
     /// let (solved, stats) = solver.solve(&mut grid)?;
     /// if solved {
@@ -325,7 +318,7 @@ impl TechniqueSolver {
     /// ```
     pub fn solve(
         &self,
-        grid: &mut CandidateGrid,
+        grid: &mut TechniqueGrid,
     ) -> Result<(bool, TechniqueSolverStats), SolverError> {
         let mut stats = TechniqueSolverStats::default();
         let solved = self.solve_with_stats(grid, &mut stats)?;
@@ -357,11 +350,10 @@ impl TechniqueSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_core::CandidateGrid;
-    /// use numelace_solver::{TechniqueSolver, TechniqueSolverStats};
+    /// use numelace_solver::{TechniqueSolver, TechniqueSolverStats, technique::TechniqueGrid};
     ///
     /// let solver = TechniqueSolver::with_all_techniques();
-    /// let mut grid = CandidateGrid::new();
+    /// let mut grid = TechniqueGrid::new();
     /// let mut stats = TechniqueSolverStats::new();
     ///
     /// let solved = solver.solve_with_stats(&mut grid, &mut stats)?;
@@ -370,7 +362,7 @@ impl TechniqueSolver {
     /// ```
     pub fn solve_with_stats(
         &self,
-        grid: &mut CandidateGrid,
+        grid: &mut TechniqueGrid,
         stats: &mut TechniqueSolverStats,
     ) -> Result<bool, SolverError> {
         while self.step(grid, stats)? {
@@ -398,7 +390,7 @@ mod tests {
     #[test]
     fn test_step_returns_false_when_no_progress() {
         let solver = create_test_solver();
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
         let mut stats = TechniqueSolverStats::new();
 
         // On a fresh grid with all candidates, no technique can make progress yet
@@ -411,13 +403,14 @@ mod tests {
     #[test]
     fn test_step_returns_true_when_progress_made() {
         let solver = create_test_solver();
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
         let mut stats = TechniqueSolverStats::new();
 
         // Create a naked single: only D5 at (4, 4)
         for digit in Digit::ALL {
             if digit != Digit::D5 {
-                grid.remove_candidate(Position::new(4, 4), digit);
+                grid.candidates_mut()
+                    .remove_candidate(Position::new(4, 4), digit);
             }
         }
 
@@ -431,13 +424,14 @@ mod tests {
     #[test]
     fn test_step_records_stats() {
         let solver = create_test_solver();
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
         let mut stats = TechniqueSolverStats::new();
 
         // Create a naked single
         for digit in Digit::ALL {
             if digit != Digit::D5 {
-                grid.remove_candidate(Position::new(4, 4), digit);
+                grid.candidates_mut()
+                    .remove_candidate(Position::new(4, 4), digit);
             }
         }
 
@@ -452,7 +446,7 @@ mod tests {
     #[test]
     fn test_solve_empty_grid() {
         let solver = create_test_solver();
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
 
         let result = solver.solve(&mut grid);
         assert!(result.is_ok());
@@ -465,12 +459,13 @@ mod tests {
     #[test]
     fn test_solve_records_multiple_steps() {
         let solver = create_test_solver();
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
 
         // Create a naked single at (0, 0) - only D1 remains
         for digit in Digit::ALL {
             if digit != Digit::D1 {
-                grid.remove_candidate(Position::new(0, 0), digit);
+                grid.candidates_mut()
+                    .remove_candidate(Position::new(0, 0), digit);
             }
         }
 
@@ -494,12 +489,13 @@ mod tests {
         let solver = create_test_solver();
 
         // Create a simple case with a few naked singles
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
 
         // Create a naked single at (0, 0) - only D1 remains
         for digit in Digit::ALL {
             if digit != Digit::D1 {
-                grid.remove_candidate(Position::new(0, 0), digit);
+                grid.candidates_mut()
+                    .remove_candidate(Position::new(0, 0), digit);
             }
         }
 
@@ -578,13 +574,14 @@ mod tests {
     #[test]
     fn test_solve_with_stats() {
         let solver = create_test_solver();
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
         let mut stats = TechniqueSolverStats::new();
 
         // Create a naked single that hasn't been placed yet
         for digit in Digit::ALL {
             if digit != Digit::D5 {
-                grid.remove_candidate(Position::new(4, 4), digit);
+                grid.candidates_mut()
+                    .remove_candidate(Position::new(4, 4), digit);
             }
         }
 
@@ -597,14 +594,16 @@ mod tests {
     #[test]
     fn test_solve_with_stats_accumulates() {
         let solver = create_test_solver();
-        let mut grid1 = CandidateGrid::new();
-        let mut grid2 = CandidateGrid::new();
+        let mut grid1 = TechniqueGrid::from(CandidateGrid::new());
+        let mut grid2 = TechniqueGrid::from(CandidateGrid::new());
         let mut stats = TechniqueSolverStats::new();
 
         // First solve - create naked single
         for digit in Digit::ALL {
             if digit != Digit::D1 {
-                grid1.remove_candidate(Position::new(0, 0), digit);
+                grid1
+                    .candidates_mut()
+                    .remove_candidate(Position::new(0, 0), digit);
             }
         }
         let _ = solver.solve_with_stats(&mut grid1, &mut stats);
@@ -613,7 +612,9 @@ mod tests {
         // Second solve accumulates - create another naked single
         for digit in Digit::ALL {
             if digit != Digit::D2 {
-                grid2.remove_candidate(Position::new(1, 1), digit);
+                grid2
+                    .candidates_mut()
+                    .remove_candidate(Position::new(1, 1), digit);
             }
         }
         let _ = solver.solve_with_stats(&mut grid2, &mut stats);

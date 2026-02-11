@@ -5,7 +5,7 @@
 //! logic used by background tasks.
 
 use numelace_core::CandidateGrid;
-use numelace_solver::BacktrackSolverStats;
+use numelace_solver::{BacktrackSolverStats, technique::TechniqueGrid};
 use serde::{Deserialize, Serialize};
 
 use crate::worker::tasks::{CandidateGridDtoError, CandidateGridPairDto, CandidateGridPairsDto};
@@ -48,8 +48,9 @@ pub(crate) fn handle_solvability_undo_scan(
     request: CandidateGridPairsDto,
 ) -> Result<SolvabilityUndoScanResultDto, CandidateGridDtoError> {
     for (index, grids) in request.grids.into_iter().enumerate() {
-        let with_user_notes: CandidateGrid = grids.with_user_notes.try_into()?;
-        let without_user_notes: CandidateGrid = grids.without_user_notes.try_into()?;
+        let with_user_notes = TechniqueGrid::from(CandidateGrid::try_from(grids.with_user_notes)?);
+        let without_user_notes =
+            TechniqueGrid::from(CandidateGrid::try_from(grids.without_user_notes)?);
 
         let with_state = check_grid_solvability(with_user_notes, true);
         if matches!(with_state, SolvabilityResultDto::Solvable { .. }) {
@@ -81,8 +82,9 @@ pub(crate) fn handle_solvability_undo_scan(
 pub(crate) fn handle_solvability_request(
     request: CandidateGridPairDto,
 ) -> Result<SolvabilityResultDto, CandidateGridDtoError> {
-    let with_user_notes: CandidateGrid = request.with_user_notes.try_into()?;
-    let without_user_notes: CandidateGrid = request.without_user_notes.try_into()?;
+    let with_user_notes = TechniqueGrid::from(CandidateGrid::try_from(request.with_user_notes)?);
+    let without_user_notes =
+        TechniqueGrid::from(CandidateGrid::try_from(request.without_user_notes)?);
 
     let first_result = check_grid_solvability(with_user_notes, true);
     let result = if matches!(
@@ -97,7 +99,7 @@ pub(crate) fn handle_solvability_request(
     Ok(result)
 }
 
-fn check_grid_solvability(grid: CandidateGrid, with_user_notes: bool) -> SolvabilityResultDto {
+fn check_grid_solvability(grid: TechniqueGrid, with_user_notes: bool) -> SolvabilityResultDto {
     if grid.check_consistency().is_err() {
         return SolvabilityResultDto::Inconsistent;
     }

@@ -1,8 +1,8 @@
-use numelace_core::{CandidateGrid, ConsistencyError, Position};
+use numelace_core::{ConsistencyError, Position};
 use numelace_game::{CellState, Game};
 use numelace_solver::{
     SolverError, TechniqueSolver,
-    technique::{BoxedTechniqueStep, NakedSingle},
+    technique::{BoxedTechniqueStep, NakedSingle, TechniqueGrid},
 };
 
 use crate::{
@@ -108,7 +108,7 @@ async fn handle_hint_notes_maybe_incorrect(handle: &FlowHandle) {
     handle.request_action(UiAction::SetHintState(None).into());
 }
 
-fn find_naked_single_hint(game: &Game, grid: &CandidateGrid) -> Option<BoxedTechniqueStep> {
+fn find_naked_single_hint(game: &Game, grid: &TechniqueGrid) -> Option<BoxedTechniqueStep> {
     // Naked single hints must consider placement validity even when no eliminations occur.
     // The solver's NakedSingle::find_step intentionally gates on eliminations, which can
     // skip valid placements once peers already lack that candidate.
@@ -132,7 +132,7 @@ fn find_naked_single_hint(game: &Game, grid: &CandidateGrid) -> Option<BoxedTech
 
 fn find_hint_step_from_grid(
     game: &Game,
-    grid: &CandidateGrid,
+    grid: &TechniqueGrid,
     solver: &TechniqueSolver,
 ) -> Result<Option<BoxedTechniqueStep>, HintStepError> {
     grid.check_consistency()?;
@@ -161,7 +161,7 @@ fn find_hint_step_from_grid(
 
 fn find_hint_step(game: &Game) -> Result<Option<(bool, BoxedTechniqueStep)>, HintStepError> {
     let solver = TechniqueSolver::with_all_techniques();
-    let grid_with_notes = game.to_candidate_grid_with_notes();
+    let grid_with_notes = TechniqueGrid::from(game.to_candidate_grid_with_notes());
 
     // Notes-derived grids can be stale; treat inconsistency or solution mismatch as a signal
     // to fall back to the no-notes grid before surfacing an error.
@@ -170,7 +170,7 @@ fn find_hint_step(game: &Game) -> Result<Option<(bool, BoxedTechniqueStep)>, Hin
         Ok(None) | Err(HintStepError::Inconsistent(_) | HintStepError::SolutionMismatch) => {}
     }
 
-    let grid = game.to_candidate_grid();
+    let grid = TechniqueGrid::from(game.to_candidate_grid());
 
     if let Some(step) = find_hint_step_from_grid(game, &grid, &solver)? {
         return Ok(Some((false, step)));

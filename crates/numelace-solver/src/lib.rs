@@ -66,11 +66,10 @@
 //! ## Basic Usage
 //!
 //! ```
-//! use numelace_core::CandidateGrid;
-//! use numelace_solver::BacktrackSolver;
+//! use numelace_solver::{BacktrackSolver, technique::TechniqueGrid};
 //!
 //! let solver = BacktrackSolver::with_all_techniques();
-//! let grid = CandidateGrid::new();
+//! let grid = TechniqueGrid::new();
 //!
 //! // Get first solution
 //! if let Some((solution, stats)) = solver.solve(grid)?.next() {
@@ -88,11 +87,10 @@
 //! ## Technique-Only Solving
 //!
 //! ```
-//! use numelace_core::CandidateGrid;
-//! use numelace_solver::TechniqueSolver;
+//! use numelace_solver::{TechniqueSolver, technique::TechniqueGrid};
 //!
 //! let solver = TechniqueSolver::with_all_techniques();
-//! let mut grid = CandidateGrid::new();
+//! let mut grid = TechniqueGrid::new();
 //!
 //! let (solved, stats) = solver.solve(&mut grid)?;
 //! if solved {
@@ -107,11 +105,10 @@
 //! ## Step-by-Step Solving
 //!
 //! ```
-//! use numelace_core::CandidateGrid;
-//! use numelace_solver::{TechniqueSolver, TechniqueSolverStats};
+//! use numelace_solver::{TechniqueSolver, TechniqueSolverStats, technique::TechniqueGrid};
 //!
 //! let solver = TechniqueSolver::with_all_techniques();
-//! let mut grid = CandidateGrid::new();
+//! let mut grid = TechniqueGrid::new();
 //! let mut stats = TechniqueSolverStats::new();
 //!
 //! // Apply one technique at a time
@@ -129,11 +126,10 @@
 //! ## Checking for Multiple Solutions
 //!
 //! ```
-//! use numelace_core::CandidateGrid;
-//! use numelace_solver::BacktrackSolver;
+//! use numelace_solver::{BacktrackSolver, technique::TechniqueGrid};
 //!
 //! let solver = BacktrackSolver::with_all_techniques();
-//! let grid = CandidateGrid::new();
+//! let grid = TechniqueGrid::new();
 //!
 //! // Check if puzzle has a unique solution
 //! let solutions: Vec<_> = solver.solve(grid)?.take(2).collect();
@@ -148,17 +144,16 @@
 //! ## Custom Technique Selection
 //!
 //! ```
-//! use numelace_core::CandidateGrid;
 //! use numelace_solver::{
 //!     BacktrackSolver,
-//!     technique::{BoxedTechnique, NakedSingle},
+//!     technique::{BoxedTechnique, NakedSingle, TechniqueGrid},
 //! };
 //!
 //! // Use only specific techniques
 //! let techniques: Vec<BoxedTechnique> = vec![Box::new(NakedSingle::new())];
 //! let solver = BacktrackSolver::with_techniques(techniques);
 //!
-//! let grid = CandidateGrid::new();
+//! let grid = TechniqueGrid::new();
 //! if let Some((solution, _)) = solver.solve(grid)?.next() {
 //!     println!("Solved!");
 //! }
@@ -181,10 +176,9 @@
 //! 1. Implement the [`Technique`](technique::Technique) trait:
 //!
 //! ```
-//! use numelace_core::CandidateGrid;
 //! use numelace_solver::{
 //!     SolverError,
-//!     technique::{BoxedTechniqueStep, Technique},
+//!     technique::{BoxedTechniqueStep, Technique, TechniqueGrid},
 //! };
 //!
 //! #[derive(Debug, Clone)]
@@ -201,12 +195,12 @@
 //!
 //!     fn find_step(
 //!         &self,
-//!         _grid: &CandidateGrid,
+//!         _grid: &TechniqueGrid,
 //!     ) -> Result<Option<BoxedTechniqueStep>, SolverError> {
 //!         Ok(None)
 //!     }
 //!
-//!     fn apply(&self, grid: &mut CandidateGrid) -> Result<bool, SolverError> {
+//!     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
 //!         // Apply your technique logic here
 //!         // Return Ok(true) if progress was made
 //!         Ok(false)

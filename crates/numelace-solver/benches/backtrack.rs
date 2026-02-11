@@ -29,7 +29,7 @@ use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use numelace_core::{CandidateGrid, DigitGrid};
 use numelace_solver::{
     backtrack,
-    technique::{NakedSingle, Technique as _},
+    technique::{NakedSingle, Technique as _, TechniqueGrid},
 };
 
 // Problems generated from seed: c1d44bd6afaf8af64f126546884e19298acbdc33c3924a28136715de946ef3f1
@@ -64,7 +64,7 @@ fn bench_find_best_assumption(c: &mut Criterion) {
         let grid = DigitGrid::from_str(grid).unwrap();
         let given = grid.iter().filter(|o| o.is_some()).count();
 
-        let mut grid = CandidateGrid::from(grid);
+        let mut grid = TechniqueGrid::from(CandidateGrid::from(grid));
         NakedSingle::new().apply(&mut grid).unwrap();
         c.bench_with_input(
             BenchmarkId::new("find_best_assumption", format!("{param}_{given}")),

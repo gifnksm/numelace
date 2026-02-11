@@ -109,7 +109,7 @@
 use std::{fmt::Display, str::FromStr};
 
 use numelace_core::{CandidateGrid, Digit, DigitGrid, Position};
-use numelace_solver::{TechniqueSolver, backtrack};
+use numelace_solver::{TechniqueSolver, backtrack, technique::TechniqueGrid};
 use rand::{
     Rng, SeedableRng,
     distr::{Distribution, StandardUniform},
@@ -236,6 +236,8 @@ impl<'a> PuzzleGenerator<'a> {
             grid.place(pos, digit);
         }
 
+        let grid = TechniqueGrid::from(grid);
+
         // Step 3: Fill the rest of the grid using backtracking with solver assistance
         let mut stack = vec![];
         let assumption = backtrack::find_best_assumption(&grid);
@@ -248,7 +250,7 @@ impl<'a> PuzzleGenerator<'a> {
             // Pick a random candidate digit and try it
             let digit = digits.pop_nth(rng.random_range(0..digits.len())).unwrap();
             stack.push((grid.clone(), (pos, digits)));
-            grid.place(pos, digit);
+            grid.candidates_mut().place(pos, digit);
             // Use the solver to fill in cells that can be determined logically
             let Ok((solved, _)) = self.solver.solve(&mut grid) else {
                 continue; // Contradiction found, backtrack
@@ -285,7 +287,7 @@ impl<'a> PuzzleGenerator<'a> {
         for pos in positions {
             let mut removed = problem.clone();
             removed.set(pos, None);
-            let mut test_grid = CandidateGrid::from_digit_grid(&removed);
+            let mut test_grid = TechniqueGrid::from_digit_grid(&removed);
             let result = self.solver.solve(&mut test_grid);
             if result.is_ok_and(|(solved, _)| solved) {
                 problem = removed;
@@ -520,7 +522,7 @@ mod tests {
         let problem = generator.remove_cells(&mut rng, &solution);
 
         // Solve the problem
-        let mut test_grid = CandidateGrid::from_digit_grid(&problem);
+        let mut test_grid = TechniqueGrid::from_digit_grid(&problem);
         let result = generator.solver.solve(&mut test_grid);
 
         assert!(result.is_ok());
@@ -641,7 +643,7 @@ mod tests {
                 let generator = PuzzleGenerator::new(&solver);
                 let puzzle = generator.generate_with_seed(PuzzleSeed(seed));
 
-                let mut test_grid = CandidateGrid::from_digit_grid(&puzzle.problem);
+                let mut test_grid = TechniqueGrid::from_digit_grid(&puzzle.problem);
                 let result = generator.solver.solve(&mut test_grid);
 
                 prop_assert!(result.is_ok());

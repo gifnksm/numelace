@@ -1,9 +1,10 @@
-use numelace_core::{CandidateGrid, Digit, DigitPositions, DigitSet, House, Position};
+use numelace_core::{Digit, DigitPositions, DigitSet, House, Position};
 
 use crate::{
     SolverError,
     technique::{
-        BoxedTechnique, BoxedTechniqueStep, Technique, TechniqueApplication, TechniqueStep,
+        BoxedTechnique, BoxedTechniqueStep, Technique, TechniqueApplication, TechniqueGrid,
+        TechniqueStep,
     },
 };
 
@@ -19,10 +20,9 @@ const NAME: &str = "hidden single";
 /// # Examples
 ///
 /// ```
-/// use numelace_core::CandidateGrid;
-/// use numelace_solver::technique::{HiddenSingle, Technique};
+/// use numelace_solver::technique::{HiddenSingle, Technique, TechniqueGrid};
 ///
-/// let mut grid = CandidateGrid::new();
+/// let mut grid = TechniqueGrid::new();
 /// let technique = HiddenSingle::new();
 ///
 /// // Apply the technique
@@ -91,15 +91,16 @@ impl Technique for HiddenSingle {
         Box::new(*self)
     }
 
-    fn find_step(&self, grid: &CandidateGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-        let decided_cells = grid.decided_cells();
+    fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+        let candidates = &grid.candidates;
+        let decided_cells = candidates.decided_cells();
         for digit in Digit::ALL {
-            let not_decided_digit_positions = grid.digit_positions(digit) & !decided_cells;
+            let not_decided_digit_positions = candidates.digit_positions(digit) & !decided_cells;
             for house in House::ALL {
                 let house_mask = not_decided_digit_positions.house_mask(house);
                 if let Some(x) = house_mask.as_single() {
                     let pos = house.position_from_cell_index(x);
-                    if grid.would_place_change(pos, digit) {
+                    if candidates.would_place_change(pos, digit) {
                         return Ok(Some(Box::new(HiddenSingleStep::new(house, pos, digit))));
                     }
                 }
@@ -108,16 +109,17 @@ impl Technique for HiddenSingle {
         Ok(None)
     }
 
-    fn apply(&self, grid: &mut CandidateGrid) -> Result<bool, SolverError> {
+    fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
         let mut changed = false;
-        let decided_cells = grid.decided_cells();
+        let candidates = &mut grid.candidates;
+        let decided_cells = candidates.decided_cells();
         for digit in Digit::ALL {
-            let not_decided_digit_positions = grid.digit_positions(digit) & !decided_cells;
+            let not_decided_digit_positions = candidates.digit_positions(digit) & !decided_cells;
             for house in House::ALL {
                 let house_mask = not_decided_digit_positions.house_mask(house);
                 if let Some(i) = house_mask.as_single() {
                     let pos = house.position_from_cell_index(i);
-                    changed |= grid.place(pos, digit);
+                    changed |= candidates.place(pos, digit);
                 }
             }
         }
@@ -227,12 +229,12 @@ mod tests {
 
     #[test]
     fn test_find_step_matches_apply() {
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
 
         // Remove D5 from all cells in row 0 except (3, 0)
         for pos in Position::ROWS[0] {
             if pos.x() != 3 {
-                grid.remove_candidate(pos, Digit::D5);
+                grid.candidates.remove_candidate(pos, Digit::D5);
             }
         }
 

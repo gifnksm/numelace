@@ -276,7 +276,7 @@ impl CandidateGrid {
     /// assert!(candidates.contains(Digit::D5));
     /// ```
     #[must_use]
-    pub fn from_digit_grid(digit_grid: &crate::DigitGrid) -> Self {
+    pub fn from_digit_grid(digit_grid: &DigitGrid) -> Self {
         let mut grid = Self::new();
         for pos in Position::ALL {
             if let Some(digit) = digit_grid.get(pos) {

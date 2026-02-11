@@ -33,8 +33,8 @@
 use std::{hint, str::FromStr as _};
 
 use criterion::{BatchSize, BenchmarkId, Criterion, criterion_group, criterion_main};
-use numelace_core::{CandidateGrid, DigitGrid};
-use numelace_solver::{BacktrackSolver, TechniqueSolver};
+use numelace_core::DigitGrid;
+use numelace_solver::{BacktrackSolver, TechniqueSolver, technique::TechniqueGrid};
 
 // Problems generated from seed: c1d44bd6afaf8af64f126546884e19298acbdc33c3924a28136715de946ef3f1
 // using PuzzleGenerator with fundamental techniques (NakedSingle + HiddenSingle).
@@ -70,7 +70,7 @@ fn bench_technique_solver_fundamental(c: &mut Criterion) {
     for (param, grid) in puzzles {
         let grid = DigitGrid::from_str(grid).unwrap();
         let given = grid.iter().filter(|o| o.is_some()).count();
-        let grid = CandidateGrid::from(grid);
+        let grid = TechniqueGrid::from(grid);
         c.bench_with_input(
             BenchmarkId::new("technique_solver_fundamental", format!("{param}_{given}")),
             &grid,
@@ -109,7 +109,7 @@ fn bench_backtrack_solver_fundamental(c: &mut Criterion) {
     for (param, expected_solutions, grid) in puzzles {
         let grid = DigitGrid::from_str(grid).unwrap();
         let given = grid.iter().filter(|o| o.is_some()).count();
-        let grid = CandidateGrid::from(grid);
+        let grid = TechniqueGrid::from(grid);
         c.bench_with_input(
             BenchmarkId::new("backtrack_solver_fundamental", format!("{param}_{given}")),
             &grid,
@@ -128,7 +128,10 @@ fn bench_backtrack_solver_fundamental(c: &mut Criterion) {
                 );
                 // if unique solution, ensure that it matches the known solution
                 if solutions.len() == 1 {
-                    assert_eq!(solutions[0].0.to_digit_grid().to_string(), SOLUTION);
+                    assert_eq!(
+                        solutions[0].0.candidates().to_digit_grid().to_string(),
+                        SOLUTION
+                    );
                 }
 
                 b.iter_batched(

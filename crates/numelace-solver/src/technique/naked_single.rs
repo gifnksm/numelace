@@ -1,9 +1,9 @@
-use numelace_core::{CandidateGrid, Digit, DigitPositions, DigitSet, Position};
+use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 
 use super::{BoxedTechnique, TechniqueApplication};
 use crate::{
     SolverError,
-    technique::{BoxedTechniqueStep, Technique, TechniqueStep},
+    technique::{BoxedTechniqueStep, Technique, TechniqueGrid, TechniqueStep},
 };
 
 const NAME: &str = "naked single";
@@ -22,10 +22,9 @@ const NAME: &str = "naked single";
 /// # Examples
 ///
 /// ```
-/// use numelace_core::CandidateGrid;
-/// use numelace_solver::technique::{NakedSingle, Technique};
+/// use numelace_solver::technique::{NakedSingle, Technique, TechniqueGrid};
 ///
-/// let mut grid = CandidateGrid::new();
+/// let mut grid = TechniqueGrid::new();
 /// let technique = NakedSingle::new();
 ///
 /// // Apply the technique
@@ -47,12 +46,13 @@ impl NakedSingle {
     /// This is useful for hint systems that need to recognize valid placements even
     /// when no candidate elimination would occur in peers.
     #[must_use]
-    pub fn build_step(grid: &CandidateGrid, pos: Position) -> Option<BoxedTechniqueStep> {
-        let digit = grid.candidates_at(pos).as_single()?;
+    pub fn build_step(grid: &TechniqueGrid, pos: Position) -> Option<BoxedTechniqueStep> {
+        let candidates = &grid.candidates;
+        let digit = candidates.candidates_at(pos).as_single()?;
         let mut affected_pos = (DigitPositions::ROW_POSITIONS[pos.y()]
             | DigitPositions::COLUMN_POSITIONS[pos.x()]
             | DigitPositions::BOX_POSITIONS[pos.box_index()])
-            & grid.digit_positions(digit);
+            & candidates.digit_positions(digit);
         affected_pos.remove(pos);
         Some(Box::new(NakedSingleStep::new(pos, digit, affected_pos)))
     }
@@ -118,16 +118,19 @@ impl Technique for NakedSingle {
         Box::new(*self)
     }
 
-    fn find_step(&self, grid: &CandidateGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-        let decided_cells = grid.decided_cells();
+    fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+        let candidates = &grid.candidates;
+        let decided_cells = candidates.decided_cells();
         for digit in Digit::ALL {
-            for pos in grid.digit_positions(digit) & decided_cells {
+            let decided_digit_positions =
+                candidates.digit_positions(digit) & decided_cells & !grid.decided_propagated;
+            for pos in decided_digit_positions {
                 let mut affected_pos = (DigitPositions::ROW_POSITIONS[pos.y()]
                     | DigitPositions::COLUMN_POSITIONS[pos.x()]
                     | DigitPositions::BOX_POSITIONS[pos.box_index()])
-                    & grid.digit_positions(digit);
+                    & candidates.digit_positions(digit);
                 affected_pos.remove(pos);
-                if grid.would_remove_candidate_with_mask_change(affected_pos, digit) {
+                if candidates.would_remove_candidate_with_mask_change(affected_pos, digit) {
                     return Ok(Some(Box::new(NakedSingleStep::new(
                         pos,
                         digit,
@@ -139,17 +142,21 @@ impl Technique for NakedSingle {
         Ok(None)
     }
 
-    fn apply(&self, grid: &mut CandidateGrid) -> Result<bool, SolverError> {
+    fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
         let mut changed = false;
 
-        let decided_cells = grid.decided_cells();
+        let candidates = &mut grid.candidates;
+        let decided_cells = candidates.decided_cells();
         for digit in Digit::ALL {
-            for pos in grid.digit_positions(digit) & decided_cells {
+            let decided_digit_positions =
+                candidates.digit_positions(digit) & decided_cells & !grid.decided_propagated;
+            for pos in decided_digit_positions {
                 let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.y()]
                     | DigitPositions::COLUMN_POSITIONS[pos.x()]
                     | DigitPositions::BOX_POSITIONS[pos.box_index()];
                 affected_pos.remove(pos);
-                changed |= grid.remove_candidate_with_mask(affected_pos, digit);
+                grid.decided_propagated.insert(pos);
+                changed |= candidates.remove_candidate_with_mask(affected_pos, digit);
             }
         }
 
@@ -215,10 +222,10 @@ mod tests {
 
     #[test]
     fn test_find_step_matches_apply() {
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
 
         // Make (0, 0) have only D5 as candidate
-        grid.place(Position::new(0, 0), Digit::D5);
+        grid.candidates.place(Position::new(0, 0), Digit::D5);
 
         let technique = NakedSingle::new();
         let step = technique.find_step(&grid).unwrap().expect("expected step");

@@ -4,10 +4,11 @@
 //! When techniques cannot make further progress, the solver makes assumptions and explores
 //! the search space to find solutions.
 
-use numelace_core::{CandidateGrid, Digit, DigitSet, Position};
+use numelace_core::{Digit, DigitSet, Position};
 
 use crate::{
-    SolverError, TechniqueSolver, TechniqueSolverStats, backtrack, technique::BoxedTechnique,
+    SolverError, TechniqueSolver, TechniqueSolverStats, backtrack,
+    technique::{BoxedTechnique, TechniqueGrid},
 };
 
 /// Statistics collected during backtracking solving.
@@ -79,11 +80,10 @@ impl BacktrackSolverStats {
 /// # Examples
 ///
 /// ```
-/// use numelace_core::CandidateGrid;
-/// use numelace_solver::BacktrackSolver;
+/// use numelace_solver::{BacktrackSolver, technique::TechniqueGrid};
 ///
 /// let solver = BacktrackSolver::with_all_techniques();
-/// let grid = CandidateGrid::new();
+/// let grid = TechniqueGrid::new();
 ///
 /// // Get first solution
 /// if let Some((solution, stats)) = solver.solve(grid)?.next() {
@@ -98,11 +98,10 @@ impl BacktrackSolverStats {
 /// # Finding Multiple Solutions
 ///
 /// ```
-/// use numelace_core::CandidateGrid;
-/// use numelace_solver::BacktrackSolver;
+/// use numelace_solver::{BacktrackSolver, technique::TechniqueGrid};
 ///
 /// let solver = BacktrackSolver::with_all_techniques();
-/// let grid = CandidateGrid::new();
+/// let grid = TechniqueGrid::new();
 ///
 /// // Check for unique solution
 /// let solutions: Vec<_> = solver.solve(grid)?.take(2).collect();
@@ -187,11 +186,10 @@ impl BacktrackSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_core::CandidateGrid;
-    /// use numelace_solver::BacktrackSolver;
+    /// use numelace_solver::{BacktrackSolver, technique::TechniqueGrid};
     ///
     /// let solver = BacktrackSolver::with_all_techniques();
-    /// let grid = CandidateGrid::new();
+    /// let grid = TechniqueGrid::new();
     ///
     /// // Get first solution only
     /// match solver.solve(grid)?.next() {
@@ -204,7 +202,7 @@ impl BacktrackSolver {
     /// }
     /// # Ok::<(), numelace_solver::SolverError>(())
     /// ```
-    pub fn solve(&self, mut grid: CandidateGrid) -> Result<Solutions<'_>, SolverError> {
+    pub fn solve(&self, mut grid: TechniqueGrid) -> Result<Solutions<'_>, SolverError> {
         let mut stats = BacktrackSolverStats::new();
         let solved = self.solve_by_technique(&mut grid, &mut stats)?;
         let solutions = if solved {
@@ -218,7 +216,7 @@ impl BacktrackSolver {
 
     fn solve_by_technique(
         &self,
-        grid: &mut CandidateGrid,
+        grid: &mut TechniqueGrid,
         stats: &mut BacktrackSolverStats,
     ) -> Result<bool, SolverError> {
         let solved = self
@@ -241,13 +239,13 @@ pub struct Solutions<'a> {
 
 #[derive(Debug, Clone)]
 struct SearchState {
-    grid: CandidateGrid,
+    grid: TechniqueGrid,
     stats: BacktrackSolverStats,
     assumption: Option<(Position, DigitSet)>,
 }
 
 impl SearchState {
-    fn solved(grid: CandidateGrid, stats: BacktrackSolverStats) -> Self {
+    fn solved(grid: TechniqueGrid, stats: BacktrackSolverStats) -> Self {
         Self {
             grid,
             stats,
@@ -256,7 +254,7 @@ impl SearchState {
     }
 
     fn with_assumption(
-        grid: CandidateGrid,
+        grid: TechniqueGrid,
         stats: BacktrackSolverStats,
         assumption: (Position, DigitSet),
     ) -> Self {
@@ -271,7 +269,7 @@ impl SearchState {
 impl<'a> Solutions<'a> {
     fn solved(
         solver: &'a BacktrackSolver,
-        grid: CandidateGrid,
+        grid: TechniqueGrid,
         stats: BacktrackSolverStats,
     ) -> Self {
         Self {
@@ -282,7 +280,7 @@ impl<'a> Solutions<'a> {
 
     fn with_assumptions(
         solver: &'a BacktrackSolver,
-        grid: CandidateGrid,
+        grid: TechniqueGrid,
         stats: BacktrackSolverStats,
         assumption: (Position, DigitSet),
     ) -> Self {
@@ -294,7 +292,7 @@ impl<'a> Solutions<'a> {
 }
 
 impl Iterator for Solutions<'_> {
-    type Item = (CandidateGrid, BacktrackSolverStats);
+    type Item = (TechniqueGrid, BacktrackSolverStats);
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(mut state) = self.stack.pop() {
@@ -310,7 +308,7 @@ impl Iterator for Solutions<'_> {
             self.stack.push(state);
 
             stats.assumptions.push((pos, digit));
-            grid.place(pos, digit);
+            grid.candidates_mut().place(pos, digit);
             let Ok(solved) = self.solver.solve_by_technique(&mut grid, &mut stats) else {
                 stats.backtrack_count += 1;
                 continue;
@@ -328,14 +326,14 @@ impl Iterator for Solutions<'_> {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{Digit, Position};
+    use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
 
     #[test]
     fn test_without_techniques_solver() {
         let solver = BacktrackSolver::without_techniques();
-        let grid = CandidateGrid::new();
+        let grid = TechniqueGrid::new();
 
         // Should be able to solve even without techniques
         let result = solver.solve(grid);
@@ -345,10 +343,10 @@ mod tests {
     #[test]
     fn test_solve_with_all_techniques() {
         let solver = BacktrackSolver::with_all_techniques();
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::new();
 
         // Create a naked single
-        grid.place(Position::new(4, 4), Digit::D5);
+        grid.candidates_mut().place(Position::new(4, 4), Digit::D5);
 
         let result = solver.solve(grid);
         assert!(result.is_ok());
@@ -357,10 +355,10 @@ mod tests {
     #[test]
     fn test_solve_returns_iterator() {
         let solver = BacktrackSolver::with_all_techniques();
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::new();
 
         // Simple setup
-        grid.place(Position::new(0, 0), Digit::D1);
+        grid.candidates_mut().place(Position::new(0, 0), Digit::D1);
 
         let solutions = solver.solve(grid).unwrap();
 
@@ -399,11 +397,12 @@ mod tests {
     #[test]
     fn test_contradiction_in_initial_grid() {
         let solver = BacktrackSolver::with_all_techniques();
-        let mut grid = CandidateGrid::new();
+        let mut grid = TechniqueGrid::new();
 
         // Create a contradiction: remove all candidates from a cell
         for digit in Digit::ALL {
-            grid.remove_candidate(Position::new(0, 0), digit);
+            grid.candidates_mut()
+                .remove_candidate(Position::new(0, 0), digit);
         }
 
         let result = solver.solve(grid);
@@ -414,7 +413,7 @@ mod tests {
     #[test]
     fn test_multiple_solutions() {
         let solver = BacktrackSolver::without_techniques();
-        let grid = CandidateGrid::new();
+        let grid = TechniqueGrid::new();
 
         // Empty grid has multiple solutions - verify we can get at least 2
         let solutions: Vec<_> = solver.solve(grid).unwrap().take(2).collect();
@@ -423,7 +422,10 @@ mod tests {
         // Verify that solutions are different
         let (grid1, _) = &solutions[0];
         let (grid2, _) = &solutions[1];
-        assert_ne!(grid1.to_digit_grid(), grid2.to_digit_grid());
+        assert_ne!(
+            grid1.candidates().to_digit_grid(),
+            grid2.candidates().to_digit_grid()
+        );
     }
 
     #[test]
@@ -437,7 +439,7 @@ mod tests {
         grid.place(Position::new(2, 2), Digit::D3);
 
         // Should still have multiple solutions
-        let solutions: Vec<_> = solver.solve(grid).unwrap().take(3).collect();
+        let solutions: Vec<_> = solver.solve(grid.into()).unwrap().take(3).collect();
         assert_eq!(solutions.len(), 3);
 
         // Verify all solutions are valid and different
@@ -446,14 +448,17 @@ mod tests {
             assert!(grid_i.is_solved().unwrap());
 
             // Check that the original placements are preserved
-            let digit_grid_i = grid_i.to_digit_grid();
+            let digit_grid_i = grid_i.candidates().to_digit_grid();
             assert_eq!(digit_grid_i[Position::new(0, 0)], Some(Digit::D1));
             assert_eq!(digit_grid_i[Position::new(1, 1)], Some(Digit::D2));
             assert_eq!(digit_grid_i[Position::new(2, 2)], Some(Digit::D3));
 
             // Verify solutions are distinct
             for (grid_j, _) in &solutions[i + 1..] {
-                assert_ne!(grid_i.to_digit_grid(), grid_j.to_digit_grid());
+                assert_ne!(
+                    grid_i.candidates().to_digit_grid(),
+                    grid_j.candidates().to_digit_grid()
+                );
             }
         }
     }
@@ -473,7 +478,7 @@ mod tests {
 
         // Solve and check that some backtracking occurred
         // (We can't guarantee backtracking will happen, but it's likely with this setup)
-        let mut solutions = solver.solve(grid).unwrap();
+        let mut solutions = solver.solve(grid.into()).unwrap();
         let (_, stats) = solutions.next().unwrap();
 
         // Should have made assumptions
@@ -493,7 +498,7 @@ mod tests {
         grid.place(Position::new(0, 4), Digit::D5);
 
         // Get multiple solutions to increase chances of backtracking
-        let solutions: Vec<_> = solver.solve(grid).unwrap().take(5).collect();
+        let solutions: Vec<_> = solver.solve(grid.into()).unwrap().take(5).collect();
 
         // At least one solution should have backtracked
         // (This is probabilistic but very likely with multiple solutions)
@@ -516,11 +521,11 @@ mod tests {
         // Start with a partial grid
         grid.place(Position::new(4, 4), Digit::D5);
 
-        let (solution, _) = solver.solve(grid).unwrap().next().unwrap();
+        let (solution, _) = solver.solve(grid.into()).unwrap().next().unwrap();
 
         // Solution should be complete (all 81 cells filled)
         assert!(solution.is_solved().unwrap());
-        let digit_grid = solution.to_digit_grid();
+        let digit_grid = solution.candidates().to_digit_grid();
         for pos in Position::ALL {
             assert!(digit_grid[pos].is_some());
         }
@@ -541,7 +546,7 @@ mod tests {
         let techniques: Vec<BoxedTechnique> = vec![Box::new(NakedSingle::new())];
         let solver = BacktrackSolver::with_techniques(techniques);
 
-        let grid = CandidateGrid::new();
+        let grid = TechniqueGrid::new();
         let result = solver.solve(grid);
         assert!(result.is_ok());
     }

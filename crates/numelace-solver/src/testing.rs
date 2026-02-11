@@ -34,9 +34,9 @@
 
 use std::str::FromStr as _;
 
-use numelace_core::{CandidateGrid, Digit, DigitGrid, DigitSet, Position};
+use numelace_core::{Digit, DigitGrid, DigitSet, Position};
 
-use crate::technique::Technique;
+use crate::technique::{Technique, TechniqueGrid};
 
 /// A test harness for verifying technique implementations.
 ///
@@ -54,13 +54,17 @@ use crate::technique::Technique;
 /// `#[track_caller]` to report the correct source location.
 #[derive(Debug)]
 pub struct TechniqueTester {
-    initial: CandidateGrid,
-    current: CandidateGrid,
+    initial: TechniqueGrid,
+    current: TechniqueGrid,
 }
 
 impl TechniqueTester {
     /// Creates a new tester from an initial grid state.
-    pub fn new(initial: CandidateGrid) -> Self {
+    pub fn new<T>(initial: T) -> Self
+    where
+        T: Into<TechniqueGrid>,
+    {
+        let initial = initial.into();
         let current = initial.clone();
         Self { initial, current }
     }
@@ -97,7 +101,7 @@ impl TechniqueTester {
     #[track_caller]
     pub fn from_str(s: &str) -> Self {
         let grid = DigitGrid::from_str(s).unwrap();
-        Self::new(grid.into())
+        Self::new(grid)
     }
 
     /// Applies the technique once and returns self for chaining.
@@ -156,8 +160,8 @@ impl TechniqueTester {
     /// Panics if the cell was not placed as expected.
     #[track_caller]
     pub fn assert_placed(self, pos: Position, digit: Digit) -> Self {
-        let initial = self.initial.candidates_at(pos);
-        let current = self.current.candidates_at(pos);
+        let initial = self.initial.candidates().candidates_at(pos);
+        let current = self.current.candidates().candidates_at(pos);
 
         assert!(
             initial.len() > 1,
@@ -196,8 +200,8 @@ impl TechniqueTester {
         C: IntoIterator<Item = Digit>,
     {
         let digits = DigitSet::from_iter(digits);
-        let initial = self.initial.candidates_at(pos);
-        let current = self.current.candidates_at(pos);
+        let initial = self.initial.candidates().candidates_at(pos);
+        let current = self.current.candidates().candidates_at(pos);
         assert_eq!(
             initial & digits,
             digits,
@@ -225,8 +229,8 @@ impl TechniqueTester {
         C: IntoIterator<Item = Digit>,
     {
         let digits = DigitSet::from_iter(digits);
-        let initial = self.initial.candidates_at(pos);
-        let current = self.current.candidates_at(pos);
+        let initial = self.initial.candidates().candidates_at(pos);
+        let current = self.current.candidates().candidates_at(pos);
         let removed = initial.difference(current);
         assert_eq!(
             removed, digits,
@@ -242,8 +246,8 @@ impl TechniqueTester {
     /// Panics if the cell's candidates differ from the initial state.
     #[track_caller]
     pub fn assert_no_change(self, pos: Position) -> Self {
-        let initial = self.initial.candidates_at(pos);
-        let current = self.current.candidates_at(pos);
+        let initial = self.initial.candidates().candidates_at(pos);
+        let current = self.current.candidates().candidates_at(pos);
         assert_eq!(
             initial, current,
             "Expected no change at {pos:?}, but candidates changed from {initial:?} to {current:?}"
@@ -255,6 +259,10 @@ impl TechniqueTester {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        SolverError,
+        technique::{BoxedTechnique, BoxedTechniqueStep},
+    };
 
     // Mock technique for testing that always returns false (no change)
     #[derive(Debug)]
@@ -265,18 +273,18 @@ mod tests {
             "no-op"
         }
 
-        fn clone_box(&self) -> crate::technique::BoxedTechnique {
+        fn clone_box(&self) -> BoxedTechnique {
             Box::new(NoOpTechnique)
         }
 
         fn find_step(
             &self,
-            _grid: &CandidateGrid,
-        ) -> Result<Option<crate::technique::BoxedTechniqueStep>, crate::SolverError> {
+            _grid: &TechniqueGrid,
+        ) -> Result<Option<BoxedTechniqueStep>, SolverError> {
             Ok(None)
         }
 
-        fn apply(&self, _grid: &mut CandidateGrid) -> Result<bool, crate::SolverError> {
+        fn apply(&self, _grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
             Ok(false)
         }
     }
@@ -290,24 +298,24 @@ mod tests {
             "place-d1-at-00"
         }
 
-        fn clone_box(&self) -> crate::technique::BoxedTechnique {
+        fn clone_box(&self) -> BoxedTechnique {
             Box::new(PlaceD1At00)
         }
 
         fn find_step(
             &self,
-            _grid: &CandidateGrid,
-        ) -> Result<Option<crate::technique::BoxedTechniqueStep>, crate::SolverError> {
+            _grid: &TechniqueGrid,
+        ) -> Result<Option<BoxedTechniqueStep>, SolverError> {
             Ok(None)
         }
 
-        fn apply(&self, grid: &mut CandidateGrid) -> Result<bool, crate::SolverError> {
+        fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
             let pos = Position::new(0, 0);
-            let candidates = grid.candidates_at(pos);
+            let candidates = grid.candidates().candidates_at(pos);
             if candidates.len() == 1 {
                 Ok(false)
             } else {
-                grid.place(pos, Digit::D1);
+                grid.candidates_mut().place(pos, Digit::D1);
                 Ok(true)
             }
         }
