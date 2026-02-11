@@ -92,9 +92,12 @@ impl Technique for HiddenSingle {
     }
 
     fn find_step(&self, grid: &CandidateGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+        let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
+            let not_decided_digit_positions = grid.digit_positions(digit) & !decided_cells;
             for house in House::ALL {
-                if let Some(x) = grid.house_mask(house, digit).as_single() {
+                let house_mask = not_decided_digit_positions.house_mask(house);
+                if let Some(x) = house_mask.as_single() {
                     let pos = house.position_from_cell_index(x);
                     if grid.would_place_change(pos, digit) {
                         return Ok(Some(Box::new(HiddenSingleStep::new(house, pos, digit))));
@@ -107,9 +110,12 @@ impl Technique for HiddenSingle {
 
     fn apply(&self, grid: &mut CandidateGrid) -> Result<bool, SolverError> {
         let mut changed = false;
+        let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
+            let not_decided_digit_positions = grid.digit_positions(digit) & !decided_cells;
             for house in House::ALL {
-                if let Some(i) = grid.house_mask(house, digit).as_single() {
+                let house_mask = not_decided_digit_positions.house_mask(house);
+                if let Some(i) = house_mask.as_single() {
                     let pos = house.position_from_cell_index(i);
                     changed |= grid.place(pos, digit);
                 }
