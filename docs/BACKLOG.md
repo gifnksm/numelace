@@ -18,7 +18,29 @@ This backlog is the single source of truth for tasks and ideas.
 - [ ] Difficulty-based puzzle generation
 - [ ] Seeded generation and regenerate by seed
 - [ ] Technique explanations for hints (may overlap with hint system)
-- [ ] Generator-aligned technique expansion (solver + generator; pairs, pointing, box/line, X-Wing)
+- Generator-aligned technique expansion (solver + generator; tiered checklist)
+  - [X] Tier 0 (fundamental): Naked Single
+  - [X] Tier 0 (fundamental): Hidden Single
+  - [ ] Tier 1 (basic): Locked Candidates (Pointing)
+  - [ ] Tier 1 (basic): Locked Candidates (Claiming)
+  - [ ] Tier 2 (intermediate): Naked Pair
+  - [ ] Tier 2 (intermediate): Hidden Pair
+  - [ ] Tier 2 (intermediate): Naked Triple
+  - [ ] Tier 2 (intermediate): Hidden Triple
+  - [ ] Tier 3 (upper-intermediate): Naked Quad
+  - [ ] Tier 3 (upper-intermediate): Hidden Quad
+  - [ ] Tier 3 (upper-intermediate): X-Wing
+  - [ ] Tier 3 (upper-intermediate): Y-Wing
+  - [ ] Tier 3 (upper-intermediate): Skyscraper
+  - [ ] Tier 3 (upper-intermediate): 2-String Kite
+  - [ ] Tier 3 (upper-intermediate): X-Chain
+  - [ ] Tier 4 (advanced): Swordfish
+  - [ ] Tier 4 (advanced): Jellyfish
+  - [ ] Tier 4 (advanced): XY-Chain
+  - [ ] Tier 4 (advanced): XYZ-Wing
+  - [ ] Tier 4 (advanced): Remote Pairs
+  - [ ] Tier 5 (expert): WXYZ-Wing
+  - [ ] Tier 5 (expert): BUG+1 (Bivalue Universal Grave +1)
 
 ### Optional assist features
 
