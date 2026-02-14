@@ -3,10 +3,13 @@ use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 use super::{BoxedTechnique, TechniqueApplication};
 use crate::{
     SolverError,
-    technique::{BoxedTechniqueStep, Technique, TechniqueGrid, TechniqueStep},
+    technique::{
+        BoxedTechniqueStep, ConditionCells, ConditionDigitCells, Technique, TechniqueGrid,
+        TechniqueStep,
+    },
 };
 
-const NAME: &str = "naked single";
+const NAME: &str = "Naked Single";
 
 /// A technique that finds cells with only one remaining candidate and propagates constraints.
 ///
@@ -32,13 +35,13 @@ const NAME: &str = "naked single";
 /// # Ok::<(), numelace_solver::SolverError>(())
 /// ```
 #[derive(Debug, Default, Clone, Copy)]
-pub struct NakedSingle;
+pub struct NakedSingle {}
 
 impl NakedSingle {
     /// Creates a new `NakedSingle` technique.
     #[must_use]
     pub const fn new() -> Self {
-        NakedSingle
+        Self {}
     }
 
     /// Builds a naked single step for a decided position, without gating on eliminations.
@@ -84,11 +87,11 @@ impl TechniqueStep for NakedSingleStep {
         Box::new(self.clone())
     }
 
-    fn condition_cells(&self) -> DigitPositions {
+    fn condition_cells(&self) -> ConditionCells {
         DigitPositions::from_elem(self.position)
     }
 
-    fn condition_digit_cells(&self) -> Vec<(DigitPositions, DigitSet)> {
+    fn condition_digit_cells(&self) -> ConditionDigitCells {
         vec![(
             DigitPositions::from_elem(self.position),
             DigitSet::from_elem(self.digit),

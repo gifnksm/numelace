@@ -21,8 +21,8 @@ This backlog is the single source of truth for tasks and ideas.
 - Generator-aligned technique expansion (solver + generator; tiered checklist)
   - [X] Tier 0 (fundamental): Naked Single
   - [X] Tier 0 (fundamental): Hidden Single
-  - [ ] Tier 1 (basic): Locked Candidates (Pointing)
-  - [ ] Tier 1 (basic): Locked Candidates (Claiming)
+  - [X] Tier 1 (basic): Locked Candidates (Pointing)
+  - [X] Tier 1 (basic): Locked Candidates (Claiming)
   - [ ] Tier 2 (intermediate): Naked Pair
   - [ ] Tier 2 (intermediate): Hidden Pair
   - [ ] Tier 2 (intermediate): Naked Triple

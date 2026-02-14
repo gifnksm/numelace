@@ -1,14 +1,14 @@
-use numelace_core::{Digit, DigitPositions, DigitSet, House, Position};
+use numelace_core::{Digit, DigitSet, House, Position};
 
 use crate::{
     SolverError,
     technique::{
-        BoxedTechnique, BoxedTechniqueStep, Technique, TechniqueApplication, TechniqueGrid,
-        TechniqueStep,
+        BoxedTechnique, BoxedTechniqueStep, ConditionCells, ConditionDigitCells, Technique,
+        TechniqueApplication, TechniqueGrid, TechniqueStep,
     },
 };
 
-const NAME: &str = "hidden single";
+const NAME: &str = "Hidden Single";
 
 /// A technique that finds digits that can only go in one position within a house.
 ///
@@ -30,13 +30,13 @@ const NAME: &str = "hidden single";
 /// # Ok::<(), numelace_solver::SolverError>(())
 /// ```
 #[derive(Debug, Default, Clone, Copy)]
-pub struct HiddenSingle;
+pub struct HiddenSingle {}
 
 impl HiddenSingle {
     /// Creates a new `HiddenSingle` technique.
     #[must_use]
     pub const fn new() -> Self {
-        HiddenSingle
+        Self {}
     }
 }
 
@@ -66,11 +66,11 @@ impl TechniqueStep for HiddenSingleStep {
         Box::new(self.clone())
     }
 
-    fn condition_cells(&self) -> DigitPositions {
+    fn condition_cells(&self) -> ConditionCells {
         self.house.positions()
     }
 
-    fn condition_digit_cells(&self) -> Vec<(DigitPositions, DigitSet)> {
+    fn condition_digit_cells(&self) -> ConditionDigitCells {
         vec![(self.house.positions(), DigitSet::from_elem(self.digit))]
     }
 

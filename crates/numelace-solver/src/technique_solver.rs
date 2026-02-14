@@ -13,14 +13,20 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use numelace_solver::{TechniqueSolver, TechniqueSolverStats, technique::TechniqueGrid};
+/// use numelace_solver::{
+///     TechniqueSolver, TechniqueSolverStats,
+///     technique::{NakedSingle, Technique as _, TechniqueGrid},
+/// };
 ///
 /// let solver = TechniqueSolver::with_all_techniques();
 /// let mut grid = TechniqueGrid::new();
 ///
 /// let (solved, stats) = solver.solve(&mut grid)?;
 /// println!("Total steps: {}", stats.total_steps());
-/// println!("Naked singles applied: {}", stats.count("naked singles"));
+/// println!(
+///     "Naked singles applied: {}",
+///     stats.count(NakedSingle::new().name())
+/// );
 /// # Ok::<(), numelace_solver::SolverError>(())
 /// ```
 #[derive(Debug, Default, Clone)]
@@ -379,7 +385,9 @@ mod tests {
     use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::technique::{BoxedTechnique, HiddenSingle, NakedSingle, all_techniques};
+    use crate::technique::{
+        BoxedTechnique, HiddenSingle, NakedSingle, Technique as _, all_techniques,
+    };
 
     fn create_test_solver() -> TechniqueSolver {
         let techniques: Vec<BoxedTechnique> =
@@ -418,7 +426,7 @@ mod tests {
         assert!(result.is_ok());
         assert!(result.unwrap());
         assert_eq!(stats.total_steps, 1);
-        assert_eq!(stats.count("naked single"), 1);
+        assert_eq!(stats.count(NakedSingle::new().name()), 1);
     }
 
     #[test]
@@ -439,8 +447,8 @@ mod tests {
 
         assert_eq!(stats.total_steps, 1);
         assert!(stats.has_progress());
-        assert_eq!(stats.count("naked single"), 1);
-        assert_eq!(stats.count("hidden single"), 0);
+        assert_eq!(stats.count(NakedSingle::new().name()), 1);
+        assert_eq!(stats.count(HiddenSingle::new().name()), 0);
     }
 
     #[test]
@@ -481,7 +489,10 @@ mod tests {
         );
         assert!(stats.has_progress());
         // The naked single technique should have been applied
-        assert!(stats.count("naked single") >= 1 || stats.count("hidden single") >= 1);
+        assert!(
+            stats.count(NakedSingle::new().name()) >= 1
+                || stats.count(HiddenSingle::new().name()) >= 1
+        );
     }
 
     #[test]
@@ -511,14 +522,15 @@ mod tests {
     #[test]
     fn test_stats_count_method() {
         let mut stats = TechniqueSolverStats::new();
+        let naked_single = NakedSingle::new();
 
-        assert_eq!(stats.count("naked single"), 0);
+        assert_eq!(stats.count(naked_single.name()), 0);
 
-        *stats.applications.entry("naked single").or_default() += 1;
-        assert_eq!(stats.count("naked single"), 1);
+        *stats.applications.entry(naked_single.name()).or_default() += 1;
+        assert_eq!(stats.count(naked_single.name()), 1);
 
-        *stats.applications.entry("naked single").or_default() += 2;
-        assert_eq!(stats.count("naked single"), 3);
+        *stats.applications.entry(naked_single.name()).or_default() += 2;
+        assert_eq!(stats.count(naked_single.name()), 3);
 
         assert_eq!(stats.count("nonexistent"), 0);
     }
