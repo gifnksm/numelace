@@ -12,7 +12,7 @@
 //! ```
 
 use numelace_generator::PuzzleGenerator;
-use numelace_solver::TechniqueSolver;
+use numelace_solver::{TechniqueSolver, technique::TechniqueGrid};
 
 fn main() {
     let solver = TechniqueSolver::with_all_techniques();
@@ -28,4 +28,13 @@ fn main() {
     println!("Solution:");
     println!("{:#}", puzzle.solution);
     println!();
+
+    let mut grid = TechniqueGrid::from(puzzle.problem);
+    let (is_solved, stats) = solver.solve(&mut grid).unwrap();
+    assert!(is_solved);
+    println!("Stats:");
+    for (name, count) in stats.applications() {
+        println!("  {name}: {count}");
+    }
+    println!("  total: {}", stats.total_steps());
 }
