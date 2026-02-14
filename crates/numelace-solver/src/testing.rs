@@ -36,7 +36,7 @@ use std::str::FromStr as _;
 
 use numelace_core::{Digit, DigitGrid, DigitSet, Position};
 
-use crate::technique::{Technique, TechniqueGrid};
+use crate::technique::{BoxedTechniqueStep, Technique, TechniqueApplication, TechniqueGrid};
 
 /// A test harness for verifying technique implementations.
 ///
@@ -56,6 +56,7 @@ use crate::technique::{Technique, TechniqueGrid};
 pub struct TechniqueTester {
     initial: TechniqueGrid,
     current: TechniqueGrid,
+    check_find_step_consistency: bool,
 }
 
 impl TechniqueTester {
@@ -66,7 +67,11 @@ impl TechniqueTester {
     {
         let initial = initial.into();
         let current = initial.clone();
-        Self { initial, current }
+        Self {
+            initial,
+            current,
+            check_find_step_consistency: true,
+        }
     }
 
     /// Creates a new tester from a grid string.
@@ -104,6 +109,23 @@ impl TechniqueTester {
         Self::new(grid)
     }
 
+    /// Enables or disables `find_step` consistency checks.
+    ///
+    /// When enabled, `apply_*` methods assert that `find_step` and `apply` are consistent.
+    #[must_use]
+    #[expect(dead_code)]
+    pub fn with_find_step_consistency(mut self, enabled: bool) -> Self {
+        self.check_find_step_consistency = enabled;
+        self
+    }
+
+    /// Disables `find_step`/`apply` consistency checks for this tester.
+    #[must_use]
+    pub fn without_find_step_consistency(mut self) -> Self {
+        self.check_find_step_consistency = false;
+        self
+    }
+
     /// Applies the technique once and returns self for chaining.
     ///
     /// # Panics
@@ -114,7 +136,11 @@ impl TechniqueTester {
     where
         T: Technique,
     {
-        technique.apply(&mut self.current).unwrap();
+        let before = self.current.clone();
+        let changed = technique.apply(&mut self.current).unwrap();
+        if self.check_find_step_consistency {
+            Self::assert_find_step_consistent_once(technique, &before, &self.current, changed);
+        }
         self
     }
 
@@ -128,7 +154,16 @@ impl TechniqueTester {
     where
         T: Technique,
     {
-        while technique.apply(&mut self.current).unwrap() {}
+        loop {
+            let before = self.current.clone();
+            let changed = technique.apply(&mut self.current).unwrap();
+            if self.check_find_step_consistency {
+                Self::assert_find_step_consistent_once(technique, &before, &self.current, changed);
+            }
+            if !changed {
+                break;
+            }
+        }
         self
     }
 
@@ -143,9 +178,93 @@ impl TechniqueTester {
         T: Technique,
     {
         for _ in 0..times {
-            technique.apply(&mut self.current).unwrap();
+            let before = self.current.clone();
+            let changed = technique.apply(&mut self.current).unwrap();
+            if self.check_find_step_consistency {
+                Self::assert_find_step_consistent_once(technique, &before, &self.current, changed);
+            }
         }
         self
+    }
+
+    #[track_caller]
+    fn assert_find_step_consistent_once<T>(
+        technique: &T,
+        before: &TechniqueGrid,
+        after: &TechniqueGrid,
+        changed: bool,
+    ) where
+        T: Technique,
+    {
+        let name = technique.name();
+        let step = technique.find_step(before).unwrap();
+        match step {
+            None => {
+                assert!(
+                    !changed,
+                    "Expected {name} to report no change when find_step returned None"
+                );
+                Self::assert_candidates_unchanged(before, after);
+            }
+            Some(step) => {
+                assert!(
+                    changed,
+                    "Expected {name} to report a change when find_step returned a step"
+                );
+                Self::assert_step_application_applied(before, &step, after);
+            }
+        }
+    }
+
+    #[track_caller]
+    fn assert_candidates_unchanged(before: &TechniqueGrid, after: &TechniqueGrid) {
+        for digit in Digit::ALL {
+            let before_positions = before.candidates().digit_positions(digit);
+            let after_positions = after.candidates().digit_positions(digit);
+            assert_eq!(
+                before_positions, after_positions,
+                "Expected candidates to remain unchanged for {digit:?}"
+            );
+        }
+    }
+
+    #[track_caller]
+    fn assert_step_application_applied(
+        before: &TechniqueGrid,
+        step: &BoxedTechniqueStep,
+        after: &TechniqueGrid,
+    ) {
+        let name = step.technique_name();
+        for application in step.application() {
+            match application {
+                TechniqueApplication::Placement { position, digit } => {
+                    let candidates = after.candidates().candidates_at(position);
+                    assert_eq!(
+                        candidates.len(),
+                        1,
+                        "Expected {position:?} to be decided after applying {name}, but candidates are {candidates:?}"
+                    );
+                    assert!(
+                        candidates.contains(digit),
+                        "Expected {position:?} to contain {digit:?} after applying {name}, but candidates are {candidates:?}"
+                    );
+                }
+                TechniqueApplication::CandidateElimination { positions, digits } => {
+                    for pos in positions {
+                        let before_candidates = before.candidates().candidates_at(pos);
+                        let after_candidates = after.candidates().candidates_at(pos);
+                        for digit in digits {
+                            if before_candidates.contains(digit) {
+                                assert!(
+                                    !after_candidates.contains(digit),
+                                    "Expected {digit:?} to be removed from {pos:?} after applying {name}, but candidates are {after_candidates:?}"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /// Asserts that a cell was placed (decided) with the given digit.
@@ -258,10 +377,14 @@ impl TechniqueTester {
 
 #[cfg(test)]
 mod tests {
+    use numelace_core::DigitPositions;
+
     use super::*;
     use crate::{
         SolverError,
-        technique::{BoxedTechnique, BoxedTechniqueStep},
+        technique::{
+            BoxedTechnique, BoxedTechniqueStep, TechniqueApplication, TechniqueGrid, TechniqueStep,
+        },
     };
 
     // Mock technique for testing that always returns false (no change)
@@ -289,6 +412,37 @@ mod tests {
         }
     }
 
+    #[derive(Debug, Clone)]
+    struct PlaceD1At00Step;
+
+    impl TechniqueStep for PlaceD1At00Step {
+        fn technique_name(&self) -> &'static str {
+            "place-d1-at-00"
+        }
+
+        fn clone_box(&self) -> BoxedTechniqueStep {
+            Box::new(self.clone())
+        }
+
+        fn condition_cells(&self) -> DigitPositions {
+            DigitPositions::from_elem(Position::new(0, 0))
+        }
+
+        fn condition_digit_cells(&self) -> Vec<(DigitPositions, DigitSet)> {
+            vec![(
+                DigitPositions::from_elem(Position::new(0, 0)),
+                DigitSet::from_elem(Digit::D1),
+            )]
+        }
+
+        fn application(&self) -> Vec<TechniqueApplication> {
+            vec![TechniqueApplication::Placement {
+                position: Position::new(0, 0),
+                digit: Digit::D1,
+            }]
+        }
+    }
+
     // Mock technique that places a digit at (0, 0) if it's not already decided
     #[derive(Debug)]
     struct PlaceD1At00;
@@ -304,9 +458,15 @@ mod tests {
 
         fn find_step(
             &self,
-            _grid: &TechniqueGrid,
+            grid: &TechniqueGrid,
         ) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-            Ok(None)
+            let pos = Position::new(0, 0);
+            let candidates = grid.candidates().candidates_at(pos);
+            if candidates.len() == 1 {
+                Ok(None)
+            } else {
+                Ok(Some(Box::new(PlaceD1At00Step)))
+            }
         }
 
         fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
@@ -318,6 +478,30 @@ mod tests {
                 grid.candidates_mut().place(pos, Digit::D1);
                 Ok(true)
             }
+        }
+    }
+
+    #[derive(Debug)]
+    struct InconsistentTechnique;
+
+    impl Technique for InconsistentTechnique {
+        fn name(&self) -> &'static str {
+            "inconsistent"
+        }
+
+        fn clone_box(&self) -> BoxedTechnique {
+            Box::new(InconsistentTechnique)
+        }
+
+        fn find_step(
+            &self,
+            _grid: &TechniqueGrid,
+        ) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+            Ok(Some(Box::new(PlaceD1At00Step)))
+        }
+
+        fn apply(&self, _grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+            Ok(false)
         }
     }
 
@@ -401,6 +585,44 @@ mod tests {
 
         let result = tester.apply_times(&NoOpTechnique, 5);
         let _ = result;
+    }
+
+    #[test]
+    #[should_panic(expected = "Expected inconsistent to report a change")]
+    fn test_find_step_consistency_panics_on_inconsistent_apply() {
+        TechniqueTester::from_str(
+            "
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+        ",
+        )
+        .apply_once(&InconsistentTechnique);
+    }
+
+    #[test]
+    fn test_find_step_consistency_opt_out() {
+        TechniqueTester::from_str(
+            "
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+            ___ ___ ___
+        ",
+        )
+        .without_find_step_consistency()
+        .apply_once(&InconsistentTechnique);
     }
 
     #[test]

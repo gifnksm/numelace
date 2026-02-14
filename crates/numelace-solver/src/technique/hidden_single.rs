@@ -129,7 +129,7 @@ impl Technique for HiddenSingle {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{CandidateGrid, Digit, DigitPositions, DigitSet, Position};
+    use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
     use crate::testing::TechniqueTester;
@@ -225,49 +225,5 @@ mod tests {
             .apply_once(&HiddenSingle::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
-    }
-
-    #[test]
-    fn test_find_step_matches_apply() {
-        let mut grid = TechniqueGrid::from(CandidateGrid::new());
-
-        // Remove D5 from all cells in row 0 except (3, 0)
-        for pos in Position::ROWS[0] {
-            if pos.x() != 3 {
-                grid.candidates.remove_candidate(pos, Digit::D5);
-            }
-        }
-
-        let technique = HiddenSingle::new();
-        let step = technique.find_step(&grid).unwrap().expect("expected step");
-
-        let condition_cells = step.condition_cells();
-        assert!(condition_cells.contains(Position::new(3, 0)));
-        assert_eq!(condition_cells, DigitPositions::ROW_POSITIONS[0]);
-
-        let condition_digit_cells = step.condition_digit_cells();
-        assert_eq!(condition_digit_cells.len(), 1);
-        assert_eq!(
-            condition_digit_cells[0],
-            (
-                DigitPositions::ROW_POSITIONS[0],
-                DigitSet::from_elem(Digit::D5)
-            )
-        );
-
-        let applications = step.application();
-        assert_eq!(applications.len(), 1);
-
-        match applications[0] {
-            TechniqueApplication::Placement { position, digit } => {
-                assert_eq!(position, Position::new(3, 0));
-                assert_eq!(digit, Digit::D5);
-            }
-            TechniqueApplication::CandidateElimination { .. } => panic!("expected placement step"),
-        }
-
-        TechniqueTester::new(grid)
-            .apply_once(&HiddenSingle::new())
-            .assert_placed(Position::new(3, 0), Digit::D5);
     }
 }

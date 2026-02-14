@@ -166,7 +166,7 @@ impl Technique for NakedSingle {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{CandidateGrid, Digit, DigitPositions, DigitSet, Position};
+    use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
     use crate::testing::TechniqueTester;
@@ -218,63 +218,6 @@ mod tests {
             .apply_once(&NakedSingle::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
-    }
-
-    #[test]
-    fn test_find_step_matches_apply() {
-        let mut grid = TechniqueGrid::from(CandidateGrid::new());
-
-        // Make (0, 0) have only D5 as candidate
-        grid.candidates.place(Position::new(0, 0), Digit::D5);
-
-        let technique = NakedSingle::new();
-        let step = technique.find_step(&grid).unwrap().expect("expected step");
-
-        let condition_cells = step.condition_cells();
-        assert_eq!(
-            condition_cells,
-            DigitPositions::from_elem(Position::new(0, 0))
-        );
-
-        let condition_digit_cells = step.condition_digit_cells();
-        assert_eq!(condition_digit_cells.len(), 1);
-        assert_eq!(
-            condition_digit_cells[0],
-            (
-                DigitPositions::from_elem(Position::new(0, 0)),
-                DigitSet::from_elem(Digit::D5)
-            )
-        );
-
-        let applications = step.application();
-        assert_eq!(applications.len(), 2);
-        match applications[0] {
-            TechniqueApplication::Placement { position, digit } => {
-                assert_eq!(position, Position::new(0, 0));
-                assert_eq!(digit, Digit::D5);
-            }
-            TechniqueApplication::CandidateElimination { .. } => {
-                panic!("expected placement step first");
-            }
-        }
-        match applications[1] {
-            TechniqueApplication::CandidateElimination { positions, digits } => {
-                assert!(!positions.contains(Position::new(0, 0)));
-                assert!(positions.contains(Position::new(1, 0)));
-                assert!(positions.contains(Position::new(0, 1)));
-                assert!(positions.contains(Position::new(1, 1)));
-                assert_eq!(digits, DigitSet::from_elem(Digit::D5));
-            }
-            TechniqueApplication::Placement { .. } => {
-                panic!("expected candidate elimination step second");
-            }
-        }
-
-        TechniqueTester::new(grid)
-            .apply_once(&NakedSingle::new())
-            .assert_removed_exact(Position::new(1, 0), [Digit::D5])
-            .assert_removed_exact(Position::new(0, 1), [Digit::D5])
-            .assert_removed_exact(Position::new(1, 1), [Digit::D5]);
     }
 
     #[test]

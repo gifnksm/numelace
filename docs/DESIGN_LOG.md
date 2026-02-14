@@ -76,3 +76,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-11: Hint system uses memo-backed candidates with a notes-first fallback to no-notes when inconsistent or mismatched — keeps hints aligned with player notes while recovering from stale memo states.
 - 2026-02-11: Hint progression advances in stages (focus area → technique + condition pairs → preview → apply) and resets on board mutations — preserves discovery while ensuring hint visuals are tied to a stable step.
 - 2026-02-11: Hint inconsistencies prompt undo-driven rollback to a consistent state, with distinct “no hint found” messaging after rollback — guides recovery without masking board errors.
+- 2026-02-14: TechniqueTester auto-checks find_step/apply consistency with an opt-out toggle — makes consistency the default while allowing exceptions for future techniques.
