@@ -137,6 +137,8 @@ impl Technique for LockedCandidates {
     }
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+        let decided_cells = grid.candidates.decided_cells();
+
         for box_index in 0..9 {
             let box_ = House::Box { index: box_index };
             let origin = Position::box_origin(box_index);
@@ -150,20 +152,21 @@ impl Technique for LockedCandidates {
             ];
             for row_or_col in row_or_cols {
                 let intersection = box_.positions() & row_or_col.positions();
-                if (intersection & !grid.candidates.decided_cells()).is_empty() {
+                if (intersection & !decided_cells).is_empty() {
                     continue;
                 }
                 let rest_in_box = box_.positions() & !intersection;
                 let rest_in_row_or_col = row_or_col.positions() & !intersection;
                 for digit in Digit::ALL {
-                    let digit_positions = grid.candidates.digit_positions(digit);
-                    if (digit_positions & intersection).is_empty() {
+                    let undecided_positions =
+                        grid.candidates.digit_positions(digit) & !decided_cells;
+                    if (undecided_positions & intersection).is_empty() {
                         continue;
                     }
 
-                    if (digit_positions & rest_in_box).is_empty() {
+                    if (undecided_positions & rest_in_box).is_empty() {
                         // Pointing
-                        let eliminations = digit_positions & rest_in_row_or_col;
+                        let eliminations = undecided_positions & rest_in_row_or_col;
                         if grid
                             .candidates
                             .would_remove_candidate_with_mask_change(eliminations, digit)
@@ -172,13 +175,13 @@ impl Technique for LockedCandidates {
                                 digit,
                                 box_index,
                                 row_or_col,
-                                digit_positions & intersection,
+                                undecided_positions & intersection,
                                 eliminations,
                             ))));
                         }
-                    } else if (digit_positions & rest_in_row_or_col).is_empty() {
+                    } else if (undecided_positions & rest_in_row_or_col).is_empty() {
                         // Claiming
-                        let eliminations = digit_positions & rest_in_box;
+                        let eliminations = undecided_positions & rest_in_box;
                         if grid
                             .candidates
                             .would_remove_candidate_with_mask_change(eliminations, digit)
@@ -187,7 +190,7 @@ impl Technique for LockedCandidates {
                                 digit,
                                 box_index,
                                 row_or_col,
-                                digit_positions & intersection,
+                                undecided_positions & intersection,
                                 eliminations,
                             ))));
                         }
@@ -201,6 +204,8 @@ impl Technique for LockedCandidates {
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
         let mut changed = false;
 
+        let decided_cells = grid.candidates.decided_cells();
+
         for box_index in 0..9 {
             let box_ = House::Box { index: box_index };
             let origin = Position::box_origin(box_index);
@@ -212,29 +217,30 @@ impl Technique for LockedCandidates {
                 House::Column { x: origin.x() + 1 },
                 House::Column { x: origin.x() + 2 },
             ];
+
             for row_or_col in row_or_cols {
                 let intersection = box_.positions() & row_or_col.positions();
-                if (intersection & !grid.candidates.decided_cells()).is_empty() {
+                if (intersection & !decided_cells).is_empty() {
                     continue;
                 }
 
                 let rest_in_box = box_.positions() & !intersection;
                 let rest_in_row_or_col = row_or_col.positions() & !intersection;
                 for digit in Digit::ALL {
-                    let digit_positions = grid.candidates.digit_positions(digit);
-                    if (digit_positions & intersection).is_empty() {
+                    let undecided_positions =
+                        grid.candidates.digit_positions(digit) & !decided_cells;
+                    if (undecided_positions & intersection).is_empty() {
                         continue;
                     }
-
-                    if (digit_positions & rest_in_box).is_empty() {
+                    if (undecided_positions & rest_in_box).is_empty() {
                         // Pointing
-                        let eliminations = digit_positions & rest_in_row_or_col;
+                        let eliminations = undecided_positions & rest_in_row_or_col;
                         changed |= grid
                             .candidates
                             .remove_candidate_with_mask(eliminations, digit);
-                    } else if (digit_positions & rest_in_row_or_col).is_empty() {
+                    } else if (undecided_positions & rest_in_row_or_col).is_empty() {
                         // Claiming
-                        let eliminations = digit_positions & rest_in_box;
+                        let eliminations = undecided_positions & rest_in_box;
                         changed |= grid
                             .candidates
                             .remove_candidate_with_mask(eliminations, digit);
