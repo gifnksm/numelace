@@ -17,6 +17,7 @@ numelace-solver.workspace = true
 workspace = true
 
 [dev-dependencies]
+clap = { workspace = true, features = ["derive"] }
 criterion.workspace = true
 proptest.workspace = true
 

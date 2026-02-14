@@ -24,3 +24,7 @@ harness = false
 [[bench]]
 name = "solver"
 harness = false
+
+[[bench]]
+name = "techniques"
+harness = false

@@ -1,13 +1,15 @@
 //! Benchmarks for Sudoku puzzle generation.
 //!
 //! This benchmark suite measures the performance of puzzle generation using
-//! `PuzzleGenerator` with fundamental techniques.
+//! `PuzzleGenerator` with fundamental and basic techniques.
 //!
 //! # Benchmarks
 //!
 //! - **`generator_fundamental`**: Generates puzzles using fundamental techniques
 //!   (`NakedSingle` + `HiddenSingle`). Measures the complete generation process
 //!   including solution generation and cell removal.
+//! - **`generator_basic`**: Generates puzzles using basic techniques
+//!   (fundamental + `Locked Candidates`).
 //!
 //! # Test Data
 //!
@@ -30,7 +32,7 @@ use std::{hint, str::FromStr as _};
 
 use criterion::{BatchSize, BenchmarkId, Criterion, criterion_group, criterion_main};
 use numelace_generator::{PuzzleGenerator, PuzzleSeed};
-use numelace_solver::TechniqueSolver;
+use numelace_solver::{TechniqueSolver, technique::basic_techniques};
 
 const SEEDS: [&str; 3] = [
     "c1d44bd6afaf8af64f126546884e19298acbdc33c3924a28136715de946ef3f1",
@@ -58,5 +60,25 @@ fn bench_generator_fundamental(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, bench_generator_fundamental);
+fn bench_generator_basic(c: &mut Criterion) {
+    let solver = TechniqueSolver::new(basic_techniques());
+    let generator = PuzzleGenerator::new(&solver);
+
+    for (i, seed) in SEEDS.into_iter().enumerate() {
+        let seed = PuzzleSeed::from_str(seed).unwrap();
+        c.bench_with_input(
+            BenchmarkId::new("generator_basic", format!("seed_{i}")),
+            &seed,
+            |b, seed| {
+                b.iter_batched(
+                    || hint::black_box(*seed),
+                    |seed| generator.generate_with_seed(seed),
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
+}
+
+criterion_group!(benches, bench_generator_fundamental, bench_generator_basic);
 criterion_main!(benches);

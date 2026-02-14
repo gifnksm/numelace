@@ -34,7 +34,10 @@ use std::{hint, str::FromStr as _};
 
 use criterion::{BatchSize, BenchmarkId, Criterion, criterion_group, criterion_main};
 use numelace_core::DigitGrid;
-use numelace_solver::{BacktrackSolver, TechniqueSolver, technique::TechniqueGrid};
+use numelace_solver::{
+    BacktrackSolver, TechniqueSolver,
+    technique::{TechniqueGrid, basic_techniques},
+};
 
 // Problems generated from seed: c1d44bd6afaf8af64f126546884e19298acbdc33c3924a28136715de946ef3f1
 // using PuzzleGenerator with fundamental techniques (NakedSingle + HiddenSingle).
@@ -56,6 +59,12 @@ const DENSE_PROBLEM: &str =
 // solution 81 given
 const SOLUTION: &str =
     "185362947793148526246795183564239871931874265827516394318427659672951438459683712";
+// locked-candidates: 25 given (uses Locked Candidates 3 times)
+// seed: 723b41d8a9fa67daa2622c9ca4137222a39fbbbe9908cc8d2cd544ec0a8f6826
+const LOCKED_CANDIDATES_PROBLEM: &str =
+    "7...134...8...2...63.5.....5..........2..814....3....6.7....61...6...2548.....7..";
+const LOCKED_CANDIDATES_SOLUTION: &str =
+    "729613485485972361631584927597146832362758149148329576273495618916837254854261793";
 
 fn bench_technique_solver_fundamental(c: &mut Criterion) {
     let puzzles = [
@@ -83,6 +92,42 @@ fn bench_technique_solver_fundamental(c: &mut Criterion) {
                     "puzzle should be solvable by fundamental techniques"
                 );
                 assert_eq!(test_grid.to_digit_grid().to_string(), SOLUTION);
+
+                b.iter_batched_ref(
+                    || hint::black_box(grid.clone()),
+                    |grid| solver.solve(grid).unwrap(),
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
+}
+
+fn bench_technique_solver_basic(c: &mut Criterion) {
+    let puzzles = [(
+        "locked_candidates",
+        LOCKED_CANDIDATES_PROBLEM,
+        LOCKED_CANDIDATES_SOLUTION,
+    )];
+
+    let solver = TechniqueSolver::new(basic_techniques());
+
+    for (param, grid, expected_solution) in puzzles {
+        let grid = DigitGrid::from_str(grid).unwrap();
+        let given = grid.iter().filter(|o| o.is_some()).count();
+        let grid = TechniqueGrid::from(grid);
+        c.bench_with_input(
+            BenchmarkId::new("technique_solver_basic", format!("{param}_{given}")),
+            &grid,
+            |b, grid| {
+                // ensure that the puzzle is solvable by basic techniques
+                let mut test_grid = grid.clone();
+                let (puzzle_solved, _stats) = solver.solve(&mut test_grid).unwrap();
+                assert!(
+                    puzzle_solved,
+                    "puzzle should be solvable by basic techniques"
+                );
+                assert_eq!(test_grid.to_digit_grid().to_string(), expected_solution);
 
                 b.iter_batched_ref(
                     || hint::black_box(grid.clone()),
@@ -147,6 +192,7 @@ fn bench_backtrack_solver_fundamental(c: &mut Criterion) {
 criterion_group!(
     benches,
     bench_technique_solver_fundamental,
+    bench_technique_solver_basic,
     bench_backtrack_solver_fundamental,
 );
 criterion_main!(benches);
