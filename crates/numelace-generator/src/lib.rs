@@ -111,7 +111,7 @@ use std::{fmt::Display, str::FromStr};
 use numelace_core::{CandidateGrid, Digit, DigitGrid, Position};
 use numelace_solver::{TechniqueSolver, backtrack, technique::TechniqueGrid};
 use rand::{
-    Rng, SeedableRng,
+    Rng, RngExt as _, SeedableRng,
     distr::{Distribution, StandardUniform},
     seq::SliceRandom,
 };
