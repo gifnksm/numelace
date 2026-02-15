@@ -20,7 +20,10 @@ const NAME: &str = "Hidden Single";
 /// # Examples
 ///
 /// ```
-/// use numelace_solver::technique::{HiddenSingle, Technique, TechniqueGrid};
+/// use numelace_solver::{
+///     TechniqueGrid,
+///     technique::{HiddenSingle, Technique},
+/// };
 ///
 /// let mut grid = TechniqueGrid::new();
 /// let technique = HiddenSingle::new();
@@ -92,15 +95,14 @@ impl Technique for HiddenSingle {
     }
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-        let candidates = &grid.candidates;
-        let decided_cells = candidates.decided_cells();
+        let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
-            let not_decided_digit_positions = candidates.digit_positions(digit) & !decided_cells;
+            let not_decided_digit_positions = grid.digit_positions(digit) & !decided_cells;
             for house in House::ALL {
                 let house_mask = not_decided_digit_positions.house_mask(house);
                 if let Some(x) = house_mask.as_single() {
                     let pos = house.position_from_cell_index(x);
-                    if candidates.would_place_change(pos, digit) {
+                    if grid.would_place_change(pos, digit) {
                         return Ok(Some(Box::new(HiddenSingleStep::new(house, pos, digit))));
                     }
                 }
@@ -111,15 +113,14 @@ impl Technique for HiddenSingle {
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
         let mut changed = false;
-        let candidates = &mut grid.candidates;
-        let decided_cells = candidates.decided_cells();
+        let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
-            let not_decided_digit_positions = candidates.digit_positions(digit) & !decided_cells;
+            let not_decided_digit_positions = grid.digit_positions(digit) & !decided_cells;
             for house in House::ALL {
                 let house_mask = not_decided_digit_positions.house_mask(house);
                 if let Some(i) = house_mask.as_single() {
                     let pos = house.position_from_cell_index(i);
-                    changed |= candidates.place(pos, digit);
+                    changed |= grid.place(pos, digit);
                 }
             }
         }

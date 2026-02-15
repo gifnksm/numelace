@@ -5,7 +5,7 @@
 //! logic used by background tasks.
 
 use numelace_core::CandidateGrid;
-use numelace_solver::{BacktrackSolverStats, technique::TechniqueGrid};
+use numelace_solver::{BacktrackSolverStats, TechniqueGrid};
 use serde::{Deserialize, Serialize};
 
 use crate::worker::tasks::{CandidateGridDtoError, CandidateGridPairDto, CandidateGridPairsDto};

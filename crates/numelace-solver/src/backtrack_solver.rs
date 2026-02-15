@@ -7,8 +7,8 @@
 use numelace_core::{Digit, DigitSet, Position};
 
 use crate::{
-    SolverError, TechniqueSolver, TechniqueSolverStats, backtrack,
-    technique::{BoxedTechnique, TechniqueGrid},
+    SolverError, TechniqueGrid, TechniqueSolver, TechniqueSolverStats, backtrack,
+    technique::BoxedTechnique,
 };
 
 /// Statistics collected during backtracking solving.
@@ -80,7 +80,7 @@ impl BacktrackSolverStats {
 /// # Examples
 ///
 /// ```
-/// use numelace_solver::{BacktrackSolver, technique::TechniqueGrid};
+/// use numelace_solver::{BacktrackSolver, TechniqueGrid};
 ///
 /// let solver = BacktrackSolver::with_all_techniques();
 /// let grid = TechniqueGrid::new();
@@ -98,7 +98,7 @@ impl BacktrackSolverStats {
 /// # Finding Multiple Solutions
 ///
 /// ```
-/// use numelace_solver::{BacktrackSolver, technique::TechniqueGrid};
+/// use numelace_solver::{BacktrackSolver, TechniqueGrid};
 ///
 /// let solver = BacktrackSolver::with_all_techniques();
 /// let grid = TechniqueGrid::new();
@@ -186,7 +186,7 @@ impl BacktrackSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_solver::{BacktrackSolver, technique::TechniqueGrid};
+    /// use numelace_solver::{BacktrackSolver, TechniqueGrid};
     ///
     /// let solver = BacktrackSolver::with_all_techniques();
     /// let grid = TechniqueGrid::new();
@@ -308,7 +308,7 @@ impl Iterator for Solutions<'_> {
             self.stack.push(state);
 
             stats.assumptions.push((pos, digit));
-            grid.candidates_mut().place(pos, digit);
+            grid.place(pos, digit);
             let Ok(solved) = self.solver.solve_by_technique(&mut grid, &mut stats) else {
                 stats.backtrack_count += 1;
                 continue;
@@ -346,7 +346,7 @@ mod tests {
         let mut grid = TechniqueGrid::new();
 
         // Create a naked single
-        grid.candidates_mut().place(Position::new(4, 4), Digit::D5);
+        grid.place(Position::new(4, 4), Digit::D5);
 
         let result = solver.solve(grid);
         assert!(result.is_ok());
@@ -358,7 +358,7 @@ mod tests {
         let mut grid = TechniqueGrid::new();
 
         // Simple setup
-        grid.candidates_mut().place(Position::new(0, 0), Digit::D1);
+        grid.place(Position::new(0, 0), Digit::D1);
 
         let solutions = solver.solve(grid).unwrap();
 
@@ -401,8 +401,7 @@ mod tests {
 
         // Create a contradiction: remove all candidates from a cell
         for digit in Digit::ALL {
-            grid.candidates_mut()
-                .remove_candidate(Position::new(0, 0), digit);
+            grid.remove_candidate(Position::new(0, 0), digit);
         }
 
         let result = solver.solve(grid);
@@ -422,10 +421,7 @@ mod tests {
         // Verify that solutions are different
         let (grid1, _) = &solutions[0];
         let (grid2, _) = &solutions[1];
-        assert_ne!(
-            grid1.candidates().to_digit_grid(),
-            grid2.candidates().to_digit_grid()
-        );
+        assert_ne!(grid1.to_digit_grid(), grid2.to_digit_grid());
     }
 
     #[test]
@@ -448,17 +444,14 @@ mod tests {
             assert!(grid_i.is_solved().unwrap());
 
             // Check that the original placements are preserved
-            let digit_grid_i = grid_i.candidates().to_digit_grid();
+            let digit_grid_i = grid_i.to_digit_grid();
             assert_eq!(digit_grid_i[Position::new(0, 0)], Some(Digit::D1));
             assert_eq!(digit_grid_i[Position::new(1, 1)], Some(Digit::D2));
             assert_eq!(digit_grid_i[Position::new(2, 2)], Some(Digit::D3));
 
             // Verify solutions are distinct
             for (grid_j, _) in &solutions[i + 1..] {
-                assert_ne!(
-                    grid_i.candidates().to_digit_grid(),
-                    grid_j.candidates().to_digit_grid()
-                );
+                assert_ne!(grid_i.to_digit_grid(), grid_j.to_digit_grid());
             }
         }
     }
@@ -525,7 +518,7 @@ mod tests {
 
         // Solution should be complete (all 81 cells filled)
         assert!(solution.is_solved().unwrap());
-        let digit_grid = solution.candidates().to_digit_grid();
+        let digit_grid = solution.to_digit_grid();
         for pos in Position::ALL {
             assert!(digit_grid[pos].is_some());
         }

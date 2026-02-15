@@ -66,7 +66,7 @@
 //! ## Basic Usage
 //!
 //! ```
-//! use numelace_solver::{BacktrackSolver, technique::TechniqueGrid};
+//! use numelace_solver::{BacktrackSolver, TechniqueGrid};
 //!
 //! let solver = BacktrackSolver::with_all_techniques();
 //! let grid = TechniqueGrid::new();
@@ -87,7 +87,7 @@
 //! ## Technique-Only Solving
 //!
 //! ```
-//! use numelace_solver::{TechniqueSolver, technique::TechniqueGrid};
+//! use numelace_solver::{TechniqueGrid, TechniqueSolver};
 //!
 //! let solver = TechniqueSolver::with_all_techniques();
 //! let mut grid = TechniqueGrid::new();
@@ -105,7 +105,7 @@
 //! ## Step-by-Step Solving
 //!
 //! ```
-//! use numelace_solver::{TechniqueSolver, TechniqueSolverStats, technique::TechniqueGrid};
+//! use numelace_solver::{TechniqueGrid, TechniqueSolver, TechniqueSolverStats};
 //!
 //! let solver = TechniqueSolver::with_all_techniques();
 //! let mut grid = TechniqueGrid::new();
@@ -126,7 +126,7 @@
 //! ## Checking for Multiple Solutions
 //!
 //! ```
-//! use numelace_solver::{BacktrackSolver, technique::TechniqueGrid};
+//! use numelace_solver::{BacktrackSolver, TechniqueGrid};
 //!
 //! let solver = BacktrackSolver::with_all_techniques();
 //! let grid = TechniqueGrid::new();
@@ -145,8 +145,8 @@
 //!
 //! ```
 //! use numelace_solver::{
-//!     BacktrackSolver,
-//!     technique::{BoxedTechnique, NakedSingle, TechniqueGrid},
+//!     BacktrackSolver, TechniqueGrid,
+//!     technique::{BoxedTechnique, NakedSingle},
 //! };
 //!
 //! // Use only specific techniques
@@ -177,8 +177,8 @@
 //!
 //! ```
 //! use numelace_solver::{
-//!     SolverError,
-//!     technique::{BoxedTechniqueStep, Technique, TechniqueGrid},
+//!     SolverError, TechniqueGrid,
+//!     technique::{BoxedTechniqueStep, Technique},
 //! };
 //!
 //! #[derive(Debug, Clone)]
@@ -228,12 +228,13 @@
 //!
 //! This typically indicates the input puzzle is invalid or unsolvable.
 
-pub use self::{backtrack_solver::*, error::*, technique_solver::*};
+pub use self::{backtrack_solver::*, error::*, technique_grid::*, technique_solver::*};
 
 pub mod backtrack;
 mod backtrack_solver;
 mod error;
 pub mod technique;
+mod technique_grid;
 mod technique_solver;
 
 #[cfg(test)]

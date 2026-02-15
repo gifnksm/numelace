@@ -24,7 +24,7 @@
 //! # Examples
 //!
 //! ```
-//! use numelace_solver::{backtrack, technique::TechniqueGrid};
+//! use numelace_solver::{TechniqueGrid, backtrack};
 //!
 //! let mut grid = TechniqueGrid::new();
 //! // ... apply some constraints ...
@@ -37,7 +37,7 @@
 
 use numelace_core::{DigitSet, Position};
 
-use crate::technique::TechniqueGrid;
+use crate::TechniqueGrid;
 
 /// Finds the best cell to make an assumption for.
 ///
@@ -64,13 +64,13 @@ use crate::technique::TechniqueGrid;
 ///
 /// ```
 /// use numelace_core::{Digit, Position};
-/// use numelace_solver::{backtrack, technique::TechniqueGrid};
+/// use numelace_solver::{TechniqueGrid, backtrack};
 ///
 /// let mut grid = TechniqueGrid::new();
 ///
 /// // Place some digits to create a partially filled grid
-/// grid.candidates_mut().place(Position::new(0, 0), Digit::D1);
-/// grid.candidates_mut().place(Position::new(1, 0), Digit::D2);
+/// grid.place(Position::new(0, 0), Digit::D1);
+/// grid.place(Position::new(1, 0), Digit::D2);
 ///
 /// // Find the best cell to try next
 /// let (pos, candidates) = backtrack::find_best_assumption(&grid);
@@ -82,12 +82,12 @@ use crate::technique::TechniqueGrid;
 pub fn find_best_assumption(grid: &TechniqueGrid) -> (Position, DigitSet) {
     // classify_cells::<10> groups cells by candidate count (0-9)
     // [0]: 0 candidates (contradiction), [1]: 1 candidate (decided), [2..]: 2-9 candidates
-    let [empty, decided, cells @ ..] = grid.candidates().classify_cells::<10>();
+    let [empty, decided, cells @ ..] = grid.classify_cells::<10>();
     assert!(empty.is_empty() && decided.len() < 81);
 
     // Pick the first undecided cell with minimum candidates
     let pos = cells.iter().find_map(|cells| cells.first()).unwrap();
-    (pos, grid.candidates().candidates_at(pos))
+    (pos, grid.candidates_at(pos))
 }
 
 #[cfg(test)]
@@ -210,7 +210,7 @@ mod tests {
         let (pos, candidates) = find_best_assumption(&grid);
 
         // Verify that returned candidates are actually valid for the position
-        let actual_candidates = grid.candidates().candidates_at(pos);
+        let actual_candidates = grid.candidates_at(pos);
         assert_eq!(candidates, actual_candidates);
         assert!(!candidates.is_empty());
     }

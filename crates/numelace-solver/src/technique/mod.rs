@@ -5,14 +5,12 @@
 
 use std::fmt::Debug;
 
-use numelace_core::{
-    CandidateGrid, ConsistencyError, Digit, DigitGrid, DigitPositions, DigitSet, Position,
-};
+use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 
 pub use self::{
     hidden_single::HiddenSingle, locked_candidates::LockedCandidates, naked_single::NakedSingle,
 };
-use crate::SolverError;
+use crate::{SolverError, TechniqueGrid};
 
 mod hidden_single;
 mod locked_candidates;
@@ -44,104 +42,6 @@ pub fn basic_techniques() -> Vec<BoxedTechnique> {
     let mut techniques = fundamental_techniques();
     techniques.push(Box::new(LockedCandidates::new()));
     techniques
-}
-
-/// Solver state for technique-based solving.
-///
-/// This is a lightweight wrapper around a [`CandidateGrid`] with technique
-/// solver bookkeeping.
-#[derive(Debug, Clone)]
-pub struct TechniqueGrid {
-    /// Underlying candidate state.
-    candidates: CandidateGrid,
-    /// Decided cells that have already had their peer eliminations applied.
-    decided_propagated: DigitPositions,
-}
-
-impl From<DigitGrid> for TechniqueGrid {
-    fn from(grid: DigitGrid) -> Self {
-        CandidateGrid::from(grid).into()
-    }
-}
-
-impl From<CandidateGrid> for TechniqueGrid {
-    fn from(candidates: CandidateGrid) -> Self {
-        Self {
-            candidates,
-            decided_propagated: DigitPositions::EMPTY,
-        }
-    }
-}
-
-impl Default for TechniqueGrid {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl TechniqueGrid {
-    /// Creates an empty technique grid with all candidates available.
-    #[inline]
-    #[must_use]
-    pub fn new() -> Self {
-        Self::from(CandidateGrid::new())
-    }
-
-    /// Builds a technique grid from a digit grid.
-    #[inline]
-    #[must_use]
-    pub fn from_digit_grid(grid: &DigitGrid) -> Self {
-        Self::from(CandidateGrid::from_digit_grid(grid))
-    }
-
-    /// Returns the underlying candidate grid.
-    #[inline]
-    #[must_use]
-    pub fn candidates(&self) -> &CandidateGrid {
-        &self.candidates
-    }
-
-    /// Returns a mutable reference to the underlying candidate grid.
-    #[inline]
-    #[must_use]
-    pub fn candidates_mut(&mut self) -> &mut CandidateGrid {
-        &mut self.candidates
-    }
-
-    /// Consumes the wrapper and returns the underlying candidate grid.
-    #[inline]
-    #[must_use]
-    pub fn into_candidates(self) -> CandidateGrid {
-        self.candidates
-    }
-
-    /// Returns a digit grid containing only decided cells.
-    #[inline]
-    #[must_use]
-    pub fn to_digit_grid(&self) -> DigitGrid {
-        self.candidates.to_digit_grid()
-    }
-
-    /// Checks whether the candidate grid is consistent.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ConsistencyError`] if the grid contains contradictions.
-    #[inline]
-    pub fn check_consistency(&self) -> Result<(), ConsistencyError> {
-        self.candidates.check_consistency()
-    }
-
-    /// Returns whether the candidate grid is fully solved.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ConsistencyError`] if the grid contains contradictions.
-    #[inline]
-    pub fn is_solved(&self) -> Result<bool, ConsistencyError> {
-        self.candidates.is_solved()
-    }
 }
 
 /// A trait representing a Sudoku solving technique.

@@ -1,8 +1,8 @@
 use numelace_core::{ConsistencyError, Position};
 use numelace_game::{CellState, Game};
 use numelace_solver::{
-    SolverError, TechniqueSolver,
-    technique::{BoxedTechniqueStep, NakedSingle, TechniqueGrid},
+    SolverError, TechniqueGrid, TechniqueSolver,
+    technique::{BoxedTechniqueStep, NakedSingle},
 };
 
 use crate::{

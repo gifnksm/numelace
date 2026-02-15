@@ -13,8 +13,9 @@ use std::hint;
 
 use criterion::{BatchSize, BenchmarkId, Criterion, criterion_group, criterion_main};
 use numelace_core::{CandidateGrid, Digit, Position};
-use numelace_solver::technique::{
-    HiddenSingle, LockedCandidates, NakedSingle, Technique as _, TechniqueGrid,
+use numelace_solver::{
+    TechniqueGrid,
+    technique::{HiddenSingle, LockedCandidates, NakedSingle, Technique as _},
 };
 
 fn naked_single_grid() -> TechniqueGrid {

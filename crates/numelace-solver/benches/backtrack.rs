@@ -28,8 +28,8 @@ use std::{hint, str::FromStr as _};
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use numelace_core::{CandidateGrid, DigitGrid};
 use numelace_solver::{
-    backtrack,
-    technique::{NakedSingle, Technique as _, TechniqueGrid},
+    TechniqueGrid, backtrack,
+    technique::{NakedSingle, Technique as _},
 };
 
 // Problems generated from seed: c1d44bd6afaf8af64f126546884e19298acbdc33c3924a28136715de946ef3f1

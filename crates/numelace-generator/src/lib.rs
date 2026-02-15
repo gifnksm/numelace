@@ -109,7 +109,7 @@
 use std::{fmt::Display, str::FromStr};
 
 use numelace_core::{CandidateGrid, Digit, DigitGrid, Position};
-use numelace_solver::{TechniqueSolver, backtrack, technique::TechniqueGrid};
+use numelace_solver::{TechniqueGrid, TechniqueSolver, backtrack};
 use rand::{
     Rng, RngExt as _, SeedableRng,
     distr::{Distribution, StandardUniform},
@@ -250,7 +250,7 @@ impl<'a> PuzzleGenerator<'a> {
             // Pick a random candidate digit and try it
             let digit = digits.pop_nth(rng.random_range(0..digits.len())).unwrap();
             stack.push((grid.clone(), (pos, digits)));
-            grid.candidates_mut().place(pos, digit);
+            grid.place(pos, digit);
             // Use the solver to fill in cells that can be determined logically
             let Ok((solved, _)) = self.solver.solve(&mut grid) else {
                 continue; // Contradiction found, backtrack

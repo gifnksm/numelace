@@ -25,7 +25,10 @@ const NAME: &str = "Naked Single";
 /// # Examples
 ///
 /// ```
-/// use numelace_solver::technique::{NakedSingle, Technique, TechniqueGrid};
+/// use numelace_solver::{
+///     TechniqueGrid,
+///     technique::{NakedSingle, Technique},
+/// };
 ///
 /// let mut grid = TechniqueGrid::new();
 /// let technique = NakedSingle::new();
@@ -50,12 +53,11 @@ impl NakedSingle {
     /// when no candidate elimination would occur in peers.
     #[must_use]
     pub fn build_step(grid: &TechniqueGrid, pos: Position) -> Option<BoxedTechniqueStep> {
-        let candidates = &grid.candidates;
-        let digit = candidates.candidates_at(pos).as_single()?;
+        let digit = grid.candidates_at(pos).as_single()?;
         let mut affected_pos = (DigitPositions::ROW_POSITIONS[pos.y()]
             | DigitPositions::COLUMN_POSITIONS[pos.x()]
             | DigitPositions::BOX_POSITIONS[pos.box_index()])
-            & candidates.digit_positions(digit);
+            & grid.digit_positions(digit);
         affected_pos.remove(pos);
         Some(Box::new(NakedSingleStep::new(pos, digit, affected_pos)))
     }
@@ -122,18 +124,17 @@ impl Technique for NakedSingle {
     }
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-        let candidates = &grid.candidates;
-        let decided_cells = candidates.decided_cells();
+        let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
             let decided_digit_positions =
-                candidates.digit_positions(digit) & decided_cells & !grid.decided_propagated;
+                grid.digit_positions(digit) & decided_cells & !grid.decided_propagated();
             for pos in decided_digit_positions {
                 let mut affected_pos = (DigitPositions::ROW_POSITIONS[pos.y()]
                     | DigitPositions::COLUMN_POSITIONS[pos.x()]
                     | DigitPositions::BOX_POSITIONS[pos.box_index()])
-                    & candidates.digit_positions(digit);
+                    & grid.digit_positions(digit);
                 affected_pos.remove(pos);
-                if candidates.would_remove_candidate_with_mask_change(affected_pos, digit) {
+                if grid.would_remove_candidate_with_mask_change(affected_pos, digit) {
                     return Ok(Some(Box::new(NakedSingleStep::new(
                         pos,
                         digit,
@@ -148,18 +149,17 @@ impl Technique for NakedSingle {
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
         let mut changed = false;
 
-        let candidates = &mut grid.candidates;
-        let decided_cells = candidates.decided_cells();
+        let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
             let decided_digit_positions =
-                candidates.digit_positions(digit) & decided_cells & !grid.decided_propagated;
+                grid.digit_positions(digit) & decided_cells & !grid.decided_propagated();
             for pos in decided_digit_positions {
                 let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.y()]
                     | DigitPositions::COLUMN_POSITIONS[pos.x()]
                     | DigitPositions::BOX_POSITIONS[pos.box_index()];
                 affected_pos.remove(pos);
-                grid.decided_propagated.insert(pos);
-                changed |= candidates.remove_candidate_with_mask(affected_pos, digit);
+                grid.insert_decided_propagated(pos);
+                changed |= grid.remove_candidate_with_mask(affected_pos, digit);
             }
         }
 

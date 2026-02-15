@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
-    SolverError,
-    technique::{self, BoxedTechnique, BoxedTechniqueStep, TechniqueGrid},
+    SolverError, TechniqueGrid,
+    technique::{self, BoxedTechnique, BoxedTechniqueStep},
 };
 
 /// Statistics collected during technique-based solving.
@@ -14,8 +14,8 @@ use crate::{
 ///
 /// ```
 /// use numelace_solver::{
-///     TechniqueSolver, TechniqueSolverStats,
-///     technique::{NakedSingle, Technique as _, TechniqueGrid},
+///     TechniqueGrid, TechniqueSolver, TechniqueSolverStats,
+///     technique::{NakedSingle, Technique as _},
 /// };
 ///
 /// let solver = TechniqueSolver::with_all_techniques();
@@ -100,7 +100,7 @@ impl TechniqueSolverStats {
 /// # Examples
 ///
 /// ```
-/// use numelace_solver::{TechniqueSolver, technique::TechniqueGrid};
+/// use numelace_solver::{TechniqueGrid, TechniqueSolver};
 ///
 /// let solver = TechniqueSolver::with_all_techniques();
 /// let mut grid = TechniqueGrid::new();
@@ -118,7 +118,7 @@ impl TechniqueSolverStats {
 /// # Step-by-step solving
 ///
 /// ```
-/// use numelace_solver::{TechniqueSolver, TechniqueSolverStats, technique::TechniqueGrid};
+/// use numelace_solver::{TechniqueGrid, TechniqueSolver, TechniqueSolverStats};
 ///
 /// let solver = TechniqueSolver::with_all_techniques();
 /// let mut grid = TechniqueGrid::new();
@@ -231,7 +231,7 @@ impl TechniqueSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_solver::{TechniqueSolver, TechniqueSolverStats, technique::TechniqueGrid};
+    /// use numelace_solver::{TechniqueGrid, TechniqueSolver, TechniqueSolverStats};
     ///
     /// let solver = TechniqueSolver::with_all_techniques();
     /// let mut grid = TechniqueGrid::new();
@@ -306,7 +306,7 @@ impl TechniqueSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_solver::{TechniqueSolver, technique::TechniqueGrid};
+    /// use numelace_solver::{TechniqueGrid, TechniqueSolver};
     ///
     /// let solver = TechniqueSolver::with_all_techniques();
     /// let mut grid = TechniqueGrid::new();
@@ -356,7 +356,7 @@ impl TechniqueSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_solver::{TechniqueSolver, TechniqueSolverStats, technique::TechniqueGrid};
+    /// use numelace_solver::{TechniqueGrid, TechniqueSolver, TechniqueSolverStats};
     ///
     /// let solver = TechniqueSolver::with_all_techniques();
     /// let mut grid = TechniqueGrid::new();
@@ -417,8 +417,7 @@ mod tests {
         // Create a naked single: only D5 at (4, 4)
         for digit in Digit::ALL {
             if digit != Digit::D5 {
-                grid.candidates_mut()
-                    .remove_candidate(Position::new(4, 4), digit);
+                grid.remove_candidate(Position::new(4, 4), digit);
             }
         }
 
@@ -438,8 +437,7 @@ mod tests {
         // Create a naked single
         for digit in Digit::ALL {
             if digit != Digit::D5 {
-                grid.candidates_mut()
-                    .remove_candidate(Position::new(4, 4), digit);
+                grid.remove_candidate(Position::new(4, 4), digit);
             }
         }
 
@@ -472,8 +470,7 @@ mod tests {
         // Create a naked single at (0, 0) - only D1 remains
         for digit in Digit::ALL {
             if digit != Digit::D1 {
-                grid.candidates_mut()
-                    .remove_candidate(Position::new(0, 0), digit);
+                grid.remove_candidate(Position::new(0, 0), digit);
             }
         }
 
@@ -505,8 +502,7 @@ mod tests {
         // Create a naked single at (0, 0) - only D1 remains
         for digit in Digit::ALL {
             if digit != Digit::D1 {
-                grid.candidates_mut()
-                    .remove_candidate(Position::new(0, 0), digit);
+                grid.remove_candidate(Position::new(0, 0), digit);
             }
         }
 
@@ -592,8 +588,7 @@ mod tests {
         // Create a naked single that hasn't been placed yet
         for digit in Digit::ALL {
             if digit != Digit::D5 {
-                grid.candidates_mut()
-                    .remove_candidate(Position::new(4, 4), digit);
+                grid.remove_candidate(Position::new(4, 4), digit);
             }
         }
 
@@ -613,9 +608,7 @@ mod tests {
         // First solve - create naked single
         for digit in Digit::ALL {
             if digit != Digit::D1 {
-                grid1
-                    .candidates_mut()
-                    .remove_candidate(Position::new(0, 0), digit);
+                grid1.remove_candidate(Position::new(0, 0), digit);
             }
         }
         let _ = solver.solve_with_stats(&mut grid1, &mut stats);
@@ -624,9 +617,7 @@ mod tests {
         // Second solve accumulates - create another naked single
         for digit in Digit::ALL {
             if digit != Digit::D2 {
-                grid2
-                    .candidates_mut()
-                    .remove_candidate(Position::new(1, 1), digit);
+                grid2.remove_candidate(Position::new(1, 1), digit);
             }
         }
         let _ = solver.solve_with_stats(&mut grid2, &mut stats);

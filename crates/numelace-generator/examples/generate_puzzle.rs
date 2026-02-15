@@ -41,10 +41,7 @@ use std::process;
 
 use clap::{Parser, ValueEnum};
 use numelace_generator::{GeneratedPuzzle, PuzzleGenerator};
-use numelace_solver::{
-    TechniqueSolver, TechniqueSolverStats,
-    technique::{self, TechniqueGrid},
-};
+use numelace_solver::{TechniqueGrid, TechniqueSolver, TechniqueSolverStats, technique};
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum SolverKind {

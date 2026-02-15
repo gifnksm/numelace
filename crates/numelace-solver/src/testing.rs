@@ -36,7 +36,10 @@ use std::str::FromStr as _;
 
 use numelace_core::{Digit, DigitGrid, DigitSet, Position};
 
-use crate::technique::{BoxedTechniqueStep, Technique, TechniqueApplication, TechniqueGrid};
+use crate::{
+    TechniqueGrid,
+    technique::{BoxedTechniqueStep, Technique, TechniqueApplication},
+};
 
 /// A test harness for verifying technique implementations.
 ///
@@ -219,8 +222,8 @@ impl TechniqueTester {
     #[track_caller]
     fn assert_candidates_unchanged(before: &TechniqueGrid, after: &TechniqueGrid) {
         for digit in Digit::ALL {
-            let before_positions = before.candidates().digit_positions(digit);
-            let after_positions = after.candidates().digit_positions(digit);
+            let before_positions = before.digit_positions(digit);
+            let after_positions = after.digit_positions(digit);
             assert_eq!(
                 before_positions, after_positions,
                 "Expected candidates to remain unchanged for {digit:?}"
@@ -238,7 +241,7 @@ impl TechniqueTester {
         for application in step.application() {
             match application {
                 TechniqueApplication::Placement { position, digit } => {
-                    let candidates = after.candidates().candidates_at(position);
+                    let candidates = after.candidates_at(position);
                     assert_eq!(
                         candidates.len(),
                         1,
@@ -251,8 +254,8 @@ impl TechniqueTester {
                 }
                 TechniqueApplication::CandidateElimination { positions, digits } => {
                     for pos in positions {
-                        let before_candidates = before.candidates().candidates_at(pos);
-                        let after_candidates = after.candidates().candidates_at(pos);
+                        let before_candidates = before.candidates_at(pos);
+                        let after_candidates = after.candidates_at(pos);
                         for digit in digits {
                             if before_candidates.contains(digit) {
                                 assert!(
@@ -279,8 +282,8 @@ impl TechniqueTester {
     /// Panics if the cell was not placed as expected.
     #[track_caller]
     pub fn assert_placed(self, pos: Position, digit: Digit) -> Self {
-        let initial = self.initial.candidates().candidates_at(pos);
-        let current = self.current.candidates().candidates_at(pos);
+        let initial = self.initial.candidates_at(pos);
+        let current = self.current.candidates_at(pos);
 
         assert!(
             initial.len() > 1,
@@ -319,8 +322,8 @@ impl TechniqueTester {
         C: IntoIterator<Item = Digit>,
     {
         let digits = DigitSet::from_iter(digits);
-        let initial = self.initial.candidates().candidates_at(pos);
-        let current = self.current.candidates().candidates_at(pos);
+        let initial = self.initial.candidates_at(pos);
+        let current = self.current.candidates_at(pos);
         assert_eq!(
             initial & digits,
             digits,
@@ -348,8 +351,8 @@ impl TechniqueTester {
         C: IntoIterator<Item = Digit>,
     {
         let digits = DigitSet::from_iter(digits);
-        let initial = self.initial.candidates().candidates_at(pos);
-        let current = self.current.candidates().candidates_at(pos);
+        let initial = self.initial.candidates_at(pos);
+        let current = self.current.candidates_at(pos);
         let removed = initial.difference(current);
         assert_eq!(
             removed, digits,
@@ -365,8 +368,8 @@ impl TechniqueTester {
     /// Panics if the cell's candidates differ from the initial state.
     #[track_caller]
     pub fn assert_no_change(self, pos: Position) -> Self {
-        let initial = self.initial.candidates().candidates_at(pos);
-        let current = self.current.candidates().candidates_at(pos);
+        let initial = self.initial.candidates_at(pos);
+        let current = self.current.candidates_at(pos);
         assert_eq!(
             initial, current,
             "Expected no change at {pos:?}, but candidates changed from {initial:?} to {current:?}"
@@ -382,9 +385,7 @@ mod tests {
     use super::*;
     use crate::{
         SolverError,
-        technique::{
-            BoxedTechnique, BoxedTechniqueStep, TechniqueApplication, TechniqueGrid, TechniqueStep,
-        },
+        technique::{BoxedTechnique, BoxedTechniqueStep, TechniqueApplication, TechniqueStep},
     };
 
     // Mock technique for testing that always returns false (no change)
@@ -461,7 +462,7 @@ mod tests {
             grid: &TechniqueGrid,
         ) -> Result<Option<BoxedTechniqueStep>, SolverError> {
             let pos = Position::new(0, 0);
-            let candidates = grid.candidates().candidates_at(pos);
+            let candidates = grid.candidates_at(pos);
             if candidates.len() == 1 {
                 Ok(None)
             } else {
@@ -471,11 +472,11 @@ mod tests {
 
         fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
             let pos = Position::new(0, 0);
-            let candidates = grid.candidates().candidates_at(pos);
+            let candidates = grid.candidates_at(pos);
             if candidates.len() == 1 {
                 Ok(false)
             } else {
-                grid.candidates_mut().place(pos, Digit::D1);
+                grid.place(pos, Digit::D1);
                 Ok(true)
             }
         }
