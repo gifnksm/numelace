@@ -5,6 +5,8 @@
 //!
 //! [`BitSet81`]: crate::containers::BitSet81
 
+use crate::Position;
+
 /// A bit index in the range 0-80.
 ///
 /// This type represents a valid index into an 81-element container (such as an 81-bit bitset
@@ -157,17 +159,17 @@ pub trait Index81Semantics {
 pub struct PositionSemantics;
 
 impl Index81Semantics for PositionSemantics {
-    type Value = crate::Position;
+    type Value = Position;
 
     #[inline]
     fn to_index(value: Self::Value) -> Index81 {
-        Index81::new(value.y() * 9 + value.x())
+        Index81::new(value.index())
     }
 
     #[inline]
     fn from_index(index: Index81) -> Self::Value {
-        let i = index.index();
-        Self::Value::new(i % 9, i / 9)
+        let index = index.index();
+        Self::Value::from_index(index)
     }
 }
 

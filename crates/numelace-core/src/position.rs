@@ -7,8 +7,7 @@ use crate::{DigitPositions, containers::Array9, index::CellIndexSemantics};
 /// Both coordinates are in the range 0-8.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Position {
-    x: u8,
-    y: u8,
+    index: u8,
 }
 
 impl PartialOrd for Position {
@@ -21,7 +20,7 @@ impl Ord for Position {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         // Compare by index order: y * 9 + x
         // This ensures ordering matches PositionSemantics::to_index
-        (self.y * 9 + self.x).cmp(&(other.y * 9 + other.x))
+        (self.index).cmp(&(other.index))
     }
 }
 
@@ -34,6 +33,9 @@ pub enum PositionNewError {
     /// The y coordinate is outside the valid range (0-8).
     #[display("invalid y value: {_0}")]
     InvalidYValue(#[error(not(source))] u8),
+    /// The index value is outside the valid range (0-80).
+    #[display("invalid index value: {_0}")]
+    InvalidIndex(#[error(not(source))] u8),
 }
 
 impl Position {
@@ -158,7 +160,7 @@ impl Position {
     #[inline]
     pub const fn new(x: u8, y: u8) -> Self {
         assert!(x < 9 && y < 9);
-        Self { x, y }
+        Self { index: x + y * 9 }
     }
 
     /// Attempts to create a new position from column and row coordinates.
@@ -175,7 +177,32 @@ impl Position {
         if y >= 9 {
             return Err(PositionNewError::InvalidYValue(y));
         }
-        Ok(Self { x, y })
+        Ok(Self { index: x + y * 9 })
+    }
+
+    /// Creates a new position from a single index (0-80).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index` is greater than or equal to 81.
+    #[must_use]
+    #[inline]
+    pub const fn from_index(index: u8) -> Self {
+        assert!(index < 81);
+        Self { index }
+    }
+
+    /// Attempts to create a new position from a single index (0-80).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`PositionNewError::InvalidIndex`] if `index` is greater than or equal to 81.
+    #[inline]
+    pub const fn try_from_index(index: u8) -> Result<Self, PositionNewError> {
+        if index >= 81 {
+            return Err(PositionNewError::InvalidIndex(index));
+        }
+        Ok(Self { index })
     }
 
     /// Returns a new position with the given column (x), preserving the row (y).
@@ -228,8 +255,8 @@ impl Position {
     /// ```
     #[must_use]
     pub const fn up(self) -> Option<Self> {
-        if self.y > 0 {
-            Some(self.with_y(self.y - 1))
+        if self.y() > 0 {
+            Some(self.with_y(self.y() - 1))
         } else {
             None
         }
@@ -247,8 +274,8 @@ impl Position {
     /// ```
     #[must_use]
     pub const fn down(self) -> Option<Self> {
-        if self.y < 8 {
-            Some(self.with_y(self.y + 1))
+        if self.y() < 8 {
+            Some(self.with_y(self.y() + 1))
         } else {
             None
         }
@@ -266,8 +293,8 @@ impl Position {
     /// ```
     #[must_use]
     pub const fn left(self) -> Option<Self> {
-        if self.x > 0 {
-            Some(self.with_x(self.x - 1))
+        if self.x() > 0 {
+            Some(self.with_x(self.x() - 1))
         } else {
             None
         }
@@ -285,8 +312,8 @@ impl Position {
     /// ```
     #[must_use]
     pub const fn right(self) -> Option<Self> {
-        if self.x < 8 {
-            Some(self.with_x(self.x + 1))
+        if self.x() < 8 {
+            Some(self.with_x(self.x() + 1))
         } else {
             None
         }
@@ -302,35 +329,42 @@ impl Position {
     pub const fn from_box(box_index: u8, cell_index: u8) -> Self {
         assert!(box_index < 9 && cell_index < 9);
         let origin = Self::box_origin(box_index);
-        Self::new(origin.x + cell_index % 3, origin.y + cell_index / 3)
+        Self::new(origin.x() + cell_index % 3, origin.y() + cell_index / 3)
+    }
+
+    /// Returns the index (0-80) of this position, where index = y * 9 + x.
+    #[must_use]
+    #[inline]
+    pub const fn index(self) -> u8 {
+        self.index
     }
 
     /// Returns the column (x coordinate) of this position.
     #[must_use]
     #[inline]
     pub const fn x(self) -> u8 {
-        self.x
+        self.index % 9
     }
 
     /// Returns the row (y coordinate) of this position.
     #[must_use]
     #[inline]
     pub const fn y(self) -> u8 {
-        self.y
+        self.index / 9
     }
 
     /// Returns the box index (0-8) that this position belongs to.
     #[must_use]
     #[inline]
     pub const fn box_index(&self) -> u8 {
-        (self.y / 3) * 3 + (self.x / 3)
+        (self.y() / 3) * 3 + (self.x() / 3)
     }
 
     /// Returns the relative position (0-8) within the box.
     #[must_use]
     #[inline]
     pub const fn box_cell_index(&self) -> u8 {
-        (self.y % 3) * 3 + (self.x % 3)
+        (self.y() % 3) * 3 + (self.x() % 3)
     }
 
     /// Returns the top-left position (origin) of the specified box.
@@ -441,6 +475,34 @@ mod tests {
             Position::try_new(0, 9).unwrap_err(),
             PositionNewError::InvalidYValue(9)
         ));
+    }
+
+    #[test]
+    fn test_from_index_roundtrip() {
+        assert_eq!(Position::from_index(0), Position::new(0, 0));
+        assert_eq!(Position::from_index(40), Position::new(4, 4));
+        assert_eq!(Position::from_index(80), Position::new(8, 8));
+
+        for pos in Position::ALL {
+            assert_eq!(Position::from_index(pos.index()), pos);
+            assert_eq!(pos.index(), pos.y() * 9 + pos.x());
+        }
+    }
+
+    #[test]
+    fn test_try_from_index() {
+        assert_eq!(Position::try_from_index(0).unwrap(), Position::new(0, 0));
+        assert_eq!(Position::try_from_index(80).unwrap(), Position::new(8, 8));
+        assert!(matches!(
+            Position::try_from_index(81).unwrap_err(),
+            PositionNewError::InvalidIndex(81)
+        ));
+    }
+
+    #[test]
+    #[should_panic(expected = "assertion failed")]
+    fn test_from_index_invalid() {
+        let _ = Position::from_index(81);
     }
 
     #[test]
