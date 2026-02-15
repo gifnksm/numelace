@@ -298,16 +298,19 @@ impl Default for CandidateGrid {
 /// This error indicates that the grid violates Sudoku constraints:
 /// - At least one cell has no remaining candidates (empty cell), or
 /// - Duplicate decided digits (cells with exactly one candidate) exist in the same row, column, or box
+/// - Candidate constraints violate Sudoku rules even without empty cells or duplicate decided digits
 ///
 /// An inconsistent grid cannot be solved and typically results from
 /// incorrect placements or contradictory constraints.
 ///
-/// This error distinguishes between two types of inconsistencies that can occur in a candidate grid:
+/// This error distinguishes between three types of inconsistencies that can occur in a candidate grid:
 /// - [`NoCandidates`]: A cell has no remaining candidates, making it impossible to place a digit
 /// - [`DuplicatedDecidedDigits`]: Multiple cells in the same row, column, or box have the same decided digit
+/// - [`CandidateConstraintViolation`]: Candidate constraints violate Sudoku rules
 ///
 /// [`NoCandidates`]: ConsistencyError::NoCandidates
 /// [`DuplicatedDecidedDigits`]: ConsistencyError::DuplicatedDecidedDigits
+/// [`CandidateConstraintViolation`]: ConsistencyError::CandidateConstraintViolation
 ///
 /// # Examples
 ///
@@ -339,6 +342,12 @@ pub enum ConsistencyError {
     /// violating Sudoku rules.
     #[display("candidate grid has duplicated decided digits")]
     DuplicatedDecidedDigits,
+    /// Candidate constraints violate Sudoku rules.
+    ///
+    /// This occurs when candidate distributions imply an impossible state without
+    /// necessarily creating empty cells or duplicate decided digits.
+    #[display("candidate grid violates candidate constraints")]
+    CandidateConstraintViolation,
 }
 
 impl CandidateGrid {
@@ -450,6 +459,16 @@ impl CandidateGrid {
     #[inline]
     pub fn remove_candidate(&mut self, pos: Position, digit: Digit) -> bool {
         self.digit_positions[digit].remove(pos)
+    }
+
+    /// Returns `true` if removing the candidate would change the grid.
+    ///
+    /// This mirrors the change detection behavior of [`remove_candidate`](Self::remove_candidate)
+    /// without mutating the grid, which is useful for hint generation.
+    #[must_use]
+    #[inline]
+    pub fn would_remove_candidate_change(&self, pos: Position, digit: Digit) -> bool {
+        self.digit_positions[digit].contains(pos)
     }
 
     /// Removes a candidate digit from all positions specified by a mask.

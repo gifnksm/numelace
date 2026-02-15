@@ -1,4 +1,4 @@
-use numelace_core::{DigitPositions, DigitSet, House};
+use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
 use crate::{
     SolverError, TechniqueGrid,
@@ -112,10 +112,12 @@ impl Technique for NakedPair {
             let mut remaining_pair_cells = pair_in_house;
             while let Some(pos1) = remaining_pair_cells.pop_first() {
                 let pair_digits = grid.candidates_at(pos1);
-                let mut matching_pair_cells = pair_in_house;
-                matching_pair_cells.remove(pos1);
+                let mut matching_pair_cells = remaining_pair_cells;
                 for d in pair_digits {
                     matching_pair_cells &= grid.digit_positions(d);
+                }
+                if matching_pair_cells.len() > 1 {
+                    return Err(ConsistencyError::CandidateConstraintViolation.into());
                 }
                 let Some(pos2) = matching_pair_cells.as_single() else {
                     continue;
@@ -153,10 +155,12 @@ impl Technique for NakedPair {
             let mut remaining_pair_cells = pair_in_house;
             while let Some(pos1) = remaining_pair_cells.pop_first() {
                 let pair_digits = grid.candidates_at(pos1);
-                let mut matching_pair_cells = pair_in_house;
-                matching_pair_cells.remove(pos1);
+                let mut matching_pair_cells = remaining_pair_cells;
                 for d in pair_digits {
                     matching_pair_cells &= grid.digit_positions(d);
+                }
+                if matching_pair_cells.len() > 1 {
+                    return Err(ConsistencyError::CandidateConstraintViolation.into());
                 }
                 let Some(pos2) = matching_pair_cells.as_single() else {
                     continue;
@@ -176,10 +180,10 @@ impl Technique for NakedPair {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{CandidateGrid, Digit, Position};
+    use numelace_core::{CandidateGrid, ConsistencyError, Digit, Position};
 
     use super::*;
-    use crate::testing::TechniqueTester;
+    use crate::{SolverError, TechniqueGrid, testing::TechniqueTester};
 
     #[test]
     fn test_eliminates_pair_candidates_in_row() {
@@ -244,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    fn test_no_change_when_three_cells_share_pair_candidates() {
+    fn test_inconsistent_when_three_cells_share_pair_candidates() {
         let mut grid = CandidateGrid::new();
         let pos1 = Position::new(0, 0);
         let pos2 = Position::new(3, 0);
@@ -258,9 +262,13 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_once(&NakedPair::new())
-            .assert_no_change(Position::new(4, 0))
-            .assert_no_change(Position::new(0, 1));
+        let mut grid = TechniqueGrid::from(grid);
+        let result = NakedPair::new().apply(&mut grid);
+        assert!(matches!(
+            result,
+            Err(SolverError::Inconsistent(
+                ConsistencyError::CandidateConstraintViolation
+            ))
+        ));
     }
 }

@@ -125,6 +125,15 @@ impl TechniqueGrid {
         self.candidates.remove_candidate(pos, digit)
     }
 
+    /// Returns `true` if removing the candidate would change the grid.
+    ///
+    /// This mirrors [`CandidateGrid::would_remove_candidate_change`].
+    #[inline]
+    #[must_use]
+    pub fn would_remove_candidate_change(&self, pos: Position, digit: Digit) -> bool {
+        self.candidates.would_remove_candidate_change(pos, digit)
+    }
+
     /// Removes a candidate digit from all positions specified by a mask.
     ///
     /// Returns `true` if any candidate was removed.
@@ -238,8 +247,7 @@ impl TechniqueGrid {
 
     /// Classifies all grid positions by candidate count.
     ///
-    /// This mirrors [`CandidateGrid::classify_cells`] and is useful for
-    /// heuristics such as choosing an assumption.
+    /// This mirrors [`CandidateGrid::classify_cells`].
     #[inline]
     #[must_use]
     pub fn classify_cells<const N: usize>(&self) -> [DigitPositions; N] {

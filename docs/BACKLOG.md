@@ -23,8 +23,8 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] Tier 0 (fundamental): Hidden Single
   - [X] Tier 1 (basic): Locked Candidates (Pointing)
   - [X] Tier 1 (basic): Locked Candidates (Claiming)
-  - [ ] Tier 2 (intermediate): Naked Pair
-  - [ ] Tier 2 (intermediate): Hidden Pair
+  - [X] Tier 2 (intermediate): Naked Pair
+  - [X] Tier 2 (intermediate): Hidden Pair
   - [ ] Tier 2 (intermediate): Naked Triple
   - [ ] Tier 2 (intermediate): Hidden Triple
   - [ ] Tier 3 (upper-intermediate): Naked Quad
