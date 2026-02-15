@@ -115,6 +115,8 @@ impl Technique for NakedTriple {
                             return Err(ConsistencyError::CandidateConstraintViolation.into());
                         }
 
+                        // Positions smaller than `pos3` are checked in earlier combinations,
+                        // so only the remaining positions need to be validated here.
                         let has_fourth_cell = remaining_pos3
                             .iter()
                             .any(|pos| grid.candidates_at(pos).is_subset(digits123));

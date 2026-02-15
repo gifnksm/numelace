@@ -8,13 +8,15 @@ use std::fmt::Debug;
 use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 
 pub use self::{
-    hidden_pair::HiddenPair, hidden_single::HiddenSingle, locked_candidates::LockedCandidates,
-    naked_pair::NakedPair, naked_single::NakedSingle, naked_triple::NakedTriple,
+    hidden_pair::HiddenPair, hidden_single::HiddenSingle, hidden_triple::HiddenTriple,
+    locked_candidates::LockedCandidates, naked_pair::NakedPair, naked_single::NakedSingle,
+    naked_triple::NakedTriple,
 };
 use crate::{SolverError, TechniqueGrid};
 
 mod hidden_pair;
 mod hidden_single;
+mod hidden_triple;
 mod locked_candidates;
 mod naked_pair;
 mod naked_single;
@@ -50,14 +52,14 @@ pub fn basic_techniques() -> Vec<BoxedTechnique> {
 
 /// Returns the intermediate techniques used by the solver.
 ///
-/// This currently includes the basic techniques plus [`NakedPair`] and [`HiddenPair`].
+/// This currently includes the basic techniques plus [`NakedPair`], [`HiddenPair`], [`NakedTriple`] and [`HiddenTriple`].
 #[must_use]
 pub fn intermediate_techniques() -> Vec<BoxedTechnique> {
     let mut techniques = basic_techniques();
     techniques.push(Box::new(NakedPair::new()));
     techniques.push(Box::new(HiddenPair::new()));
     techniques.push(Box::new(NakedTriple::new()));
-    // techniques.push(Box::new(HiddenTriple::new()));
+    techniques.push(Box::new(HiddenTriple::new()));
     techniques
 }
 
