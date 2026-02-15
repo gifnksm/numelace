@@ -38,21 +38,17 @@ pub struct HiddenPair {}
 pub struct HiddenPairStep {
     positions: DigitPositions,
     digits: DigitSet,
-    eliminations: Vec<(DigitPositions, DigitSet)>,
+    eliminate_digits: DigitSet,
 }
 
 impl HiddenPairStep {
     /// Creates a new `HiddenPairStep`.
     #[must_use]
-    pub fn new(
-        positions: DigitPositions,
-        digits: DigitSet,
-        eliminations: Vec<(DigitPositions, DigitSet)>,
-    ) -> Self {
+    pub fn new(positions: DigitPositions, digits: DigitSet, eliminate_digits: DigitSet) -> Self {
         Self {
             positions,
             digits,
-            eliminations,
+            eliminate_digits,
         }
     }
 }
@@ -75,16 +71,10 @@ impl TechniqueStep for HiddenPairStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        self.eliminations
-            .iter()
-            .copied()
-            .map(
-                |(positions, digits)| TechniqueApplication::CandidateElimination {
-                    positions,
-                    digits,
-                },
-            )
-            .collect()
+        vec![TechniqueApplication::CandidateElimination {
+            positions: self.positions,
+            digits: self.eliminate_digits,
+        }]
     }
 }
 
@@ -126,27 +116,21 @@ impl Technique for HiddenPair {
                     return Err(ConsistencyError::CandidateConstraintViolation.into());
                 }
 
-                let mut eliminations = vec![];
+                let mut eliminate_digits = DigitSet::EMPTY;
                 let eliminate_positions = d1_positions;
-                for pos in eliminate_positions {
-                    let mut removed_digits = DigitSet::EMPTY;
-                    for d in DigitSet::FULL {
-                        if d == d1 || d == d2 {
-                            continue;
-                        }
-                        if grid.would_remove_candidate_change(pos, d) {
-                            removed_digits.insert(d);
-                        }
+                for d in DigitSet::FULL {
+                    if d == d1 || d == d2 {
+                        continue;
                     }
-                    if !removed_digits.is_empty() {
-                        eliminations.push((DigitPositions::from_elem(pos), removed_digits));
+                    if grid.would_remove_candidate_with_mask_change(eliminate_positions, d) {
+                        eliminate_digits.insert(d);
                     }
                 }
-                if !eliminations.is_empty() {
+                if !eliminate_digits.is_empty() {
                     return Ok(Some(Box::new(HiddenPairStep::new(
                         eliminate_positions,
                         DigitSet::from_iter([d1, d2]),
-                        eliminations,
+                        eliminate_digits,
                     ))));
                 }
             }

@@ -1,7 +1,7 @@
 use numelace_core::{
-    Digit, DigitSet, Position,
+    Digit, DigitPositions, DigitSet, Position,
     containers::{Array9, Array81},
-    index::PositionSemantics,
+    index::{DigitSemantics, PositionSemantics},
 };
 use numelace_game::CellState;
 use numelace_solver::technique::TechniqueApplication;
@@ -57,6 +57,57 @@ fn apply_conflict_ghost(
     }
 }
 
+fn effective_hint_applications(
+    grid: &Array81<GridCell, PositionSemantics>,
+    hint_state: &HintState,
+) -> Vec<TechniqueApplication> {
+    let mut apps = Vec::new();
+
+    for app in hint_state.step.application() {
+        match app {
+            TechniqueApplication::Placement { position, digit } => {
+                if grid[position].content.as_digit() != Some(digit) {
+                    apps.push(TechniqueApplication::Placement { position, digit });
+                }
+            }
+            TechniqueApplication::CandidateElimination { positions, digits } => {
+                let mut by_digits: Array9<DigitPositions, DigitSemantics> =
+                    Array9::from_fn(|_| DigitPositions::EMPTY);
+                for pos in positions {
+                    let notes = if grid[pos].content.is_empty() {
+                        let mut notes = DigitSet::FULL;
+                        for peer_pos in pos.house_peers() {
+                            if let Some(digit) = grid[peer_pos].content.as_digit() {
+                                notes.remove(digit);
+                            }
+                        }
+                        notes
+                    } else {
+                        grid[pos].content.as_notes().unwrap_or_default()
+                    };
+                    for digit in digits {
+                        if notes.contains(digit) {
+                            by_digits[digit].insert(pos);
+                        }
+                    }
+                }
+
+                for digit in Digit::ALL {
+                    let positions = by_digits[digit];
+                    if !positions.is_empty() {
+                        apps.push(TechniqueApplication::CandidateElimination {
+                            positions,
+                            digits: DigitSet::from_elem(digit),
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    apps
+}
+
 fn apply_hint_ghost(grid: &mut Array81<GridCell, PositionSemantics>, hint_state: &HintState) {
     if hint_state.stage >= HintStage::Stage3Apply {
         return;
@@ -71,7 +122,7 @@ fn apply_hint_ghost(grid: &mut Array81<GridCell, PositionSemantics>, hint_state:
     }
 
     if hint_state.stage >= HintStage::Stage3Preview {
-        for app in hint_state.step.application() {
+        for app in effective_hint_applications(grid, hint_state) {
             match app {
                 TechniqueApplication::Placement { position, digit } => {
                     if grid[position].content.as_digit() != Some(digit) {
@@ -139,7 +190,7 @@ fn apply_hint_visuals(grid: &mut Array81<GridCell, PositionSemantics>, hint_stat
     }
 
     if hint_state.stage >= HintStage::Stage3Preview {
-        for app in hint_state.step.application() {
+        for app in effective_hint_applications(grid, hint_state) {
             match app {
                 TechniqueApplication::Placement { position, digit: _ } => {
                     grid[position].visual_state |= GridVisualState::HINT_APPLICATION_PLACEMENT;
