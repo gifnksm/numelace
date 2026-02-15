@@ -100,7 +100,7 @@ impl Technique for NakedPair {
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let pair_candidate_cells = grid.classify_cells::<3>()[2];
-        if pair_candidate_cells.is_empty() {
+        if pair_candidate_cells.len() < 2 {
             return Ok(None);
         }
 
@@ -142,7 +142,7 @@ impl Technique for NakedPair {
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
         let pair_candidate_cells = grid.classify_cells::<3>()[2];
-        if pair_candidate_cells.is_empty() {
+        if pair_candidate_cells.len() < 2 {
             return Ok(false);
         }
 

@@ -1,4 +1,4 @@
-use numelace_core::{ConsistencyError, Digit, DigitPositions, DigitSet, House};
+use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
 use crate::{
     SolverError, TechniqueGrid,
@@ -106,28 +106,19 @@ impl Technique for HiddenPair {
     }
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-        let decided_cells = grid.decided_cells();
-
         for house in House::ALL {
-            let undecided_house_positions = house.positions() & !decided_cells;
+            let house_positions = house.positions();
 
-            let mut digits_in_house = DigitSet::EMPTY;
-            for d in Digit::ALL {
-                if !(grid.digit_positions(d) & undecided_house_positions).is_empty() {
-                    digits_in_house.insert(d);
-                }
-            }
-
-            let mut remaining_digits = digits_in_house;
+            let mut remaining_digits = DigitSet::FULL;
             while let Some(d1) = remaining_digits.pop_first() {
-                let d1_positions = grid.digit_positions(d1) & undecided_house_positions;
+                let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.len() != 2 {
                     continue;
                 }
 
-                let mut candidate_digits = remaining_digits.into_iter().filter(|d2| {
-                    grid.digit_positions(*d2) & undecided_house_positions == d1_positions
-                });
+                let mut candidate_digits = remaining_digits
+                    .into_iter()
+                    .filter(|d2| grid.digit_positions(*d2) & house_positions == d1_positions);
                 let Some(d2) = candidate_digits.next() else {
                     continue;
                 };
@@ -139,7 +130,7 @@ impl Technique for HiddenPair {
                 let eliminate_positions = d1_positions;
                 for pos in eliminate_positions {
                     let mut removed_digits = DigitSet::EMPTY;
-                    for d in digits_in_house {
+                    for d in DigitSet::FULL {
                         if d == d1 || d == d2 {
                             continue;
                         }
@@ -164,29 +155,20 @@ impl Technique for HiddenPair {
     }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let decided_cells = grid.decided_cells();
-
         let mut changed = false;
         for house in House::ALL {
-            let undecided_house_positions = house.positions() & !decided_cells;
+            let house_positions = house.positions();
 
-            let mut digits_in_house = DigitSet::EMPTY;
-            for d in Digit::ALL {
-                if !(grid.digit_positions(d) & undecided_house_positions).is_empty() {
-                    digits_in_house.insert(d);
-                }
-            }
-
-            let mut remaining_digits = digits_in_house;
+            let mut remaining_digits = DigitSet::FULL;
             while let Some(d1) = remaining_digits.pop_first() {
-                let d1_positions = grid.digit_positions(d1) & undecided_house_positions;
+                let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.len() != 2 {
                     continue;
                 }
 
-                let mut candidate_digits = remaining_digits.into_iter().filter(|d2| {
-                    grid.digit_positions(*d2) & undecided_house_positions == d1_positions
-                });
+                let mut candidate_digits = remaining_digits
+                    .into_iter()
+                    .filter(|d2| grid.digit_positions(*d2) & house_positions == d1_positions);
                 let Some(d2) = candidate_digits.next() else {
                     continue;
                 };
@@ -195,7 +177,7 @@ impl Technique for HiddenPair {
                 }
 
                 let eliminate_positions = d1_positions;
-                for d in digits_in_house {
+                for d in DigitSet::FULL {
                     if d == d1 || d == d2 {
                         continue;
                     }
