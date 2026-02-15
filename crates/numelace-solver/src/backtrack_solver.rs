@@ -137,34 +137,6 @@ impl BacktrackSolver {
         Self::new(TechniqueSolver::new(techniques))
     }
 
-    /// Creates a solver with fundamental techniques.
-    ///
-    /// Uses the most basic logical solving techniques (Naked Single and Hidden Single)
-    /// combined with backtracking. These Singles techniques form the foundation of
-    /// technique-based solving and provide a stable baseline for benchmarking.
-    ///
-    /// This constructor uses [`technique::fundamental_techniques`](crate::technique::fundamental_techniques),
-    /// which provides a stable technique set that serves as a consistent baseline.
-    /// The set remains unchanged even as more advanced techniques are added to the library.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use numelace_solver::BacktrackSolver;
-    ///
-    /// let solver = BacktrackSolver::with_fundamental_techniques();
-    /// ```
-    ///
-    /// # See Also
-    ///
-    /// - [`with_all_techniques`](Self::with_all_techniques) - Use all available techniques
-    /// - [`with_techniques`](Self::with_techniques) - Use a custom set of techniques
-    /// - [`without_techniques`](Self::without_techniques) - Use backtracking only
-    #[must_use]
-    pub fn with_fundamental_techniques() -> Self {
-        Self::new(TechniqueSolver::with_fundamental_techniques())
-    }
-
     /// Creates a backtracking solver without techniques.
     ///
     /// This solver relies entirely on backtracking to find solutions.

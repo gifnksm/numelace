@@ -179,34 +179,6 @@ impl TechniqueSolver {
         }
     }
 
-    /// Creates a new solver with fundamental techniques.
-    ///
-    /// Uses the most basic logical solving techniques: Naked Single and Hidden Single.
-    /// These Singles techniques form the foundation of technique-based solving,
-    /// representing the core logical deductions that human solvers typically apply first.
-    ///
-    /// This constructor uses [`technique::fundamental_techniques`], which provides
-    /// a stable technique set that serves as a consistent baseline for benchmarking.
-    /// The set remains unchanged even as more advanced techniques are added to the library.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use numelace_solver::TechniqueSolver;
-    ///
-    /// let solver = TechniqueSolver::with_fundamental_techniques();
-    /// ```
-    ///
-    /// # See Also
-    ///
-    /// - [`with_all_techniques`](Self::with_all_techniques) - Use all available techniques
-    /// - [`new`](Self::new) - Use a custom set of techniques
-    #[must_use]
-    pub fn with_fundamental_techniques() -> Self {
-        let techniques = technique::fundamental_techniques();
-        Self { techniques }
-    }
-
     /// Applies one step of solving by trying each technique in order.
     ///
     /// Iterates through the list of techniques, applying the first one that

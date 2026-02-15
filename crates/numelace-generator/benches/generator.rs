@@ -32,7 +32,7 @@ use std::{hint, str::FromStr as _};
 
 use criterion::{BatchSize, BenchmarkId, Criterion, criterion_group, criterion_main};
 use numelace_generator::{PuzzleGenerator, PuzzleSeed};
-use numelace_solver::{TechniqueSolver, technique::basic_techniques};
+use numelace_solver::{TechniqueSolver, technique};
 
 const SEEDS: [&str; 3] = [
     "c1d44bd6afaf8af64f126546884e19298acbdc33c3924a28136715de946ef3f1",
@@ -41,7 +41,7 @@ const SEEDS: [&str; 3] = [
 ];
 
 fn bench_generator_fundamental(c: &mut Criterion) {
-    let solver = TechniqueSolver::with_fundamental_techniques();
+    let solver = TechniqueSolver::new(technique::fundamental_techniques());
     let generator = PuzzleGenerator::new(&solver);
 
     for (i, seed) in SEEDS.into_iter().enumerate() {
@@ -61,7 +61,7 @@ fn bench_generator_fundamental(c: &mut Criterion) {
 }
 
 fn bench_generator_basic(c: &mut Criterion) {
-    let solver = TechniqueSolver::new(basic_techniques());
+    let solver = TechniqueSolver::new(technique::basic_techniques());
     let generator = PuzzleGenerator::new(&solver);
 
     for (i, seed) in SEEDS.into_iter().enumerate() {
