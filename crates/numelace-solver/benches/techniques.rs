@@ -16,7 +16,8 @@ use numelace_core::{CandidateGrid, Digit, Position};
 use numelace_solver::{
     TechniqueGrid,
     technique::{
-        HiddenPair, HiddenSingle, LockedCandidates, NakedPair, NakedSingle, Technique as _,
+        HiddenPair, HiddenSingle, LockedCandidates, NakedPair, NakedSingle, NakedTriple,
+        Technique as _,
     },
 };
 
@@ -76,6 +77,23 @@ fn hidden_pair_grid() -> TechniqueGrid {
         if pos != pos1 && pos != pos2 {
             grid.remove_candidate(pos, Digit::D1);
             grid.remove_candidate(pos, Digit::D2);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
+fn naked_triple_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let pos1 = Position::new(0, 0);
+    let pos2 = Position::new(3, 0);
+    let pos3 = Position::new(6, 0);
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {
+            grid.remove_candidate(pos1, digit);
+            grid.remove_candidate(pos2, digit);
+            grid.remove_candidate(pos3, digit);
         }
     }
 
@@ -212,6 +230,32 @@ fn bench_hidden_pair_apply(c: &mut Criterion) {
     }
 }
 
+fn bench_naked_triple_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("naked_triple", naked_triple_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+
+    let technique = NakedTriple::new();
+
+    for (param, grid) in puzzles {
+        c.bench_with_input(
+            BenchmarkId::new("naked_triple_apply", param),
+            &grid,
+            |b, grid| {
+                b.iter_batched_ref(
+                    || hint::black_box(grid.clone()),
+                    |grid| {
+                        let changed = technique.apply(grid).unwrap();
+                        hint::black_box(changed)
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
+}
+
 criterion_group!(
     benches,
     bench_naked_single_apply,
@@ -219,5 +263,6 @@ criterion_group!(
     bench_locked_candidates_apply,
     bench_naked_pair_apply,
     bench_hidden_pair_apply,
+    bench_naked_triple_apply,
 );
 criterion_main!(benches);
