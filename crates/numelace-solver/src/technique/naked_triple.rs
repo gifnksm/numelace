@@ -96,17 +96,14 @@ impl Technique for NakedTriple {
                 continue;
             }
 
-            let mut remaining_pos1 = triple_in_house;
-            while let Some(pos1) = remaining_pos1.pop_first() {
+            for (pos1, remaining_pos1) in triple_in_house.pivots_with_following() {
                 let digits1 = grid.candidates_at(pos1);
-                let mut remaining_pos2 = remaining_pos1;
-                while let Some(pos2) = remaining_pos2.pop_first() {
+                for (pos2, remaining_pos2) in remaining_pos1.pivots_with_following() {
                     let digits12 = digits1 | grid.candidates_at(pos2);
                     if digits12.len() > 3 {
                         continue;
                     }
-                    let mut remaining_pos3 = remaining_pos2;
-                    while let Some(pos3) = remaining_pos3.pop_first() {
+                    for (pos3, remaining_pos3) in remaining_pos2.pivots_with_following() {
                         let digits123 = digits12 | grid.candidates_at(pos3);
                         if digits123.len() > 3 {
                             continue;
@@ -160,17 +157,14 @@ impl Technique for NakedTriple {
                 continue;
             }
 
-            let mut remaining_pos1 = triple_in_house;
-            while let Some(pos1) = remaining_pos1.pop_first() {
+            for (pos1, remaining_pos1) in triple_in_house.pivots_with_following() {
                 let digits1 = grid.candidates_at(pos1);
-                let mut remaining_pos2 = remaining_pos1;
-                while let Some(pos2) = remaining_pos2.pop_first() {
+                for (pos2, remaining_pos2) in remaining_pos1.pivots_with_following() {
                     let digits12 = digits1 | grid.candidates_at(pos2);
                     if digits12.len() > 3 {
                         continue;
                     }
-                    let mut remaining_pos3 = remaining_pos2;
-                    while let Some(pos3) = remaining_pos3.pop_first() {
+                    for (pos3, remaining_pos3) in remaining_pos2.pivots_with_following() {
                         let digits123 = digits12 | grid.candidates_at(pos3);
                         if digits123.len() > 3 {
                             continue;

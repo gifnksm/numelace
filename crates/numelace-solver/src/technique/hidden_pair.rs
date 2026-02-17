@@ -99,8 +99,7 @@ impl Technique for HiddenPair {
         for house in House::ALL {
             let house_positions = house.positions();
 
-            let mut remaining_digits = DigitSet::FULL;
-            while let Some(d1) = remaining_digits.pop_first() {
+            for (d1, remaining_digits) in DigitSet::FULL.pivots_with_following() {
                 let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.len() != 2 {
                     continue;
@@ -143,8 +142,7 @@ impl Technique for HiddenPair {
         for house in House::ALL {
             let house_positions = house.positions();
 
-            let mut remaining_digits = DigitSet::FULL;
-            while let Some(d1) = remaining_digits.pop_first() {
+            for (d1, remaining_digits) in DigitSet::FULL.pivots_with_following() {
                 let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.len() != 2 {
                     continue;

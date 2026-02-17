@@ -109,10 +109,8 @@ impl Technique for NakedPair {
             if pair_in_house.len() < 2 {
                 continue;
             }
-            let mut remaining_pair_cells = pair_in_house;
-            while let Some(pos1) = remaining_pair_cells.pop_first() {
+            for (pos1, mut matching_pair_cells) in pair_in_house.pivots_with_following() {
                 let pair_digits = grid.candidates_at(pos1);
-                let mut matching_pair_cells = remaining_pair_cells;
                 for d in pair_digits {
                     matching_pair_cells &= grid.digit_positions(d);
                 }
@@ -152,10 +150,8 @@ impl Technique for NakedPair {
             if pair_in_house.len() < 2 {
                 continue;
             }
-            let mut remaining_pair_cells = pair_in_house;
-            while let Some(pos1) = remaining_pair_cells.pop_first() {
+            for (pos1, mut matching_pair_cells) in pair_in_house.pivots_with_following() {
                 let pair_digits = grid.candidates_at(pos1);
-                let mut matching_pair_cells = remaining_pair_cells;
                 for d in pair_digits {
                     matching_pair_cells &= grid.digit_positions(d);
                 }

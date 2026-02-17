@@ -98,14 +98,12 @@ impl Technique for HiddenTriple {
         for house in House::ALL {
             let house_positions = house.positions();
 
-            let mut remaining_digits1 = DigitSet::FULL;
-            while let Some(d1) = remaining_digits1.pop_first() {
+            for (d1, remaining_digits1) in DigitSet::FULL.pivots_with_following() {
                 let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.is_empty() || d1_positions.len() > 3 {
                     continue;
                 }
-                let mut remaining_digits2 = remaining_digits1;
-                while let Some(d2) = remaining_digits2.pop_first() {
+                for (d2, remaining_digits2) in remaining_digits1.pivots_with_following() {
                     let d2_positions = grid.digit_positions(d2) & house_positions;
                     if d2_positions.is_empty() {
                         continue;
@@ -114,8 +112,7 @@ impl Technique for HiddenTriple {
                     if pair_positions.len() > 3 {
                         continue;
                     }
-                    let mut remaining_digits3 = remaining_digits2;
-                    while let Some(d3) = remaining_digits3.pop_first() {
+                    for (d3, remaining_digits3) in remaining_digits2.pivots_with_following() {
                         let d3_positions = grid.digit_positions(d3) & house_positions;
                         if d3_positions.is_empty() {
                             continue;
@@ -169,14 +166,12 @@ impl Technique for HiddenTriple {
         for house in House::ALL {
             let house_positions = house.positions();
 
-            let mut remaining_digits1 = DigitSet::FULL;
-            while let Some(d1) = remaining_digits1.pop_first() {
+            for (d1, remaining_digits1) in DigitSet::FULL.pivots_with_following() {
                 let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.is_empty() || d1_positions.len() > 3 {
                     continue;
                 }
-                let mut remaining_digits2 = remaining_digits1;
-                while let Some(d2) = remaining_digits2.pop_first() {
+                for (d2, remaining_digits2) in remaining_digits1.pivots_with_following() {
                     let d2_positions = grid.digit_positions(d2) & house_positions;
                     if d2_positions.is_empty() {
                         continue;
@@ -185,8 +180,7 @@ impl Technique for HiddenTriple {
                     if pair_positions.len() > 3 {
                         continue;
                     }
-                    let mut remaining_digits3 = remaining_digits2;
-                    while let Some(d3) = remaining_digits3.pop_first() {
+                    for (d3, remaining_digits3) in remaining_digits2.pivots_with_following() {
                         let d3_positions = grid.digit_positions(d3) & house_positions;
                         if d3_positions.is_empty() {
                             continue;

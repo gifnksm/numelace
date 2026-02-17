@@ -393,6 +393,16 @@ where
         BitSet9Iter { set: self }
     }
 
+    /// Returns an iterator that yields each pivot element with the following elements.
+    ///
+    /// Each item is `(pivot, following)`, where `following` contains elements
+    /// greater than `pivot` in ascending order.
+    #[must_use]
+    #[inline]
+    pub const fn pivots_with_following(self) -> PivotsWithFollowing9<S> {
+        PivotsWithFollowing9 { remaining: self }
+    }
+
     /// Returns the number of elements in the set.
     #[must_use]
     #[inline]
@@ -563,6 +573,51 @@ where
 
 impl<S> ExactSizeIterator for BitSet9Iter<S> where S: Index9Semantics {}
 impl<S> FusedIterator for BitSet9Iter<S> where S: Index9Semantics {}
+
+/// Iterator over `(pivot, following)` pairs produced from a [`BitSet9`].
+///
+/// The iterator walks pivots in ascending order, and for each pivot returns
+/// the remaining suffix as another `BitSet9`.
+#[derive(Clone)]
+pub struct PivotsWithFollowing9<S>
+where
+    S: Index9Semantics,
+{
+    remaining: BitSet9<S>,
+}
+
+impl<S> Debug for PivotsWithFollowing9<S>
+where
+    S: Index9Semantics,
+    S::Value: Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PivotsWithFollowing9")
+            .field("remaining", &self.remaining)
+            .finish()
+    }
+}
+
+impl<S> Iterator for PivotsWithFollowing9<S>
+where
+    S: Index9Semantics,
+{
+    type Item = (S::Value, BitSet9<S>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let pivot = self.remaining.pop_first()?;
+        Some((pivot, self.remaining))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.remaining.len();
+        (len, Some(len))
+    }
+}
+
+impl<S> ExactSizeIterator for PivotsWithFollowing9<S> where S: Index9Semantics {}
+
+impl<S> FusedIterator for PivotsWithFollowing9<S> where S: Index9Semantics {}
 
 impl<S> FromIterator<S::Value> for BitSet9<S>
 where
@@ -850,6 +905,22 @@ mod tests {
         assert_eq!(set![].as_single(), None);
         assert_eq!(set![3].as_single(), Some(3));
         assert_eq!(set![2, 6, 0].as_single(), None);
+    }
+
+    #[test]
+    fn test_pivots_with_following() {
+        let set = set![4, 0, 8, 2];
+
+        let pairs: Vec<_> = set.pivots_with_following().collect();
+        assert_eq!(
+            pairs,
+            vec![
+                (0, set![2, 4, 8]),
+                (2, set![4, 8]),
+                (4, set![8]),
+                (8, set![]),
+            ]
+        );
     }
 
     #[test]

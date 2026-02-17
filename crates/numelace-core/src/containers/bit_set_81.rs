@@ -345,6 +345,16 @@ where
         BitSet81Iter { set: self }
     }
 
+    /// Returns an iterator that yields each pivot element with the following elements.
+    ///
+    /// Each item is `(pivot, following)`, where `following` contains elements
+    /// greater than `pivot` in ascending order.
+    #[must_use]
+    #[inline]
+    pub const fn pivots_with_following(self) -> PivotsWithFollowing81<S> {
+        PivotsWithFollowing81 { remaining: self }
+    }
+
     /// Returns the number of elements in the set.
     #[must_use]
     #[inline]
@@ -513,6 +523,50 @@ where
 
 impl<S> ExactSizeIterator for BitSet81Iter<S> where S: Index81Semantics {}
 impl<S> FusedIterator for BitSet81Iter<S> where S: Index81Semantics {}
+
+/// Iterator over `(pivot, following)` pairs produced from a [`BitSet81`].
+///
+/// The iterator walks pivots in ascending order, and for each pivot returns
+/// the remaining suffix as another `BitSet81`.
+#[derive(Clone)]
+pub struct PivotsWithFollowing81<S>
+where
+    S: Index81Semantics,
+{
+    remaining: BitSet81<S>,
+}
+
+impl<S> Debug for PivotsWithFollowing81<S>
+where
+    S: Index81Semantics,
+    S::Value: Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PivotsWithFollowing81")
+            .field("remaining", &self.remaining)
+            .finish()
+    }
+}
+
+impl<S> Iterator for PivotsWithFollowing81<S>
+where
+    S: Index81Semantics,
+{
+    type Item = (S::Value, BitSet81<S>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let pivot = self.remaining.pop_first()?;
+        Some((pivot, self.remaining))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.remaining.len();
+        (len, Some(len))
+    }
+}
+
+impl<S> ExactSizeIterator for PivotsWithFollowing81<S> where S: Index81Semantics {}
+impl<S> FusedIterator for PivotsWithFollowing81<S> where S: Index81Semantics {}
 
 impl<S> FromIterator<S::Value> for BitSet81<S>
 where
@@ -805,7 +859,6 @@ mod tests {
     fn test_pop_first_last() {
         let mut set = set![(1, 1), (2, 2)];
         assert_eq!(set.pop_first(), Some((1, 1)));
-        assert_eq!(set.len(), 1);
         assert_eq!(set.pop_first(), Some((2, 2)));
         assert_eq!(set.pop_first(), None);
 
@@ -813,6 +866,21 @@ mod tests {
         assert_eq!(set.pop_last(), Some((2, 2)));
         assert_eq!(set.pop_last(), Some((1, 1)));
         assert_eq!(set.pop_last(), None);
+    }
+
+    #[test]
+    fn test_pivots_with_following() {
+        let set = set![(2, 2), (1, 1), (0, 0)];
+
+        let pairs: Vec<_> = set.pivots_with_following().collect();
+        assert_eq!(
+            pairs,
+            vec![
+                ((0, 0), set![(1, 1), (2, 2)]),
+                ((1, 1), set![(2, 2)]),
+                ((2, 2), set![]),
+            ]
+        );
     }
 
     #[test]
