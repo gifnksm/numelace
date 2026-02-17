@@ -68,7 +68,7 @@ impl TechniqueSolverStats {
     /// # Examples
     ///
     /// ```
-    /// use numelace_solver::{TechniqueSolver, TechniqueGrid};
+    /// use numelace_solver::{TechniqueGrid, TechniqueSolver};
     ///
     /// let solver = TechniqueSolver::with_all_techniques();
     /// let _grid = TechniqueGrid::new();

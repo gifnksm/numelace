@@ -1,12 +1,11 @@
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
+use super::{
+    BoxedTechnique, BoxedTechniqueStep, ConditionCells, ConditionDigitCells, TechniqueApplication,
+};
 use crate::{
     SolverError, TechniqueGrid,
     technique::{Technique, TechniqueStep},
-};
-
-use super::{
-    BoxedTechnique, BoxedTechniqueStep, ConditionCells, ConditionDigitCells, TechniqueApplication,
 };
 
 const NAME: &str = "Hidden Pair";

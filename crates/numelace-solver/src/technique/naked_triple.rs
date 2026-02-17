@@ -1,8 +1,7 @@
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
-use crate::technique::{Technique, TechniqueStep};
-
 use super::{BoxedTechniqueStep, ConditionCells, ConditionDigitCells, TechniqueApplication};
+use crate::technique::{Technique, TechniqueStep};
 
 const NAME: &str = "Naked Triple";
 
