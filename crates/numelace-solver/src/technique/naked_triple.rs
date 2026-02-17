@@ -26,7 +26,8 @@ impl NakedTriple {
 pub struct NakedTripleStep {
     positions: DigitPositions,
     digits: DigitSet,
-    eliminate_positions: DigitPositions,
+
+    application: TechniqueApplication,
 }
 
 impl NakedTripleStep {
@@ -35,12 +36,12 @@ impl NakedTripleStep {
     pub fn new(
         positions: DigitPositions,
         digits: DigitSet,
-        eliminate_positions: DigitPositions,
+        application: TechniqueApplication,
     ) -> Self {
         Self {
             positions,
             digits,
-            eliminate_positions,
+            application,
         }
     }
 }
@@ -63,10 +64,7 @@ impl TechniqueStep for NakedTripleStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![TechniqueApplication::CandidateElimination {
-            positions: self.eliminate_positions,
-            digits: self.digits,
-        }]
+        vec![self.application]
     }
 }
 
@@ -123,14 +121,13 @@ impl Technique for NakedTriple {
                         eliminate_positions.remove(pos1);
                         eliminate_positions.remove(pos2);
                         eliminate_positions.remove(pos3);
-                        if grid.would_remove_candidate_set_with_mask_change(
-                            eliminate_positions,
-                            digits123,
-                        ) {
+                        if let Some(app) =
+                            grid.plan_remove_candidate_set_with_mask(eliminate_positions, digits123)
+                        {
                             return Ok(Some(Box::new(NakedTripleStep::new(
                                 DigitPositions::from_iter([pos1, pos2, pos3]),
                                 digits123,
-                                eliminate_positions,
+                                app,
                             ))));
                         }
                     }

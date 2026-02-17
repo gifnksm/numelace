@@ -33,7 +33,7 @@ impl NakedQuad {
 pub struct NakedQuadStep {
     positions: DigitPositions,
     digits: DigitSet,
-    eliminate_positions: DigitPositions,
+    application: TechniqueApplication,
 }
 
 impl NakedQuadStep {
@@ -42,12 +42,12 @@ impl NakedQuadStep {
     pub fn new(
         positions: DigitPositions,
         digits: DigitSet,
-        eliminate_positions: DigitPositions,
+        application: TechniqueApplication,
     ) -> Self {
         Self {
             positions,
             digits,
-            eliminate_positions,
+            application,
         }
     }
 }
@@ -70,10 +70,7 @@ impl TechniqueStep for NakedQuadStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![TechniqueApplication::CandidateElimination {
-            positions: self.eliminate_positions,
-            digits: self.digits,
-        }]
+        vec![self.application]
     }
 }
 
@@ -132,14 +129,14 @@ impl Technique for NakedQuad {
                             eliminate_positions.remove(pos2);
                             eliminate_positions.remove(pos3);
                             eliminate_positions.remove(pos4);
-                            if grid.would_remove_candidate_set_with_mask_change(
+                            if let Some(app) = grid.plan_remove_candidate_set_with_mask(
                                 eliminate_positions,
                                 digits1234,
                             ) {
                                 return Ok(Some(Box::new(NakedQuadStep::new(
                                     DigitPositions::from_iter([pos1, pos2, pos3, pos4]),
                                     digits1234,
-                                    eliminate_positions,
+                                    app,
                                 ))));
                             }
                         }

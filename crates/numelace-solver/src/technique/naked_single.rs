@@ -59,7 +59,14 @@ impl NakedSingle {
             | DigitPositions::BOX_POSITIONS[pos.box_index()])
             & grid.digit_positions(digit);
         affected_pos.remove(pos);
-        Some(Box::new(NakedSingleStep::new(pos, digit, affected_pos)))
+        Some(Box::new(NakedSingleStep::new(
+            pos,
+            digit,
+            TechniqueApplication::CandidateElimination {
+                positions: affected_pos,
+                digits: DigitSet::from_elem(digit),
+            },
+        )))
     }
 }
 
@@ -67,15 +74,15 @@ impl NakedSingle {
 pub struct NakedSingleStep {
     position: Position,
     digit: Digit,
-    affected_positions: DigitPositions,
+    application: TechniqueApplication,
 }
 
 impl NakedSingleStep {
-    fn new(position: Position, digit: Digit, affected_positions: DigitPositions) -> Self {
+    fn new(position: Position, digit: Digit, application: TechniqueApplication) -> Self {
         Self {
             position,
             digit,
-            affected_positions,
+            application,
         }
     }
 }
@@ -106,10 +113,7 @@ impl TechniqueStep for NakedSingleStep {
                 position: self.position,
                 digit: self.digit,
             },
-            TechniqueApplication::CandidateElimination {
-                positions: self.affected_positions,
-                digits: DigitSet::from_elem(self.digit),
-            },
+            self.application,
         ]
     }
 }
@@ -134,12 +138,8 @@ impl Technique for NakedSingle {
                     | DigitPositions::BOX_POSITIONS[pos.box_index()])
                     & grid.digit_positions(digit);
                 affected_pos.remove(pos);
-                if grid.would_remove_candidate_with_mask_change(affected_pos, digit) {
-                    return Ok(Some(Box::new(NakedSingleStep::new(
-                        pos,
-                        digit,
-                        affected_pos,
-                    ))));
+                if let Some(app) = grid.plan_remove_candidate_with_mask(affected_pos, digit) {
+                    return Ok(Some(Box::new(NakedSingleStep::new(pos, digit, app))));
                 }
             }
         }

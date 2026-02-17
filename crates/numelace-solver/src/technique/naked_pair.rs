@@ -38,19 +38,19 @@ pub struct NakedPair {}
 pub struct NakedPairStep {
     positions: DigitPositions,
     digits: DigitSet,
-    eliminate_positions: DigitPositions,
+    application: TechniqueApplication,
 }
 
 impl NakedPairStep {
     pub fn new(
         positions: DigitPositions,
         digits: DigitSet,
-        eliminate_positions: DigitPositions,
+        application: TechniqueApplication,
     ) -> Self {
         Self {
             positions,
             digits,
-            eliminate_positions,
+            application,
         }
     }
 }
@@ -73,10 +73,7 @@ impl TechniqueStep for NakedPairStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![TechniqueApplication::CandidateElimination {
-            positions: self.eliminate_positions,
-            digits: self.digits,
-        }]
+        vec![self.application]
     }
 }
 
@@ -123,13 +120,13 @@ impl Technique for NakedPair {
                 let mut eliminate_positions = house.positions();
                 eliminate_positions.remove(pos1);
                 eliminate_positions.remove(pos2);
-                if grid
-                    .would_remove_candidate_set_with_mask_change(eliminate_positions, pair_digits)
+                if let Some(app) =
+                    grid.plan_remove_candidate_set_with_mask(eliminate_positions, pair_digits)
                 {
                     return Ok(Some(Box::new(NakedPairStep::new(
                         DigitPositions::from_iter([pos1, pos2]),
                         pair_digits,
-                        eliminate_positions,
+                        app,
                     ))));
                 }
             }

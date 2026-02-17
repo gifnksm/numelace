@@ -37,13 +37,22 @@ pub struct HiddenPair {}
 pub struct HiddenPairStep {
     positions: DigitPositions,
     digits: DigitSet,
+    application: TechniqueApplication,
 }
 
 impl HiddenPairStep {
     /// Creates a new `HiddenPairStep`.
     #[must_use]
-    pub fn new(positions: DigitPositions, digits: DigitSet) -> Self {
-        Self { positions, digits }
+    pub fn new(
+        positions: DigitPositions,
+        digits: DigitSet,
+        application: TechniqueApplication,
+    ) -> Self {
+        Self {
+            positions,
+            digits,
+            application,
+        }
     }
 }
 
@@ -65,10 +74,7 @@ impl TechniqueStep for HiddenPairStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![TechniqueApplication::CandidateElimination {
-            positions: self.positions,
-            digits: !self.digits,
-        }]
+        vec![self.application]
     }
 }
 
@@ -109,11 +115,13 @@ impl Technique for HiddenPair {
                 }
                 let digits12 = digits1 | DigitSet::from_elem(d2);
                 let eliminate_positions = d1_positions;
-                if grid.would_remove_candidate_set_with_mask_change(eliminate_positions, !digits12)
+                if let Some(app) =
+                    grid.plan_remove_candidate_set_with_mask(eliminate_positions, !digits12)
                 {
                     return Ok(Some(Box::new(HiddenPairStep::new(
                         eliminate_positions,
                         DigitSet::from_iter([d1, d2]),
+                        app,
                     ))));
                 }
             }

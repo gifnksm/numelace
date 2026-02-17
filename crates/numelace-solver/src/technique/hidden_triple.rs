@@ -46,11 +46,20 @@ impl HiddenTriple {
 pub struct HiddenTripleStep {
     positions: DigitPositions,
     digits: DigitSet,
+    application: TechniqueApplication,
 }
 
 impl HiddenTripleStep {
-    pub fn new(positions: DigitPositions, digits: DigitSet) -> Self {
-        Self { positions, digits }
+    pub fn new(
+        positions: DigitPositions,
+        digits: DigitSet,
+        application: TechniqueApplication,
+    ) -> Self {
+        Self {
+            positions,
+            digits,
+            application,
+        }
     }
 }
 
@@ -72,10 +81,7 @@ impl TechniqueStep for HiddenTripleStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![TechniqueApplication::CandidateElimination {
-            positions: self.positions,
-            digits: !self.digits,
-        }]
+        vec![self.application]
     }
 }
 
@@ -133,13 +139,13 @@ impl Technique for HiddenTriple {
 
                         let digits123 = digits12 | DigitSet::from_elem(d3);
                         let eliminate_positions = triple_positions;
-                        if grid.would_remove_candidate_set_with_mask_change(
-                            eliminate_positions,
-                            !digits123,
-                        ) {
+                        if let Some(app) = grid
+                            .plan_remove_candidate_set_with_mask(eliminate_positions, !digits123)
+                        {
                             return Ok(Some(Box::new(HiddenTripleStep::new(
                                 eliminate_positions,
                                 digits123,
+                                app,
                             ))));
                         }
                     }

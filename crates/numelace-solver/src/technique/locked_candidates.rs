@@ -59,7 +59,7 @@ pub struct LockedCandidatesStep {
     box_index: u8,
     row_or_col: House,
     intersection_cells: DigitPositions,
-    eliminations: DigitPositions,
+    application: TechniqueApplication,
 }
 
 impl LockedCandidatesStep {
@@ -68,7 +68,7 @@ impl LockedCandidatesStep {
         box_index: u8,
         row_or_col: House,
         intersection_cells: DigitPositions,
-        eliminations: DigitPositions,
+        application: TechniqueApplication,
     ) -> Self {
         Self {
             kind: LockedCandidatesKind::Pointing,
@@ -76,7 +76,7 @@ impl LockedCandidatesStep {
             box_index,
             row_or_col,
             intersection_cells,
-            eliminations,
+            application,
         }
     }
 
@@ -85,7 +85,7 @@ impl LockedCandidatesStep {
         box_index: u8,
         row_or_col: House,
         intersection_cells: DigitPositions,
-        eliminations: DigitPositions,
+        application: TechniqueApplication,
     ) -> Self {
         Self {
             kind: LockedCandidatesKind::Claiming,
@@ -93,7 +93,7 @@ impl LockedCandidatesStep {
             box_index,
             row_or_col,
             intersection_cells,
-            eliminations,
+            application,
         }
     }
 }
@@ -123,10 +123,7 @@ impl TechniqueStep for LockedCandidatesStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![TechniqueApplication::CandidateElimination {
-            positions: self.eliminations,
-            digits: DigitSet::from_elem(self.digit),
-        }]
+        vec![self.application]
     }
 }
 
@@ -169,25 +166,27 @@ impl Technique for LockedCandidates {
                     if (undecided_positions & rest_in_box).is_empty() {
                         // Pointing
                         let eliminations = undecided_positions & rest_in_row_or_col;
-                        if grid.would_remove_candidate_with_mask_change(eliminations, digit) {
+                        if let Some(app) = grid.plan_remove_candidate_with_mask(eliminations, digit)
+                        {
                             return Ok(Some(Box::new(LockedCandidatesStep::pointing(
                                 digit,
                                 box_index,
                                 row_or_col,
                                 undecided_positions & intersection,
-                                eliminations,
+                                app,
                             ))));
                         }
                     } else if (undecided_positions & rest_in_row_or_col).is_empty() {
                         // Claiming
                         let eliminations = undecided_positions & rest_in_box;
-                        if grid.would_remove_candidate_with_mask_change(eliminations, digit) {
+                        if let Some(app) = grid.plan_remove_candidate_with_mask(eliminations, digit)
+                        {
                             return Ok(Some(Box::new(LockedCandidatesStep::claiming(
                                 digit,
                                 box_index,
                                 row_or_col,
                                 undecided_positions & intersection,
-                                eliminations,
+                                app,
                             ))));
                         }
                     }

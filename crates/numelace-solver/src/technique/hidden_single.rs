@@ -1,4 +1,4 @@
-use numelace_core::{Digit, DigitSet, House, Position};
+use numelace_core::{Digit, DigitSet, House};
 
 use crate::{
     SolverError,
@@ -46,16 +46,16 @@ impl HiddenSingle {
 #[derive(Debug, Clone)]
 pub struct HiddenSingleStep {
     house: House,
-    position: Position,
     digit: Digit,
+    application: TechniqueApplication,
 }
 
 impl HiddenSingleStep {
-    fn new(house: House, position: Position, digit: Digit) -> Self {
+    fn new(house: House, digit: Digit, application: TechniqueApplication) -> Self {
         HiddenSingleStep {
             house,
-            position,
             digit,
+            application,
         }
     }
 }
@@ -78,10 +78,7 @@ impl TechniqueStep for HiddenSingleStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![TechniqueApplication::Placement {
-            position: self.position,
-            digit: self.digit,
-        }]
+        vec![self.application]
     }
 }
 
@@ -102,8 +99,8 @@ impl Technique for HiddenSingle {
                 let house_mask = undecided_digit_positions.house_mask(house);
                 if let Some(x) = house_mask.as_single() {
                     let pos = house.position_from_cell_index(x);
-                    if grid.would_place_change(pos, digit) {
-                        return Ok(Some(Box::new(HiddenSingleStep::new(house, pos, digit))));
+                    if let Some(app) = grid.plan_place(pos, digit) {
+                        return Ok(Some(Box::new(HiddenSingleStep::new(house, digit, app))));
                     }
                 }
             }
