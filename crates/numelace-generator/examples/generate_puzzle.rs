@@ -91,7 +91,7 @@ fn main() {
     if args.techniques.is_empty() {
         let puzzle = generator.generate();
         let stats = solve_stats(&solver, &puzzle);
-        print_puzzle(&puzzle, &stats, None, &[]);
+        print_puzzle(&puzzle, &solver, &stats, None, &[]);
         return;
     }
 
@@ -105,7 +105,7 @@ fn main() {
     for _ in 0..max_tries {
         let puzzle = generator.generate();
         let stats = solve_stats(&solver, &puzzle);
-        let score = techniques_score(&stats, &args.techniques);
+        let score = techniques_score(&solver, &stats, &args.techniques);
         match &best {
             None => best = Some((puzzle, stats, score)),
             Some((_, _, best_score)) if score > *best_score => {
@@ -116,7 +116,13 @@ fn main() {
     }
 
     if let Some((puzzle, stats, score)) = best {
-        print_puzzle(&puzzle, &stats, Some((max_tries, score)), &args.techniques);
+        print_puzzle(
+            &puzzle,
+            &solver,
+            &stats,
+            Some((max_tries, score)),
+            &args.techniques,
+        );
         return;
     }
 
@@ -150,29 +156,31 @@ fn solve_stats(solver: &TechniqueSolver, puzzle: &GeneratedPuzzle) -> TechniqueS
     stats
 }
 
-fn techniques_score(stats: &TechniqueSolverStats, techniques: &[String]) -> usize {
+fn techniques_score(
+    solver: &TechniqueSolver,
+    stats: &TechniqueSolverStats,
+    techniques: &[String],
+) -> usize {
     techniques
         .iter()
-        .map(|name| technique_count(stats, name))
+        .map(|name| technique_count(solver, stats, name))
         .sum()
 }
 
-fn technique_count(stats: &TechniqueSolverStats, name: &str) -> usize {
-    stats
-        .applications()
+fn technique_count(solver: &TechniqueSolver, stats: &TechniqueSolverStats, name: &str) -> usize {
+    let Some(i) = solver
+        .techniques()
         .iter()
-        .find_map(|(technique, count)| {
-            if technique.eq_ignore_ascii_case(name) {
-                Some(*count)
-            } else {
-                None
-            }
-        })
-        .unwrap_or(0)
+        .position(|technique| technique.name() == name)
+    else {
+        return 0;
+    };
+    stats.applications()[i]
 }
 
 fn print_puzzle(
     puzzle: &GeneratedPuzzle,
+    solver: &TechniqueSolver,
     stats: &TechniqueSolverStats,
     selection: Option<(usize, usize)>,
     techniques: &[String],
@@ -197,7 +205,8 @@ fn print_puzzle(
     println!();
 
     println!("Stats:");
-    for (name, count) in stats.applications() {
+    for (i, count) in stats.applications().iter().enumerate() {
+        let name = solver.techniques()[i].name();
         println!("  {name}: {count}");
     }
     println!("  total: {}", stats.total_steps());

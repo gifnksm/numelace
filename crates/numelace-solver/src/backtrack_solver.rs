@@ -14,7 +14,7 @@ use crate::{
 /// Statistics collected during backtracking solving.
 ///
 /// Tracks technique applications, assumptions made, and backtrack events.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct BacktrackSolverStats {
     technique: TechniqueSolverStats,
     assumptions: Vec<(Position, Digit)>,
@@ -22,12 +22,6 @@ pub struct BacktrackSolverStats {
 }
 
 impl BacktrackSolverStats {
-    /// Creates a new empty statistics object.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Creates statistics with initial technique statistics.
     #[must_use]
     pub fn with_technique(technique: TechniqueSolverStats) -> Self {
@@ -145,6 +139,12 @@ impl BacktrackSolver {
         Self::new(TechniqueSolver::new(vec![]))
     }
 
+    /// Creates a statistics object aligned with this solver configuration.
+    #[must_use]
+    pub fn new_stats(&self) -> BacktrackSolverStats {
+        BacktrackSolverStats::with_technique(self.technique.new_stats())
+    }
+
     /// Solves the puzzle and returns an iterator over all solutions.
     ///
     /// The iterator yields solutions in the order they are found during the
@@ -175,7 +175,7 @@ impl BacktrackSolver {
     /// # Ok::<(), numelace_solver::SolverError>(())
     /// ```
     pub fn solve(&self, mut grid: TechniqueGrid) -> Result<Solutions<'_>, SolverError> {
-        let mut stats = BacktrackSolverStats::new();
+        let mut stats = self.new_stats();
         let solved = self.solve_by_technique(&mut grid, &mut stats)?;
         let solutions = if solved {
             Solutions::solved(self, grid, stats)
@@ -341,7 +341,8 @@ mod tests {
 
     #[test]
     fn test_stats_solved_without_assumptions() {
-        let stats = BacktrackSolverStats::new();
+        let solver = BacktrackSolver::with_all_techniques();
+        let stats = solver.new_stats();
 
         // Empty stats should indicate no assumptions
         assert!(stats.solved_without_assumptions());
@@ -349,7 +350,8 @@ mod tests {
 
     #[test]
     fn test_stats_getters() {
-        let stats = BacktrackSolverStats::new();
+        let solver = BacktrackSolver::with_all_techniques();
+        let stats = solver.new_stats();
 
         assert_eq!(stats.assumptions().len(), 0);
         assert_eq!(stats.backtrack_count(), 0);
@@ -359,7 +361,8 @@ mod tests {
 
     #[test]
     fn test_stats_with_technique() {
-        let tech_stats = TechniqueSolverStats::new();
+        let technique_solver = TechniqueSolver::with_all_techniques();
+        let tech_stats = technique_solver.new_stats();
         let stats = BacktrackSolverStats::with_technique(tech_stats);
 
         assert_eq!(stats.assumptions().len(), 0);
@@ -498,7 +501,8 @@ mod tests {
 
     #[test]
     fn test_backtrack_count() {
-        let stats = BacktrackSolverStats::new();
+        let solver = BacktrackSolver::with_all_techniques();
+        let stats = solver.new_stats();
 
         // New stats should have zero backtrack count
         assert_eq!(stats.backtrack_count(), 0);

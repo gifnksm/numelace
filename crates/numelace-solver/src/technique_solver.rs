@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{
     SolverError, TechniqueGrid,
     technique::{self, BoxedTechnique, BoxedTechniqueStep},
@@ -13,50 +11,53 @@ use crate::{
 /// # Examples
 ///
 /// ```
-/// use numelace_solver::{
-///     TechniqueGrid, TechniqueSolver, TechniqueSolverStats,
-///     technique::{NakedSingle, Technique as _},
-/// };
+/// use numelace_solver::{TechniqueGrid, TechniqueSolver};
 ///
 /// let solver = TechniqueSolver::with_all_techniques();
 /// let mut grid = TechniqueGrid::new();
 ///
-/// let (solved, stats) = solver.solve(&mut grid)?;
+/// let (_solved, stats) = solver.solve(&mut grid)?;
 /// println!("Total steps: {}", stats.total_steps());
-/// println!(
-///     "Naked singles applied: {}",
-///     stats.count(NakedSingle::new().name())
-/// );
+///
+/// if let Some((i, _)) = solver
+///     .techniques()
+///     .iter()
+///     .enumerate()
+///     .find(|(_, t)| t.name() == "naked single")
+/// {
+///     println!("Naked singles applied: {}", stats.applications()[i]);
+/// }
 /// # Ok::<(), numelace_solver::SolverError>(())
 /// ```
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct TechniqueSolverStats {
-    applications: HashMap<&'static str, usize>,
+    applications: Vec<usize>,
     total_steps: usize,
 }
 
 impl TechniqueSolverStats {
-    /// Creates a new empty statistics object.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns a reference to the map of technique names and their application counts.
+    /// Returns technique application counts in solver order.
+    ///
+    /// Includes techniques that were never applied with a count of `0`.
     ///
     /// # Examples
     ///
     /// ```
-    /// use numelace_solver::TechniqueSolverStats;
+    /// use numelace_solver::{TechniqueGrid, TechniqueSolver};
     ///
-    /// let mut stats = TechniqueSolverStats::new();
-    /// // After solving...
-    /// for (name, count) in stats.applications() {
-    ///     println!("{}: {} times", name, count);
+    /// let solver = TechniqueSolver::with_all_techniques();
+    /// let mut grid = TechniqueGrid::new();
+    /// let mut stats = solver.new_stats();
+    ///
+    /// let _ = solver.solve_with_stats(&mut grid, &mut stats)?;
+    ///
+    /// for (i, count) in stats.applications().iter().enumerate() {
+    ///     println!("{}: {} times", solver.techniques()[i].name(), count);
     /// }
+    /// # Ok::<(), numelace_solver::SolverError>(())
     /// ```
     #[must_use]
-    pub fn applications(&self) -> &HashMap<&'static str, usize> {
+    pub fn applications(&self) -> &[usize] {
         &self.applications
     }
 
@@ -67,20 +68,16 @@ impl TechniqueSolverStats {
     /// # Examples
     ///
     /// ```
-    /// use numelace_solver::TechniqueSolverStats;
+    /// use numelace_solver::{TechniqueSolver, TechniqueGrid};
     ///
-    /// let mut stats = TechniqueSolverStats::new();
+    /// let solver = TechniqueSolver::with_all_techniques();
+    /// let _grid = TechniqueGrid::new();
+    /// let stats = solver.new_stats();
     /// assert_eq!(stats.total_steps(), 0);
     /// ```
     #[must_use]
     pub fn total_steps(&self) -> usize {
         self.total_steps
-    }
-
-    /// Returns the number of times a specific technique was applied.
-    #[must_use]
-    pub fn count(&self, technique_name: &str) -> usize {
-        self.applications.get(technique_name).copied().unwrap_or(0)
     }
 
     /// Returns `true` if any technique was applied at least once.
@@ -118,11 +115,11 @@ impl TechniqueSolverStats {
 /// # Step-by-step solving
 ///
 /// ```
-/// use numelace_solver::{TechniqueGrid, TechniqueSolver, TechniqueSolverStats};
+/// use numelace_solver::{TechniqueGrid, TechniqueSolver};
 ///
 /// let solver = TechniqueSolver::with_all_techniques();
 /// let mut grid = TechniqueGrid::new();
-/// let mut stats = TechniqueSolverStats::new();
+/// let mut stats = solver.new_stats();
 ///
 /// while solver.step(&mut grid, &mut stats)? {
 ///     println!("Progress made! Step {}", stats.total_steps());
@@ -179,6 +176,24 @@ impl TechniqueSolver {
         }
     }
 
+    /// Creates a statistics object aligned with this solver's technique order.
+    #[must_use]
+    pub fn new_stats(&self) -> TechniqueSolverStats {
+        TechniqueSolverStats {
+            applications: vec![0; self.techniques.len()],
+            total_steps: 0,
+        }
+    }
+
+    /// Returns the configured techniques in application order.
+    ///
+    /// The returned slice defines the index mapping used by
+    /// [`TechniqueSolverStats::applications`].
+    #[must_use]
+    pub fn techniques(&self) -> &[BoxedTechnique] {
+        &self.techniques
+    }
+
     /// Applies one step of solving by trying each technique in order.
     ///
     /// Iterates through the list of techniques, applying the first one that
@@ -203,11 +218,11 @@ impl TechniqueSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_solver::{TechniqueGrid, TechniqueSolver, TechniqueSolverStats};
+    /// use numelace_solver::{TechniqueGrid, TechniqueSolver};
     ///
     /// let solver = TechniqueSolver::with_all_techniques();
     /// let mut grid = TechniqueGrid::new();
-    /// let mut stats = TechniqueSolverStats::new();
+    /// let mut stats = solver.new_stats();
     ///
     /// if solver.step(&mut grid, &mut stats)? {
     ///     println!("Made progress!");
@@ -221,11 +236,12 @@ impl TechniqueSolver {
         grid: &mut TechniqueGrid,
         stats: &mut TechniqueSolverStats,
     ) -> Result<bool, SolverError> {
+        debug_assert_eq!(self.techniques.len(), stats.applications.len());
         grid.check_consistency()?;
 
-        for technique in &self.techniques {
+        for (i, technique) in self.techniques.iter().enumerate() {
             if technique.apply(grid)? {
-                *stats.applications.entry(technique.name()).or_default() += 1;
+                stats.applications[i] += 1;
                 stats.total_steps += 1;
                 grid.check_consistency()?;
                 return Ok(true);
@@ -298,7 +314,7 @@ impl TechniqueSolver {
         &self,
         grid: &mut TechniqueGrid,
     ) -> Result<(bool, TechniqueSolverStats), SolverError> {
-        let mut stats = TechniqueSolverStats::default();
+        let mut stats = self.new_stats();
         let solved = self.solve_with_stats(grid, &mut stats)?;
         Ok((solved, stats))
     }
@@ -328,11 +344,11 @@ impl TechniqueSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_solver::{TechniqueGrid, TechniqueSolver, TechniqueSolverStats};
+    /// use numelace_solver::{TechniqueGrid, TechniqueSolver};
     ///
     /// let solver = TechniqueSolver::with_all_techniques();
     /// let mut grid = TechniqueGrid::new();
-    /// let mut stats = TechniqueSolverStats::new();
+    /// let mut stats = solver.new_stats();
     ///
     /// let solved = solver.solve_with_stats(&mut grid, &mut stats)?;
     /// println!("Solved: {}, Steps: {}", solved, stats.total_steps());
@@ -371,7 +387,7 @@ mod tests {
     fn test_step_returns_false_when_no_progress() {
         let solver = create_test_solver();
         let mut grid = TechniqueGrid::from(CandidateGrid::new());
-        let mut stats = TechniqueSolverStats::new();
+        let mut stats = solver.new_stats();
 
         // On a fresh grid with all candidates, no technique can make progress yet
         let result = solver.step(&mut grid, &mut stats);
@@ -384,7 +400,7 @@ mod tests {
     fn test_step_returns_true_when_progress_made() {
         let solver = create_test_solver();
         let mut grid = TechniqueGrid::from(CandidateGrid::new());
-        let mut stats = TechniqueSolverStats::new();
+        let mut stats = solver.new_stats();
 
         // Create a naked single: only D5 at (4, 4)
         for digit in Digit::ALL {
@@ -397,14 +413,20 @@ mod tests {
         assert!(result.is_ok());
         assert!(result.unwrap());
         assert_eq!(stats.total_steps, 1);
-        assert_eq!(stats.count(NakedSingle::new().name()), 1);
+
+        let i = solver
+            .techniques()
+            .iter()
+            .position(|t| t.name() == NakedSingle::new().name())
+            .unwrap();
+        assert_eq!(stats.applications()[i], 1);
     }
 
     #[test]
     fn test_step_records_stats() {
         let solver = create_test_solver();
         let mut grid = TechniqueGrid::from(CandidateGrid::new());
-        let mut stats = TechniqueSolverStats::new();
+        let mut stats = solver.new_stats();
 
         // Create a naked single
         for digit in Digit::ALL {
@@ -416,9 +438,12 @@ mod tests {
         solver.step(&mut grid, &mut stats).unwrap();
 
         assert_eq!(stats.total_steps, 1);
-        assert!(stats.has_progress());
-        assert_eq!(stats.count(NakedSingle::new().name()), 1);
-        assert_eq!(stats.count(HiddenSingle::new().name()), 0);
+        let i = solver
+            .techniques()
+            .iter()
+            .position(|t| t.name() == NakedSingle::new().name())
+            .unwrap();
+        assert_eq!(stats.applications()[i], 1);
     }
 
     #[test]
@@ -457,11 +482,8 @@ mod tests {
             stats.total_steps
         );
         assert!(stats.has_progress());
-        // The naked single technique should have been applied
-        assert!(
-            stats.count(NakedSingle::new().name()) >= 1
-                || stats.count(HiddenSingle::new().name()) >= 1
-        );
+        // At least one configured technique should have been applied
+        assert!(stats.applications().iter().any(|&n| n >= 1));
     }
 
     #[test]
@@ -488,24 +510,9 @@ mod tests {
     }
 
     #[test]
-    fn test_stats_count_method() {
-        let mut stats = TechniqueSolverStats::new();
-        let naked_single = NakedSingle::new();
-
-        assert_eq!(stats.count(naked_single.name()), 0);
-
-        *stats.applications.entry(naked_single.name()).or_default() += 1;
-        assert_eq!(stats.count(naked_single.name()), 1);
-
-        *stats.applications.entry(naked_single.name()).or_default() += 2;
-        assert_eq!(stats.count(naked_single.name()), 3);
-
-        assert_eq!(stats.count("nonexistent"), 0);
-    }
-
-    #[test]
     fn test_stats_has_progress() {
-        let mut stats = TechniqueSolverStats::new();
+        let solver = create_test_solver();
+        let mut stats = solver.new_stats();
 
         assert!(!stats.has_progress());
 
@@ -535,16 +542,24 @@ mod tests {
 
     #[test]
     fn test_stats_applications_getter() {
-        let mut stats = TechniqueSolverStats::new();
-        assert_eq!(stats.applications().len(), 0);
+        let solver = create_test_solver();
+        let mut stats = solver.new_stats();
+        assert_eq!(stats.applications().len(), 2);
 
-        *stats.applications.entry("test").or_default() += 1;
-        assert_eq!(stats.applications().get("test"), Some(&1));
+        let i = solver
+            .techniques()
+            .iter()
+            .position(|t| t.name() == NakedSingle::new().name())
+            .unwrap();
+        stats.applications[i] += 1;
+
+        assert_eq!(stats.applications()[i], 1);
     }
 
     #[test]
     fn test_stats_total_steps_getter() {
-        let mut stats = TechniqueSolverStats::new();
+        let solver = create_test_solver();
+        let mut stats = solver.new_stats();
         assert_eq!(stats.total_steps(), 0);
 
         stats.total_steps = 5;
@@ -555,7 +570,7 @@ mod tests {
     fn test_solve_with_stats() {
         let solver = create_test_solver();
         let mut grid = TechniqueGrid::from(CandidateGrid::new());
-        let mut stats = TechniqueSolverStats::new();
+        let mut stats = solver.new_stats();
 
         // Create a naked single that hasn't been placed yet
         for digit in Digit::ALL {
@@ -575,7 +590,7 @@ mod tests {
         let solver = create_test_solver();
         let mut grid1 = TechniqueGrid::from(CandidateGrid::new());
         let mut grid2 = TechniqueGrid::from(CandidateGrid::new());
-        let mut stats = TechniqueSolverStats::new();
+        let mut stats = solver.new_stats();
 
         // First solve - create naked single
         for digit in Digit::ALL {

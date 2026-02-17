@@ -109,7 +109,7 @@
 //!
 //! let solver = TechniqueSolver::with_all_techniques();
 //! let mut grid = TechniqueGrid::new();
-//! let mut stats = TechniqueSolverStats::new();
+//! let mut stats = solver.new_stats();
 //!
 //! // Apply one technique at a time
 //! while solver.step(&mut grid, &mut stats)? {
