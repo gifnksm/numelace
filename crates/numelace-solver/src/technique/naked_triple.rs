@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
 use super::{BoxedTechniqueStep, ConditionCells, ConditionDigitCells, TechniqueApplication};
@@ -27,7 +29,7 @@ pub struct NakedTripleStep {
     positions: DigitPositions,
     digits: DigitSet,
 
-    application: TechniqueApplication,
+    application: Vec<TechniqueApplication>,
 }
 
 impl NakedTripleStep {
@@ -36,7 +38,7 @@ impl NakedTripleStep {
     pub fn new(
         positions: DigitPositions,
         digits: DigitSet,
-        application: TechniqueApplication,
+        application: Vec<TechniqueApplication>,
     ) -> Self {
         Self {
             positions,
@@ -64,23 +66,22 @@ impl TechniqueStep for NakedTripleStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![self.application]
+        self.application.clone()
     }
 }
 
-impl Technique for NakedTriple {
-    fn name(&self) -> &'static str {
-        NAME
-    }
-
-    fn clone_box(&self) -> super::BoxedTechnique {
-        Box::new(*self)
-    }
-
-    fn find_step(
-        &self,
-        grid: &crate::TechniqueGrid,
-    ) -> Result<Option<BoxedTechniqueStep>, crate::SolverError> {
+impl NakedTriple {
+    fn apply_with_control_flow<F>(
+        grid: &mut crate::TechniqueGrid,
+        mut on_condition: F,
+    ) -> Result<Option<NakedTripleStep>, crate::SolverError>
+    where
+        F: for<'a> FnMut(
+            &'a mut crate::TechniqueGrid,
+            DigitPositions,
+            DigitSet,
+        ) -> ControlFlow<NakedTripleStep>,
+    {
         let classes = grid.classify_cells::<4>();
         let triple_candidate_cells = classes[2] | classes[3];
         if triple_candidate_cells.len() < 3 {
@@ -121,14 +122,14 @@ impl Technique for NakedTriple {
                         eliminate_positions.remove(pos1);
                         eliminate_positions.remove(pos2);
                         eliminate_positions.remove(pos3);
-                        if let Some(app) =
-                            grid.plan_remove_candidate_set_with_mask(eliminate_positions, digits123)
-                        {
-                            return Ok(Some(Box::new(NakedTripleStep::new(
+                        if grid.remove_candidate_set_with_mask(eliminate_positions, digits123)
+                            && let ControlFlow::Break(step) = on_condition(
+                                grid,
                                 DigitPositions::from_iter([pos1, pos2, pos3]),
                                 digits123,
-                                app,
-                            ))));
+                            )
+                        {
+                            return Ok(Some(step));
                         }
                     }
                 }
@@ -136,54 +137,36 @@ impl Technique for NakedTriple {
         }
         Ok(None)
     }
+}
+
+impl Technique for NakedTriple {
+    fn name(&self) -> &'static str {
+        NAME
+    }
+
+    fn clone_box(&self) -> super::BoxedTechnique {
+        Box::new(*self)
+    }
+
+    fn find_step(
+        &self,
+        grid: &crate::TechniqueGrid,
+    ) -> Result<Option<BoxedTechniqueStep>, crate::SolverError> {
+        let mut after_grid = grid.clone();
+        let step =
+            Self::apply_with_control_flow(&mut after_grid, |after_grid, positions, digits| {
+                let app = super::collect_applications_from_diff(grid, after_grid);
+                ControlFlow::Break(NakedTripleStep::new(positions, digits, app))
+            })?;
+        Ok(step.map(|step| step.clone_box()))
+    }
 
     fn apply(&self, grid: &mut crate::TechniqueGrid) -> Result<bool, crate::SolverError> {
-        let classes = grid.classify_cells::<4>();
-        let triple_candidate_cells = classes[2] | classes[3];
-        if triple_candidate_cells.len() < 3 {
-            return Ok(false);
-        }
         let mut changed = false;
-        for house in House::ALL {
-            let triple_in_house = triple_candidate_cells & house.positions();
-            if triple_in_house.len() < 3 {
-                continue;
-            }
-            for (pos1, remaining_pos1) in triple_in_house.pivots_with_following() {
-                let digits1 = grid.candidates_at(pos1);
-                for (pos2, remaining_pos2) in remaining_pos1.pivots_with_following() {
-                    let digits12 = digits1 | grid.candidates_at(pos2);
-                    if digits12.len() > 3 {
-                        continue;
-                    }
-                    for (pos3, remaining_pos3) in remaining_pos2.pivots_with_following() {
-                        let digits123 = digits12 | grid.candidates_at(pos3);
-                        if digits123.len() > 3 {
-                            continue;
-                        }
-                        if digits123.len() < 3 {
-                            return Err(ConsistencyError::CandidateConstraintViolation.into());
-                        }
-
-                        // Positions smaller than `pos3` are checked in earlier combinations,
-                        // so only the remaining positions need to be validated here.
-                        let has_fourth_cell = remaining_pos3
-                            .iter()
-                            .any(|pos| grid.candidates_at(pos).is_subset(digits123));
-                        if has_fourth_cell {
-                            return Err(ConsistencyError::CandidateConstraintViolation.into());
-                        }
-
-                        let mut eliminate_positions = house.positions();
-                        eliminate_positions.remove(pos1);
-                        eliminate_positions.remove(pos2);
-                        eliminate_positions.remove(pos3);
-                        changed |=
-                            grid.remove_candidate_set_with_mask(eliminate_positions, digits123);
-                    }
-                }
-            }
-        }
+        Self::apply_with_control_flow(grid, |_, _, _| {
+            changed = true;
+            ControlFlow::Continue(())
+        })?;
         Ok(changed)
     }
 }

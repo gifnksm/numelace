@@ -181,3 +181,23 @@ impl Clone for BoxedTechniqueStep {
         self.clone_box()
     }
 }
+
+fn collect_applications_from_diff(
+    before: &TechniqueGrid,
+    after: &TechniqueGrid,
+) -> Vec<TechniqueApplication> {
+    let mut app = vec![];
+    for digit in DigitSet::FULL {
+        let before_positions = before.digit_positions(digit);
+        let after_positions = after.digit_positions(digit);
+        debug_assert!(before_positions.is_superset(after_positions));
+        let diff = before_positions.difference(after_positions);
+        if !diff.is_empty() {
+            app.push(TechniqueApplication::CandidateElimination {
+                positions: diff,
+                digits: DigitSet::from_elem(digit),
+            });
+        }
+    }
+    app
+}

@@ -1,4 +1,6 @@
-use numelace_core::{Digit, DigitSet, House};
+use std::ops::ControlFlow;
+
+use numelace_core::{Digit, DigitSet, House, Position};
 
 use crate::{
     SolverError,
@@ -47,11 +49,11 @@ impl HiddenSingle {
 pub struct HiddenSingleStep {
     house: House,
     digit: Digit,
-    application: TechniqueApplication,
+    application: Vec<TechniqueApplication>,
 }
 
 impl HiddenSingleStep {
-    fn new(house: House, digit: Digit, application: TechniqueApplication) -> Self {
+    fn new(house: House, digit: Digit, application: Vec<TechniqueApplication>) -> Self {
         HiddenSingleStep {
             house,
             digit,
@@ -78,7 +80,40 @@ impl TechniqueStep for HiddenSingleStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![self.application]
+        self.application.clone()
+    }
+}
+
+impl HiddenSingle {
+    #[inline]
+    fn apply_with_control_flow<F>(
+        grid: &mut TechniqueGrid,
+        mut on_condition: F,
+    ) -> Option<HiddenSingleStep>
+    where
+        F: for<'a> FnMut(
+            &'a mut TechniqueGrid,
+            House,
+            Position,
+            Digit,
+        ) -> ControlFlow<HiddenSingleStep>,
+    {
+        let decided_cells = grid.decided_cells();
+        for digit in Digit::ALL {
+            let undecided_digit_positions = grid.digit_positions(digit) & !decided_cells;
+            for house in House::ALL {
+                let house_mask = undecided_digit_positions.house_mask(house);
+                if let Some(x) = house_mask.as_single() {
+                    let pos = house.position_from_cell_index(x);
+                    if grid.place(pos, digit)
+                        && let ControlFlow::Break(value) = on_condition(grid, house, pos, digit)
+                    {
+                        return Some(value);
+                    }
+                }
+            }
+        }
+        None
     }
 }
 
@@ -92,35 +127,25 @@ impl Technique for HiddenSingle {
     }
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-        let decided_cells = grid.decided_cells();
-        for digit in Digit::ALL {
-            let undecided_digit_positions = grid.digit_positions(digit) & !decided_cells;
-            for house in House::ALL {
-                let house_mask = undecided_digit_positions.house_mask(house);
-                if let Some(x) = house_mask.as_single() {
-                    let pos = house.position_from_cell_index(x);
-                    if let Some(app) = grid.plan_place(pos, digit) {
-                        return Ok(Some(Box::new(HiddenSingleStep::new(house, digit, app))));
-                    }
-                }
-            }
-        }
-        Ok(None)
+        let mut after_grid = grid.clone();
+        let step =
+            Self::apply_with_control_flow(&mut after_grid, |after_grid, house, pos, digit| {
+                let mut app = super::collect_applications_from_diff(grid, after_grid);
+                app.push(TechniqueApplication::Placement {
+                    position: pos,
+                    digit,
+                });
+                ControlFlow::Break(HiddenSingleStep::new(house, digit, app))
+            });
+        Ok(step.map(|step| step.clone_box()))
     }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
         let mut changed = false;
-        let decided_cells = grid.decided_cells();
-        for digit in Digit::ALL {
-            let undecided_digit_positions = grid.digit_positions(digit) & !decided_cells;
-            for house in House::ALL {
-                let house_mask = undecided_digit_positions.house_mask(house);
-                if let Some(i) = house_mask.as_single() {
-                    let pos = house.position_from_cell_index(i);
-                    changed |= grid.place(pos, digit);
-                }
-            }
-        }
+        Self::apply_with_control_flow(grid, |_, _, _, _| {
+            changed = true;
+            ControlFlow::Continue(())
+        });
         Ok(changed)
     }
 }

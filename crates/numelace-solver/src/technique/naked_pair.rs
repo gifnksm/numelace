@@ -1,4 +1,6 @@
-use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
+use std::ops::ControlFlow;
+
+use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House, Position};
 
 use super::{
     BoxedTechnique, BoxedTechniqueStep, ConditionCells, ConditionDigitCells, TechniqueApplication,
@@ -38,14 +40,14 @@ pub struct NakedPair {}
 pub struct NakedPairStep {
     positions: DigitPositions,
     digits: DigitSet,
-    application: TechniqueApplication,
+    application: Vec<TechniqueApplication>,
 }
 
 impl NakedPairStep {
     pub fn new(
         positions: DigitPositions,
         digits: DigitSet,
-        application: TechniqueApplication,
+        application: Vec<TechniqueApplication>,
     ) -> Self {
         Self {
             positions,
@@ -73,7 +75,7 @@ impl TechniqueStep for NakedPairStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![self.application]
+        self.application.clone()
     }
 }
 
@@ -85,16 +87,18 @@ impl NakedPair {
     }
 }
 
-impl Technique for NakedPair {
-    fn name(&self) -> &'static str {
-        NAME
-    }
-
-    fn clone_box(&self) -> BoxedTechnique {
-        Box::new(*self)
-    }
-
-    fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+impl NakedPair {
+    fn apply_with_control_flow<F>(
+        grid: &mut TechniqueGrid,
+        mut on_condition: F,
+    ) -> Result<Option<NakedPairStep>, SolverError>
+    where
+        F: for<'a> FnMut(
+            &'a mut TechniqueGrid,
+            [Position; 2],
+            DigitSet,
+        ) -> ControlFlow<NakedPairStep>,
+    {
         let pair_candidate_cells = grid.classify_cells::<3>()[2];
         if pair_candidate_cells.len() < 2 {
             return Ok(None);
@@ -120,52 +124,51 @@ impl Technique for NakedPair {
                 let mut eliminate_positions = house.positions();
                 eliminate_positions.remove(pos1);
                 eliminate_positions.remove(pos2);
-                if let Some(app) =
-                    grid.plan_remove_candidate_set_with_mask(eliminate_positions, pair_digits)
-                {
-                    return Ok(Some(Box::new(NakedPairStep::new(
-                        DigitPositions::from_iter([pos1, pos2]),
-                        pair_digits,
-                        app,
-                    ))));
+                for digit in pair_digits {
+                    if grid.remove_candidate_with_mask(eliminate_positions, digit)
+                        && let ControlFlow::Break(step) =
+                            on_condition(grid, [pos1, pos2], pair_digits)
+                    {
+                        return Ok(Some(step));
+                    }
                 }
             }
         }
         Ok(None)
     }
+}
+
+impl Technique for NakedPair {
+    fn name(&self) -> &'static str {
+        NAME
+    }
+
+    fn clone_box(&self) -> BoxedTechnique {
+        Box::new(*self)
+    }
+
+    fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+        let mut after_grid = grid.clone();
+        let step = Self::apply_with_control_flow(
+            &mut after_grid,
+            |after_grid, [pos1, pos2], pair_digits| {
+                let app = super::collect_applications_from_diff(grid, after_grid);
+                ControlFlow::Break(NakedPairStep::new(
+                    DigitPositions::from_iter([pos1, pos2]),
+                    pair_digits,
+                    app,
+                ))
+            },
+        )?;
+        Ok(step.map(|step| step.clone_box()))
+    }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let pair_candidate_cells = grid.classify_cells::<3>()[2];
-        if pair_candidate_cells.len() < 2 {
-            return Ok(false);
-        }
-
         let mut changed = false;
-        for house in House::ALL {
-            let pair_in_house = pair_candidate_cells & house.positions();
-            if pair_in_house.len() < 2 {
-                continue;
-            }
-            for (pos1, mut matching_pair_cells) in pair_in_house.pivots_with_following() {
-                let pair_digits = grid.candidates_at(pos1);
-                for d in pair_digits {
-                    matching_pair_cells &= grid.digit_positions(d);
-                }
-                if matching_pair_cells.len() > 1 {
-                    return Err(ConsistencyError::CandidateConstraintViolation.into());
-                }
-                let Some(pos2) = matching_pair_cells.as_single() else {
-                    continue;
-                };
-
-                let mut eliminate_positions = house.positions();
-                eliminate_positions.remove(pos1);
-                eliminate_positions.remove(pos2);
-                for digit in pair_digits {
-                    changed |= grid.remove_candidate_with_mask(eliminate_positions, digit);
-                }
-            }
-        }
+        Self::apply_with_control_flow(grid, |_, _, _| {
+            changed = true;
+            ControlFlow::Continue(())
+        })?;
         Ok(changed)
     }
 }

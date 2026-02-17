@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
 use crate::{
@@ -33,7 +35,7 @@ impl NakedQuad {
 pub struct NakedQuadStep {
     positions: DigitPositions,
     digits: DigitSet,
-    application: TechniqueApplication,
+    application: Vec<TechniqueApplication>,
 }
 
 impl NakedQuadStep {
@@ -42,7 +44,7 @@ impl NakedQuadStep {
     pub fn new(
         positions: DigitPositions,
         digits: DigitSet,
-        application: TechniqueApplication,
+        application: Vec<TechniqueApplication>,
     ) -> Self {
         Self {
             positions,
@@ -70,20 +72,22 @@ impl TechniqueStep for NakedQuadStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![self.application]
+        self.application.clone()
     }
 }
 
-impl Technique for NakedQuad {
-    fn name(&self) -> &'static str {
-        NAME
-    }
-
-    fn clone_box(&self) -> BoxedTechnique {
-        Box::new(*self)
-    }
-
-    fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+impl NakedQuad {
+    fn apply_with_control_flow<F>(
+        grid: &mut TechniqueGrid,
+        mut on_condition: F,
+    ) -> Result<Option<NakedQuadStep>, SolverError>
+    where
+        F: for<'a> FnMut(
+            &'a mut TechniqueGrid,
+            DigitPositions,
+            DigitSet,
+        ) -> ControlFlow<NakedQuadStep>,
+    {
         let classes = grid.classify_cells::<5>();
         let quad_candidate_cells = classes[2] | classes[3] | classes[4];
         if quad_candidate_cells.len() < 4 {
@@ -129,15 +133,14 @@ impl Technique for NakedQuad {
                             eliminate_positions.remove(pos2);
                             eliminate_positions.remove(pos3);
                             eliminate_positions.remove(pos4);
-                            if let Some(app) = grid.plan_remove_candidate_set_with_mask(
-                                eliminate_positions,
-                                digits1234,
-                            ) {
-                                return Ok(Some(Box::new(NakedQuadStep::new(
+                            if grid.remove_candidate_set_with_mask(eliminate_positions, digits1234)
+                                && let ControlFlow::Break(step) = on_condition(
+                                    grid,
                                     DigitPositions::from_iter([pos1, pos2, pos3, pos4]),
                                     digits1234,
-                                    app,
-                                ))));
+                                )
+                            {
+                                return Ok(Some(step));
                             }
                         }
                     }
@@ -146,61 +149,33 @@ impl Technique for NakedQuad {
         }
         Ok(None)
     }
+}
+
+impl Technique for NakedQuad {
+    fn name(&self) -> &'static str {
+        NAME
+    }
+
+    fn clone_box(&self) -> BoxedTechnique {
+        Box::new(*self)
+    }
+
+    fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+        let mut after_grid = grid.clone();
+        let step =
+            Self::apply_with_control_flow(&mut after_grid, |after_grid, positions, digits| {
+                let app = super::collect_applications_from_diff(grid, after_grid);
+                ControlFlow::Break(NakedQuadStep::new(positions, digits, app))
+            })?;
+        Ok(step.map(|step| step.clone_box()))
+    }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let classes = grid.classify_cells::<5>();
-        let quad_candidate_cells = classes[2] | classes[3] | classes[4];
-        if quad_candidate_cells.len() < 4 {
-            return Ok(false);
-        }
         let mut changed = false;
-        for house in House::ALL {
-            let quad_in_house = quad_candidate_cells & house.positions();
-            if quad_in_house.len() < 4 {
-                continue;
-            }
-            for (pos1, remaining_pos1) in quad_in_house.pivots_with_following() {
-                let digits1 = grid.candidates_at(pos1);
-                for (pos2, remaining_pos2) in remaining_pos1.pivots_with_following() {
-                    let digits12 = digits1 | grid.candidates_at(pos2);
-                    if digits12.len() > 4 {
-                        continue;
-                    }
-                    for (pos3, remaining_pos3) in remaining_pos2.pivots_with_following() {
-                        let digits123 = digits12 | grid.candidates_at(pos3);
-                        if digits123.len() > 4 {
-                            continue;
-                        }
-                        for (pos4, remaining_pos4) in remaining_pos3.pivots_with_following() {
-                            let digits1234 = digits123 | grid.candidates_at(pos4);
-                            if digits1234.len() > 4 {
-                                continue;
-                            }
-                            if digits1234.len() < 4 {
-                                return Err(ConsistencyError::CandidateConstraintViolation.into());
-                            }
-
-                            // Positions smaller than `pos4` are checked in earlier combinations,
-                            // so only the remaining positions need to be validated here.
-                            let has_fifth_cell = remaining_pos4
-                                .iter()
-                                .any(|pos| grid.candidates_at(pos).is_subset(digits1234));
-                            if has_fifth_cell {
-                                return Err(ConsistencyError::CandidateConstraintViolation.into());
-                            }
-
-                            let mut eliminate_positions = house.positions();
-                            eliminate_positions.remove(pos1);
-                            eliminate_positions.remove(pos2);
-                            eliminate_positions.remove(pos3);
-                            eliminate_positions.remove(pos4);
-                            changed |= grid
-                                .remove_candidate_set_with_mask(eliminate_positions, digits1234);
-                        }
-                    }
-                }
-            }
-        }
+        Self::apply_with_control_flow(grid, |_, _, _| {
+            changed = true;
+            ControlFlow::Continue(())
+        })?;
         Ok(changed)
     }
 }

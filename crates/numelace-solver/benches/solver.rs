@@ -114,7 +114,7 @@ fn bench_technique_solver_fundamental(c: &mut Criterion) {
 }
 
 fn bench_technique_solver_basic(c: &mut Criterion) {
-    let puzzles = [("locked_candidates", BASIC_PROBLEM, BASIC_SOLUTION)];
+    let puzzles = [("basic", BASIC_PROBLEM, BASIC_SOLUTION)];
 
     let solver = TechniqueSolver::new(technique::basic_techniques());
 
@@ -146,11 +146,7 @@ fn bench_technique_solver_basic(c: &mut Criterion) {
 }
 
 fn bench_technique_solver_intermediate(c: &mut Criterion) {
-    let puzzles = [(
-        "generated_intermediate",
-        INTERMEDIATE_PROBLEM,
-        INTERMEDIATE_SOLUTION,
-    )];
+    let puzzles = [("intermediate", INTERMEDIATE_PROBLEM, INTERMEDIATE_SOLUTION)];
 
     let solver = TechniqueSolver::new(technique::intermediate_techniques());
 

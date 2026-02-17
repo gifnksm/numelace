@@ -3,8 +3,6 @@ use numelace_core::{
     Position,
 };
 
-use crate::technique::TechniqueApplication;
-
 /// Solver state for technique-based solving.
 ///
 /// This type wraps a [`CandidateGrid`] and exposes a solver-oriented API for
@@ -108,23 +106,6 @@ impl TechniqueGrid {
         self.candidates.place(pos, digit)
     }
 
-    /// Plans a placement application if placing the digit would change the grid.
-    ///
-    /// Returns [`Some`] with a [`TechniqueApplication::Placement`] when the
-    /// placement would modify candidates, otherwise returns [`None`].
-    ///
-    /// This uses [`CandidateGrid::would_place_change`] for change detection.
-    #[inline]
-    #[must_use]
-    pub fn plan_place(&self, pos: Position, digit: Digit) -> Option<TechniqueApplication> {
-        self.candidates
-            .would_place_change(pos, digit)
-            .then_some(TechniqueApplication::Placement {
-                position: pos,
-                digit,
-            })
-    }
-
     /// Removes a specific digit as a candidate at a position.
     ///
     /// Returns `true` if the candidate was removed.
@@ -135,29 +116,6 @@ impl TechniqueGrid {
         self.candidates.remove_candidate(pos, digit)
     }
 
-    /// Plans a candidate-elimination application for one cell if it would change the grid.
-    ///
-    /// Returns [`Some`] with a [`TechniqueApplication::CandidateElimination`]
-    /// when removing the candidate would modify candidates, otherwise returns
-    /// [`None`].
-    ///
-    /// This uses [`CandidateGrid::would_remove_candidate_change`] for change
-    /// detection.
-    #[inline]
-    #[must_use]
-    pub fn plan_remove_candidate(
-        &self,
-        pos: Position,
-        digit: Digit,
-    ) -> Option<TechniqueApplication> {
-        self.candidates
-            .would_remove_candidate_change(pos, digit)
-            .then_some(TechniqueApplication::CandidateElimination {
-                positions: DigitPositions::from_elem(pos),
-                digits: DigitSet::from_elem(digit),
-            })
-    }
-
     /// Removes a candidate digit from all positions specified by a mask.
     ///
     /// Returns `true` if any candidate was removed.
@@ -166,29 +124,6 @@ impl TechniqueGrid {
     #[inline]
     pub fn remove_candidate_with_mask(&mut self, mask: DigitPositions, digit: Digit) -> bool {
         self.candidates.remove_candidate_with_mask(mask, digit)
-    }
-
-    /// Plans a candidate-elimination application for masked cells if it would change the grid.
-    ///
-    /// Returns [`Some`] with a [`TechniqueApplication::CandidateElimination`]
-    /// when removing the candidate from any masked position would modify
-    /// candidates, otherwise returns [`None`].
-    ///
-    /// This uses [`CandidateGrid::would_remove_candidate_with_mask_change`] for
-    /// change detection.
-    #[inline]
-    #[must_use]
-    pub fn plan_remove_candidate_with_mask(
-        &self,
-        mask: DigitPositions,
-        digit: Digit,
-    ) -> Option<TechniqueApplication> {
-        self.candidates
-            .would_remove_candidate_with_mask_change(mask, digit)
-            .then_some(TechniqueApplication::CandidateElimination {
-                positions: mask,
-                digits: DigitSet::from_elem(digit),
-            })
     }
 
     /// Removes a set of candidate digits from all positions specified by a mask.
@@ -204,29 +139,6 @@ impl TechniqueGrid {
         digits: DigitSet,
     ) -> bool {
         self.candidates.remove_candidate_set_with_mask(mask, digits)
-    }
-
-    /// Plans a candidate-elimination application for masked cells if it would change the grid.
-    ///
-    /// Returns [`Some`] with a [`TechniqueApplication::CandidateElimination`]
-    /// when removing any digit in the set from any masked position would modify
-    /// candidates, otherwise returns [`None`].
-    ///
-    /// This uses [`CandidateGrid::would_remove_candidate_set_with_mask_change`]
-    /// for change detection.
-    #[inline]
-    #[must_use]
-    pub fn plan_remove_candidate_set_with_mask(
-        &self,
-        mask: DigitPositions,
-        digits: DigitSet,
-    ) -> Option<TechniqueApplication> {
-        self.candidates
-            .would_remove_candidate_set_with_mask_change(mask, digits)
-            .then_some(TechniqueApplication::CandidateElimination {
-                positions: mask,
-                digits,
-            })
     }
 
     /// Returns the set of all positions where the specified digit can be placed.

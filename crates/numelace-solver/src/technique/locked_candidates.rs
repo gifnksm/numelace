@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use numelace_core::{Digit, DigitPositions, DigitSet, House, Position};
 
 use super::{
@@ -59,36 +61,20 @@ pub struct LockedCandidatesStep {
     box_index: u8,
     row_or_col: House,
     intersection_cells: DigitPositions,
-    application: TechniqueApplication,
+    application: Vec<TechniqueApplication>,
 }
 
 impl LockedCandidatesStep {
-    fn pointing(
+    fn new(
+        kind: LockedCandidatesKind,
         digit: Digit,
         box_index: u8,
         row_or_col: House,
         intersection_cells: DigitPositions,
-        application: TechniqueApplication,
+        application: Vec<TechniqueApplication>,
     ) -> Self {
         Self {
-            kind: LockedCandidatesKind::Pointing,
-            digit,
-            box_index,
-            row_or_col,
-            intersection_cells,
-            application,
-        }
-    }
-
-    fn claiming(
-        digit: Digit,
-        box_index: u8,
-        row_or_col: House,
-        intersection_cells: DigitPositions,
-        application: TechniqueApplication,
-    ) -> Self {
-        Self {
-            kind: LockedCandidatesKind::Claiming,
+            kind,
             digit,
             box_index,
             row_or_col,
@@ -123,7 +109,87 @@ impl TechniqueStep for LockedCandidatesStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![self.application]
+        self.application.clone()
+    }
+}
+
+impl LockedCandidates {
+    #[inline]
+    fn apply_with_control_flow<F>(
+        grid: &mut TechniqueGrid,
+        mut on_condition: F,
+    ) -> Option<LockedCandidatesStep>
+    where
+        F: for<'a> FnMut(
+            &'a mut TechniqueGrid,
+            LockedCandidatesKind,
+            Digit,
+            u8,
+            House,
+            DigitPositions,
+        ) -> ControlFlow<LockedCandidatesStep>,
+    {
+        let decided_cells = grid.decided_cells();
+        for box_index in 0..9 {
+            let box_ = House::Box { index: box_index };
+            let origin = Position::box_origin(box_index);
+            let row_or_cols = [
+                House::Row { y: origin.y() },
+                House::Row { y: origin.y() + 1 },
+                House::Row { y: origin.y() + 2 },
+                House::Column { x: origin.x() },
+                House::Column { x: origin.x() + 1 },
+                House::Column { x: origin.x() + 2 },
+            ];
+
+            for row_or_col in row_or_cols {
+                let intersection = box_.positions() & row_or_col.positions();
+                if (intersection & !decided_cells).is_empty() {
+                    continue;
+                }
+
+                let rest_in_box = box_.positions() & !intersection;
+                let rest_in_row_or_col = row_or_col.positions() & !intersection;
+                for digit in Digit::ALL {
+                    let undecided_positions = grid.digit_positions(digit) & !decided_cells;
+                    if (undecided_positions & intersection).is_empty() {
+                        continue;
+                    }
+                    if (undecided_positions & rest_in_box).is_empty() {
+                        // Pointing
+                        let eliminations = undecided_positions & rest_in_row_or_col;
+                        if grid.remove_candidate_with_mask(eliminations, digit)
+                            && let ControlFlow::Break(value) = on_condition(
+                                grid,
+                                LockedCandidatesKind::Pointing,
+                                digit,
+                                box_index,
+                                row_or_col,
+                                undecided_positions & intersection,
+                            )
+                        {
+                            return Some(value);
+                        }
+                    } else if (undecided_positions & rest_in_row_or_col).is_empty() {
+                        // Claiming
+                        let eliminations = undecided_positions & rest_in_box;
+                        if grid.remove_candidate_with_mask(eliminations, digit)
+                            && let ControlFlow::Break(value) = on_condition(
+                                grid,
+                                LockedCandidatesKind::Claiming,
+                                digit,
+                                box_index,
+                                row_or_col,
+                                undecided_positions & intersection,
+                            )
+                        {
+                            return Some(value);
+                        }
+                    }
+                }
+            }
+        }
+        None
     }
 }
 
@@ -137,108 +203,30 @@ impl Technique for LockedCandidates {
     }
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-        let decided_cells = grid.decided_cells();
-
-        for box_index in 0..9 {
-            let box_ = House::Box { index: box_index };
-            let origin = Position::box_origin(box_index);
-            let row_or_cols = [
-                House::Row { y: origin.y() },
-                House::Row { y: origin.y() + 1 },
-                House::Row { y: origin.y() + 2 },
-                House::Column { x: origin.x() },
-                House::Column { x: origin.x() + 1 },
-                House::Column { x: origin.x() + 2 },
-            ];
-            for row_or_col in row_or_cols {
-                let intersection = box_.positions() & row_or_col.positions();
-                if (intersection & !decided_cells).is_empty() {
-                    continue;
-                }
-                let rest_in_box = box_.positions() & !intersection;
-                let rest_in_row_or_col = row_or_col.positions() & !intersection;
-                for digit in Digit::ALL {
-                    let undecided_positions = grid.digit_positions(digit) & !decided_cells;
-                    if (undecided_positions & intersection).is_empty() {
-                        continue;
-                    }
-
-                    if (undecided_positions & rest_in_box).is_empty() {
-                        // Pointing
-                        let eliminations = undecided_positions & rest_in_row_or_col;
-                        if let Some(app) = grid.plan_remove_candidate_with_mask(eliminations, digit)
-                        {
-                            return Ok(Some(Box::new(LockedCandidatesStep::pointing(
-                                digit,
-                                box_index,
-                                row_or_col,
-                                undecided_positions & intersection,
-                                app,
-                            ))));
-                        }
-                    } else if (undecided_positions & rest_in_row_or_col).is_empty() {
-                        // Claiming
-                        let eliminations = undecided_positions & rest_in_box;
-                        if let Some(app) = grid.plan_remove_candidate_with_mask(eliminations, digit)
-                        {
-                            return Ok(Some(Box::new(LockedCandidatesStep::claiming(
-                                digit,
-                                box_index,
-                                row_or_col,
-                                undecided_positions & intersection,
-                                app,
-                            ))));
-                        }
-                    }
-                }
-            }
-        }
-        Ok(None)
+        let mut after_grid = grid.clone();
+        let step = Self::apply_with_control_flow(
+            &mut after_grid,
+            |after_grid, kind, digit, box_index, row_or_col, intersection| {
+                let app = super::collect_applications_from_diff(grid, after_grid);
+                ControlFlow::Break(LockedCandidatesStep::new(
+                    kind,
+                    digit,
+                    box_index,
+                    row_or_col,
+                    intersection,
+                    app,
+                ))
+            },
+        );
+        Ok(step.map(|step| step.clone_box()))
     }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
         let mut changed = false;
-
-        let decided_cells = grid.decided_cells();
-
-        for box_index in 0..9 {
-            let box_ = House::Box { index: box_index };
-            let origin = Position::box_origin(box_index);
-            let row_or_cols = [
-                House::Row { y: origin.y() },
-                House::Row { y: origin.y() + 1 },
-                House::Row { y: origin.y() + 2 },
-                House::Column { x: origin.x() },
-                House::Column { x: origin.x() + 1 },
-                House::Column { x: origin.x() + 2 },
-            ];
-
-            for row_or_col in row_or_cols {
-                let intersection = box_.positions() & row_or_col.positions();
-                if (intersection & !decided_cells).is_empty() {
-                    continue;
-                }
-
-                let rest_in_box = box_.positions() & !intersection;
-                let rest_in_row_or_col = row_or_col.positions() & !intersection;
-                for digit in Digit::ALL {
-                    let undecided_positions = grid.digit_positions(digit) & !decided_cells;
-                    if (undecided_positions & intersection).is_empty() {
-                        continue;
-                    }
-                    if (undecided_positions & rest_in_box).is_empty() {
-                        // Pointing
-                        let eliminations = undecided_positions & rest_in_row_or_col;
-                        changed |= grid.remove_candidate_with_mask(eliminations, digit);
-                    } else if (undecided_positions & rest_in_row_or_col).is_empty() {
-                        // Claiming
-                        let eliminations = undecided_positions & rest_in_box;
-                        changed |= grid.remove_candidate_with_mask(eliminations, digit);
-                    }
-                }
-            }
-        }
-
+        Self::apply_with_control_flow(grid, |_, _, _, _, _, _| {
+            changed = true;
+            ControlFlow::Continue(())
+        });
         Ok(changed)
     }
 }

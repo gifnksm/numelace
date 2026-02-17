@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
 use super::{
@@ -46,14 +48,14 @@ impl HiddenTriple {
 pub struct HiddenTripleStep {
     positions: DigitPositions,
     digits: DigitSet,
-    application: TechniqueApplication,
+    application: Vec<TechniqueApplication>,
 }
 
 impl HiddenTripleStep {
     pub fn new(
         positions: DigitPositions,
         digits: DigitSet,
-        application: TechniqueApplication,
+        application: Vec<TechniqueApplication>,
     ) -> Self {
         Self {
             positions,
@@ -81,7 +83,77 @@ impl TechniqueStep for HiddenTripleStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![self.application]
+        self.application.clone()
+    }
+}
+
+impl HiddenTriple {
+    fn apply_with_control_flow<F>(
+        grid: &mut TechniqueGrid,
+        mut on_condition: F,
+    ) -> Result<Option<HiddenTripleStep>, SolverError>
+    where
+        F: for<'a> FnMut(
+            &'a mut TechniqueGrid,
+            DigitPositions,
+            DigitSet,
+        ) -> ControlFlow<HiddenTripleStep>,
+    {
+        for house in House::ALL {
+            let house_positions = house.positions();
+            for (d1, remaining_digits1) in DigitSet::FULL.pivots_with_following() {
+                let d1_positions = grid.digit_positions(d1) & house_positions;
+                if d1_positions.is_empty() || d1_positions.len() > 3 {
+                    continue;
+                }
+                let digits1 = DigitSet::from_elem(d1);
+                for (d2, remaining_digits2) in remaining_digits1.pivots_with_following() {
+                    let d2_positions = grid.digit_positions(d2) & house_positions;
+                    if d2_positions.is_empty() {
+                        continue;
+                    }
+                    let pair_positions = d1_positions | d2_positions;
+                    if pair_positions.len() > 3 {
+                        continue;
+                    }
+                    let digits12 = digits1 | DigitSet::from_elem(d2);
+                    for (d3, remaining_digits3) in remaining_digits2.pivots_with_following() {
+                        let d3_positions = grid.digit_positions(d3) & house_positions;
+                        if d3_positions.is_empty() {
+                            continue;
+                        }
+                        let triple_positions = pair_positions | d3_positions;
+                        if triple_positions.len() > 3 {
+                            continue;
+                        }
+                        if triple_positions.len() < 3 {
+                            return Err(ConsistencyError::CandidateConstraintViolation.into());
+                        }
+
+                        // Digits smaller than `d3` are checked in earlier combinations,
+                        // so only the remaining digits need to be validated here.
+                        for d in remaining_digits3 {
+                            let other_positions = grid.digit_positions(d) & house_positions;
+                            if !other_positions.is_empty()
+                                && other_positions.is_subset(triple_positions)
+                            {
+                                return Err(ConsistencyError::CandidateConstraintViolation.into());
+                            }
+                        }
+
+                        let digits123 = digits12 | DigitSet::from_elem(d3);
+                        let eliminate_positions = triple_positions;
+                        if grid.remove_candidate_set_with_mask(eliminate_positions, !digits123)
+                            && let ControlFlow::Break(step) =
+                                on_condition(grid, eliminate_positions, digits123)
+                        {
+                            return Ok(Some(step));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(None)
     }
 }
 
@@ -95,117 +167,21 @@ impl Technique for HiddenTriple {
     }
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-        for house in House::ALL {
-            let house_positions = house.positions();
-            for (d1, remaining_digits1) in DigitSet::FULL.pivots_with_following() {
-                let d1_positions = grid.digit_positions(d1) & house_positions;
-                if d1_positions.is_empty() || d1_positions.len() > 3 {
-                    continue;
-                }
-                let digits1 = DigitSet::from_elem(d1);
-                for (d2, remaining_digits2) in remaining_digits1.pivots_with_following() {
-                    let d2_positions = grid.digit_positions(d2) & house_positions;
-                    if d2_positions.is_empty() {
-                        continue;
-                    }
-                    let pair_positions = d1_positions | d2_positions;
-                    if pair_positions.len() > 3 {
-                        continue;
-                    }
-                    let digits12 = digits1 | DigitSet::from_elem(d2);
-                    for (d3, remaining_digits3) in remaining_digits2.pivots_with_following() {
-                        let d3_positions = grid.digit_positions(d3) & house_positions;
-                        if d3_positions.is_empty() {
-                            continue;
-                        }
-                        let triple_positions = pair_positions | d3_positions;
-                        if triple_positions.len() > 3 {
-                            continue;
-                        }
-                        if triple_positions.len() < 3 {
-                            return Err(ConsistencyError::CandidateConstraintViolation.into());
-                        }
-
-                        // Digits smaller than `d3` are checked in earlier combinations,
-                        // so only the remaining digits need to be validated here.
-                        for d in remaining_digits3 {
-                            let other_positions = grid.digit_positions(d) & house_positions;
-                            if !other_positions.is_empty()
-                                && other_positions.is_subset(triple_positions)
-                            {
-                                return Err(ConsistencyError::CandidateConstraintViolation.into());
-                            }
-                        }
-
-                        let digits123 = digits12 | DigitSet::from_elem(d3);
-                        let eliminate_positions = triple_positions;
-                        if let Some(app) = grid
-                            .plan_remove_candidate_set_with_mask(eliminate_positions, !digits123)
-                        {
-                            return Ok(Some(Box::new(HiddenTripleStep::new(
-                                eliminate_positions,
-                                digits123,
-                                app,
-                            ))));
-                        }
-                    }
-                }
-            }
-        }
-        Ok(None)
+        let mut after_grid = grid.clone();
+        let step =
+            Self::apply_with_control_flow(&mut after_grid, |after_grid, positions, digits| {
+                let app = super::collect_applications_from_diff(grid, after_grid);
+                ControlFlow::Break(HiddenTripleStep::new(positions, digits, app))
+            })?;
+        Ok(step.map(|step| step.clone_box()))
     }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
         let mut changed = false;
-        for house in House::ALL {
-            let house_positions = house.positions();
-            for (d1, remaining_digits1) in DigitSet::FULL.pivots_with_following() {
-                let d1_positions = grid.digit_positions(d1) & house_positions;
-                if d1_positions.is_empty() || d1_positions.len() > 3 {
-                    continue;
-                }
-                let digits1 = DigitSet::from_elem(d1);
-                for (d2, remaining_digits2) in remaining_digits1.pivots_with_following() {
-                    let d2_positions = grid.digit_positions(d2) & house_positions;
-                    if d2_positions.is_empty() {
-                        continue;
-                    }
-                    let pair_positions = d1_positions | d2_positions;
-                    if pair_positions.len() > 3 {
-                        continue;
-                    }
-                    let digits12 = digits1 | DigitSet::from_elem(d2);
-                    for (d3, remaining_digits3) in remaining_digits2.pivots_with_following() {
-                        let d3_positions = grid.digit_positions(d3) & house_positions;
-                        if d3_positions.is_empty() {
-                            continue;
-                        }
-                        let triple_positions = pair_positions | d3_positions;
-                        if triple_positions.len() > 3 {
-                            continue;
-                        }
-                        if triple_positions.len() < 3 {
-                            return Err(ConsistencyError::CandidateConstraintViolation.into());
-                        }
-                        // Digits smaller than `d3` are checked in earlier combinations,
-                        // so only the remaining digits need to be validated here.
-                        for d in remaining_digits3 {
-                            let other_positions = grid.digit_positions(d) & house_positions;
-                            if !other_positions.is_empty()
-                                && other_positions.is_subset(triple_positions)
-                            {
-                                return Err(ConsistencyError::CandidateConstraintViolation.into());
-                            }
-                        }
-
-                        let digits123 = digits12 | DigitSet::from_elem(d3);
-                        let eliminate_positions = triple_positions;
-                        changed |=
-                            grid.remove_candidate_set_with_mask(eliminate_positions, !digits123);
-                    }
-                }
-            }
-        }
+        Self::apply_with_control_flow(grid, |_, _, _| {
+            changed = true;
+            ControlFlow::Continue(())
+        })?;
         Ok(changed)
     }
 }

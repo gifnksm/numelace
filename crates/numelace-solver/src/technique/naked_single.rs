@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 
 use super::{BoxedTechnique, TechniqueApplication};
@@ -62,10 +64,10 @@ impl NakedSingle {
         Some(Box::new(NakedSingleStep::new(
             pos,
             digit,
-            TechniqueApplication::CandidateElimination {
+            vec![TechniqueApplication::CandidateElimination {
                 positions: affected_pos,
                 digits: DigitSet::from_elem(digit),
-            },
+            }],
         )))
     }
 }
@@ -74,11 +76,12 @@ impl NakedSingle {
 pub struct NakedSingleStep {
     position: Position,
     digit: Digit,
-    application: TechniqueApplication,
+    application: Vec<TechniqueApplication>,
 }
 
 impl NakedSingleStep {
-    fn new(position: Position, digit: Digit, application: TechniqueApplication) -> Self {
+    fn new(position: Position, digit: Digit, mut application: Vec<TechniqueApplication>) -> Self {
+        application.push(TechniqueApplication::Placement { position, digit });
         Self {
             position,
             digit,
@@ -108,13 +111,37 @@ impl TechniqueStep for NakedSingleStep {
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
-        vec![
-            TechniqueApplication::Placement {
-                position: self.position,
-                digit: self.digit,
-            },
-            self.application,
-        ]
+        self.application.clone()
+    }
+}
+
+impl NakedSingle {
+    #[inline]
+    fn apply_with_control_flow<F>(
+        grid: &mut TechniqueGrid,
+        mut on_condition: F,
+    ) -> Option<NakedSingleStep>
+    where
+        F: for<'a> FnMut(&'a mut TechniqueGrid, Position, Digit) -> ControlFlow<NakedSingleStep>,
+    {
+        let decided_cells = grid.decided_cells();
+        for digit in Digit::ALL {
+            let decided_digit_positions =
+                grid.digit_positions(digit) & decided_cells & !grid.decided_propagated();
+            for pos in decided_digit_positions {
+                let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.y()]
+                    | DigitPositions::COLUMN_POSITIONS[pos.x()]
+                    | DigitPositions::BOX_POSITIONS[pos.box_index()];
+                affected_pos.remove(pos);
+                grid.insert_decided_propagated(pos);
+                if grid.remove_candidate_with_mask(affected_pos, digit)
+                    && let ControlFlow::Break(value) = on_condition(grid, pos, digit)
+                {
+                    return Some(value);
+                }
+            }
+        }
+        None
     }
 }
 
@@ -128,41 +155,20 @@ impl Technique for NakedSingle {
     }
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-        let decided_cells = grid.decided_cells();
-        for digit in Digit::ALL {
-            let decided_digit_positions =
-                grid.digit_positions(digit) & decided_cells & !grid.decided_propagated();
-            for pos in decided_digit_positions {
-                let mut affected_pos = (DigitPositions::ROW_POSITIONS[pos.y()]
-                    | DigitPositions::COLUMN_POSITIONS[pos.x()]
-                    | DigitPositions::BOX_POSITIONS[pos.box_index()])
-                    & grid.digit_positions(digit);
-                affected_pos.remove(pos);
-                if let Some(app) = grid.plan_remove_candidate_with_mask(affected_pos, digit) {
-                    return Ok(Some(Box::new(NakedSingleStep::new(pos, digit, app))));
-                }
-            }
-        }
-        Ok(None)
+        let mut after_grid = grid.clone();
+        let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, pos, digit| {
+            let app = super::collect_applications_from_diff(grid, after_grid);
+            ControlFlow::Break(NakedSingleStep::new(pos, digit, app))
+        });
+        Ok(step.map(|step| step.clone_box()))
     }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
         let mut changed = false;
-
-        let decided_cells = grid.decided_cells();
-        for digit in Digit::ALL {
-            let decided_digit_positions =
-                grid.digit_positions(digit) & decided_cells & !grid.decided_propagated();
-            for pos in decided_digit_positions {
-                let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.y()]
-                    | DigitPositions::COLUMN_POSITIONS[pos.x()]
-                    | DigitPositions::BOX_POSITIONS[pos.box_index()];
-                affected_pos.remove(pos);
-                grid.insert_decided_propagated(pos);
-                changed |= grid.remove_candidate_with_mask(affected_pos, digit);
-            }
-        }
-
+        Self::apply_with_control_flow(grid, |_, _, _| {
+            changed = true;
+            ControlFlow::Continue(())
+        });
         Ok(changed)
     }
 }

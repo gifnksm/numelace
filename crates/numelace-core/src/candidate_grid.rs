@@ -427,16 +427,6 @@ impl CandidateGrid {
         changed
     }
 
-    /// Returns `true` if placing the digit would change the grid.
-    ///
-    /// This mirrors the change detection behavior of [`place`](Self::place) without
-    /// mutating the grid, which is useful for hint generation.
-    #[must_use]
-    #[inline]
-    pub fn would_place_change(&self, pos: Position, digit: Digit) -> bool {
-        self.candidates_at(pos).as_single() != Some(digit)
-    }
-
     /// Removes a specific digit as a candidate at a position.
     ///
     /// # Returns
@@ -459,16 +449,6 @@ impl CandidateGrid {
     #[inline]
     pub fn remove_candidate(&mut self, pos: Position, digit: Digit) -> bool {
         self.digit_positions[digit].remove(pos)
-    }
-
-    /// Returns `true` if removing the candidate would change the grid.
-    ///
-    /// This mirrors the change detection behavior of [`remove_candidate`](Self::remove_candidate)
-    /// without mutating the grid, which is useful for hint generation.
-    #[must_use]
-    #[inline]
-    pub fn would_remove_candidate_change(&self, pos: Position, digit: Digit) -> bool {
-        self.digit_positions[digit].contains(pos)
     }
 
     /// Removes a candidate digit from all positions specified by a mask.
@@ -502,23 +482,6 @@ impl CandidateGrid {
         before != self.digit_positions[digit]
     }
 
-    /// Returns `true` if removing the digit from the masked positions would change the grid.
-    ///
-    /// This mirrors the change detection behavior of
-    /// [`remove_candidate_with_mask`](Self::remove_candidate_with_mask) without
-    /// mutating the grid, which is useful for hint generation.
-    #[must_use]
-    #[inline]
-    pub fn would_remove_candidate_with_mask_change(
-        &self,
-        mask: DigitPositions,
-        digit: Digit,
-    ) -> bool {
-        let before = self.digit_positions[digit];
-        let after = before & !mask;
-        before != after
-    }
-
     /// Removes a set of candidate digits from all positions specified by a mask.
     ///
     /// Returns `true` if any candidate was removed.
@@ -538,26 +501,6 @@ impl CandidateGrid {
             changed |= self.remove_candidate_with_mask(mask, digit);
         }
         changed
-    }
-
-    /// Returns `true` if removing the digit set from the masked positions would change the grid.
-    ///
-    /// This mirrors the change detection behavior of
-    /// [`remove_candidate_set_with_mask`](Self::remove_candidate_set_with_mask)
-    /// without mutating the grid, which is useful for hint generation.
-    #[must_use]
-    #[inline]
-    pub fn would_remove_candidate_set_with_mask_change(
-        &self,
-        mask: BitSet81<PositionSemantics>,
-        digits: BitSet9<DigitSemantics>,
-    ) -> bool {
-        for digit in digits {
-            if self.would_remove_candidate_with_mask_change(mask, digit) {
-                return true;
-            }
-        }
-        false
     }
 
     /// Returns the set of all positions where the specified digit can be placed.
@@ -865,8 +808,6 @@ mod tests {
 
         // Place is idempotent
         assert!(!grid.place(pos, D5));
-        assert!(!grid.would_place_change(pos, D5));
-        assert!(grid.would_place_change(pos, D1));
 
         // Placement reduces cell to single candidate and removes others
         let candidates = grid.candidates_at(pos);
@@ -918,15 +859,7 @@ mod tests {
         for (name, mask, digit, pos_in_mask) in cases {
             let mut grid = CandidateGrid::new();
 
-            assert!(
-                grid.would_remove_candidate_with_mask_change(mask, digit),
-                "{name}"
-            );
             assert!(grid.remove_candidate_with_mask(mask, digit), "{name}");
-            assert!(
-                !grid.would_remove_candidate_with_mask_change(mask, digit),
-                "{name}"
-            );
 
             // Removal is idempotent
             assert!(!grid.remove_candidate_with_mask(mask, digit), "{name}");
