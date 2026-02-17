@@ -28,9 +28,11 @@
 //! cargo bench --bench generator
 //! ```
 
-use std::{hint, str::FromStr as _};
+use std::{hint, str::FromStr as _, time::Duration};
 
-use criterion::{BatchSize, BenchmarkId, Criterion, criterion_group, criterion_main};
+use criterion::{
+    BatchSize, BenchmarkId, Criterion, PlottingBackend, criterion_group, criterion_main,
+};
 use numelace_generator::{PuzzleGenerator, PuzzleSeed};
 use numelace_solver::{TechniqueSolver, technique};
 
@@ -80,5 +82,14 @@ fn bench_generator_basic(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, bench_generator_fundamental, bench_generator_basic);
+criterion_group!(
+    name = benches;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters)
+            .measurement_time(Duration::from_secs(12));
+    targets =
+        bench_generator_fundamental,
+        bench_generator_basic
+);
 criterion_main!(benches);

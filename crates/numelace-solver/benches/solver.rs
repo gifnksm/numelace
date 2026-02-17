@@ -35,9 +35,11 @@
 //! cargo bench --bench solver
 //! ```
 
-use std::{hint, str::FromStr as _};
+use std::{hint, str::FromStr as _, time::Duration};
 
-use criterion::{BatchSize, BenchmarkId, Criterion, criterion_group, criterion_main};
+use criterion::{
+    BatchSize, BenchmarkId, Criterion, PlottingBackend, criterion_group, criterion_main,
+};
 use numelace_core::DigitGrid;
 use numelace_solver::{BacktrackSolver, TechniqueGrid, TechniqueSolver, technique};
 
@@ -231,10 +233,15 @@ fn bench_backtrack_solver_fundamental(c: &mut Criterion) {
 }
 
 criterion_group!(
-    benches,
-    bench_technique_solver_fundamental,
-    bench_technique_solver_basic,
-    bench_technique_solver_intermediate,
-    bench_backtrack_solver_fundamental,
+    name = benches;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters)
+            .measurement_time(Duration::from_secs(12));
+    targets =
+        bench_technique_solver_fundamental,
+        bench_technique_solver_basic,
+        bench_technique_solver_intermediate,
+        bench_backtrack_solver_fundamental,
 );
 criterion_main!(benches);

@@ -9,9 +9,11 @@
 //! cargo bench --bench techniques
 //! ```
 
-use std::hint;
+use std::{hint, time::Duration};
 
-use criterion::{BatchSize, BenchmarkId, Criterion, criterion_group, criterion_main};
+use criterion::{
+    BatchSize, BenchmarkId, Criterion, PlottingBackend, criterion_group, criterion_main,
+};
 use numelace_core::{CandidateGrid, Digit, Position};
 use numelace_solver::{
     TechniqueGrid,
@@ -300,13 +302,18 @@ fn bench_hidden_triple_apply(c: &mut Criterion) {
 }
 
 criterion_group!(
-    benches,
-    bench_naked_single_apply,
-    bench_hidden_single_apply,
-    bench_locked_candidates_apply,
-    bench_naked_pair_apply,
-    bench_hidden_pair_apply,
-    bench_naked_triple_apply,
-    bench_hidden_triple_apply,
+    name = benches;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters)
+            .measurement_time(Duration::from_secs(10));
+    targets =
+        bench_naked_single_apply,
+        bench_hidden_single_apply,
+        bench_locked_candidates_apply,
+        bench_naked_pair_apply,
+        bench_hidden_pair_apply,
+        bench_naked_triple_apply,
+        bench_hidden_triple_apply,
 );
 criterion_main!(benches);
