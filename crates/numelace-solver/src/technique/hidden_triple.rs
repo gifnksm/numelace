@@ -101,6 +101,7 @@ impl Technique for HiddenTriple {
                 if d1_positions.is_empty() || d1_positions.len() > 3 {
                     continue;
                 }
+                let digits1 = DigitSet::from_elem(d1);
                 for (d2, remaining_digits2) in remaining_digits1.pivots_with_following() {
                     let d2_positions = grid.digit_positions(d2) & house_positions;
                     if d2_positions.is_empty() {
@@ -110,6 +111,7 @@ impl Technique for HiddenTriple {
                     if pair_positions.len() > 3 {
                         continue;
                     }
+                    let digits12 = digits1 | DigitSet::from_elem(d2);
                     for (d3, remaining_digits3) in remaining_digits2.pivots_with_following() {
                         let d3_positions = grid.digit_positions(d3) & house_positions;
                         if d3_positions.is_empty() {
@@ -134,12 +136,10 @@ impl Technique for HiddenTriple {
                             }
                         }
 
+                        let digits123 = digits12 | DigitSet::from_elem(d3);
                         let eliminate_positions = triple_positions;
                         let mut eliminate_digits = DigitSet::EMPTY;
-                        for d in DigitSet::FULL {
-                            if d == d1 || d == d2 || d == d3 {
-                                continue;
-                            }
+                        for d in !digits123 {
                             if grid.would_remove_candidate_with_mask_change(eliminate_positions, d)
                             {
                                 eliminate_digits.insert(d);
@@ -168,6 +168,7 @@ impl Technique for HiddenTriple {
                 if d1_positions.is_empty() || d1_positions.len() > 3 {
                     continue;
                 }
+                let digits1 = DigitSet::from_elem(d1);
                 for (d2, remaining_digits2) in remaining_digits1.pivots_with_following() {
                     let d2_positions = grid.digit_positions(d2) & house_positions;
                     if d2_positions.is_empty() {
@@ -177,6 +178,7 @@ impl Technique for HiddenTriple {
                     if pair_positions.len() > 3 {
                         continue;
                     }
+                    let digits12 = digits1 | DigitSet::from_elem(d2);
                     for (d3, remaining_digits3) in remaining_digits2.pivots_with_following() {
                         let d3_positions = grid.digit_positions(d3) & house_positions;
                         if d3_positions.is_empty() {
@@ -189,7 +191,6 @@ impl Technique for HiddenTriple {
                         if triple_positions.len() < 3 {
                             return Err(ConsistencyError::CandidateConstraintViolation.into());
                         }
-
                         // Digits smaller than `d3` are checked in earlier combinations,
                         // so only the remaining digits need to be validated here.
                         for d in remaining_digits3 {
@@ -201,11 +202,9 @@ impl Technique for HiddenTriple {
                             }
                         }
 
+                        let digits123 = digits12 | DigitSet::from_elem(d3);
                         let eliminate_positions = triple_positions;
-                        for d in DigitSet::FULL {
-                            if d == d1 || d == d2 || d == d3 {
-                                continue;
-                            }
+                        for d in !digits123 {
                             changed |= grid.remove_candidate_with_mask(eliminate_positions, d);
                         }
                     }

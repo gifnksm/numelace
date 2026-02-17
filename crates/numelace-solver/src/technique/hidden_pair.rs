@@ -97,13 +97,12 @@ impl Technique for HiddenPair {
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         for house in House::ALL {
             let house_positions = house.positions();
-
             for (d1, remaining_digits) in DigitSet::FULL.pivots_with_following() {
                 let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.len() != 2 {
                     continue;
                 }
-
+                let digits1 = DigitSet::from_elem(d1);
                 let mut candidate_digits = remaining_digits
                     .into_iter()
                     .filter(|d2| grid.digit_positions(*d2) & house_positions == d1_positions);
@@ -113,13 +112,10 @@ impl Technique for HiddenPair {
                 if candidate_digits.next().is_some() {
                     return Err(ConsistencyError::CandidateConstraintViolation.into());
                 }
-
+                let digits12 = digits1 | DigitSet::from_elem(d2);
                 let mut eliminate_digits = DigitSet::EMPTY;
                 let eliminate_positions = d1_positions;
-                for d in DigitSet::FULL {
-                    if d == d1 || d == d2 {
-                        continue;
-                    }
+                for d in !digits12 {
                     if grid.would_remove_candidate_with_mask_change(eliminate_positions, d) {
                         eliminate_digits.insert(d);
                     }
@@ -140,13 +136,12 @@ impl Technique for HiddenPair {
         let mut changed = false;
         for house in House::ALL {
             let house_positions = house.positions();
-
             for (d1, remaining_digits) in DigitSet::FULL.pivots_with_following() {
                 let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.len() != 2 {
                     continue;
                 }
-
+                let digits1 = DigitSet::from_elem(d1);
                 let mut candidate_digits = remaining_digits
                     .into_iter()
                     .filter(|d2| grid.digit_positions(*d2) & house_positions == d1_positions);
@@ -156,12 +151,9 @@ impl Technique for HiddenPair {
                 if candidate_digits.next().is_some() {
                     return Err(ConsistencyError::CandidateConstraintViolation.into());
                 }
-
+                let digits12 = digits1 | DigitSet::from_elem(d2);
                 let eliminate_positions = d1_positions;
-                for d in DigitSet::FULL {
-                    if d == d1 || d == d2 {
-                        continue;
-                    }
+                for d in !digits12 {
                     changed |= grid.remove_candidate_with_mask(eliminate_positions, d);
                 }
             }
