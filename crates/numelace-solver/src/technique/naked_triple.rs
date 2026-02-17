@@ -94,7 +94,6 @@ impl Technique for NakedTriple {
             if triple_in_house.len() < 3 {
                 continue;
             }
-
             for (pos1, remaining_pos1) in triple_in_house.pivots_with_following() {
                 let digits1 = grid.candidates_at(pos1);
                 for (pos2, remaining_pos2) in remaining_pos1.pivots_with_following() {
@@ -148,14 +147,12 @@ impl Technique for NakedTriple {
         if triple_candidate_cells.len() < 3 {
             return Ok(false);
         }
-
         let mut changed = false;
         for house in House::ALL {
             let triple_in_house = triple_candidate_cells & house.positions();
             if triple_in_house.len() < 3 {
                 continue;
             }
-
             for (pos1, remaining_pos1) in triple_in_house.pivots_with_following() {
                 let digits1 = grid.candidates_at(pos1);
                 for (pos2, remaining_pos2) in remaining_pos1.pivots_with_following() {
@@ -172,6 +169,8 @@ impl Technique for NakedTriple {
                             return Err(ConsistencyError::CandidateConstraintViolation.into());
                         }
 
+                        // Positions smaller than `pos3` are checked in earlier combinations,
+                        // so only the remaining positions need to be validated here.
                         let has_fourth_cell = remaining_pos3
                             .iter()
                             .any(|pos| grid.candidates_at(pos).is_subset(digits123));

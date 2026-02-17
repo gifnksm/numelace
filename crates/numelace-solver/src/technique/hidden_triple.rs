@@ -96,7 +96,6 @@ impl Technique for HiddenTriple {
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         for house in House::ALL {
             let house_positions = house.positions();
-
             for (d1, remaining_digits1) in DigitSet::FULL.pivots_with_following() {
                 let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.is_empty() || d1_positions.len() > 3 {
@@ -164,7 +163,6 @@ impl Technique for HiddenTriple {
         let mut changed = false;
         for house in House::ALL {
             let house_positions = house.positions();
-
             for (d1, remaining_digits1) in DigitSet::FULL.pivots_with_following() {
                 let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.is_empty() || d1_positions.len() > 3 {

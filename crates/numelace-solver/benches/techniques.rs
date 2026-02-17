@@ -18,8 +18,8 @@ use numelace_core::{CandidateGrid, Digit, Position};
 use numelace_solver::{
     TechniqueGrid,
     technique::{
-        HiddenPair, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedSingle,
-        NakedTriple, Technique as _,
+        HiddenPair, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedQuad,
+        NakedSingle, NakedTriple, Technique as _,
     },
 };
 
@@ -113,6 +113,25 @@ fn hidden_triple_grid() -> TechniqueGrid {
             grid.remove_candidate(pos, Digit::D1);
             grid.remove_candidate(pos, Digit::D2);
             grid.remove_candidate(pos, Digit::D3);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
+fn naked_quad_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let pos1 = Position::new(0, 0);
+    let pos2 = Position::new(2, 0);
+    let pos3 = Position::new(4, 0);
+    let pos4 = Position::new(6, 0);
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 && digit != Digit::D4 {
+            grid.remove_candidate(pos1, digit);
+            grid.remove_candidate(pos2, digit);
+            grid.remove_candidate(pos3, digit);
+            grid.remove_candidate(pos4, digit);
         }
     }
 
@@ -301,6 +320,32 @@ fn bench_hidden_triple_apply(c: &mut Criterion) {
     }
 }
 
+fn bench_naked_quad_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("naked_quad", naked_quad_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+
+    let technique = NakedQuad::new();
+
+    for (param, grid) in puzzles {
+        c.bench_with_input(
+            BenchmarkId::new("naked_quad_apply", param),
+            &grid,
+            |b, grid| {
+                b.iter_batched_ref(
+                    || hint::black_box(grid.clone()),
+                    |grid| {
+                        let changed = technique.apply(grid).unwrap();
+                        hint::black_box(changed)
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
+}
+
 criterion_group!(
     name = benches;
     config =
@@ -315,5 +360,6 @@ criterion_group!(
         bench_hidden_pair_apply,
         bench_naked_triple_apply,
         bench_hidden_triple_apply,
+        bench_naked_quad_apply,
 );
 criterion_main!(benches);

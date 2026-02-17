@@ -9,8 +9,8 @@ use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 
 pub use self::{
     hidden_pair::HiddenPair, hidden_single::HiddenSingle, hidden_triple::HiddenTriple,
-    locked_candidates::LockedCandidates, naked_pair::NakedPair, naked_single::NakedSingle,
-    naked_triple::NakedTriple,
+    locked_candidates::LockedCandidates, naked_pair::NakedPair, naked_quad::NakedQuad,
+    naked_single::NakedSingle, naked_triple::NakedTriple,
 };
 use crate::{SolverError, TechniqueGrid};
 
@@ -19,6 +19,7 @@ mod hidden_single;
 mod hidden_triple;
 mod locked_candidates;
 mod naked_pair;
+mod naked_quad;
 mod naked_single;
 mod naked_triple;
 
@@ -28,7 +29,7 @@ mod naked_triple;
 /// This list may grow as new techniques are implemented.
 #[must_use]
 pub fn all_techniques() -> Vec<BoxedTechnique> {
-    intermediate_techniques()
+    upper_intermediate_techniques()
 }
 
 /// Returns the fundamental techniques.
@@ -60,6 +61,24 @@ pub fn intermediate_techniques() -> Vec<BoxedTechnique> {
     techniques.push(Box::new(HiddenPair::new()));
     techniques.push(Box::new(NakedTriple::new()));
     techniques.push(Box::new(HiddenTriple::new()));
+    techniques
+}
+
+/// Returns the upper-intermediate techniques used by the solver.
+///
+/// This currently includes the intermediate techniques plus [`NakedQuad`].
+/// Additional upper-intermediate techniques may be appended here as they are
+/// implemented.
+#[must_use]
+pub fn upper_intermediate_techniques() -> Vec<BoxedTechnique> {
+    let mut techniques = intermediate_techniques();
+    techniques.push(Box::new(NakedQuad::new()));
+    // techniques.push(Box::new(HiddenQuad::new()));
+    // techniques.push(Box::new(XWing:new()));
+    // techniques.push(Box::new(YWing:new()));
+    // techniques.push(Box::new(Skyscraper:new()));
+    // techniques.push(Box::new(TwoStringKite:new()));
+    // techniques.push(Box::new(XChain:new()));
     techniques
 }
 

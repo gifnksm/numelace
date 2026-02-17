@@ -27,7 +27,7 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] Tier 2 (intermediate): Hidden Pair
   - [X] Tier 2 (intermediate): Naked Triple
   - [X] Tier 2 (intermediate): Hidden Triple
-  - [ ] Tier 3 (upper-intermediate): Naked Quad
+  - [X] Tier 3 (upper-intermediate): Naked Quad
   - [ ] Tier 3 (upper-intermediate): Hidden Quad
   - [ ] Tier 3 (upper-intermediate): X-Wing
   - [ ] Tier 3 (upper-intermediate): Y-Wing
