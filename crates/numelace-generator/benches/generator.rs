@@ -82,14 +82,35 @@ fn bench_generator_basic(c: &mut Criterion) {
     }
 }
 
+fn bench_generator_intermediate(c: &mut Criterion) {
+    let solver = TechniqueSolver::new(technique::intermediate_techniques());
+    let generator = PuzzleGenerator::new(&solver);
+
+    for (i, seed) in SEEDS.into_iter().enumerate() {
+        let seed = PuzzleSeed::from_str(seed).unwrap();
+        c.bench_with_input(
+            BenchmarkId::new("generator_intermediate", format!("seed_{i}")),
+            &seed,
+            |b, seed| {
+                b.iter_batched(
+                    || hint::black_box(*seed),
+                    |seed| generator.generate_with_seed(seed),
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+    }
+}
+
 criterion_group!(
     name = benches;
     config =
         Criterion::default()
             .plotting_backend(PlottingBackend::Plotters)
-            .measurement_time(Duration::from_secs(12));
+            .measurement_time(Duration::from_secs(15));
     targets =
         bench_generator_fundamental,
-        bench_generator_basic
+        bench_generator_basic,
+        bench_generator_intermediate,
 );
 criterion_main!(benches);
