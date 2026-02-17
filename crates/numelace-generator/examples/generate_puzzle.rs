@@ -198,10 +198,10 @@ fn print_puzzle(
     }
 
     println!("Problem:");
-    println!("{:#}", puzzle.problem);
+    println!("  {}", puzzle.problem);
     println!();
     println!("Solution:");
-    println!("{:#}", puzzle.solution);
+    println!("  {}", puzzle.solution);
     println!();
 
     println!("Stats:");
