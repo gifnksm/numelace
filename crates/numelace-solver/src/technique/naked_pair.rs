@@ -123,14 +123,14 @@ impl Technique for NakedPair {
                 let mut eliminate_positions = house.positions();
                 eliminate_positions.remove(pos1);
                 eliminate_positions.remove(pos2);
-                for digit in pair_digits {
-                    if grid.would_remove_candidate_with_mask_change(eliminate_positions, digit) {
-                        return Ok(Some(Box::new(NakedPairStep::new(
-                            DigitPositions::from_iter([pos1, pos2]),
-                            pair_digits,
-                            eliminate_positions,
-                        ))));
-                    }
+                if grid
+                    .would_remove_candidate_set_with_mask_change(eliminate_positions, pair_digits)
+                {
+                    return Ok(Some(Box::new(NakedPairStep::new(
+                        DigitPositions::from_iter([pos1, pos2]),
+                        pair_digits,
+                        eliminate_positions,
+                    ))));
                 }
             }
         }

@@ -123,16 +123,15 @@ impl Technique for NakedTriple {
                         eliminate_positions.remove(pos1);
                         eliminate_positions.remove(pos2);
                         eliminate_positions.remove(pos3);
-                        for digit in digits123 {
-                            if grid
-                                .would_remove_candidate_with_mask_change(eliminate_positions, digit)
-                            {
-                                return Ok(Some(Box::new(NakedTripleStep::new(
-                                    DigitPositions::from_iter([pos1, pos2, pos3]),
-                                    digits123,
-                                    eliminate_positions,
-                                ))));
-                            }
+                        if grid.would_remove_candidate_set_with_mask_change(
+                            eliminate_positions,
+                            digits123,
+                        ) {
+                            return Ok(Some(Box::new(NakedTripleStep::new(
+                                DigitPositions::from_iter([pos1, pos2, pos3]),
+                                digits123,
+                                eliminate_positions,
+                            ))));
                         }
                     }
                 }
@@ -182,9 +181,8 @@ impl Technique for NakedTriple {
                         eliminate_positions.remove(pos1);
                         eliminate_positions.remove(pos2);
                         eliminate_positions.remove(pos3);
-                        for digit in digits123 {
-                            changed |= grid.remove_candidate_with_mask(eliminate_positions, digit);
-                        }
+                        changed |=
+                            grid.remove_candidate_set_with_mask(eliminate_positions, digits123);
                     }
                 }
             }

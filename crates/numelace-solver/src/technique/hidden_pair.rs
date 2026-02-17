@@ -37,18 +37,13 @@ pub struct HiddenPair {}
 pub struct HiddenPairStep {
     positions: DigitPositions,
     digits: DigitSet,
-    eliminate_digits: DigitSet,
 }
 
 impl HiddenPairStep {
     /// Creates a new `HiddenPairStep`.
     #[must_use]
-    pub fn new(positions: DigitPositions, digits: DigitSet, eliminate_digits: DigitSet) -> Self {
-        Self {
-            positions,
-            digits,
-            eliminate_digits,
-        }
+    pub fn new(positions: DigitPositions, digits: DigitSet) -> Self {
+        Self { positions, digits }
     }
 }
 
@@ -72,7 +67,7 @@ impl TechniqueStep for HiddenPairStep {
     fn application(&self) -> Vec<TechniqueApplication> {
         vec![TechniqueApplication::CandidateElimination {
             positions: self.positions,
-            digits: self.eliminate_digits,
+            digits: !self.digits,
         }]
     }
 }
@@ -113,18 +108,12 @@ impl Technique for HiddenPair {
                     return Err(ConsistencyError::CandidateConstraintViolation.into());
                 }
                 let digits12 = digits1 | DigitSet::from_elem(d2);
-                let mut eliminate_digits = DigitSet::EMPTY;
                 let eliminate_positions = d1_positions;
-                for d in !digits12 {
-                    if grid.would_remove_candidate_with_mask_change(eliminate_positions, d) {
-                        eliminate_digits.insert(d);
-                    }
-                }
-                if !eliminate_digits.is_empty() {
+                if grid.would_remove_candidate_set_with_mask_change(eliminate_positions, !digits12)
+                {
                     return Ok(Some(Box::new(HiddenPairStep::new(
                         eliminate_positions,
                         DigitSet::from_iter([d1, d2]),
-                        eliminate_digits,
                     ))));
                 }
             }
@@ -153,9 +142,7 @@ impl Technique for HiddenPair {
                 }
                 let digits12 = digits1 | DigitSet::from_elem(d2);
                 let eliminate_positions = d1_positions;
-                for d in !digits12 {
-                    changed |= grid.remove_candidate_with_mask(eliminate_positions, d);
-                }
+                changed |= grid.remove_candidate_set_with_mask(eliminate_positions, !digits12);
             }
         }
         Ok(changed)

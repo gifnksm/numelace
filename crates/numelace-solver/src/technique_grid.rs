@@ -158,6 +158,35 @@ impl TechniqueGrid {
             .would_remove_candidate_with_mask_change(mask, digit)
     }
 
+    /// Removes a set of candidate digits from all positions specified by a mask.
+    ///
+    /// Returns `true` if any candidate was removed.
+    ///
+    /// This mirrors [`CandidateGrid::remove_candidate_set_with_mask`].
+    #[inline]
+    #[must_use]
+    pub fn remove_candidate_set_with_mask(
+        &mut self,
+        mask: DigitPositions,
+        digits: DigitSet,
+    ) -> bool {
+        self.candidates.remove_candidate_set_with_mask(mask, digits)
+    }
+
+    /// Returns `true` if removing the digit set from the masked positions would change the grid.
+    ///
+    /// This mirrors [`CandidateGrid::would_remove_candidate_set_with_mask_change`].
+    #[inline]
+    #[must_use]
+    pub fn would_remove_candidate_set_with_mask_change(
+        &self,
+        mask: DigitPositions,
+        digits: DigitSet,
+    ) -> bool {
+        self.candidates
+            .would_remove_candidate_set_with_mask_change(mask, digits)
+    }
+
     /// Returns the set of all positions where the specified digit can be placed.
     ///
     /// This mirrors [`CandidateGrid::digit_positions`].

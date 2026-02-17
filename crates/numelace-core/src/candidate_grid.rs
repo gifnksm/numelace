@@ -519,6 +519,47 @@ impl CandidateGrid {
         before != after
     }
 
+    /// Removes a set of candidate digits from all positions specified by a mask.
+    ///
+    /// Returns `true` if any candidate was removed.
+    ///
+    /// This is equivalent to calling
+    /// [`remove_candidate_with_mask`](Self::remove_candidate_with_mask)
+    /// for each digit in `digits`.
+    #[must_use]
+    #[inline]
+    pub fn remove_candidate_set_with_mask(
+        &mut self,
+        mask: BitSet81<PositionSemantics>,
+        digits: BitSet9<DigitSemantics>,
+    ) -> bool {
+        let mut changed = false;
+        for digit in digits {
+            changed |= self.remove_candidate_with_mask(mask, digit);
+        }
+        changed
+    }
+
+    /// Returns `true` if removing the digit set from the masked positions would change the grid.
+    ///
+    /// This mirrors the change detection behavior of
+    /// [`remove_candidate_set_with_mask`](Self::remove_candidate_set_with_mask)
+    /// without mutating the grid, which is useful for hint generation.
+    #[must_use]
+    #[inline]
+    pub fn would_remove_candidate_set_with_mask_change(
+        &self,
+        mask: BitSet81<PositionSemantics>,
+        digits: BitSet9<DigitSemantics>,
+    ) -> bool {
+        for digit in digits {
+            if self.would_remove_candidate_with_mask_change(mask, digit) {
+                return true;
+            }
+        }
+        false
+    }
+
     /// Returns the set of all positions where the specified digit can be placed.
     #[must_use]
     #[inline]

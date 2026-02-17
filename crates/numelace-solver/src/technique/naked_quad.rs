@@ -132,17 +132,15 @@ impl Technique for NakedQuad {
                             eliminate_positions.remove(pos2);
                             eliminate_positions.remove(pos3);
                             eliminate_positions.remove(pos4);
-                            for digit in digits1234 {
-                                if grid.would_remove_candidate_with_mask_change(
+                            if grid.would_remove_candidate_set_with_mask_change(
+                                eliminate_positions,
+                                digits1234,
+                            ) {
+                                return Ok(Some(Box::new(NakedQuadStep::new(
+                                    DigitPositions::from_iter([pos1, pos2, pos3, pos4]),
+                                    digits1234,
                                     eliminate_positions,
-                                    digit,
-                                ) {
-                                    return Ok(Some(Box::new(NakedQuadStep::new(
-                                        DigitPositions::from_iter([pos1, pos2, pos3, pos4]),
-                                        digits1234,
-                                        eliminate_positions,
-                                    ))));
-                                }
+                                ))));
                             }
                         }
                     }
@@ -199,10 +197,8 @@ impl Technique for NakedQuad {
                             eliminate_positions.remove(pos2);
                             eliminate_positions.remove(pos3);
                             eliminate_positions.remove(pos4);
-                            for digit in digits1234 {
-                                changed |=
-                                    grid.remove_candidate_with_mask(eliminate_positions, digit);
-                            }
+                            changed |= grid
+                                .remove_candidate_set_with_mask(eliminate_positions, digits1234);
                         }
                     }
                 }
