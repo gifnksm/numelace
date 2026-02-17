@@ -90,7 +90,7 @@ cargo test
 cargo bench
 
 # Run specific benchmark
-cargo bench --bench backtrack
 cargo bench --bench solver
 cargo bench --bench generator
+cargo bench --bench techniques
 ```
