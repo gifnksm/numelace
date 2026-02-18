@@ -9,7 +9,7 @@
 //! cargo bench --bench techniques
 //! ```
 
-use std::{hint, time::Duration};
+use std::hint;
 
 use criterion::{
     BatchSize, BenchmarkId, Criterion, PlottingBackend, criterion_group, criterion_main,
@@ -347,19 +347,84 @@ fn bench_naked_quad_apply(c: &mut Criterion) {
 }
 
 criterion_group!(
-    name = benches;
+    name = benches_naked_single;
     config =
         Criterion::default()
-            .plotting_backend(PlottingBackend::Plotters)
-            .measurement_time(Duration::from_secs(10));
+            .plotting_backend(PlottingBackend::Plotters);
     targets =
         bench_naked_single_apply,
+);
+
+criterion_group!(
+    name = benches_hidden_single;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
         bench_hidden_single_apply,
+);
+
+criterion_group!(
+    name = benches_locked_candidates;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
         bench_locked_candidates_apply,
+);
+
+criterion_group!(
+    name = benches_naked_pair;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
         bench_naked_pair_apply,
+);
+
+criterion_group!(
+    name = benches_hidden_pair;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
         bench_hidden_pair_apply,
+);
+
+criterion_group!(
+    name = benches_naked_triple;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
         bench_naked_triple_apply,
+);
+
+criterion_group!(
+    name = benches_hidden_triple;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
         bench_hidden_triple_apply,
+);
+
+criterion_group!(
+    name = benches_naked_quad;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
         bench_naked_quad_apply,
 );
-criterion_main!(benches);
+
+criterion_main!(
+    benches_naked_single,
+    benches_hidden_single,
+    benches_locked_candidates,
+    benches_naked_pair,
+    benches_hidden_pair,
+    benches_naked_triple,
+    benches_hidden_triple,
+    benches_naked_quad,
+);

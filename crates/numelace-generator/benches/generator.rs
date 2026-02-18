@@ -103,14 +103,31 @@ fn bench_generator_intermediate(c: &mut Criterion) {
 }
 
 criterion_group!(
-    name = benches;
+    name = benches_fundamental;
     config =
         Criterion::default()
             .plotting_backend(PlottingBackend::Plotters)
-            .measurement_time(Duration::from_secs(15));
+            .measurement_time(Duration::from_secs(8));
+    targets = bench_generator_fundamental,
+);
+
+criterion_group!(
+    name = benches_basic;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters)
+            .measurement_time(Duration::from_secs(9));
     targets =
-        bench_generator_fundamental,
         bench_generator_basic,
+);
+
+criterion_group!(
+    name = benches_intermediate;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
         bench_generator_intermediate,
 );
-criterion_main!(benches);
+
+criterion_main!(benches_fundamental, benches_basic, benches_intermediate);

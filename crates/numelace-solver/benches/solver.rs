@@ -181,10 +181,6 @@ fn bench_backtrack_solver_fundamental(c: &mut Criterion) {
     let puzzles = [
         ("empty", 100, EMPTY_PROBLEM),
         ("ultra_sparse", 100, ULTRA_SPARSE_PROBLEM),
-        ("sparse", 1, SPARSE_PROBLEM),
-        ("mid", 1, MID_PROBLEM),
-        ("dense", 1, DENSE_PROBLEM),
-        ("solution", 1, SOLUTION),
     ];
 
     let solver = BacktrackSolver::with_techniques(technique::fundamental_techniques());
@@ -225,15 +221,45 @@ fn bench_backtrack_solver_fundamental(c: &mut Criterion) {
 }
 
 criterion_group!(
-    name = benches;
+    name = benches_technique_fundamental;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_technique_solver_fundamental,
+);
+
+criterion_group!(
+    name = benches_technique_basic;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_technique_solver_basic,
+);
+
+criterion_group!(
+    name = benches_technique_intermediate;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_technique_solver_intermediate,
+);
+
+criterion_group!(
+    name = benches_backtrack;
     config =
         Criterion::default()
             .plotting_backend(PlottingBackend::Plotters)
             .measurement_time(Duration::from_secs(12));
     targets =
-        bench_technique_solver_fundamental,
-        bench_technique_solver_basic,
-        bench_technique_solver_intermediate,
         bench_backtrack_solver_fundamental,
 );
-criterion_main!(benches);
+
+criterion_main!(
+    benches_technique_fundamental,
+    benches_technique_basic,
+    benches_technique_intermediate,
+    benches_backtrack,
+);
