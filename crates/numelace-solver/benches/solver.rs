@@ -76,32 +76,27 @@ const INTERMEDIATE_PROBLEM: &str =
 const INTERMEDIATE_SOLUTION: &str =
     "741295683692738451538461297967842315854319762123576948275684139489123576316957824";
 
-fn bench_technique_solver_fundamental(c: &mut Criterion) {
-    let puzzles = [
-        ("sparse", SPARSE_PROBLEM),
-        ("mid", MID_PROBLEM),
-        ("dense", DENSE_PROBLEM),
-        ("solution", SOLUTION),
-    ];
-
-    let solver = TechniqueSolver::new(technique::fundamental_techniques());
-
-    for (param, grid) in puzzles {
+fn bench_technique_solver_cases(
+    c: &mut Criterion,
+    bench_name: &'static str,
+    solver: &TechniqueSolver,
+    puzzles: &[(&'static str, &'static str, &'static str)],
+) {
+    for (param, grid, expected_solution) in puzzles {
         let grid = DigitGrid::from_str(grid).unwrap();
         let given = grid.iter().filter(|o| o.is_some()).count();
         let grid = TechniqueGrid::from(grid);
         c.bench_with_input(
-            BenchmarkId::new("technique_solver_fundamental", format!("{param}_{given}")),
+            BenchmarkId::new(bench_name, format!("{param}_{given}")),
             &grid,
             |b, grid| {
-                // ensure that the puzzle is solvable by fundamental techniques
                 let mut test_grid = grid.clone();
                 let (puzzle_solved, _stats) = solver.solve(&mut test_grid).unwrap();
                 assert!(
                     puzzle_solved,
-                    "puzzle should be solvable by fundamental techniques"
+                    "puzzle should be solvable by selected techniques"
                 );
-                assert_eq!(test_grid.to_digit_grid().to_string(), SOLUTION);
+                assert_eq!(test_grid.to_digit_grid().to_string(), *expected_solution);
 
                 b.iter_batched_ref(
                     || grid.clone(),
@@ -111,6 +106,19 @@ fn bench_technique_solver_fundamental(c: &mut Criterion) {
             },
         );
     }
+}
+
+fn bench_technique_solver_fundamental(c: &mut Criterion) {
+    let puzzles = [
+        ("sparse", SPARSE_PROBLEM, SOLUTION),
+        ("mid", MID_PROBLEM, SOLUTION),
+        ("dense", DENSE_PROBLEM, SOLUTION),
+        ("solution", SOLUTION, SOLUTION),
+    ];
+
+    let solver = TechniqueSolver::new(technique::fundamental_techniques());
+
+    bench_technique_solver_cases(c, "technique_solver_fundamental", &solver, &puzzles);
 }
 
 fn bench_technique_solver_basic(c: &mut Criterion) {
@@ -118,31 +126,7 @@ fn bench_technique_solver_basic(c: &mut Criterion) {
 
     let solver = TechniqueSolver::new(technique::basic_techniques());
 
-    for (param, grid, expected_solution) in puzzles {
-        let grid = DigitGrid::from_str(grid).unwrap();
-        let given = grid.iter().filter(|o| o.is_some()).count();
-        let grid = TechniqueGrid::from(grid);
-        c.bench_with_input(
-            BenchmarkId::new("technique_solver_basic", format!("{param}_{given}")),
-            &grid,
-            |b, grid| {
-                // ensure that the puzzle is solvable by basic techniques
-                let mut test_grid = grid.clone();
-                let (puzzle_solved, _stats) = solver.solve(&mut test_grid).unwrap();
-                assert!(
-                    puzzle_solved,
-                    "puzzle should be solvable by basic techniques"
-                );
-                assert_eq!(test_grid.to_digit_grid().to_string(), expected_solution);
-
-                b.iter_batched_ref(
-                    || grid.clone(),
-                    |grid| solver.solve(grid).unwrap(),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_technique_solver_cases(c, "technique_solver_basic", &solver, &puzzles);
 }
 
 fn bench_technique_solver_intermediate(c: &mut Criterion) {
@@ -150,31 +134,7 @@ fn bench_technique_solver_intermediate(c: &mut Criterion) {
 
     let solver = TechniqueSolver::new(technique::intermediate_techniques());
 
-    for (param, grid, expected_solution) in puzzles {
-        let grid = DigitGrid::from_str(grid).unwrap();
-        let given = grid.iter().filter(|o| o.is_some()).count();
-        let grid = TechniqueGrid::from(grid);
-        c.bench_with_input(
-            BenchmarkId::new("technique_solver_intermediate", format!("{param}_{given}")),
-            &grid,
-            |b, grid| {
-                // ensure that the puzzle is solvable by intermediate techniques
-                let mut test_grid = grid.clone();
-                let (puzzle_solved, _stats) = solver.solve(&mut test_grid).unwrap();
-                assert!(
-                    puzzle_solved,
-                    "puzzle should be solvable by intermediate techniques"
-                );
-                assert_eq!(test_grid.to_digit_grid().to_string(), expected_solution);
-
-                b.iter_batched_ref(
-                    || grid.clone(),
-                    |grid| solver.solve(grid).unwrap(),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_technique_solver_cases(c, "technique_solver_intermediate", &solver, &puzzles);
 }
 
 fn bench_backtrack_solver_fundamental(c: &mut Criterion) {

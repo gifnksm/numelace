@@ -17,9 +17,28 @@ use numelace_solver::{
     TechniqueGrid,
     technique::{
         HiddenPair, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedQuad,
-        NakedSingle, NakedTriple, Technique as _,
+        NakedSingle, NakedTriple, Technique,
     },
 };
+
+fn bench_apply_cases<T>(
+    c: &mut Criterion,
+    bench_name: &'static str,
+    technique: &T,
+    puzzles: &[(&'static str, TechniqueGrid)],
+) where
+    T: Technique,
+{
+    for (param, grid) in puzzles {
+        c.bench_with_input(BenchmarkId::new(bench_name, param), grid, |b, grid| {
+            b.iter_batched_ref(
+                || grid.clone(),
+                |grid| technique.apply(grid).unwrap(),
+                BatchSize::SmallInput,
+            );
+        });
+    }
+}
 
 fn naked_single_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
@@ -141,22 +160,8 @@ fn bench_naked_single_apply(c: &mut Criterion) {
         ("naked_single", naked_single_grid()),
         ("empty", TechniqueGrid::new()),
     ];
-
     let technique = NakedSingle::new();
-
-    for (param, grid) in puzzles {
-        c.bench_with_input(
-            BenchmarkId::new("naked_single_apply", param),
-            &grid,
-            |b, grid| {
-                b.iter_batched_ref(
-                    || grid.clone(),
-                    |grid| technique.apply(grid).unwrap(),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_apply_cases(c, "naked_single_apply", &technique, &puzzles);
 }
 
 fn bench_hidden_single_apply(c: &mut Criterion) {
@@ -164,22 +169,8 @@ fn bench_hidden_single_apply(c: &mut Criterion) {
         ("hidden_single", hidden_single_grid()),
         ("empty", TechniqueGrid::new()),
     ];
-
     let technique = HiddenSingle::new();
-
-    for (param, grid) in puzzles {
-        c.bench_with_input(
-            BenchmarkId::new("hidden_single_apply", param),
-            &grid,
-            |b, grid| {
-                b.iter_batched_ref(
-                    || grid.clone(),
-                    |grid| technique.apply(grid).unwrap(),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_apply_cases(c, "hidden_single_apply", &technique, &puzzles);
 }
 
 fn bench_locked_candidates_apply(c: &mut Criterion) {
@@ -187,22 +178,8 @@ fn bench_locked_candidates_apply(c: &mut Criterion) {
         ("locked_candidates", locked_candidates_grid()),
         ("empty", TechniqueGrid::new()),
     ];
-
     let technique = LockedCandidates::new();
-
-    for (param, grid) in puzzles {
-        c.bench_with_input(
-            BenchmarkId::new("locked_candidates_apply", param),
-            &grid,
-            |b, grid| {
-                b.iter_batched_ref(
-                    || grid.clone(),
-                    |grid| technique.apply(grid).unwrap(),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_apply_cases(c, "locked_candidates_apply", &technique, &puzzles);
 }
 
 fn bench_naked_pair_apply(c: &mut Criterion) {
@@ -210,22 +187,8 @@ fn bench_naked_pair_apply(c: &mut Criterion) {
         ("naked_pair", naked_pair_grid()),
         ("empty", TechniqueGrid::new()),
     ];
-
     let technique = NakedPair::new();
-
-    for (param, grid) in puzzles {
-        c.bench_with_input(
-            BenchmarkId::new("naked_pair_apply", param),
-            &grid,
-            |b, grid| {
-                b.iter_batched_ref(
-                    || grid.clone(),
-                    |grid| technique.apply(grid).unwrap(),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_apply_cases(c, "naked_pair_apply", &technique, &puzzles);
 }
 
 fn bench_hidden_pair_apply(c: &mut Criterion) {
@@ -233,22 +196,8 @@ fn bench_hidden_pair_apply(c: &mut Criterion) {
         ("hidden_pair", hidden_pair_grid()),
         ("empty", TechniqueGrid::new()),
     ];
-
     let technique = HiddenPair::new();
-
-    for (param, grid) in puzzles {
-        c.bench_with_input(
-            BenchmarkId::new("hidden_pair_apply", param),
-            &grid,
-            |b, grid| {
-                b.iter_batched_ref(
-                    || grid.clone(),
-                    |grid| technique.apply(grid).unwrap(),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_apply_cases(c, "hidden_pair_apply", &technique, &puzzles);
 }
 
 fn bench_naked_triple_apply(c: &mut Criterion) {
@@ -256,22 +205,8 @@ fn bench_naked_triple_apply(c: &mut Criterion) {
         ("naked_triple", naked_triple_grid()),
         ("empty", TechniqueGrid::new()),
     ];
-
     let technique = NakedTriple::new();
-
-    for (param, grid) in puzzles {
-        c.bench_with_input(
-            BenchmarkId::new("naked_triple_apply", param),
-            &grid,
-            |b, grid| {
-                b.iter_batched_ref(
-                    || grid.clone(),
-                    |grid| technique.apply(grid).unwrap(),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_apply_cases(c, "naked_triple_apply", &technique, &puzzles);
 }
 
 fn bench_hidden_triple_apply(c: &mut Criterion) {
@@ -279,22 +214,8 @@ fn bench_hidden_triple_apply(c: &mut Criterion) {
         ("hidden_triple", hidden_triple_grid()),
         ("empty", TechniqueGrid::new()),
     ];
-
     let technique = HiddenTriple::new();
-
-    for (param, grid) in puzzles {
-        c.bench_with_input(
-            BenchmarkId::new("hidden_triple_apply", param),
-            &grid,
-            |b, grid| {
-                b.iter_batched_ref(
-                    || grid.clone(),
-                    |grid| technique.apply(grid).unwrap(),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_apply_cases(c, "hidden_triple_apply", &technique, &puzzles);
 }
 
 fn bench_naked_quad_apply(c: &mut Criterion) {
@@ -302,22 +223,8 @@ fn bench_naked_quad_apply(c: &mut Criterion) {
         ("naked_quad", naked_quad_grid()),
         ("empty", TechniqueGrid::new()),
     ];
-
     let technique = NakedQuad::new();
-
-    for (param, grid) in puzzles {
-        c.bench_with_input(
-            BenchmarkId::new("naked_quad_apply", param),
-            &grid,
-            |b, grid| {
-                b.iter_batched_ref(
-                    || grid.clone(),
-                    |grid| technique.apply(grid).unwrap(),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_apply_cases(c, "naked_quad_apply", &technique, &puzzles);
 }
 
 criterion_group!(

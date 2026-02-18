@@ -42,14 +42,15 @@ const SEEDS: [&str; 3] = [
     "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
 ];
 
-fn bench_generator_fundamental(c: &mut Criterion) {
-    let solver = TechniqueSolver::new(technique::fundamental_techniques());
-    let generator = PuzzleGenerator::new(&solver);
-
+fn bench_generator_cases(
+    c: &mut Criterion,
+    bench_name: &'static str,
+    generator: &PuzzleGenerator<'_>,
+) {
     for (i, seed) in SEEDS.into_iter().enumerate() {
         let seed = PuzzleSeed::from_str(seed).unwrap();
         c.bench_with_input(
-            BenchmarkId::new("generator_fundamental", format!("seed_{i}")),
+            BenchmarkId::new(bench_name, format!("seed_{i}")),
             &seed,
             |b, seed| {
                 b.iter_batched(
@@ -60,46 +61,24 @@ fn bench_generator_fundamental(c: &mut Criterion) {
             },
         );
     }
+}
+
+fn bench_generator_fundamental(c: &mut Criterion) {
+    let solver = TechniqueSolver::new(technique::fundamental_techniques());
+    let generator = PuzzleGenerator::new(&solver);
+    bench_generator_cases(c, "generator_fundamental", &generator);
 }
 
 fn bench_generator_basic(c: &mut Criterion) {
     let solver = TechniqueSolver::new(technique::basic_techniques());
     let generator = PuzzleGenerator::new(&solver);
-
-    for (i, seed) in SEEDS.into_iter().enumerate() {
-        let seed = PuzzleSeed::from_str(seed).unwrap();
-        c.bench_with_input(
-            BenchmarkId::new("generator_basic", format!("seed_{i}")),
-            &seed,
-            |b, seed| {
-                b.iter_batched(
-                    || *seed,
-                    |seed| generator.generate_with_seed(seed),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_generator_cases(c, "generator_basic", &generator);
 }
 
 fn bench_generator_intermediate(c: &mut Criterion) {
     let solver = TechniqueSolver::new(technique::intermediate_techniques());
     let generator = PuzzleGenerator::new(&solver);
-
-    for (i, seed) in SEEDS.into_iter().enumerate() {
-        let seed = PuzzleSeed::from_str(seed).unwrap();
-        c.bench_with_input(
-            BenchmarkId::new("generator_intermediate", format!("seed_{i}")),
-            &seed,
-            |b, seed| {
-                b.iter_batched(
-                    || *seed,
-                    |seed| generator.generate_with_seed(seed),
-                    BatchSize::SmallInput,
-                );
-            },
-        );
-    }
+    bench_generator_cases(c, "generator_intermediate", &generator);
 }
 
 criterion_group!(
