@@ -35,7 +35,7 @@
 //! cargo bench --bench solver
 //! ```
 
-use std::{hint, str::FromStr as _, time::Duration};
+use std::{str::FromStr as _, time::Duration};
 
 use criterion::{
     BatchSize, BenchmarkId, Criterion, PlottingBackend, criterion_group, criterion_main,
@@ -104,7 +104,7 @@ fn bench_technique_solver_fundamental(c: &mut Criterion) {
                 assert_eq!(test_grid.to_digit_grid().to_string(), SOLUTION);
 
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
+                    || grid.clone(),
                     |grid| solver.solve(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
@@ -136,7 +136,7 @@ fn bench_technique_solver_basic(c: &mut Criterion) {
                 assert_eq!(test_grid.to_digit_grid().to_string(), expected_solution);
 
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
+                    || grid.clone(),
                     |grid| solver.solve(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
@@ -168,7 +168,7 @@ fn bench_technique_solver_intermediate(c: &mut Criterion) {
                 assert_eq!(test_grid.to_digit_grid().to_string(), expected_solution);
 
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
+                    || grid.clone(),
                     |grid| solver.solve(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
@@ -211,7 +211,7 @@ fn bench_backtrack_solver_fundamental(c: &mut Criterion) {
                 }
 
                 b.iter_batched(
-                    || hint::black_box(grid.clone()),
+                    || grid.clone(),
                     |grid| solver.solve(grid).unwrap().take(100).collect::<Vec<_>>(),
                     BatchSize::SmallInput,
                 );

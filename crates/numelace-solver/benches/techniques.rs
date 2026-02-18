@@ -9,8 +9,6 @@
 //! cargo bench --bench techniques
 //! ```
 
-use std::hint;
-
 use criterion::{
     BatchSize, BenchmarkId, Criterion, PlottingBackend, criterion_group, criterion_main,
 };
@@ -152,11 +150,8 @@ fn bench_naked_single_apply(c: &mut Criterion) {
             &grid,
             |b, grid| {
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
-                    |grid| {
-                        let changed = technique.apply(grid).unwrap();
-                        hint::black_box(changed)
-                    },
+                    || grid.clone(),
+                    |grid| technique.apply(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
             },
@@ -178,11 +173,8 @@ fn bench_hidden_single_apply(c: &mut Criterion) {
             &grid,
             |b, grid| {
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
-                    |grid| {
-                        let changed = technique.apply(grid).unwrap();
-                        hint::black_box(changed)
-                    },
+                    || grid.clone(),
+                    |grid| technique.apply(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
             },
@@ -204,11 +196,8 @@ fn bench_locked_candidates_apply(c: &mut Criterion) {
             &grid,
             |b, grid| {
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
-                    |grid| {
-                        let changed = technique.apply(grid).unwrap();
-                        hint::black_box(changed)
-                    },
+                    || grid.clone(),
+                    |grid| technique.apply(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
             },
@@ -230,11 +219,8 @@ fn bench_naked_pair_apply(c: &mut Criterion) {
             &grid,
             |b, grid| {
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
-                    |grid| {
-                        let changed = technique.apply(grid).unwrap();
-                        hint::black_box(changed)
-                    },
+                    || grid.clone(),
+                    |grid| technique.apply(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
             },
@@ -256,11 +242,8 @@ fn bench_hidden_pair_apply(c: &mut Criterion) {
             &grid,
             |b, grid| {
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
-                    |grid| {
-                        let changed = technique.apply(grid).unwrap();
-                        hint::black_box(changed)
-                    },
+                    || grid.clone(),
+                    |grid| technique.apply(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
             },
@@ -282,11 +265,8 @@ fn bench_naked_triple_apply(c: &mut Criterion) {
             &grid,
             |b, grid| {
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
-                    |grid| {
-                        let changed = technique.apply(grid).unwrap();
-                        hint::black_box(changed)
-                    },
+                    || grid.clone(),
+                    |grid| technique.apply(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
             },
@@ -308,11 +288,8 @@ fn bench_hidden_triple_apply(c: &mut Criterion) {
             &grid,
             |b, grid| {
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
-                    |grid| {
-                        let changed = technique.apply(grid).unwrap();
-                        hint::black_box(changed)
-                    },
+                    || grid.clone(),
+                    |grid| technique.apply(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
             },
@@ -334,11 +311,8 @@ fn bench_naked_quad_apply(c: &mut Criterion) {
             &grid,
             |b, grid| {
                 b.iter_batched_ref(
-                    || hint::black_box(grid.clone()),
-                    |grid| {
-                        let changed = technique.apply(grid).unwrap();
-                        hint::black_box(changed)
-                    },
+                    || grid.clone(),
+                    |grid| technique.apply(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
             },

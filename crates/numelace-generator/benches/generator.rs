@@ -28,7 +28,7 @@
 //! cargo bench --bench generator
 //! ```
 
-use std::{hint, str::FromStr as _, time::Duration};
+use std::{str::FromStr as _, time::Duration};
 
 use criterion::{
     BatchSize, BenchmarkId, Criterion, PlottingBackend, criterion_group, criterion_main,
@@ -53,7 +53,7 @@ fn bench_generator_fundamental(c: &mut Criterion) {
             &seed,
             |b, seed| {
                 b.iter_batched(
-                    || hint::black_box(*seed),
+                    || *seed,
                     |seed| generator.generate_with_seed(seed),
                     BatchSize::SmallInput,
                 );
@@ -73,7 +73,7 @@ fn bench_generator_basic(c: &mut Criterion) {
             &seed,
             |b, seed| {
                 b.iter_batched(
-                    || hint::black_box(*seed),
+                    || *seed,
                     |seed| generator.generate_with_seed(seed),
                     BatchSize::SmallInput,
                 );
@@ -93,7 +93,7 @@ fn bench_generator_intermediate(c: &mut Criterion) {
             &seed,
             |b, seed| {
                 b.iter_batched(
-                    || hint::black_box(*seed),
+                    || *seed,
                     |seed| generator.generate_with_seed(seed),
                     BatchSize::SmallInput,
                 );
