@@ -101,13 +101,16 @@ impl HiddenTriple {
     {
         for house in House::ALL {
             let house_positions = house.positions();
-            for (d1, remaining_digits1) in DigitSet::FULL.pivots_with_following() {
+            for (d1, remaining_digits1) in DigitSet::FULL.pivots_with_following().take(7) {
                 let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.is_empty() || d1_positions.len() > 3 {
                     continue;
                 }
                 let digits1 = DigitSet::from_elem(d1);
-                for (d2, remaining_digits2) in remaining_digits1.pivots_with_following() {
+                for (d2, remaining_digits2) in remaining_digits1
+                    .pivots_with_following()
+                    .take(remaining_digits1.len() - 1)
+                {
                     let d2_positions = grid.digit_positions(d2) & house_positions;
                     if d2_positions.is_empty() {
                         continue;

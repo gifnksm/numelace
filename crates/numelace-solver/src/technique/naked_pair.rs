@@ -109,7 +109,10 @@ impl NakedPair {
             if pair_in_house.len() < 2 {
                 continue;
             }
-            for (pos1, mut matching_pair_cells) in pair_in_house.pivots_with_following() {
+            for (pos1, mut matching_pair_cells) in pair_in_house
+                .pivots_with_following()
+                .take(pair_in_house.len() - 1)
+            {
                 let pair_digits = grid.candidates_at(pos1);
                 for d in pair_digits {
                     matching_pair_cells &= grid.digit_positions(d);

@@ -102,7 +102,7 @@ impl HiddenPair {
     {
         for house in House::ALL {
             let house_positions = house.positions();
-            for (d1, remaining_digits) in DigitSet::FULL.pivots_with_following() {
+            for (d1, remaining_digits) in DigitSet::FULL.pivots_with_following().take(8) {
                 let d1_positions = grid.digit_positions(d1) & house_positions;
                 if d1_positions.len() != 2 {
                     continue;

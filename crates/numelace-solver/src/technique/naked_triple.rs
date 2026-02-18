@@ -93,9 +93,15 @@ impl NakedTriple {
             if triple_in_house.len() < 3 {
                 continue;
             }
-            for (pos1, remaining_pos1) in triple_in_house.pivots_with_following() {
+            for (pos1, remaining_pos1) in triple_in_house
+                .pivots_with_following()
+                .take(triple_in_house.len() - 2)
+            {
                 let digits1 = grid.candidates_at(pos1);
-                for (pos2, remaining_pos2) in remaining_pos1.pivots_with_following() {
+                for (pos2, remaining_pos2) in remaining_pos1
+                    .pivots_with_following()
+                    .take(remaining_pos1.len() - 1)
+                {
                     let digits12 = digits1 | grid.candidates_at(pos2);
                     if digits12.len() > 3 {
                         continue;

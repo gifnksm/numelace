@@ -98,14 +98,23 @@ impl NakedQuad {
             if quad_in_house.len() < 4 {
                 continue;
             }
-            for (pos1, remaining_pos1) in quad_in_house.pivots_with_following() {
+            for (pos1, remaining_pos1) in quad_in_house
+                .pivots_with_following()
+                .take(quad_in_house.len() - 3)
+            {
                 let digits1 = grid.candidates_at(pos1);
-                for (pos2, remaining_pos2) in remaining_pos1.pivots_with_following() {
+                for (pos2, remaining_pos2) in remaining_pos1
+                    .pivots_with_following()
+                    .take(remaining_pos1.len() - 2)
+                {
                     let digits12 = digits1 | grid.candidates_at(pos2);
                     if digits12.len() > 4 {
                         continue;
                     }
-                    for (pos3, remaining_pos3) in remaining_pos2.pivots_with_following() {
+                    for (pos3, remaining_pos3) in remaining_pos2
+                        .pivots_with_following()
+                        .take(remaining_pos2.len() - 1)
+                    {
                         let digits123 = digits12 | grid.candidates_at(pos3);
                         if digits123.len() > 4 {
                             continue;
