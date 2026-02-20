@@ -16,7 +16,7 @@ use numelace_core::{CandidateGrid, Digit, Position};
 use numelace_solver::{
     TechniqueGrid,
     technique::{
-        HiddenPair, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedQuad,
+        HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedQuad,
         NakedSingle, NakedTriple, Technique,
     },
 };
@@ -155,6 +155,25 @@ fn naked_quad_grid() -> TechniqueGrid {
     TechniqueGrid::from(grid)
 }
 
+fn hidden_quad_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let pos1 = Position::new(0, 0);
+    let pos2 = Position::new(2, 0);
+    let pos3 = Position::new(4, 0);
+    let pos4 = Position::new(6, 0);
+
+    for pos in Position::ROWS[0] {
+        if pos != pos1 && pos != pos2 && pos != pos3 && pos != pos4 {
+            grid.remove_candidate(pos, Digit::D1);
+            grid.remove_candidate(pos, Digit::D2);
+            grid.remove_candidate(pos, Digit::D3);
+            grid.remove_candidate(pos, Digit::D4);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
 fn bench_naked_single_apply(c: &mut Criterion) {
     let puzzles = [
         ("naked_single", naked_single_grid()),
@@ -225,6 +244,15 @@ fn bench_naked_quad_apply(c: &mut Criterion) {
     ];
     let technique = NakedQuad::new();
     bench_apply_cases(c, "naked_quad_apply", &technique, &puzzles);
+}
+
+fn bench_hidden_quad_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("hidden_quad", hidden_quad_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+    let technique = HiddenQuad::new();
+    bench_apply_cases(c, "hidden_quad_apply", &technique, &puzzles);
 }
 
 criterion_group!(
@@ -299,6 +327,15 @@ criterion_group!(
         bench_naked_quad_apply,
 );
 
+criterion_group!(
+    name = benches_hidden_quad;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_hidden_quad_apply,
+);
+
 criterion_main!(
     benches_naked_single,
     benches_hidden_single,
@@ -308,4 +345,5 @@ criterion_main!(
     benches_naked_triple,
     benches_hidden_triple,
     benches_naked_quad,
+    benches_hidden_quad,
 );

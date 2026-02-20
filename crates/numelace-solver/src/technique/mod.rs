@@ -8,13 +8,14 @@ use std::fmt::Debug;
 use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 
 pub use self::{
-    hidden_pair::HiddenPair, hidden_single::HiddenSingle, hidden_triple::HiddenTriple,
-    locked_candidates::LockedCandidates, naked_pair::NakedPair, naked_quad::NakedQuad,
-    naked_single::NakedSingle, naked_triple::NakedTriple,
+    hidden_pair::HiddenPair, hidden_quad::HiddenQuad, hidden_single::HiddenSingle,
+    hidden_triple::HiddenTriple, locked_candidates::LockedCandidates, naked_pair::NakedPair,
+    naked_quad::NakedQuad, naked_single::NakedSingle, naked_triple::NakedTriple,
 };
 use crate::{SolverError, TechniqueGrid};
 
 mod hidden_pair;
+mod hidden_quad;
 mod hidden_single;
 mod hidden_triple;
 mod locked_candidates;
@@ -73,7 +74,7 @@ pub fn intermediate_techniques() -> Vec<BoxedTechnique> {
 pub fn upper_intermediate_techniques() -> Vec<BoxedTechnique> {
     let mut techniques = intermediate_techniques();
     techniques.push(Box::new(NakedQuad::new()));
-    // techniques.push(Box::new(HiddenQuad::new()));
+    techniques.push(Box::new(HiddenQuad::new()));
     // techniques.push(Box::new(XWing:new()));
     // techniques.push(Box::new(YWing:new()));
     // techniques.push(Box::new(Skyscraper:new()));
