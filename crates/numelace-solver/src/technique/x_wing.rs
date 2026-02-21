@@ -2,12 +2,11 @@ use std::ops::ControlFlow;
 
 use numelace_core::{ConsistencyError, Digit, DigitPositions, DigitSet, Position};
 
+use super::BoxedTechniqueStep;
 use crate::{
     SolverError, TechniqueGrid,
     technique::{Technique, TechniqueStepData},
 };
-
-use super::BoxedTechniqueStep;
 
 const NAME: &str = "X-Wing";
 
