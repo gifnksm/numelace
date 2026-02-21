@@ -10,7 +10,7 @@ use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 pub use self::{
     hidden_pair::HiddenPair, hidden_quad::HiddenQuad, hidden_single::HiddenSingle,
     hidden_triple::HiddenTriple, locked_candidates::LockedCandidates, naked_pair::NakedPair,
-    naked_quad::NakedQuad, naked_single::NakedSingle, naked_triple::NakedTriple,
+    naked_quad::NakedQuad, naked_single::NakedSingle, naked_triple::NakedTriple, x_wing::XWing,
 };
 use crate::{SolverError, TechniqueGrid};
 
@@ -23,6 +23,7 @@ mod naked_pair;
 mod naked_quad;
 mod naked_single;
 mod naked_triple;
+mod x_wing;
 
 /// Returns all available techniques.
 ///
@@ -75,11 +76,11 @@ pub fn upper_intermediate_techniques() -> Vec<BoxedTechnique> {
     let mut techniques = intermediate_techniques();
     techniques.push(Box::new(NakedQuad::new()));
     techniques.push(Box::new(HiddenQuad::new()));
-    // techniques.push(Box::new(XWing:new()));
-    // techniques.push(Box::new(YWing:new()));
-    // techniques.push(Box::new(Skyscraper:new()));
-    // techniques.push(Box::new(TwoStringKite:new()));
-    // techniques.push(Box::new(XChain:new()));
+    techniques.push(Box::new(XWing::new()));
+    // techniques.push(Box::new(YWing::new()));
+    // techniques.push(Box::new(Skyscraper::new()));
+    // techniques.push(Box::new(TwoStringKite::new()));
+    // techniques.push(Box::new(XChain::new()));
     techniques
 }
 

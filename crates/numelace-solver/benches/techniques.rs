@@ -17,7 +17,7 @@ use numelace_solver::{
     TechniqueGrid,
     technique::{
         HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedQuad,
-        NakedSingle, NakedTriple, Technique,
+        NakedSingle, NakedTriple, Technique, XWing,
     },
 };
 
@@ -174,6 +174,23 @@ fn hidden_quad_grid() -> TechniqueGrid {
     TechniqueGrid::from(grid)
 }
 
+fn x_wing_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let x1 = 1;
+    let x2 = 7;
+    let y1 = 0;
+    let y2 = 4;
+
+    for x in 0..9 {
+        if x != x1 && x != x2 {
+            grid.remove_candidate(Position::new(x, y1), Digit::D1);
+            grid.remove_candidate(Position::new(x, y2), Digit::D1);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
 fn bench_naked_single_apply(c: &mut Criterion) {
     let puzzles = [
         ("naked_single", naked_single_grid()),
@@ -253,6 +270,12 @@ fn bench_hidden_quad_apply(c: &mut Criterion) {
     ];
     let technique = HiddenQuad::new();
     bench_apply_cases(c, "hidden_quad_apply", &technique, &puzzles);
+}
+
+fn bench_x_wing_apply(c: &mut Criterion) {
+    let puzzles = [("x_wing", x_wing_grid()), ("empty", TechniqueGrid::new())];
+    let technique = XWing::new();
+    bench_apply_cases(c, "x_wing_apply", &technique, &puzzles);
 }
 
 criterion_group!(
@@ -336,6 +359,15 @@ criterion_group!(
         bench_hidden_quad_apply,
 );
 
+criterion_group!(
+    name = benches_x_wing;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_x_wing_apply,
+);
+
 criterion_main!(
     benches_naked_single,
     benches_hidden_single,
@@ -346,4 +378,5 @@ criterion_main!(
     benches_hidden_triple,
     benches_naked_quad,
     benches_hidden_quad,
+    benches_x_wing,
 );
