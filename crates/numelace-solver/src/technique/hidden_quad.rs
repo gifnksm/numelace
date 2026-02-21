@@ -4,10 +4,7 @@ use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
 use crate::{
     SolverError, TechniqueGrid,
-    technique::{
-        BoxedTechnique, BoxedTechniqueStep, ConditionCells, ConditionDigitCells, Technique,
-        TechniqueApplication, TechniqueStep,
-    },
+    technique::{BoxedTechnique, BoxedTechniqueStep, Technique, TechniqueStepData},
 };
 
 const NAME: &str = "Hidden Quad";
@@ -44,60 +41,17 @@ impl HiddenQuad {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct HiddenQuadStep {
-    positions: DigitPositions,
-    digits: DigitSet,
-    application: Vec<TechniqueApplication>,
-}
-
-impl HiddenQuadStep {
-    pub fn new(
-        positions: DigitPositions,
-        digits: DigitSet,
-        application: Vec<TechniqueApplication>,
-    ) -> Self {
-        Self {
-            positions,
-            digits,
-            application,
-        }
-    }
-}
-
-impl TechniqueStep for HiddenQuadStep {
-    fn technique_name(&self) -> &'static str {
-        NAME
-    }
-
-    fn clone_box(&self) -> BoxedTechniqueStep {
-        Box::new(self.clone())
-    }
-
-    fn condition_cells(&self) -> ConditionCells {
-        self.positions
-    }
-
-    fn condition_digit_cells(&self) -> ConditionDigitCells {
-        vec![(self.positions, self.digits)]
-    }
-
-    fn application(&self) -> Vec<TechniqueApplication> {
-        self.application.clone()
-    }
-}
-
 impl HiddenQuad {
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,
-    ) -> Result<Option<HiddenQuadStep>, SolverError>
+    ) -> Result<Option<BoxedTechniqueStep>, SolverError>
     where
         F: for<'a> FnMut(
             &'a mut TechniqueGrid,
             DigitPositions,
             DigitSet,
-        ) -> ControlFlow<HiddenQuadStep>,
+        ) -> ControlFlow<BoxedTechniqueStep>,
     {
         for house in House::ALL {
             let house_positions = house.positions();
@@ -189,10 +143,15 @@ impl Technique for HiddenQuad {
         let mut after_grid = grid.clone();
         let step =
             Self::apply_with_control_flow(&mut after_grid, |after_grid, positions, digits| {
-                let app = super::collect_applications_from_diff(grid, after_grid);
-                ControlFlow::Break(HiddenQuadStep::new(positions, digits, app))
+                ControlFlow::Break(Box::new(TechniqueStepData::from_diff(
+                    NAME,
+                    positions,
+                    vec![(positions, digits)],
+                    grid,
+                    after_grid,
+                )))
             })?;
-        Ok(step.map(|step| step.clone_box()))
+        Ok(step)
     }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {

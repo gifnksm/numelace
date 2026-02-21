@@ -5,8 +5,8 @@ use numelace_core::{Digit, DigitSet, House, Position};
 use crate::{
     SolverError,
     technique::{
-        BoxedTechnique, BoxedTechniqueStep, ConditionCells, ConditionDigitCells, Technique,
-        TechniqueApplication, TechniqueGrid, TechniqueStep,
+        BoxedTechnique, BoxedTechniqueStep, Technique, TechniqueApplication, TechniqueGrid,
+        TechniqueStepData,
     },
 };
 
@@ -45,58 +45,19 @@ impl HiddenSingle {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct HiddenSingleStep {
-    house: House,
-    digit: Digit,
-    application: Vec<TechniqueApplication>,
-}
-
-impl HiddenSingleStep {
-    fn new(house: House, digit: Digit, application: Vec<TechniqueApplication>) -> Self {
-        HiddenSingleStep {
-            house,
-            digit,
-            application,
-        }
-    }
-}
-
-impl TechniqueStep for HiddenSingleStep {
-    fn technique_name(&self) -> &'static str {
-        NAME
-    }
-
-    fn clone_box(&self) -> BoxedTechniqueStep {
-        Box::new(self.clone())
-    }
-
-    fn condition_cells(&self) -> ConditionCells {
-        self.house.positions()
-    }
-
-    fn condition_digit_cells(&self) -> ConditionDigitCells {
-        vec![(self.house.positions(), DigitSet::from_elem(self.digit))]
-    }
-
-    fn application(&self) -> Vec<TechniqueApplication> {
-        self.application.clone()
-    }
-}
-
 impl HiddenSingle {
     #[inline]
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,
-    ) -> Option<HiddenSingleStep>
+    ) -> Option<BoxedTechniqueStep>
     where
         F: for<'a> FnMut(
             &'a mut TechniqueGrid,
             House,
             Position,
             Digit,
-        ) -> ControlFlow<HiddenSingleStep>,
+        ) -> ControlFlow<BoxedTechniqueStep>,
     {
         let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
@@ -130,14 +91,19 @@ impl Technique for HiddenSingle {
         let mut after_grid = grid.clone();
         let step =
             Self::apply_with_control_flow(&mut after_grid, |after_grid, house, pos, digit| {
-                let mut app = super::collect_applications_from_diff(grid, after_grid);
-                app.push(TechniqueApplication::Placement {
-                    position: pos,
-                    digit,
-                });
-                ControlFlow::Break(HiddenSingleStep::new(house, digit, app))
+                ControlFlow::Break(Box::new(TechniqueStepData::from_diff_with_extra(
+                    NAME,
+                    house.positions(),
+                    vec![(house.positions(), DigitSet::from_elem(digit))],
+                    grid,
+                    after_grid,
+                    vec![TechniqueApplication::Placement {
+                        position: pos,
+                        digit,
+                    }],
+                )))
             });
-        Ok(step.map(|step| step.clone_box()))
+        Ok(step)
     }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {

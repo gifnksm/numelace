@@ -2,12 +2,10 @@ use std::ops::ControlFlow;
 
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House, Position};
 
-use super::{
-    BoxedTechnique, BoxedTechniqueStep, ConditionCells, ConditionDigitCells, TechniqueApplication,
-};
+use super::{BoxedTechnique, BoxedTechniqueStep};
 use crate::{
     SolverError, TechniqueGrid,
-    technique::{Technique, TechniqueStep},
+    technique::{Technique, TechniqueStepData},
 };
 
 const NAME: &str = "Naked Pair";
@@ -36,49 +34,6 @@ const NAME: &str = "Naked Pair";
 #[derive(Debug, Default, Clone, Copy)]
 pub struct NakedPair {}
 
-#[derive(Debug, Clone)]
-pub struct NakedPairStep {
-    positions: DigitPositions,
-    digits: DigitSet,
-    application: Vec<TechniqueApplication>,
-}
-
-impl NakedPairStep {
-    pub fn new(
-        positions: DigitPositions,
-        digits: DigitSet,
-        application: Vec<TechniqueApplication>,
-    ) -> Self {
-        Self {
-            positions,
-            digits,
-            application,
-        }
-    }
-}
-
-impl TechniqueStep for NakedPairStep {
-    fn technique_name(&self) -> &'static str {
-        NAME
-    }
-
-    fn clone_box(&self) -> BoxedTechniqueStep {
-        Box::new(self.clone())
-    }
-
-    fn condition_cells(&self) -> ConditionCells {
-        self.positions
-    }
-
-    fn condition_digit_cells(&self) -> ConditionDigitCells {
-        vec![(self.positions, self.digits)]
-    }
-
-    fn application(&self) -> Vec<TechniqueApplication> {
-        self.application.clone()
-    }
-}
-
 impl NakedPair {
     /// Creates a new `NakedPair` technique.
     #[must_use]
@@ -91,13 +46,13 @@ impl NakedPair {
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,
-    ) -> Result<Option<NakedPairStep>, SolverError>
+    ) -> Result<Option<BoxedTechniqueStep>, SolverError>
     where
         F: for<'a> FnMut(
             &'a mut TechniqueGrid,
             [Position; 2],
             DigitSet,
-        ) -> ControlFlow<NakedPairStep>,
+        ) -> ControlFlow<BoxedTechniqueStep>,
     {
         let pair_candidate_cells = grid.classify_cells::<3>()[2];
         if pair_candidate_cells.len() < 2 {
@@ -155,15 +110,16 @@ impl Technique for NakedPair {
         let step = Self::apply_with_control_flow(
             &mut after_grid,
             |after_grid, [pos1, pos2], pair_digits| {
-                let app = super::collect_applications_from_diff(grid, after_grid);
-                ControlFlow::Break(NakedPairStep::new(
+                ControlFlow::Break(Box::new(TechniqueStepData::from_diff(
+                    NAME,
                     DigitPositions::from_iter([pos1, pos2]),
-                    pair_digits,
-                    app,
-                ))
+                    vec![(DigitPositions::from_iter([pos1, pos2]), pair_digits)],
+                    grid,
+                    after_grid,
+                )))
             },
         )?;
-        Ok(step.map(|step| step.clone_box()))
+        Ok(step)
     }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {

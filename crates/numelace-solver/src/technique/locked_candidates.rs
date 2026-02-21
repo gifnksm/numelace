@@ -2,13 +2,10 @@ use std::ops::ControlFlow;
 
 use numelace_core::{Digit, DigitPositions, DigitSet, House, Position};
 
-use super::{
-    BoxedTechnique, BoxedTechniqueStep, ConditionCells, ConditionDigitCells, TechniqueApplication,
-    TechniqueGrid,
-};
+use super::{BoxedTechnique, BoxedTechniqueStep, TechniqueGrid};
 use crate::{
     SolverError,
-    technique::{Technique, TechniqueStep},
+    technique::{Technique, TechniqueStepData},
 };
 
 const NAME: &str = "Locked Candidates";
@@ -54,71 +51,12 @@ enum LockedCandidatesKind {
     Claiming,
 }
 
-#[derive(Debug, Clone)]
-pub struct LockedCandidatesStep {
-    kind: LockedCandidatesKind,
-    digit: Digit,
-    box_index: u8,
-    row_or_col: House,
-    intersection_cells: DigitPositions,
-    application: Vec<TechniqueApplication>,
-}
-
-impl LockedCandidatesStep {
-    fn new(
-        kind: LockedCandidatesKind,
-        digit: Digit,
-        box_index: u8,
-        row_or_col: House,
-        intersection_cells: DigitPositions,
-        application: Vec<TechniqueApplication>,
-    ) -> Self {
-        Self {
-            kind,
-            digit,
-            box_index,
-            row_or_col,
-            intersection_cells,
-            application,
-        }
-    }
-}
-
-impl TechniqueStep for LockedCandidatesStep {
-    fn technique_name(&self) -> &'static str {
-        match self.kind {
-            LockedCandidatesKind::Pointing => NAME_POINTING,
-            LockedCandidatesKind::Claiming => NAME_CLAIMING,
-        }
-    }
-
-    fn clone_box(&self) -> BoxedTechniqueStep {
-        Box::new(self.clone())
-    }
-
-    fn condition_cells(&self) -> ConditionCells {
-        House::Box {
-            index: self.box_index,
-        }
-        .positions()
-            | self.row_or_col.positions()
-    }
-
-    fn condition_digit_cells(&self) -> ConditionDigitCells {
-        vec![(self.intersection_cells, DigitSet::from_elem(self.digit))]
-    }
-
-    fn application(&self) -> Vec<TechniqueApplication> {
-        self.application.clone()
-    }
-}
-
 impl LockedCandidates {
     #[inline]
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,
-    ) -> Option<LockedCandidatesStep>
+    ) -> Option<BoxedTechniqueStep>
     where
         F: for<'a> FnMut(
             &'a mut TechniqueGrid,
@@ -127,7 +65,7 @@ impl LockedCandidates {
             u8,
             House,
             DigitPositions,
-        ) -> ControlFlow<LockedCandidatesStep>,
+        ) -> ControlFlow<BoxedTechniqueStep>,
     {
         let decided_cells = grid.decided_cells();
         for box_index in 0..9 {
@@ -207,18 +145,19 @@ impl Technique for LockedCandidates {
         let step = Self::apply_with_control_flow(
             &mut after_grid,
             |after_grid, kind, digit, box_index, row_or_col, intersection| {
-                let app = super::collect_applications_from_diff(grid, after_grid);
-                ControlFlow::Break(LockedCandidatesStep::new(
-                    kind,
-                    digit,
-                    box_index,
-                    row_or_col,
-                    intersection,
-                    app,
-                ))
+                ControlFlow::Break(Box::new(TechniqueStepData::from_diff(
+                    match kind {
+                        LockedCandidatesKind::Pointing => NAME_POINTING,
+                        LockedCandidatesKind::Claiming => NAME_CLAIMING,
+                    },
+                    House::Box { index: box_index }.positions() | row_or_col.positions(),
+                    vec![(intersection, DigitSet::from_elem(digit))],
+                    grid,
+                    after_grid,
+                )))
             },
         );
-        Ok(step.map(|step| step.clone_box()))
+        Ok(step)
     }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {

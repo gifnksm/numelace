@@ -2,8 +2,8 @@ use std::ops::ControlFlow;
 
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
-use super::{BoxedTechniqueStep, ConditionCells, ConditionDigitCells, TechniqueApplication};
-use crate::technique::{Technique, TechniqueStep};
+use super::BoxedTechniqueStep;
+use crate::technique::{Technique, TechniqueStepData};
 
 const NAME: &str = "Naked Triple";
 
@@ -23,64 +23,17 @@ impl NakedTriple {
     }
 }
 
-/// A step describing a naked triple and its candidate eliminations.
-#[derive(Debug, Clone)]
-pub struct NakedTripleStep {
-    positions: DigitPositions,
-    digits: DigitSet,
-
-    application: Vec<TechniqueApplication>,
-}
-
-impl NakedTripleStep {
-    /// Creates a new `NakedTripleStep`.
-    #[must_use]
-    pub fn new(
-        positions: DigitPositions,
-        digits: DigitSet,
-        application: Vec<TechniqueApplication>,
-    ) -> Self {
-        Self {
-            positions,
-            digits,
-            application,
-        }
-    }
-}
-
-impl TechniqueStep for NakedTripleStep {
-    fn technique_name(&self) -> &'static str {
-        NAME
-    }
-
-    fn clone_box(&self) -> BoxedTechniqueStep {
-        Box::new(self.clone())
-    }
-
-    fn condition_cells(&self) -> ConditionCells {
-        self.positions
-    }
-
-    fn condition_digit_cells(&self) -> ConditionDigitCells {
-        vec![(self.positions, self.digits)]
-    }
-
-    fn application(&self) -> Vec<TechniqueApplication> {
-        self.application.clone()
-    }
-}
-
 impl NakedTriple {
     fn apply_with_control_flow<F>(
         grid: &mut crate::TechniqueGrid,
         mut on_condition: F,
-    ) -> Result<Option<NakedTripleStep>, crate::SolverError>
+    ) -> Result<Option<BoxedTechniqueStep>, crate::SolverError>
     where
         F: for<'a> FnMut(
             &'a mut crate::TechniqueGrid,
             DigitPositions,
             DigitSet,
-        ) -> ControlFlow<NakedTripleStep>,
+        ) -> ControlFlow<BoxedTechniqueStep>,
     {
         let classes = grid.classify_cells::<4>();
         let triple_candidate_cells = classes[2] | classes[3];
@@ -161,10 +114,15 @@ impl Technique for NakedTriple {
         let mut after_grid = grid.clone();
         let step =
             Self::apply_with_control_flow(&mut after_grid, |after_grid, positions, digits| {
-                let app = super::collect_applications_from_diff(grid, after_grid);
-                ControlFlow::Break(NakedTripleStep::new(positions, digits, app))
+                ControlFlow::Break(Box::new(TechniqueStepData::from_diff(
+                    NAME,
+                    positions,
+                    vec![(positions, digits)],
+                    grid,
+                    after_grid,
+                )))
             })?;
-        Ok(step.map(|step| step.clone_box()))
+        Ok(step)
     }
 
     fn apply(&self, grid: &mut crate::TechniqueGrid) -> Result<bool, crate::SolverError> {

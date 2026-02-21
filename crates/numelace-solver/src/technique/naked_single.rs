@@ -5,10 +5,7 @@ use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 use super::{BoxedTechnique, TechniqueApplication};
 use crate::{
     SolverError,
-    technique::{
-        BoxedTechniqueStep, ConditionCells, ConditionDigitCells, Technique, TechniqueGrid,
-        TechniqueStep,
-    },
+    technique::{BoxedTechniqueStep, Technique, TechniqueGrid, TechniqueStepData},
 };
 
 const NAME: &str = "Naked Single";
@@ -61,57 +58,20 @@ impl NakedSingle {
             | DigitPositions::BOX_POSITIONS[pos.box_index()])
             & grid.digit_positions(digit);
         affected_pos.remove(pos);
-        Some(Box::new(NakedSingleStep::new(
-            pos,
+        let mut application = vec![TechniqueApplication::CandidateElimination {
+            positions: affected_pos,
+            digits: DigitSet::from_elem(digit),
+        }];
+        application.push(TechniqueApplication::Placement {
+            position: pos,
             digit,
-            vec![TechniqueApplication::CandidateElimination {
-                positions: affected_pos,
-                digits: DigitSet::from_elem(digit),
-            }],
-        )))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct NakedSingleStep {
-    position: Position,
-    digit: Digit,
-    application: Vec<TechniqueApplication>,
-}
-
-impl NakedSingleStep {
-    fn new(position: Position, digit: Digit, mut application: Vec<TechniqueApplication>) -> Self {
-        application.push(TechniqueApplication::Placement { position, digit });
-        Self {
-            position,
-            digit,
+        });
+        Some(Box::new(TechniqueStepData::new(
+            NAME,
+            DigitPositions::from_elem(pos),
+            vec![(DigitPositions::from_elem(pos), DigitSet::from_elem(digit))],
             application,
-        }
-    }
-}
-
-impl TechniqueStep for NakedSingleStep {
-    fn technique_name(&self) -> &'static str {
-        NAME
-    }
-
-    fn clone_box(&self) -> BoxedTechniqueStep {
-        Box::new(self.clone())
-    }
-
-    fn condition_cells(&self) -> ConditionCells {
-        DigitPositions::from_elem(self.position)
-    }
-
-    fn condition_digit_cells(&self) -> ConditionDigitCells {
-        vec![(
-            DigitPositions::from_elem(self.position),
-            DigitSet::from_elem(self.digit),
-        )]
-    }
-
-    fn application(&self) -> Vec<TechniqueApplication> {
-        self.application.clone()
+        )))
     }
 }
 
@@ -120,9 +80,9 @@ impl NakedSingle {
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,
-    ) -> Option<NakedSingleStep>
+    ) -> Option<BoxedTechniqueStep>
     where
-        F: for<'a> FnMut(&'a mut TechniqueGrid, Position, Digit) -> ControlFlow<NakedSingleStep>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, Position, Digit) -> ControlFlow<BoxedTechniqueStep>,
     {
         let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
@@ -157,10 +117,19 @@ impl Technique for NakedSingle {
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let mut after_grid = grid.clone();
         let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, pos, digit| {
-            let app = super::collect_applications_from_diff(grid, after_grid);
-            ControlFlow::Break(NakedSingleStep::new(pos, digit, app))
+            ControlFlow::Break(Box::new(TechniqueStepData::from_diff_with_extra(
+                NAME,
+                DigitPositions::from_elem(pos),
+                vec![(DigitPositions::from_elem(pos), DigitSet::from_elem(digit))],
+                grid,
+                after_grid,
+                vec![TechniqueApplication::Placement {
+                    position: pos,
+                    digit,
+                }],
+            )))
         });
-        Ok(step.map(|step| step.clone_box()))
+        Ok(step)
     }
 
     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {

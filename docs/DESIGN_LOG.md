@@ -78,3 +78,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-11: Hint inconsistencies prompt undo-driven rollback to a consistent state, with distinct “no hint found” messaging after rollback — guides recovery without masking board errors.
 - 2026-02-14: TechniqueTester auto-checks find_step/apply consistency with an opt-out toggle — makes consistency the default while allowing exceptions for future techniques.
 - 2026-02-17: Remove `find_best_assumption` micro benchmark from `numelace-solver` benches — runtime is too short and noisy, causing large swings from small changes despite low impact on end-to-end backtracking solver performance; keep benchmark focus on more stable solver-level measurements.
+- 2026-02-21: Consolidate technique steps into shared `TechniqueStepData` — reduces per-technique boilerplate while keeping a clear path for future per-technique extensions.

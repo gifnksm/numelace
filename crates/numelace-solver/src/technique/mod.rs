@@ -147,6 +147,95 @@ pub trait TechniqueStep: Debug {
     fn application(&self) -> Vec<TechniqueApplication>;
 }
 
+/// Shared data for technique steps without technique-specific payloads.
+#[derive(Debug, Clone)]
+pub struct TechniqueStepData {
+    technique_name: &'static str,
+    condition_cells: ConditionCells,
+    condition_digit_cells: ConditionDigitCells,
+    application: Vec<TechniqueApplication>,
+}
+
+impl TechniqueStepData {
+    /// Creates a new `TechniqueStepData`.
+    #[must_use]
+    pub fn new(
+        technique_name: &'static str,
+        condition_cells: ConditionCells,
+        condition_digit_cells: ConditionDigitCells,
+        application: Vec<TechniqueApplication>,
+    ) -> Self {
+        Self {
+            technique_name,
+            condition_cells,
+            condition_digit_cells,
+            application,
+        }
+    }
+
+    /// Creates a new `TechniqueStepData` from a before/after grid diff.
+    #[must_use]
+    pub fn from_diff(
+        technique_name: &'static str,
+        condition_cells: ConditionCells,
+        condition_digit_cells: ConditionDigitCells,
+        before: &TechniqueGrid,
+        after: &TechniqueGrid,
+    ) -> Self {
+        Self::from_diff_with_extra(
+            technique_name,
+            condition_cells,
+            condition_digit_cells,
+            before,
+            after,
+            Vec::new(),
+        )
+    }
+
+    /// Creates a new `TechniqueStepData` from a before/after grid diff,
+    /// appending extra applications.
+    #[must_use]
+    pub fn from_diff_with_extra(
+        technique_name: &'static str,
+        condition_cells: ConditionCells,
+        condition_digit_cells: ConditionDigitCells,
+        before: &TechniqueGrid,
+        after: &TechniqueGrid,
+        mut extra_application: Vec<TechniqueApplication>,
+    ) -> Self {
+        let mut application = collect_applications_from_diff(before, after);
+        application.append(&mut extra_application);
+        Self::new(
+            technique_name,
+            condition_cells,
+            condition_digit_cells,
+            application,
+        )
+    }
+}
+
+impl TechniqueStep for TechniqueStepData {
+    fn technique_name(&self) -> &'static str {
+        self.technique_name
+    }
+
+    fn clone_box(&self) -> BoxedTechniqueStep {
+        Box::new(self.clone())
+    }
+
+    fn condition_cells(&self) -> ConditionCells {
+        self.condition_cells
+    }
+
+    fn condition_digit_cells(&self) -> ConditionDigitCells {
+        self.condition_digit_cells.clone()
+    }
+
+    fn application(&self) -> Vec<TechniqueApplication> {
+        self.application.clone()
+    }
+}
+
 /// Concrete changes produced by applying a technique.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TechniqueApplication {
