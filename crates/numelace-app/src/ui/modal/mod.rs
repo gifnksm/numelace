@@ -17,7 +17,7 @@ pub(crate) fn show(
             dialogs::show_confirm(ctx, action_queue, *kind, responder);
         }
         ModalRequest::Alert { kind, responder } => {
-            dialogs::show_alert(ctx, action_queue, *kind, responder);
+            dialogs::show_alert(ctx, action_queue, kind, responder);
         }
         ModalRequest::Settings => {
             settings::show(ctx, settings_vm, action_queue);

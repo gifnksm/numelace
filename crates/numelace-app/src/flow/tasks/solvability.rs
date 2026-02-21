@@ -47,9 +47,10 @@ async fn check_solvability_flow(handle: FlowHandle, request: CandidateGridPairDt
         }
         SolvabilityResultDto::Solvable {
             with_user_notes: true,
-            stats: _stats,
+            stats,
         } => {
-            let _ = helpers::show_alert_dialog(&handle, AlertKind::SolvabilitySolvable).await;
+            let _ =
+                helpers::show_alert_dialog(&handle, AlertKind::SolvabilitySolvable { stats }).await;
         }
         SolvabilityResultDto::Solvable {
             with_user_notes: false,

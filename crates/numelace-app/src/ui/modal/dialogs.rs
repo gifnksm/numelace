@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use eframe::egui::{Context, Id, Modal, Response, RichText, Sides, Ui};
+use eframe::egui::{CollapsingHeader, Context, Id, Modal, Response, RichText, Sides, Ui};
 
 use crate::{
     action::{
@@ -8,6 +8,7 @@ use crate::{
         ConfirmResult, Responder, UiAction,
     },
     ui::icon,
+    worker::tasks::SolvabilityStatsDto,
 };
 
 struct DialogResult {
@@ -125,60 +126,76 @@ impl ConfirmKind {
     }
 }
 
-struct AlertDialogSpec {
+#[derive(Debug)]
+enum AlertBody<'a> {
+    Text(Cow<'a, str>),
+    SolvabilityStats {
+        summary: Cow<'a, str>,
+        stats: &'a SolvabilityStatsDto,
+    },
+}
+
+struct AlertDialogSpec<'a> {
     id: Id,
     heading: &'static str,
-    body: Cow<'static, str>,
+    body: AlertBody<'a>,
     ok_label: &'static str,
 }
 
 impl AlertKind {
-    fn spec(self) -> AlertDialogSpec {
+    fn spec(&self) -> AlertDialogSpec<'_> {
         match self {
-            AlertKind::SolvabilitySolvable => AlertDialogSpec {
+            AlertKind::SolvabilitySolvable { stats } => AlertDialogSpec {
                 id: Id::new("solvability_result"),
                 heading: "Solvable",
-                body: Cow::Borrowed("A solution is still possible from the current state."),
+                body: AlertBody::SolvabilityStats {
+                    summary: Cow::Borrowed("A solution is still possible from the current state."),
+                    stats,
+                },
                 ok_label: "OK",
             },
             AlertKind::SolvabilityUndoNotice { steps } => AlertDialogSpec {
                 id: Id::new("solvability_undo_notice"),
                 heading: "Undo Complete",
-                body: Cow::Owned(format!(
+                body: AlertBody::Text(Cow::Owned(format!(
                     "Undid {steps} step(s) to return to a solvable state."
-                )),
+                ))),
                 ok_label: "OK",
             },
             AlertKind::SolvabilityUndoNotFound => AlertDialogSpec {
                 id: Id::new("solvability_undo_not_found"),
                 heading: "No Solution Found",
-                body: Cow::Borrowed("Undo did not find a solvable state."),
+                body: AlertBody::Text(Cow::Borrowed("Undo did not find a solvable state.")),
                 ok_label: "OK",
             },
             AlertKind::HintUndoNotice { steps } => AlertDialogSpec {
                 id: Id::new("hint_undo_notice"),
                 heading: "Undo Complete",
-                body: Cow::Owned(format!(
+                body: AlertBody::Text(Cow::Owned(format!(
                     "Undid {steps} step(s) to return to a consistent state."
-                )),
+                ))),
                 ok_label: "OK",
             },
             AlertKind::HintStuckNoStep => AlertDialogSpec {
                 id: Id::new("hint_stuck_no_step"),
                 heading: "No Hint Found",
-                body: Cow::Borrowed("No applicable techniques found from the current state."),
+                body: AlertBody::Text(Cow::Borrowed(
+                    "No applicable techniques found from the current state.",
+                )),
                 ok_label: "OK",
             },
             AlertKind::HintStuckAfterRollback => AlertDialogSpec {
                 id: Id::new("hint_stuck_after_rollback"),
                 heading: "No Hint Found",
-                body: Cow::Borrowed("The conflict was resolved, but no next step is available."),
+                body: AlertBody::Text(Cow::Borrowed(
+                    "The conflict was resolved, but no next step is available.",
+                )),
                 ok_label: "OK",
             },
             AlertKind::HintInconsistentAfterRollback => AlertDialogSpec {
                 id: Id::new("hint_inconsistent_after_rollback"),
                 heading: "No Hint Found",
-                body: Cow::Borrowed("Undo did not find a consistent state."),
+                body: AlertBody::Text(Cow::Borrowed("Undo did not find a consistent state.")),
                 ok_label: "OK",
             },
         }
@@ -227,7 +244,7 @@ pub(crate) fn show_confirm(
 pub(crate) fn show_alert(
     ctx: &Context,
     action_queue: &mut ActionRequestQueue,
-    kind: AlertKind,
+    kind: &AlertKind,
     responder: &mut Option<AlertResponder>,
 ) {
     let spec = kind.spec();
@@ -235,8 +252,30 @@ pub(crate) fn show_alert(
         ctx,
         spec.id,
         spec.heading,
-        |ui: &mut Ui| {
-            ui.label(spec.body);
+        |ui: &mut Ui| match &spec.body {
+            AlertBody::Text(text) => {
+                ui.label(text.as_ref());
+            }
+            AlertBody::SolvabilityStats { summary, stats } => {
+                ui.label(summary.as_ref());
+                CollapsingHeader::new("Solving details")
+                    .default_open(false)
+                    .show(ui, |ui| {
+                        ui.label(format!("Total steps: {}", stats.total_steps));
+                        let mut shown = false;
+                        for entry in stats
+                            .technique_counts
+                            .iter()
+                            .filter(|entry| entry.count > 0)
+                        {
+                            shown = true;
+                            ui.label(format!("{}: {}", entry.name, entry.count));
+                        }
+                        if !shown {
+                            ui.label("No techniques applied.");
+                        }
+                    });
+            }
         },
         |ui: &mut Ui| {
             let ok = primary_button(ui, format!("{} {}", icon::CHECK, spec.ok_label), true);

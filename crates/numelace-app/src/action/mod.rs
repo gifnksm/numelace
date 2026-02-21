@@ -5,7 +5,10 @@ use numelace_game::Game;
 use numelace_generator::GeneratedPuzzle;
 use numelace_solver::technique::BoxedTechniqueStep;
 
-use crate::state::{HintState, Settings};
+use crate::{
+    state::{HintState, Settings},
+    worker::tasks::SolvabilityStatsDto,
+};
 
 pub(crate) mod handler;
 
@@ -173,9 +176,9 @@ pub(crate) enum ConfirmKind {
     HintNotesMaybeIncorrect,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub(crate) enum AlertKind {
-    SolvabilitySolvable,
+    SolvabilitySolvable { stats: SolvabilityStatsDto },
     SolvabilityUndoNotice { steps: usize },
     SolvabilityUndoNotFound,
     HintUndoNotice { steps: usize },

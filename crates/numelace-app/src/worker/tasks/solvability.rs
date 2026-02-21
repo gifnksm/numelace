@@ -5,16 +5,24 @@
 //! logic used by background tasks.
 
 use numelace_core::CandidateGrid;
-use numelace_solver::{BacktrackSolverStats, TechniqueGrid};
+use numelace_solver::{BacktrackSolverStats, TechniqueGrid, technique};
 use serde::{Deserialize, Serialize};
 
 use crate::worker::tasks::{CandidateGridDtoError, CandidateGridPairDto, CandidateGridPairsDto};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct TechniqueCountDto {
+    pub(crate) name: String,
+    pub(crate) count: usize,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct SolvabilityStatsDto {
     pub(crate) assumptions_len: usize,
     pub(crate) backtrack_count: usize,
     pub(crate) solved_without_assumptions: bool,
+    pub(crate) total_steps: usize,
+    pub(crate) technique_counts: Vec<TechniqueCountDto>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,10 +43,21 @@ pub(crate) struct SolvabilityUndoScanResultDto {
 
 impl From<BacktrackSolverStats> for SolvabilityStatsDto {
     fn from(stats: BacktrackSolverStats) -> Self {
+        let technique_counts = technique::all_techniques()
+            .iter()
+            .zip(stats.technique().applications().iter())
+            .map(|(tech, count)| TechniqueCountDto {
+                name: tech.name().to_string(),
+                count: *count,
+            })
+            .collect();
+
         Self {
             assumptions_len: stats.assumptions().len(),
             backtrack_count: stats.backtrack_count(),
             solved_without_assumptions: stats.solved_without_assumptions(),
+            total_steps: stats.technique().total_steps(),
+            technique_counts,
         }
     }
 }
