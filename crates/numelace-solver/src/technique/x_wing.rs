@@ -24,9 +24,7 @@ impl XWing {
     pub const fn new() -> Self {
         Self {}
     }
-}
 
-impl XWing {
     #[inline]
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,

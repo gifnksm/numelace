@@ -23,9 +23,7 @@ impl HiddenTriple {
     pub const fn new() -> Self {
         Self {}
     }
-}
 
-impl HiddenTriple {
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,

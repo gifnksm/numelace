@@ -20,9 +20,7 @@ impl NakedTriple {
     pub const fn new() -> Self {
         Self {}
     }
-}
 
-impl NakedTriple {
     fn apply_with_control_flow<F>(
         grid: &mut crate::TechniqueGrid,
         mut on_condition: F,

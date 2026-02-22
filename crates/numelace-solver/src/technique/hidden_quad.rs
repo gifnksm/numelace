@@ -23,9 +23,7 @@ impl HiddenQuad {
     pub const fn new() -> Self {
         Self {}
     }
-}
 
-impl HiddenQuad {
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,

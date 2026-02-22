@@ -21,9 +21,7 @@ impl YWing {
     pub const fn new() -> Self {
         Self {}
     }
-}
 
-impl YWing {
     #[inline]
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,

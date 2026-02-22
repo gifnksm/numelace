@@ -20,14 +20,6 @@ const NAME_CLAIMING: &str = "Locked Candidates (Claiming)";
 #[derive(Debug, Default, Clone, Copy)]
 pub struct LockedCandidates {}
 
-impl LockedCandidates {
-    /// Creates a new `LockedCandidates` technique.
-    #[must_use]
-    pub const fn new() -> Self {
-        Self {}
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum LockedCandidatesKind {
     Pointing,
@@ -35,6 +27,12 @@ enum LockedCandidatesKind {
 }
 
 impl LockedCandidates {
+    /// Creates a new `LockedCandidates` technique.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {}
+    }
+
     #[inline]
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,

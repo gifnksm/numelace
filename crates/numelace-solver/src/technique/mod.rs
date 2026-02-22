@@ -7,10 +7,8 @@
 //! [`TechniqueGrid`]: crate::TechniqueGrid
 
 pub use self::{
-    hidden_pair::HiddenPair, hidden_quad::HiddenQuad, hidden_single::HiddenSingle,
-    hidden_triple::HiddenTriple, locked_candidates::LockedCandidates, naked_pair::NakedPair,
-    naked_quad::NakedQuad, naked_single::NakedSingle, naked_triple::NakedTriple, x_wing::XWing,
-    y_wing::YWing,
+    hidden_pair::*, hidden_quad::*, hidden_single::*, hidden_triple::*, locked_candidates::*,
+    naked_pair::*, naked_quad::*, naked_single::*, naked_triple::*, x_wing::*, y_wing::*,
 };
 use crate::TechniqueTier;
 

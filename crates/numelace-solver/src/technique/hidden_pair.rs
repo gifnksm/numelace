@@ -22,9 +22,7 @@ impl HiddenPair {
     pub const fn new() -> Self {
         Self {}
     }
-}
 
-impl HiddenPair {
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,
