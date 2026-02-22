@@ -256,7 +256,7 @@ pub enum TechniqueApplication {
 }
 
 /// A boxed technique.
-pub type BoxedTechnique = Box<dyn Technique>;
+pub type BoxedTechnique = Box<dyn Technique + Send + Sync>;
 
 impl Clone for BoxedTechnique {
     fn clone(&self) -> Self {
@@ -265,7 +265,7 @@ impl Clone for BoxedTechnique {
 }
 
 /// A boxed technique step.
-pub type BoxedTechniqueStep = Box<dyn TechniqueStep>;
+pub type BoxedTechniqueStep = Box<dyn TechniqueStep + Send + Sync>;
 
 impl Clone for BoxedTechniqueStep {
     fn clone(&self) -> Self {

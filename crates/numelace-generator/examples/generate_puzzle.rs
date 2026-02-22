@@ -42,6 +42,7 @@ use std::process;
 use clap::{Parser, ValueEnum};
 use numelace_generator::{GeneratedPuzzle, PuzzleGenerator};
 use numelace_solver::{TechniqueGrid, TechniqueSolver, TechniqueSolverStats, technique};
+use rayon::prelude::*;
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum SolverKind {
@@ -101,19 +102,15 @@ fn main() {
         process::exit(1);
     }
 
-    let mut best = None;
-    for _ in 0..max_tries {
-        let puzzle = generator.generate();
-        let stats = solve_stats(&solver, &puzzle);
-        let score = techniques_score(&solver, &stats, &args.techniques);
-        match &best {
-            None => best = Some((puzzle, stats, score)),
-            Some((_, _, best_score)) if score > *best_score => {
-                best = Some((puzzle, stats, score));
-            }
-            _ => {}
-        }
-    }
+    let best = (0..max_tries)
+        .into_par_iter()
+        .map(|_| {
+            let puzzle = generator.generate();
+            let stats = solve_stats(&solver, &puzzle);
+            let score = techniques_score(&solver, &stats, &args.techniques);
+            (puzzle, stats, score)
+        })
+        .max_by(|a, b| a.2.cmp(&b.2));
 
     if let Some((puzzle, stats, score)) = best {
         print_puzzle(

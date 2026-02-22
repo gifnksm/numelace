@@ -20,6 +20,7 @@ workspace = true
 clap = { workspace = true, features = ["derive"] }
 criterion.workspace = true
 proptest.workspace = true
+rayon.workspace = true
 
 [[bench]]
 name = "generator"
