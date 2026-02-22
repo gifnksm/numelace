@@ -30,7 +30,7 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] Tier 3 (upper-intermediate): Naked Quad
   - [X] Tier 3 (upper-intermediate): Hidden Quad
   - [X] Tier 3 (upper-intermediate): X-Wing
-  - [ ] Tier 3 (upper-intermediate): Y-Wing
+  - [X] Tier 3 (upper-intermediate): Y-Wing
   - [ ] Tier 3 (upper-intermediate): Skyscraper
   - [ ] Tier 3 (upper-intermediate): 2-String Kite
   - [ ] Tier 3 (upper-intermediate): X-Chain

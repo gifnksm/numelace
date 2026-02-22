@@ -10,6 +10,7 @@ pub use self::{
     hidden_pair::HiddenPair, hidden_quad::HiddenQuad, hidden_single::HiddenSingle,
     hidden_triple::HiddenTriple, locked_candidates::LockedCandidates, naked_pair::NakedPair,
     naked_quad::NakedQuad, naked_single::NakedSingle, naked_triple::NakedTriple, x_wing::XWing,
+    y_wing::YWing,
 };
 
 mod hidden_pair;
@@ -23,6 +24,7 @@ mod naked_single;
 mod naked_triple;
 pub(crate) mod traits;
 mod x_wing;
+mod y_wing;
 
 /// Returns all available techniques.
 ///
@@ -67,16 +69,16 @@ pub fn intermediate_techniques() -> Vec<crate::BoxedTechnique> {
 
 /// Returns the upper-intermediate techniques used by the solver.
 ///
-/// This currently includes the intermediate techniques plus [`NakedQuad`].
-/// Additional upper-intermediate techniques may be appended here as they are
-/// implemented.
+/// This currently includes the intermediate techniques plus [`NakedQuad`],
+/// [`HiddenQuad`], [`XWing`], and [`YWing`]. Additional upper-intermediate
+/// techniques may be appended here as they are implemented.
 #[must_use]
 pub fn upper_intermediate_techniques() -> Vec<crate::BoxedTechnique> {
     let mut techniques = intermediate_techniques();
     techniques.push(Box::new(NakedQuad::new()));
     techniques.push(Box::new(HiddenQuad::new()));
     techniques.push(Box::new(XWing::new()));
-    // techniques.push(Box::new(YWing::new()));
+    techniques.push(Box::new(YWing::new()));
     // techniques.push(Box::new(Skyscraper::new()));
     // techniques.push(Box::new(TwoStringKite::new()));
     // techniques.push(Box::new(XChain::new()));
