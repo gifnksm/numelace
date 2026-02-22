@@ -546,6 +546,19 @@ where
     set: BitSet9<S>,
 }
 
+impl<S> BitSet9Iter<S>
+where
+    S: Index9Semantics,
+{
+    /// Returns the remaining elements of this iterator as a `BitSet9`.
+    ///
+    /// This does not advance the iterator.
+    #[must_use]
+    pub fn as_set(&self) -> BitSet9<S> {
+        self.set
+    }
+}
+
 impl<S> Debug for BitSet9Iter<S>
 where
     S: Index9Semantics,

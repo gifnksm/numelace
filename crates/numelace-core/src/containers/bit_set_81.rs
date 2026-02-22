@@ -496,6 +496,19 @@ where
     set: BitSet81<S>,
 }
 
+impl<S> BitSet81Iter<S>
+where
+    S: Index81Semantics,
+{
+    /// Returns the remaining elements of this iterator as a `BitSet81`.
+    ///
+    /// This does not advance the iterator.
+    #[must_use]
+    pub fn as_set(&self) -> BitSet81<S> {
+        self.set
+    }
+}
+
 impl<S> Debug for BitSet81Iter<S>
 where
     S: Index81Semantics,
