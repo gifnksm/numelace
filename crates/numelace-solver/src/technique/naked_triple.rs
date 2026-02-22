@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
-use crate::{BoxedTechnique, BoxedTechniqueStep, Technique, TechniqueStepData};
+use crate::{BoxedTechnique, BoxedTechniqueStep, Technique, TechniqueStepData, TechniqueTier};
 
 const NAME: &str = "Naked Triple";
 
@@ -100,6 +100,10 @@ impl NakedTriple {
 impl Technique for NakedTriple {
     fn name(&self) -> &'static str {
         NAME
+    }
+
+    fn tier(&self) -> TechniqueTier {
+        TechniqueTier::Intermediate
     }
 
     fn clone_box(&self) -> BoxedTechnique {

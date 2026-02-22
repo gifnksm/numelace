@@ -12,6 +12,7 @@ pub use self::{
     naked_quad::NakedQuad, naked_single::NakedSingle, naked_triple::NakedTriple, x_wing::XWing,
     y_wing::YWing,
 };
+use crate::TechniqueTier;
 
 mod hidden_pair;
 mod hidden_quad;
@@ -32,55 +33,66 @@ mod y_wing;
 /// This list may grow as new techniques are implemented.
 #[must_use]
 pub fn all_techniques() -> Vec<crate::BoxedTechnique> {
-    upper_intermediate_techniques()
+    vec![
+        Box::new(NakedSingle::new()),
+        Box::new(HiddenSingle::new()),
+        Box::new(LockedCandidates::new()),
+        Box::new(NakedPair::new()),
+        Box::new(HiddenPair::new()),
+        Box::new(NakedTriple::new()),
+        Box::new(HiddenTriple::new()),
+        Box::new(NakedQuad::new()),
+        Box::new(HiddenQuad::new()),
+        Box::new(XWing::new()),
+        Box::new(YWing::new()),
+        // Box::new(Skyscraper::new()),
+        // Box::new(TwoStringKite::new()),
+        // Box::new(XChain::new()),
+    ]
 }
 
 /// Returns the fundamental techniques.
 ///
-/// This includes [`NakedSingle`] and [`HiddenSingle`], and stays stable as a
-/// baseline set even when [`all_techniques`] grows.
+/// This includes techniques at or below the fundamental tier, and stays stable
+/// as a baseline set even when [`all_techniques`] grows.
 #[must_use]
 pub fn fundamental_techniques() -> Vec<crate::BoxedTechnique> {
-    vec![Box::new(NakedSingle::new()), Box::new(HiddenSingle::new())]
+    all_techniques()
+        .into_iter()
+        .filter(|tech| tech.tier() <= TechniqueTier::Fundamental)
+        .collect()
 }
 
 /// Returns the basic techniques used by the solver.
 ///
-/// This includes the fundamental Singles plus [`LockedCandidates`].
+/// This includes techniques at or below the basic tier.
 #[must_use]
 pub fn basic_techniques() -> Vec<crate::BoxedTechnique> {
-    let mut techniques = fundamental_techniques();
-    techniques.push(Box::new(LockedCandidates::new()));
-    techniques
+    all_techniques()
+        .into_iter()
+        .filter(|tech| tech.tier() <= TechniqueTier::Basic)
+        .collect()
 }
 
 /// Returns the intermediate techniques used by the solver.
 ///
-/// This currently includes the basic techniques plus [`NakedPair`], [`HiddenPair`], [`NakedTriple`] and [`HiddenTriple`].
+/// This includes techniques at or below the intermediate tier.
 #[must_use]
 pub fn intermediate_techniques() -> Vec<crate::BoxedTechnique> {
-    let mut techniques = basic_techniques();
-    techniques.push(Box::new(NakedPair::new()));
-    techniques.push(Box::new(HiddenPair::new()));
-    techniques.push(Box::new(NakedTriple::new()));
-    techniques.push(Box::new(HiddenTriple::new()));
-    techniques
+    all_techniques()
+        .into_iter()
+        .filter(|tech| tech.tier() <= TechniqueTier::Intermediate)
+        .collect()
 }
 
 /// Returns the upper-intermediate techniques used by the solver.
 ///
-/// This currently includes the intermediate techniques plus [`NakedQuad`],
-/// [`HiddenQuad`], [`XWing`], and [`YWing`]. Additional upper-intermediate
+/// This includes techniques at or below the upper-intermediate tier. Additional
 /// techniques may be appended here as they are implemented.
 #[must_use]
 pub fn upper_intermediate_techniques() -> Vec<crate::BoxedTechnique> {
-    let mut techniques = intermediate_techniques();
-    techniques.push(Box::new(NakedQuad::new()));
-    techniques.push(Box::new(HiddenQuad::new()));
-    techniques.push(Box::new(XWing::new()));
-    techniques.push(Box::new(YWing::new()));
-    // techniques.push(Box::new(Skyscraper::new()));
-    // techniques.push(Box::new(TwoStringKite::new()));
-    // techniques.push(Box::new(XChain::new()));
-    techniques
+    all_techniques()
+        .into_iter()
+        .filter(|tech| tech.tier() <= TechniqueTier::UpperIntermediate)
+        .collect()
 }

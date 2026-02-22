@@ -173,7 +173,9 @@
 //! 1. Implement the [`Technique`] trait:
 //!
 //! ```
-//! use numelace_solver::{BoxedTechniqueStep, SolverError, Technique, TechniqueGrid};
+//! use numelace_solver::{
+//!     BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueTier,
+//! };
 //!
 //! #[derive(Debug, Clone)]
 //! struct MyTechnique;
@@ -181,6 +183,10 @@
 //! impl Technique for MyTechnique {
 //!     fn name(&self) -> &'static str {
 //!         "my technique"
+//!     }
+//!
+//!     fn tier(&self) -> TechniqueTier {
+//!         TechniqueTier::Fundamental
 //!     }
 //!
 //!     fn clone_box(&self) -> Box<dyn Technique> {

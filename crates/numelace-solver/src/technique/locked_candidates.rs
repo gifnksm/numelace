@@ -4,6 +4,7 @@ use numelace_core::{Digit, DigitPositions, DigitSet, House, Position};
 
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
+    TechniqueTier,
 };
 
 const NAME: &str = "Locked Candidates";
@@ -116,6 +117,10 @@ impl LockedCandidates {
 impl Technique for LockedCandidates {
     fn name(&self) -> &'static str {
         NAME
+    }
+
+    fn tier(&self) -> TechniqueTier {
+        TechniqueTier::Basic
     }
 
     fn clone_box(&self) -> BoxedTechnique {

@@ -4,6 +4,7 @@ use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
+    TechniqueTier,
 };
 
 const NAME: &str = "Hidden Quad";
@@ -116,6 +117,10 @@ impl HiddenQuad {
 impl Technique for HiddenQuad {
     fn name(&self) -> &'static str {
         NAME
+    }
+
+    fn tier(&self) -> TechniqueTier {
+        TechniqueTier::UpperIntermediate
     }
 
     fn clone_box(&self) -> BoxedTechnique {

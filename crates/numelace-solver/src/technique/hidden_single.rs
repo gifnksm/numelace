@@ -4,7 +4,7 @@ use numelace_core::{Digit, DigitSet, House, Position};
 
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueApplication,
-    TechniqueGrid, TechniqueStepData,
+    TechniqueGrid, TechniqueStepData, TechniqueTier,
 };
 
 const NAME: &str = "Hidden Single";
@@ -62,6 +62,10 @@ impl HiddenSingle {
 impl Technique for HiddenSingle {
     fn name(&self) -> &'static str {
         NAME
+    }
+
+    fn tier(&self) -> TechniqueTier {
+        TechniqueTier::Fundamental
     }
 
     fn clone_box(&self) -> BoxedTechnique {

@@ -4,6 +4,7 @@ use numelace_core::{ConsistencyError, Digit, DigitPositions, DigitSet, Position}
 
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
+    TechniqueTier,
 };
 
 const NAME: &str = "X-Wing";
@@ -116,6 +117,10 @@ impl XWing {
 impl Technique for XWing {
     fn name(&self) -> &'static str {
         NAME
+    }
+
+    fn tier(&self) -> TechniqueTier {
+        TechniqueTier::UpperIntermediate
     }
 
     fn clone_box(&self) -> BoxedTechnique {

@@ -382,6 +382,7 @@ mod tests {
     use super::*;
     use crate::{
         BoxedTechnique, BoxedTechniqueStep, SolverError, TechniqueApplication, TechniqueStep,
+        TechniqueTier,
     };
 
     // Mock technique for testing that always returns false (no change)
@@ -391,6 +392,10 @@ mod tests {
     impl Technique for NoOpTechnique {
         fn name(&self) -> &'static str {
             "no-op"
+        }
+
+        fn tier(&self) -> TechniqueTier {
+            TechniqueTier::Fundamental
         }
 
         fn clone_box(&self) -> BoxedTechnique {
@@ -449,6 +454,10 @@ mod tests {
             "place-d1-at-00"
         }
 
+        fn tier(&self) -> TechniqueTier {
+            TechniqueTier::Fundamental
+        }
+
         fn clone_box(&self) -> BoxedTechnique {
             Box::new(PlaceD1At00)
         }
@@ -484,6 +493,10 @@ mod tests {
     impl Technique for InconsistentTechnique {
         fn name(&self) -> &'static str {
             "inconsistent"
+        }
+
+        fn tier(&self) -> TechniqueTier {
+            TechniqueTier::Fundamental
         }
 
         fn clone_box(&self) -> BoxedTechnique {

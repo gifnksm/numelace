@@ -2,7 +2,7 @@ use std::ops::ControlFlow;
 
 use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 
-use crate::{BoxedTechniqueStep, Technique, TechniqueGrid, TechniqueStepData};
+use crate::{BoxedTechniqueStep, Technique, TechniqueGrid, TechniqueStepData, TechniqueTier};
 
 const NAME: &str = "Y-Wing";
 
@@ -68,6 +68,10 @@ impl YWing {
 impl Technique for YWing {
     fn name(&self) -> &'static str {
         NAME
+    }
+
+    fn tier(&self) -> TechniqueTier {
+        TechniqueTier::UpperIntermediate
     }
 
     fn clone_box(&self) -> crate::BoxedTechnique {

@@ -4,7 +4,7 @@ use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueApplication,
-    TechniqueGrid, TechniqueStepData,
+    TechniqueGrid, TechniqueStepData, TechniqueTier,
 };
 
 const NAME: &str = "Naked Single";
@@ -91,6 +91,10 @@ impl NakedSingle {
 impl Technique for NakedSingle {
     fn name(&self) -> &'static str {
         NAME
+    }
+
+    fn tier(&self) -> TechniqueTier {
+        TechniqueTier::Fundamental
     }
 
     fn clone_box(&self) -> BoxedTechnique {

@@ -4,6 +4,7 @@ use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
+    TechniqueTier,
 };
 
 const NAME: &str = "Naked Quad";
@@ -111,6 +112,10 @@ impl NakedQuad {
 impl Technique for NakedQuad {
     fn name(&self) -> &'static str {
         NAME
+    }
+
+    fn tier(&self) -> TechniqueTier {
+        TechniqueTier::UpperIntermediate
     }
 
     fn clone_box(&self) -> BoxedTechnique {
