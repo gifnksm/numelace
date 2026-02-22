@@ -17,7 +17,7 @@ use numelace_solver::{
     Technique, TechniqueGrid,
     technique::{
         HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedQuad,
-        NakedSingle, NakedTriple, XWing, YWing,
+        NakedSingle, NakedTriple, Skyscraper, XWing, YWing,
     },
 };
 
@@ -191,6 +191,29 @@ fn x_wing_grid() -> TechniqueGrid {
     TechniqueGrid::from(grid)
 }
 
+fn skyscraper_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let digit = Digit::D1;
+    let col1 = 1;
+    let col2 = 7;
+    let base_row = 0;
+    let col1_roof_row = 3;
+    let col2_roof_row = 4;
+
+    for row in 0..9u8 {
+        if row != base_row && row != col1_roof_row {
+            grid.remove_candidate(Position::new(col1, row), digit);
+        }
+    }
+    for row in 0..9u8 {
+        if row != base_row && row != col2_roof_row {
+            grid.remove_candidate(Position::new(col2, row), digit);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
 fn y_wing_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
     let pivot = Position::new(1, 1);
@@ -305,6 +328,15 @@ fn bench_x_wing_apply(c: &mut Criterion) {
     bench_apply_cases(c, "x_wing_apply", &technique, &puzzles);
 }
 
+fn bench_skyscraper_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("skyscraper", skyscraper_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+    let technique = Skyscraper::new();
+    bench_apply_cases(c, "skyscraper_apply", &technique, &puzzles);
+}
+
 fn bench_y_wing_apply(c: &mut Criterion) {
     let puzzles = [("y_wing", y_wing_grid()), ("empty", TechniqueGrid::new())];
     let technique = YWing::new();
@@ -402,6 +434,15 @@ criterion_group!(
 );
 
 criterion_group!(
+    name = benches_skyscraper;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_skyscraper_apply,
+);
+
+criterion_group!(
     name = benches_y_wing;
     config =
         Criterion::default()
@@ -421,5 +462,6 @@ criterion_main!(
     benches_naked_quad,
     benches_hidden_quad,
     benches_x_wing,
+    benches_skyscraper,
     benches_y_wing,
 );

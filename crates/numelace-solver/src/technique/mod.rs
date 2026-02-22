@@ -8,7 +8,8 @@
 
 pub use self::{
     hidden_pair::*, hidden_quad::*, hidden_single::*, hidden_triple::*, locked_candidates::*,
-    naked_pair::*, naked_quad::*, naked_single::*, naked_triple::*, x_wing::*, y_wing::*,
+    naked_pair::*, naked_quad::*, naked_single::*, naked_triple::*, skyscraper::*, x_wing::*,
+    y_wing::*,
 };
 use crate::TechniqueTier;
 
@@ -21,6 +22,7 @@ mod naked_pair;
 mod naked_quad;
 mod naked_single;
 mod naked_triple;
+mod skyscraper;
 pub(crate) mod traits;
 mod x_wing;
 mod y_wing;
@@ -42,9 +44,9 @@ pub fn all_techniques() -> Vec<crate::BoxedTechnique> {
         Box::new(NakedQuad::new()),
         Box::new(HiddenQuad::new()),
         Box::new(XWing::new()),
-        Box::new(YWing::new()),
-        // Box::new(Skyscraper::new()),
+        Box::new(Skyscraper::new()),
         // Box::new(TwoStringKite::new()),
+        Box::new(YWing::new()),
         // Box::new(XChain::new()),
     ]
 }
