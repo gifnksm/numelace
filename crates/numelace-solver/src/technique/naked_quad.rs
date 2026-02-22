@@ -2,10 +2,8 @@ use std::ops::ControlFlow;
 
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
-use super::BoxedTechnique;
 use crate::{
-    SolverError, TechniqueGrid,
-    technique::{BoxedTechniqueStep, Technique, TechniqueStepData},
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
 };
 
 const NAME: &str = "Naked Quad";

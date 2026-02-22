@@ -3,7 +3,7 @@ use std::mem;
 use numelace_core::{Digit, Position};
 use numelace_game::Game;
 use numelace_generator::GeneratedPuzzle;
-use numelace_solver::technique::BoxedTechniqueStep;
+use numelace_solver::BoxedTechniqueStep;
 
 use crate::{
     state::{HintState, Settings},

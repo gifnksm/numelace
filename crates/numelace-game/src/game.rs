@@ -4,7 +4,7 @@ use numelace_core::{
     index::{DigitSemantics, PositionSemantics},
 };
 use numelace_generator::GeneratedPuzzle;
-use numelace_solver::technique::{TechniqueApplication, TechniqueStep};
+use numelace_solver::{TechniqueApplication, TechniqueStep};
 
 use crate::{
     CellState, GameError, InputBlockReason, InputDigitOptions, InputOperation, RuleCheckPolicy,
@@ -627,8 +627,9 @@ impl Game {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{Digit, DigitGrid, DigitSet, Position};
+    use numelace_core::{Digit, DigitGrid, DigitPositions, DigitSet, Position};
     use numelace_generator::PuzzleGenerator;
+    use numelace_solver::{BoxedTechniqueStep, ConditionDigitCells};
 
     use super::*;
     use crate::NoteCleanupPolicy;
@@ -963,7 +964,7 @@ mod tests {
 
     #[test]
     fn test_verify_hint_step_matches_solution() {
-        use numelace_solver::technique::TechniqueStep;
+        use numelace_solver::TechniqueStep;
 
         #[derive(Debug)]
         struct MatchStep;
@@ -973,15 +974,15 @@ mod tests {
                 "MatchStep"
             }
 
-            fn clone_box(&self) -> numelace_solver::technique::BoxedTechniqueStep {
+            fn clone_box(&self) -> BoxedTechniqueStep {
                 Box::new(Self)
             }
 
-            fn condition_cells(&self) -> numelace_core::DigitPositions {
-                numelace_core::DigitPositions::EMPTY
+            fn condition_cells(&self) -> DigitPositions {
+                DigitPositions::EMPTY
             }
 
-            fn condition_digit_cells(&self) -> numelace_solver::technique::ConditionDigitCells {
+            fn condition_digit_cells(&self) -> ConditionDigitCells {
                 Vec::new()
             }
 
@@ -1001,15 +1002,15 @@ mod tests {
                 "MismatchStep"
             }
 
-            fn clone_box(&self) -> numelace_solver::technique::BoxedTechniqueStep {
+            fn clone_box(&self) -> BoxedTechniqueStep {
                 Box::new(Self)
             }
 
-            fn condition_cells(&self) -> numelace_core::DigitPositions {
-                numelace_core::DigitPositions::EMPTY
+            fn condition_cells(&self) -> DigitPositions {
+                DigitPositions::EMPTY
             }
 
-            fn condition_digit_cells(&self) -> numelace_solver::technique::ConditionDigitCells {
+            fn condition_digit_cells(&self) -> ConditionDigitCells {
                 Vec::new()
             }
 
@@ -1036,8 +1037,6 @@ mod tests {
 
     #[test]
     fn test_apply_technique_step_eliminates_notes_only() {
-        use numelace_solver::technique::TechniqueStep;
-
         #[derive(Debug)]
         struct TestStep;
 
@@ -1046,15 +1045,15 @@ mod tests {
                 "Test"
             }
 
-            fn clone_box(&self) -> numelace_solver::technique::BoxedTechniqueStep {
+            fn clone_box(&self) -> BoxedTechniqueStep {
                 Box::new(Self)
             }
 
-            fn condition_cells(&self) -> numelace_core::DigitPositions {
-                numelace_core::DigitPositions::EMPTY
+            fn condition_cells(&self) -> DigitPositions {
+                DigitPositions::EMPTY
             }
 
-            fn condition_digit_cells(&self) -> numelace_solver::technique::ConditionDigitCells {
+            fn condition_digit_cells(&self) -> ConditionDigitCells {
                 Vec::new()
             }
 

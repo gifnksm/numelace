@@ -2,10 +2,8 @@ use std::ops::ControlFlow;
 
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House, Position};
 
-use super::{BoxedTechnique, BoxedTechniqueStep};
 use crate::{
-    SolverError, TechniqueGrid,
-    technique::{Technique, TechniqueStepData},
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
 };
 
 const NAME: &str = "Naked Pair";
@@ -15,22 +13,6 @@ const NAME: &str = "Naked Pair";
 /// A "naked pair" occurs when two cells in a row, column, or box contain the
 /// same two candidates. Those two digits can be eliminated from all other
 /// cells in that house.
-///
-/// # Examples
-///
-/// ```
-/// use numelace_solver::{
-///     TechniqueGrid,
-///     technique::{NakedPair, Technique},
-/// };
-///
-/// let mut grid = TechniqueGrid::new();
-/// let technique = NakedPair::new();
-///
-/// // Apply the technique
-/// let changed = technique.apply(&mut grid)?;
-/// # Ok::<(), numelace_solver::SolverError>(())
-/// ```
 #[derive(Debug, Default, Clone, Copy)]
 pub struct NakedPair {}
 

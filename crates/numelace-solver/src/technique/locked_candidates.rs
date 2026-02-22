@@ -2,10 +2,8 @@ use std::ops::ControlFlow;
 
 use numelace_core::{Digit, DigitPositions, DigitSet, House, Position};
 
-use super::{BoxedTechnique, BoxedTechniqueStep, TechniqueGrid};
 use crate::{
-    SolverError,
-    technique::{Technique, TechniqueStepData},
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
 };
 
 const NAME: &str = "Locked Candidates";
@@ -18,22 +16,6 @@ const NAME_CLAIMING: &str = "Locked Candidates (Claiming)";
 ///   so that digit can be removed from the rest of that row/column outside the box.
 /// - **Claiming**: Within a row/column, all candidates of a digit lie in a single box,
 ///   so that digit can be removed from the rest of that box outside the row/column.
-///
-/// # Examples
-///
-/// ```
-/// use numelace_solver::{
-///     TechniqueGrid,
-///     technique::{LockedCandidates, Technique},
-/// };
-///
-/// let mut grid = TechniqueGrid::new();
-/// let technique = LockedCandidates::new();
-///
-/// // Apply the technique
-/// let changed = technique.apply(&mut grid)?;
-/// # Ok::<(), numelace_solver::SolverError>(())
-/// ```
 #[derive(Debug, Default, Clone, Copy)]
 pub struct LockedCandidates {}
 

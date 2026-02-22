@@ -4,7 +4,7 @@ use numelace_core::{
     index::{DigitSemantics, PositionSemantics},
 };
 use numelace_game::CellState;
-use numelace_solver::technique::TechniqueApplication;
+use numelace_solver::TechniqueApplication;
 
 use crate::{
     state::{AppState, GhostType, HintStage, HintState, UiState},
@@ -338,7 +338,7 @@ pub(crate) fn build_settings_view_model(app_state: &AppState) -> SettingsViewMod
 mod tests {
     use numelace_core::{Digit, DigitGrid, DigitPositions, DigitSet, Position};
     use numelace_game::{CellState, Game};
-    use numelace_solver::technique::{BoxedTechniqueStep, TechniqueApplication, TechniqueStep};
+    use numelace_solver::{BoxedTechniqueStep, TechniqueApplication, TechniqueStep};
 
     use super::build_grid;
     use crate::{

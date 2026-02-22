@@ -2,10 +2,8 @@ use std::ops::ControlFlow;
 
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
-use super::{BoxedTechnique, BoxedTechniqueStep};
 use crate::{
-    SolverError, TechniqueGrid,
-    technique::{Technique, TechniqueStepData},
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
 };
 
 const NAME: &str = "Hidden Triple";
@@ -15,22 +13,6 @@ const NAME: &str = "Hidden Triple";
 /// A "hidden triple" occurs when three digits can only appear in the same three
 /// cells of a row, column, or box. Other candidates in those three cells can be
 /// removed.
-///
-/// # Examples
-///
-/// ```
-/// use numelace_solver::{
-///     TechniqueGrid,
-///     technique::{HiddenTriple, Technique},
-/// };
-///
-/// let mut grid = TechniqueGrid::new();
-/// let technique = HiddenTriple::new();
-///
-/// // Apply the technique
-/// let changed = technique.apply(&mut grid)?;
-/// # Ok::<(), numelace_solver::SolverError>(())
-/// ```
 #[derive(Debug, Default, Clone, Copy)]
 pub struct HiddenTriple {}
 

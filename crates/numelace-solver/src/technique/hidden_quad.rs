@@ -3,8 +3,7 @@ use std::ops::ControlFlow;
 use numelace_core::{ConsistencyError, DigitPositions, DigitSet, House};
 
 use crate::{
-    SolverError, TechniqueGrid,
-    technique::{BoxedTechnique, BoxedTechniqueStep, Technique, TechniqueStepData},
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
 };
 
 const NAME: &str = "Hidden Quad";
@@ -14,22 +13,6 @@ const NAME: &str = "Hidden Quad";
 /// A "hidden quad" occurs when four digits can only appear in the same four
 /// cells of a row, column, or box. Other candidates in those four cells can be
 /// removed.
-///
-/// # Examples
-///
-/// ```
-/// use numelace_solver::{
-///     TechniqueGrid,
-///     technique::{HiddenQuad, Technique},
-/// };
-///
-/// let mut grid = TechniqueGrid::new();
-/// let technique = HiddenQuad::new();
-///
-/// // Apply the technique
-/// let changed = technique.apply(&mut grid)?;
-/// # Ok::<(), numelace_solver::SolverError>(())
-/// ```
 #[derive(Debug, Default, Clone, Copy)]
 pub struct HiddenQuad {}
 

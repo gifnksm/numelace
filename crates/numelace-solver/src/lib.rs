@@ -43,7 +43,7 @@
 //! ### Why Technique-Based Architecture?
 //!
 //! Each solving technique is implemented as a separate type that implements the
-//! [`Technique`](technique::Technique) trait. This design provides several benefits:
+//! [`Technique`] trait. This design provides several benefits:
 //!
 //! - **Extensibility**: New techniques can be added without modifying existing code.
 //!   Simply implement the `Technique` trait and add it to the technique list.
@@ -144,10 +144,7 @@
 //! ## Custom Technique Selection
 //!
 //! ```
-//! use numelace_solver::{
-//!     BacktrackSolver, TechniqueGrid,
-//!     technique::{BoxedTechnique, NakedSingle},
-//! };
+//! use numelace_solver::{BacktrackSolver, BoxedTechnique, TechniqueGrid, technique::NakedSingle};
 //!
 //! // Use only specific techniques
 //! let techniques: Vec<BoxedTechnique> = vec![Box::new(NakedSingle::new())];
@@ -173,13 +170,10 @@
 //!
 //! To add a new technique:
 //!
-//! 1. Implement the [`Technique`](technique::Technique) trait:
+//! 1. Implement the [`Technique`] trait:
 //!
 //! ```
-//! use numelace_solver::{
-//!     SolverError, TechniqueGrid,
-//!     technique::{BoxedTechniqueStep, Technique},
-//! };
+//! use numelace_solver::{BoxedTechniqueStep, SolverError, Technique, TechniqueGrid};
 //!
 //! #[derive(Debug, Clone)]
 //! struct MyTechnique;
@@ -228,7 +222,10 @@
 //!
 //! This typically indicates the input puzzle is invalid or unsolvable.
 
-pub use self::{backtrack_solver::*, error::*, technique_grid::*, technique_solver::*};
+pub use self::{
+    backtrack_solver::*, error::*, technique::traits::*, technique_grid::*, technique_solver::*,
+    technique_step::*,
+};
 
 pub mod backtrack;
 mod backtrack_solver;
@@ -236,6 +233,7 @@ mod error;
 pub mod technique;
 mod technique_grid;
 mod technique_solver;
+mod technique_step;
 
 #[cfg(test)]
 mod testing;

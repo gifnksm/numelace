@@ -2,10 +2,9 @@ use std::ops::ControlFlow;
 
 use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 
-use super::{BoxedTechnique, TechniqueApplication};
 use crate::{
-    SolverError,
-    technique::{BoxedTechniqueStep, Technique, TechniqueGrid, TechniqueStepData},
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueApplication,
+    TechniqueGrid, TechniqueStepData,
 };
 
 const NAME: &str = "Naked Single";
@@ -20,22 +19,6 @@ const NAME: &str = "Naked Single";
 /// This technique is fundamental to the solver's architecture: it handles all constraint
 /// propagation for the system. Other techniques only identify and place digits; the
 /// subsequent constraint propagation is performed when control returns to this technique.
-///
-/// # Examples
-///
-/// ```
-/// use numelace_solver::{
-///     TechniqueGrid,
-///     technique::{NakedSingle, Technique},
-/// };
-///
-/// let mut grid = TechniqueGrid::new();
-/// let technique = NakedSingle::new();
-///
-/// // Apply the technique
-/// let changed = technique.apply(&mut grid)?;
-/// # Ok::<(), numelace_solver::SolverError>(())
-/// ```
 #[derive(Debug, Default, Clone, Copy)]
 pub struct NakedSingle {}
 

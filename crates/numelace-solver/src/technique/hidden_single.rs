@@ -3,11 +3,8 @@ use std::ops::ControlFlow;
 use numelace_core::{Digit, DigitSet, House, Position};
 
 use crate::{
-    SolverError,
-    technique::{
-        BoxedTechnique, BoxedTechniqueStep, Technique, TechniqueApplication, TechniqueGrid,
-        TechniqueStepData,
-    },
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueApplication,
+    TechniqueGrid, TechniqueStepData,
 };
 
 const NAME: &str = "Hidden Single";
@@ -18,22 +15,6 @@ const NAME: &str = "Hidden Single";
 /// column, or box, even though that cell may have multiple candidates. This is
 /// slightly more complex than a naked single as it requires checking all positions
 /// for a specific digit within a house.
-///
-/// # Examples
-///
-/// ```
-/// use numelace_solver::{
-///     TechniqueGrid,
-///     technique::{HiddenSingle, Technique},
-/// };
-///
-/// let mut grid = TechniqueGrid::new();
-/// let technique = HiddenSingle::new();
-///
-/// // Apply the technique
-/// let changed = technique.apply(&mut grid)?;
-/// # Ok::<(), numelace_solver::SolverError>(())
-/// ```
 #[derive(Debug, Default, Clone, Copy)]
 pub struct HiddenSingle {}
 

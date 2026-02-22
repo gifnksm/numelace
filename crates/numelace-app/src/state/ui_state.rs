@@ -1,5 +1,5 @@
 use numelace_core::{Digit, Position};
-use numelace_solver::technique::BoxedTechniqueStep;
+use numelace_solver::BoxedTechniqueStep;
 
 use crate::{
     action::{ModalRequest, SpinnerId, SpinnerKind},

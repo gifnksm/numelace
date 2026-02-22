@@ -36,10 +36,7 @@ use std::str::FromStr as _;
 
 use numelace_core::{Digit, DigitGrid, DigitSet, Position};
 
-use crate::{
-    TechniqueGrid,
-    technique::{BoxedTechniqueStep, Technique, TechniqueApplication},
-};
+use crate::{BoxedTechniqueStep, Technique, TechniqueApplication, TechniqueGrid};
 
 /// A test harness for verifying technique implementations.
 ///
@@ -384,8 +381,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        SolverError,
-        technique::{BoxedTechnique, BoxedTechniqueStep, TechniqueApplication, TechniqueStep},
+        BoxedTechnique, BoxedTechniqueStep, SolverError, TechniqueApplication, TechniqueStep,
     };
 
     // Mock technique for testing that always returns false (no change)

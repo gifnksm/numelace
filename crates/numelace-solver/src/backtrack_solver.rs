@@ -7,8 +7,7 @@
 use numelace_core::{Digit, DigitSet, Position};
 
 use crate::{
-    SolverError, TechniqueGrid, TechniqueSolver, TechniqueSolverStats, backtrack,
-    technique::BoxedTechnique,
+    BoxedTechnique, SolverError, TechniqueGrid, TechniqueSolver, TechniqueSolverStats, backtrack,
 };
 
 /// Statistics collected during backtracking solving.
@@ -510,7 +509,7 @@ mod tests {
 
     #[test]
     fn test_with_techniques_constructor() {
-        use crate::technique::{BoxedTechnique, NakedSingle};
+        use crate::technique::NakedSingle;
 
         let techniques: Vec<BoxedTechnique> = vec![Box::new(NakedSingle::new())];
         let solver = BacktrackSolver::with_techniques(techniques);

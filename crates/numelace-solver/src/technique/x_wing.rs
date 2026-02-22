@@ -2,10 +2,8 @@ use std::ops::ControlFlow;
 
 use numelace_core::{ConsistencyError, Digit, DigitPositions, DigitSet, Position};
 
-use super::BoxedTechniqueStep;
 use crate::{
-    SolverError, TechniqueGrid,
-    technique::{Technique, TechniqueStepData},
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
 };
 
 const NAME: &str = "X-Wing";
@@ -16,22 +14,6 @@ const NAME: &str = "X-Wing";
 /// (or columns) and those candidate positions align in the same two columns
 /// (or rows). The digit can then be eliminated from the other cells in the
 /// intersecting columns (or rows).
-///
-/// # Examples
-///
-/// ```
-/// use numelace_solver::{
-///     TechniqueGrid,
-///     technique::{Technique, XWing},
-/// };
-///
-/// let mut grid = TechniqueGrid::new();
-/// let technique = XWing::new();
-///
-/// // Apply the technique
-/// let changed = technique.apply(&mut grid)?;
-/// # Ok::<(), numelace_solver::SolverError>(())
-/// ```
 #[derive(Debug, Default, Clone, Copy)]
 pub struct XWing {}
 
@@ -142,7 +124,7 @@ impl Technique for XWing {
         NAME
     }
 
-    fn clone_box(&self) -> super::BoxedTechnique {
+    fn clone_box(&self) -> BoxedTechnique {
         Box::new(*self)
     }
 

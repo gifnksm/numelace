@@ -14,10 +14,10 @@ use criterion::{
 };
 use numelace_core::{CandidateGrid, Digit, Position};
 use numelace_solver::{
-    TechniqueGrid,
+    Technique, TechniqueGrid,
     technique::{
         HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedQuad,
-        NakedSingle, NakedTriple, Technique, XWing,
+        NakedSingle, NakedTriple, XWing,
     },
 };
 

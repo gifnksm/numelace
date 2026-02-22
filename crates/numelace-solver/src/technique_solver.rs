@@ -1,7 +1,4 @@
-use crate::{
-    SolverError, TechniqueGrid,
-    technique::{self, BoxedTechnique, BoxedTechniqueStep},
-};
+use crate::{BoxedTechnique, BoxedTechniqueStep, SolverError, TechniqueGrid, technique};
 
 /// Statistics collected during technique-based solving.
 ///
@@ -144,10 +141,7 @@ impl TechniqueSolver {
     /// # Examples
     ///
     /// ```
-    /// use numelace_solver::{
-    ///     TechniqueSolver,
-    ///     technique::{BoxedTechnique, NakedSingle},
-    /// };
+    /// use numelace_solver::{BoxedTechnique, TechniqueSolver, technique::NakedSingle};
     ///
     /// let techniques: Vec<BoxedTechnique> = vec![Box::new(NakedSingle::new())];
     /// let solver = TechniqueSolver::new(techniques);
@@ -373,8 +367,9 @@ mod tests {
     use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::technique::{
-        BoxedTechnique, HiddenSingle, NakedSingle, Technique as _, all_techniques,
+    use crate::{
+        Technique as _,
+        technique::{HiddenSingle, NakedSingle, all_techniques},
     };
 
     fn create_test_solver() -> TechniqueSolver {
