@@ -51,29 +51,26 @@ impl XWing {
                 row_masks[row_count] = (y, xs);
                 row_count += 1;
             }
-            if row_count >= 2 {
-                for (i, (y1, xs1 @ (x1, x2))) in
-                    row_masks[0..row_count - 1].iter().copied().enumerate()
-                {
-                    for (y2, xs2) in row_masks[i + 1..].iter().copied() {
-                        if xs1 != xs2 {
-                            continue;
-                        }
-                        // If all four corners land in one box, each row would require a placement
-                        // while the box allows only one. This is a candidate constraint violation.
-                        if y1 / 3 == y2 / 3 && x1 / 3 == x2 / 3 {
-                            return Err(ConsistencyError::CandidateConstraintViolation.into());
-                        }
-                        let mut eliminations = DigitPositions::COLUMN_POSITIONS[x1]
-                            | DigitPositions::COLUMN_POSITIONS[x2];
-                        eliminations &= !(DigitPositions::ROW_POSITIONS[y1]
-                            | DigitPositions::ROW_POSITIONS[y2]);
-                        if grid.remove_candidate_with_mask(eliminations, digit)
-                            && let ControlFlow::Break(value) =
-                                on_condition(grid, digit, (x1, x2), (y1, y2))
-                        {
-                            return Ok(Some(value));
-                        }
+            let mut row_masks = row_masks[..row_count].iter();
+            while let Some(&(y1, xs1 @ (x1, x2))) = row_masks.next() {
+                for &(y2, xs2) in row_masks.as_slice() {
+                    if xs1 != xs2 {
+                        continue;
+                    }
+                    // If all four corners land in one box, each row would require a placement
+                    // while the box allows only one. This is a candidate constraint violation.
+                    if y1 / 3 == y2 / 3 && x1 / 3 == x2 / 3 {
+                        return Err(ConsistencyError::CandidateConstraintViolation.into());
+                    }
+                    let mut eliminations =
+                        DigitPositions::COLUMN_POSITIONS[x1] | DigitPositions::COLUMN_POSITIONS[x2];
+                    eliminations &=
+                        !(DigitPositions::ROW_POSITIONS[y1] | DigitPositions::ROW_POSITIONS[y2]);
+                    if grid.remove_candidate_with_mask(eliminations, digit)
+                        && let ControlFlow::Break(value) =
+                            on_condition(grid, digit, (x1, x2), (y1, y2))
+                    {
+                        return Ok(Some(value));
                     }
                 }
             }
@@ -87,29 +84,26 @@ impl XWing {
                 col_masks[col_count] = (x, ys);
                 col_count += 1;
             }
-            if col_count >= 2 {
-                for (i, (x1, ys1 @ (y1, y2))) in
-                    col_masks[0..col_count - 1].iter().copied().enumerate()
-                {
-                    for (x2, ys2) in col_masks[i + 1..].iter().copied() {
-                        if ys1 != ys2 {
-                            continue;
-                        }
-                        // If all four corners land in one box, each column would require a placement
-                        // while the box allows only one. This is a candidate constraint violation.
-                        if x1 / 3 == x2 / 3 && y1 / 3 == y2 / 3 {
-                            return Err(ConsistencyError::CandidateConstraintViolation.into());
-                        }
-                        let mut eliminations =
-                            DigitPositions::ROW_POSITIONS[y1] | DigitPositions::ROW_POSITIONS[y2];
-                        eliminations &= !(DigitPositions::COLUMN_POSITIONS[x1]
-                            | DigitPositions::COLUMN_POSITIONS[x2]);
-                        if grid.remove_candidate_with_mask(eliminations, digit)
-                            && let ControlFlow::Break(value) =
-                                on_condition(grid, digit, (x1, x2), (y1, y2))
-                        {
-                            return Ok(Some(value));
-                        }
+            let mut col_masks = col_masks[..col_count].iter();
+            while let Some(&(x1, ys1 @ (y1, y2))) = col_masks.next() {
+                for &(x2, ys2) in col_masks.as_slice() {
+                    if ys1 != ys2 {
+                        continue;
+                    }
+                    // If all four corners land in one box, each column would require a placement
+                    // while the box allows only one. This is a candidate constraint violation.
+                    if x1 / 3 == x2 / 3 && y1 / 3 == y2 / 3 {
+                        return Err(ConsistencyError::CandidateConstraintViolation.into());
+                    }
+                    let mut eliminations =
+                        DigitPositions::ROW_POSITIONS[y1] | DigitPositions::ROW_POSITIONS[y2];
+                    eliminations &= !(DigitPositions::COLUMN_POSITIONS[x1]
+                        | DigitPositions::COLUMN_POSITIONS[x2]);
+                    if grid.remove_candidate_with_mask(eliminations, digit)
+                        && let ControlFlow::Break(value) =
+                            on_condition(grid, digit, (x1, x2), (y1, y2))
+                    {
+                        return Ok(Some(value));
                     }
                 }
             }
