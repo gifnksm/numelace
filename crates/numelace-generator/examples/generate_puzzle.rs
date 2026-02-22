@@ -98,7 +98,7 @@ fn main() {
 
     let max_tries = args.max_tries.get();
 
-    let best = (0..max_tries)
+    let (puzzle, stats, score) = (0..max_tries)
         .into_par_iter()
         .map(|_| {
             let puzzle = generator.generate();
@@ -106,21 +106,16 @@ fn main() {
             let score = techniques_score(&solver, &stats, &args.techniques);
             (puzzle, stats, score)
         })
-        .max_by(|a, b| a.2.cmp(&b.2));
+        .max_by(|a, b| a.2.cmp(&b.2))
+        .unwrap();
 
-    if let Some((puzzle, stats, score)) = best {
-        print_puzzle(
-            &puzzle,
-            &solver,
-            &stats,
-            Some((max_tries, score)),
-            &args.techniques,
-        );
-        return;
-    }
-
-    eprintln!("No puzzle matched the requested techniques.");
-    process::exit(1);
+    print_puzzle(
+        &puzzle,
+        &solver,
+        &stats,
+        Some((max_tries, score)),
+        &args.techniques,
+    );
 }
 
 fn build_solver(kind: SolverKind) -> (TechniqueSolver, Vec<&'static str>) {
