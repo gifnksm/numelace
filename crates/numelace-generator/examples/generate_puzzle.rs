@@ -37,7 +37,7 @@
 //! cargo run --example generate_puzzle -- --technique "Locked Candidates" --technique "Hidden Single"
 //! ```
 
-use std::process;
+use std::{num::NonZero, process};
 
 use clap::{Parser, ValueEnum};
 use numelace_generator::{GeneratedPuzzle, PuzzleGenerator};
@@ -63,8 +63,8 @@ struct Args {
     techniques: Vec<String>,
 
     /// Maximum puzzles to sample when filtering.
-    #[arg(long, value_name = "COUNT", default_value_t = 10_000)]
-    max_tries: usize,
+    #[arg(long, value_name = "COUNT", default_value_t = NonZero::new(10_000).unwrap())]
+    max_tries: NonZero<usize>,
 }
 
 fn main() {
@@ -96,11 +96,7 @@ fn main() {
         return;
     }
 
-    let max_tries = args.max_tries;
-    if max_tries == 0 {
-        eprintln!("--max-tries must be at least 1.");
-        process::exit(1);
-    }
+    let max_tries = args.max_tries.get();
 
     let best = (0..max_tries)
         .into_par_iter()
