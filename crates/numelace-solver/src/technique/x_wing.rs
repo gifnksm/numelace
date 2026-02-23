@@ -1,6 +1,7 @@
 use std::ops::ControlFlow;
 
 use numelace_core::{ConsistencyError, Digit, DigitPositions, DigitSet, Position};
+use tinyvec::array_vec;
 
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
@@ -38,19 +39,15 @@ impl XWing {
             (u8, u8),
         ) -> ControlFlow<BoxedTechniqueStep>,
     {
-        const INVALID: u8 = u8::MAX;
-
         for digit in Digit::ALL {
-            let mut row_count = 0;
-            let mut row_masks = [(INVALID, (INVALID, INVALID)); 9];
+            let mut row_masks = array_vec!([(u8, (u8, u8)); 9]);
             for y in 0..9 {
                 let Some(xs) = grid.row_mask(y, digit).as_double() else {
                     continue;
                 };
-                row_masks[row_count] = (y, xs);
-                row_count += 1;
+                row_masks.push((y, xs));
             }
-            let mut row_masks = row_masks[..row_count].iter();
+            let mut row_masks = row_masks.iter();
             while let Some(&(y1, xs1 @ (x1, x2))) = row_masks.next() {
                 for &(y2, xs2) in row_masks.as_slice() {
                     if xs1 != xs2 {
@@ -74,16 +71,14 @@ impl XWing {
                 }
             }
 
-            let mut col_count = 0;
-            let mut col_masks = [(INVALID, (INVALID, INVALID)); 9];
+            let mut col_masks = array_vec!([(u8, (u8, u8)); 9]);
             for x in 0..9 {
                 let Some(ys) = grid.col_mask(x, digit).as_double() else {
                     continue;
                 };
-                col_masks[col_count] = (x, ys);
-                col_count += 1;
+                col_masks.push((x, ys));
             }
-            let mut col_masks = col_masks[..col_count].iter();
+            let mut col_masks = col_masks.iter();
             while let Some(&(x1, ys1 @ (y1, y2))) = col_masks.next() {
                 for &(x2, ys2) in col_masks.as_slice() {
                     if ys1 != ys2 {

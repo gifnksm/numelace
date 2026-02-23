@@ -10,6 +10,7 @@ license.workspace = true
 [dependencies]
 derive_more = { workspace = true, features = ["display", "error", "from"] }
 numelace-core.workspace = true
+tinyvec = { workspace = true, features = ["latest_stable_rust"] }
 
 [lints]
 workspace = true

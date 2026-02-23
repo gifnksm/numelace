@@ -3,6 +3,7 @@ use std::{iter, ops::ControlFlow};
 use numelace_core::{
     Digit, DigitPositions, DigitSet, Position, containers::Array9, index::CellIndexSemantics,
 };
+use tinyvec::array_vec;
 
 use crate::{
     BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData, TechniqueTier,
@@ -38,14 +39,11 @@ impl TwoStringKite {
             (u8, u8, u8),
         ) -> ControlFlow<BoxedTechniqueStep>,
     {
-        const INVALID: u8 = u8::MAX;
-
         for digit in Digit::ALL {
             let digit_positions = grid.digit_positions(digit);
 
-            let mut box_rows = Array9::<_, CellIndexSemantics>::from_array(
-                [(0, [(INVALID, INVALID, INVALID); 3]); 9],
-            );
+            let mut box_rows =
+                Array9::<_, CellIndexSemantics>::from_array([array_vec!([(u8, u8, u8); 3]); 9]);
             let mut found_rows = 0;
             for row in 0..9 {
                 let positions = digit_positions & DigitPositions::ROW_POSITIONS[row];
@@ -58,20 +56,15 @@ impl TwoStringKite {
                     continue;
                 }
                 found_rows += 1;
-                let (num_refs, refs) = &mut box_rows[pos_a.box_index()];
-                refs[*num_refs] = (row, col_a, col_b);
-                *num_refs += 1;
-                let (num_refs, refs) = &mut box_rows[pos_b.box_index()];
-                refs[*num_refs] = (row, col_b, col_a);
-                *num_refs += 1;
+                box_rows[pos_a.box_index()].push((row, col_a, col_b));
+                box_rows[pos_b.box_index()].push((row, col_b, col_a));
             }
             if found_rows == 0 {
                 continue;
             }
 
-            let mut box_cols = Array9::<_, CellIndexSemantics>::from_array(
-                [(0, [(INVALID, INVALID, INVALID); 3]); 9],
-            );
+            let mut box_cols =
+                Array9::<_, CellIndexSemantics>::from_array([array_vec!([(u8, u8, u8); 3]); 9]);
             let mut found_cols = 0;
             for col in 0..9 {
                 let positions = digit_positions & DigitPositions::COLUMN_POSITIONS[col];
@@ -84,20 +77,16 @@ impl TwoStringKite {
                     continue;
                 }
                 found_cols += 1;
-                let (num_refs, refs) = &mut box_cols[pos_a.box_index()];
-                refs[*num_refs] = (col, row_a, row_b);
-                *num_refs += 1;
-                let (num_refs, refs) = &mut box_cols[pos_b.box_index()];
-                refs[*num_refs] = (col, row_b, row_a);
-                *num_refs += 1;
+                box_cols[pos_a.box_index()].push((col, row_a, row_b));
+                box_cols[pos_b.box_index()].push((col, row_b, row_a));
             }
             if found_cols == 0 {
                 continue;
             }
 
-            for ((num_rows, rows), (num_cols, cols)) in iter::zip(box_rows, box_cols) {
-                for &(row, row_box_col, row_other_col) in &rows[..num_rows] {
-                    for &(col, col_box_row, col_other_row) in &cols[..num_cols] {
+            for (rows, cols) in iter::zip(box_rows, box_cols) {
+                for (row, row_box_col, row_other_col) in rows {
+                    for (col, col_box_row, col_other_row) in cols {
                         if row == col_box_row && row_box_col == col {
                             continue;
                         }

@@ -1,6 +1,7 @@
 use std::ops::ControlFlow;
 
 use numelace_core::{Digit, DigitPositions, DigitSet, Position};
+use tinyvec::array_vec;
 
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
@@ -82,7 +83,7 @@ impl Skyscraper {
         Self {}
     }
 
-    #[inline(always)]
+    #[inline]
     fn apply_axis_with_control_flow<A, F>(
         grid: &mut TechniqueGrid,
         digit: Digit,
@@ -97,12 +98,9 @@ impl Skyscraper {
             (Position, Position),
         ) -> ControlFlow<BoxedTechniqueStep>,
     {
-        const INVALID: u8 = u8::MAX;
-
         let digit_positions = grid.digit_positions(digit);
 
-        let mut lines_with_two = [(INVALID, INVALID, INVALID); 9];
-        let mut num_lines = 0usize;
+        let mut lines_with_two = array_vec!([(u8, u8, u8); 9]);
         for line in 0..9u8 {
             let positions = digit_positions & A::line_positions(line);
             let Some((pos_a, pos_b)) = positions.as_double() else {
@@ -113,10 +111,9 @@ impl Skyscraper {
             if cross_a / 3 == cross_b / 3 {
                 continue;
             }
-            lines_with_two[num_lines] = (line, cross_a, cross_b);
-            num_lines += 1;
+            lines_with_two.push((line, cross_a, cross_b));
         }
-        let mut lines_with_two = lines_with_two[..num_lines].iter();
+        let mut lines_with_two = lines_with_two.iter();
         while let Some(&(line1, line1_cross_a, line1_cross_b)) = lines_with_two.next() {
             for &(line2, line2_cross_a, line2_cross_b) in lines_with_two.as_slice() {
                 if line1 / 3 == line2 / 3 {
