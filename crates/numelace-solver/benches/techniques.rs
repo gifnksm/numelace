@@ -17,7 +17,7 @@ use numelace_solver::{
     Technique, TechniqueGrid,
     technique::{
         HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedQuad,
-        NakedSingle, NakedTriple, Skyscraper, XWing, YWing,
+        NakedSingle, NakedTriple, Skyscraper, TwoStringKite, XWing, YWing,
     },
 };
 
@@ -214,6 +214,30 @@ fn skyscraper_grid() -> TechniqueGrid {
     TechniqueGrid::from(grid)
 }
 
+fn two_string_kite_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let digit = Digit::D1;
+    let row = 0;
+    let row_box_col = 1;
+    let row_other_col = 4;
+    let col = 2;
+    let col_box_row = 1;
+    let col_other_row = 4;
+
+    for x in 0..9u8 {
+        if x != row_box_col && x != row_other_col {
+            grid.remove_candidate(Position::new(x, row), digit);
+        }
+    }
+    for y in 0..9u8 {
+        if y != col_box_row && y != col_other_row {
+            grid.remove_candidate(Position::new(col, y), digit);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
 fn y_wing_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
     let pivot = Position::new(1, 1);
@@ -337,6 +361,15 @@ fn bench_skyscraper_apply(c: &mut Criterion) {
     bench_apply_cases(c, "skyscraper_apply", &technique, &puzzles);
 }
 
+fn bench_two_string_kite_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("two_string_kite", two_string_kite_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+    let technique = TwoStringKite::new();
+    bench_apply_cases(c, "two_string_kite_apply", &technique, &puzzles);
+}
+
 fn bench_y_wing_apply(c: &mut Criterion) {
     let puzzles = [("y_wing", y_wing_grid()), ("empty", TechniqueGrid::new())];
     let technique = YWing::new();
@@ -443,6 +476,15 @@ criterion_group!(
 );
 
 criterion_group!(
+    name = benches_two_string_kite;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_two_string_kite_apply,
+);
+
+criterion_group!(
     name = benches_y_wing;
     config =
         Criterion::default()
@@ -463,5 +505,6 @@ criterion_main!(
     benches_hidden_quad,
     benches_x_wing,
     benches_skyscraper,
+    benches_two_string_kite,
     benches_y_wing,
 );

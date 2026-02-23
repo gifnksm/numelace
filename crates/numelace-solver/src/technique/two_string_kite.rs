@@ -1,0 +1,242 @@
+use std::{iter, ops::ControlFlow};
+
+use numelace_core::{
+    Digit, DigitPositions, DigitSet, Position, containers::Array9, index::CellIndexSemantics,
+};
+
+use crate::{
+    BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData, TechniqueTier,
+};
+
+const NAME: &str = "2-String Kite";
+
+/// A technique that removes candidates using a 2-String Kite pattern.
+///
+/// A "2-String Kite" occurs when a digit appears exactly twice in a row and
+/// exactly twice in a column, and one candidate from each lies in the same
+/// 3x3 box. The digit can then be eliminated from the cell at the intersection
+/// of the other row candidate and the other column candidate.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct TwoStringKite {}
+
+impl TwoStringKite {
+    /// Creates a new `TwoStringKite` instance.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {}
+    }
+
+    fn apply_with_control_flow<F>(
+        grid: &mut TechniqueGrid,
+        mut on_condition: F,
+    ) -> Option<BoxedTechniqueStep>
+    where
+        F: for<'a> FnMut(
+            &'a mut TechniqueGrid,
+            Digit,
+            (u8, u8, u8),
+            (u8, u8, u8),
+        ) -> ControlFlow<BoxedTechniqueStep>,
+    {
+        const INVALID: u8 = u8::MAX;
+
+        for digit in Digit::ALL {
+            let digit_positions = grid.digit_positions(digit);
+
+            let mut box_rows = Array9::<_, CellIndexSemantics>::from_array(
+                [(0, [(INVALID, INVALID, INVALID); 3]); 9],
+            );
+            let mut found_rows = 0;
+            for row in 0..9 {
+                let positions = digit_positions & DigitPositions::ROW_POSITIONS[row];
+                let Some((pos_a, pos_b)) = positions.as_double() else {
+                    continue;
+                };
+                let col_a = pos_a.x();
+                let col_b = pos_b.x();
+                if col_a / 3 == col_b / 3 {
+                    continue;
+                }
+                found_rows += 1;
+                let (num_refs, refs) = &mut box_rows[pos_a.box_index()];
+                refs[*num_refs] = (row, col_a, col_b);
+                *num_refs += 1;
+                let (num_refs, refs) = &mut box_rows[pos_b.box_index()];
+                refs[*num_refs] = (row, col_b, col_a);
+                *num_refs += 1;
+            }
+            if found_rows == 0 {
+                continue;
+            }
+
+            let mut box_cols = Array9::<_, CellIndexSemantics>::from_array(
+                [(0, [(INVALID, INVALID, INVALID); 3]); 9],
+            );
+            let mut found_cols = 0;
+            for col in 0..9 {
+                let positions = digit_positions & DigitPositions::COLUMN_POSITIONS[col];
+                let Some((pos_a, pos_b)) = positions.as_double() else {
+                    continue;
+                };
+                let row_a = pos_a.y();
+                let row_b = pos_b.y();
+                if row_a / 3 == row_b / 3 {
+                    continue;
+                }
+                found_cols += 1;
+                let (num_refs, refs) = &mut box_cols[pos_a.box_index()];
+                refs[*num_refs] = (col, row_a, row_b);
+                *num_refs += 1;
+                let (num_refs, refs) = &mut box_cols[pos_b.box_index()];
+                refs[*num_refs] = (col, row_b, row_a);
+                *num_refs += 1;
+            }
+            if found_cols == 0 {
+                continue;
+            }
+
+            for ((num_rows, rows), (num_cols, cols)) in iter::zip(box_rows, box_cols) {
+                for &(row, row_box_col, row_other_col) in &rows[..num_rows] {
+                    for &(col, col_box_row, col_other_row) in &cols[..num_cols] {
+                        if row == col_box_row && row_box_col == col {
+                            continue;
+                        }
+                        let eliminate_pos = Position::new(row_other_col, col_other_row);
+                        if grid.remove_candidate(eliminate_pos, digit)
+                            && let ControlFlow::Break(step) = on_condition(
+                                grid,
+                                digit,
+                                (row, row_box_col, row_other_col),
+                                (col, col_box_row, col_other_row),
+                            )
+                        {
+                            return Some(step);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+}
+
+impl Technique for TwoStringKite {
+    fn name(&self) -> &'static str {
+        NAME
+    }
+
+    fn tier(&self) -> TechniqueTier {
+        TechniqueTier::UpperIntermediate
+    }
+
+    fn clone_box(&self) -> Box<dyn Technique> {
+        Box::new(*self)
+    }
+
+    fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
+        let mut after_grid = grid.clone();
+        let step = Self::apply_with_control_flow(
+            &mut after_grid,
+            |after_grid,
+             digit,
+             (row, row_box_col, row_other_col),
+             (col, col_box_row, col_other_row)| {
+                let condition_cells = DigitPositions::from_iter([
+                    Position::new(row_box_col, row),
+                    Position::new(row_other_col, row),
+                    Position::new(col, col_box_row),
+                    Position::new(col, col_other_row),
+                ]);
+                ControlFlow::Break(Box::new(TechniqueStepData::from_diff(
+                    NAME,
+                    condition_cells,
+                    vec![(condition_cells, DigitSet::from_elem(digit))],
+                    grid,
+                    after_grid,
+                )))
+            },
+        );
+        Ok(step)
+    }
+
+    fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+        let mut changed = false;
+        Self::apply_with_control_flow(grid, |_, _, _, _| {
+            changed = true;
+            ControlFlow::Continue(())
+        });
+        Ok(changed)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use numelace_core::{CandidateGrid, Digit, Position};
+
+    use super::*;
+    use crate::testing::TechniqueTester;
+
+    #[test]
+    fn test_eliminates_two_string_kite_candidates() {
+        let mut grid = CandidateGrid::new();
+        let digit = Digit::D1;
+        let row = 0;
+        let row_box_col = 1;
+        let row_other_col = 4;
+        let col = 2;
+        let col_box_row = 1;
+        let col_other_row = 4;
+
+        for x in 0..9u8 {
+            if x != row_box_col && x != row_other_col {
+                grid.remove_candidate(Position::new(x, row), digit);
+            }
+        }
+        for y in 0..9u8 {
+            if y != col_box_row && y != col_other_row {
+                grid.remove_candidate(Position::new(col, y), digit);
+            }
+        }
+
+        TechniqueTester::new(grid)
+            .apply_once(&TwoStringKite::new())
+            .assert_removed_includes(Position::new(row_other_col, col_other_row), [digit]);
+    }
+
+    #[test]
+    fn test_shared_cell_skips_elimination() {
+        let mut grid = CandidateGrid::new();
+        let digit = Digit::D1;
+        let row = 0;
+        let row_box_col = 1;
+        let row_other_col = 4;
+        let col = 1;
+        let col_box_row = 0;
+        let col_other_row = 4;
+
+        for x in 0..9u8 {
+            if x != row_box_col && x != row_other_col {
+                grid.remove_candidate(Position::new(x, row), digit);
+            }
+        }
+        for y in 0..9u8 {
+            if y != col_box_row && y != col_other_row {
+                grid.remove_candidate(Position::new(col, y), digit);
+            }
+        }
+
+        TechniqueTester::new(grid)
+            .apply_once(&TwoStringKite::new())
+            .assert_no_change(Position::new(row_other_col, col_other_row));
+    }
+
+    #[test]
+    fn test_no_change_when_no_two_string_kite() {
+        let grid = CandidateGrid::new();
+
+        TechniqueTester::new(grid)
+            .apply_once(&TwoStringKite::new())
+            .assert_no_change(Position::new(0, 0))
+            .assert_no_change(Position::new(4, 4));
+    }
+}
