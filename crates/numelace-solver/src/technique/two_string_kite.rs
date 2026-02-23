@@ -3,7 +3,7 @@ use std::{iter, ops::ControlFlow};
 use numelace_core::{
     CellIndexIndexedArray, Digit, DigitPositions, DigitSet, Position, containers::Array9,
 };
-use tinyvec::{ArrayVec, array_vec};
+use tinyvec::ArrayVec;
 
 use crate::{
     BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData, TechniqueTier,
@@ -21,6 +21,9 @@ const NAME: &str = "2-String Kite";
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TwoStringKite {}
 
+type LinePair = (u8, (u8, u8));
+type LinePairs = ArrayVec<[LinePair; 3]>;
+
 impl TwoStringKite {
     /// Creates a new `TwoStringKite` instance.
     #[must_use]
@@ -32,9 +35,9 @@ impl TwoStringKite {
     fn collect_line_pairs_by_box<A: AxisOps>(
         grid: &TechniqueGrid,
         digit: Digit,
-    ) -> (CellIndexIndexedArray<ArrayVec<[(u8, u8, u8); 3]>>, u8) {
+    ) -> (CellIndexIndexedArray<LinePairs>, u8) {
         let digit_positions = grid.digit_positions(digit);
-        let mut line_pairs = Array9::from_array([array_vec!([(u8, u8, u8); 3]); 9]);
+        let mut line_pairs = Array9::from_array([LinePairs::new(); 9]);
         let mut found_lines = 0;
         for line in 0..9 {
             let positions = digit_positions & A::LINE_POSITIONS[line];
@@ -47,8 +50,8 @@ impl TwoStringKite {
                 continue;
             }
             found_lines += 1;
-            line_pairs[pos_a.box_index()].push((line, cross_a, cross_b));
-            line_pairs[pos_b.box_index()].push((line, cross_b, cross_a));
+            line_pairs[pos_a.box_index()].push((line, (cross_a, cross_b)));
+            line_pairs[pos_b.box_index()].push((line, (cross_b, cross_a)));
         }
         (line_pairs, found_lines)
     }
@@ -62,8 +65,8 @@ impl TwoStringKite {
         F: for<'a> FnMut(
             &'a mut TechniqueGrid,
             Digit,
-            (u8, u8, u8),
-            (u8, u8, u8),
+            LinePair,
+            LinePair,
         ) -> ControlFlow<BoxedTechniqueStep>,
     {
         for digit in Digit::ALL {
@@ -76,8 +79,8 @@ impl TwoStringKite {
                 continue;
             }
             for (rows, cols) in iter::zip(box_rows, box_cols) {
-                for (row, row_box_col, row_other_col) in rows {
-                    for (col, col_box_row, col_other_row) in cols {
+                for (row, (row_box_col, row_other_col)) in rows {
+                    for (col, (col_box_row, col_other_row)) in cols {
                         if row == col_box_row && row_box_col == col {
                             continue;
                         }
@@ -86,8 +89,8 @@ impl TwoStringKite {
                             && let ControlFlow::Break(step) = on_condition(
                                 grid,
                                 digit,
-                                (row, row_box_col, row_other_col),
-                                (col, col_box_row, col_other_row),
+                                (row, (row_box_col, row_other_col)),
+                                (col, (col_box_row, col_other_row)),
                             )
                         {
                             return Some(step);
@@ -119,8 +122,8 @@ impl Technique for TwoStringKite {
             &mut after_grid,
             |after_grid,
              digit,
-             (row, row_box_col, row_other_col),
-             (col, col_box_row, col_other_row)| {
+             (row, (row_box_col, row_other_col)),
+             (col, (col_box_row, col_other_row))| {
                 let condition_cells = DigitPositions::from_iter([
                     Position::new(row_box_col, row),
                     Position::new(row_other_col, row),
