@@ -3,10 +3,11 @@ use std::{iter, ops::ControlFlow};
 use numelace_core::{
     Digit, DigitPositions, DigitSet, Position, containers::Array9, index::CellIndexSemantics,
 };
-use tinyvec::array_vec;
+use tinyvec::{ArrayVec, array_vec};
 
 use crate::{
     BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData, TechniqueTier,
+    axis::{AxisOps, ColumnAxis, RowAxis},
 };
 
 const NAME: &str = "2-String Kite";
@@ -27,6 +28,32 @@ impl TwoStringKite {
         Self {}
     }
 
+    #[inline]
+    fn collect_line_pairs_by_box<A: AxisOps>(
+        grid: &TechniqueGrid,
+        digit: Digit,
+    ) -> (Array9<ArrayVec<[(u8, u8, u8); 3]>, CellIndexSemantics>, u8) {
+        let digit_positions = grid.digit_positions(digit);
+        let mut line_pairs = Array9::from_array([array_vec!([(u8, u8, u8); 3]); 9]);
+        let mut found_lines = 0;
+        for line in 0..9 {
+            let positions = digit_positions & A::LINE_POSITIONS[line];
+            let Some((pos_a, pos_b)) = positions.as_double() else {
+                continue;
+            };
+            let cross_a = A::cross_index(pos_a);
+            let cross_b = A::cross_index(pos_b);
+            if cross_a / 3 == cross_b / 3 {
+                continue;
+            }
+            found_lines += 1;
+            line_pairs[pos_a.box_index()].push((line, cross_a, cross_b));
+            line_pairs[pos_b.box_index()].push((line, cross_b, cross_a));
+        }
+        (line_pairs, found_lines)
+    }
+
+    #[inline]
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,
@@ -40,50 +67,14 @@ impl TwoStringKite {
         ) -> ControlFlow<BoxedTechniqueStep>,
     {
         for digit in Digit::ALL {
-            let digit_positions = grid.digit_positions(digit);
-
-            let mut box_rows =
-                Array9::<_, CellIndexSemantics>::from_array([array_vec!([(u8, u8, u8); 3]); 9]);
-            let mut found_rows = 0;
-            for row in 0..9 {
-                let positions = digit_positions & DigitPositions::ROW_POSITIONS[row];
-                let Some((pos_a, pos_b)) = positions.as_double() else {
-                    continue;
-                };
-                let col_a = pos_a.x();
-                let col_b = pos_b.x();
-                if col_a / 3 == col_b / 3 {
-                    continue;
-                }
-                found_rows += 1;
-                box_rows[pos_a.box_index()].push((row, col_a, col_b));
-                box_rows[pos_b.box_index()].push((row, col_b, col_a));
-            }
+            let (box_rows, found_rows) = Self::collect_line_pairs_by_box::<RowAxis>(grid, digit);
             if found_rows == 0 {
                 continue;
             }
-
-            let mut box_cols =
-                Array9::<_, CellIndexSemantics>::from_array([array_vec!([(u8, u8, u8); 3]); 9]);
-            let mut found_cols = 0;
-            for col in 0..9 {
-                let positions = digit_positions & DigitPositions::COLUMN_POSITIONS[col];
-                let Some((pos_a, pos_b)) = positions.as_double() else {
-                    continue;
-                };
-                let row_a = pos_a.y();
-                let row_b = pos_b.y();
-                if row_a / 3 == row_b / 3 {
-                    continue;
-                }
-                found_cols += 1;
-                box_cols[pos_a.box_index()].push((col, row_a, row_b));
-                box_cols[pos_b.box_index()].push((col, row_b, row_a));
-            }
+            let (box_cols, found_cols) = Self::collect_line_pairs_by_box::<ColumnAxis>(grid, digit);
             if found_cols == 0 {
                 continue;
             }
-
             for (rows, cols) in iter::zip(box_rows, box_cols) {
                 for (row, row_box_col, row_other_col) in rows {
                     for (col, col_box_row, col_other_row) in cols {
