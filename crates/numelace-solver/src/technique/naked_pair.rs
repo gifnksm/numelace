@@ -63,13 +63,10 @@ impl NakedPair {
                 let mut eliminate_positions = house.positions();
                 eliminate_positions.remove(pos1);
                 eliminate_positions.remove(pos2);
-                for digit in pair_digits {
-                    if grid.remove_candidate_with_mask(eliminate_positions, digit)
-                        && let ControlFlow::Break(step) =
-                            on_condition(grid, [pos1, pos2], pair_digits)
-                    {
-                        return Ok(Some(step));
-                    }
+                if grid.remove_candidate_set_with_mask(eliminate_positions, pair_digits)
+                    && let ControlFlow::Break(step) = on_condition(grid, [pos1, pos2], pair_digits)
+                {
+                    return Ok(Some(step));
                 }
             }
         }
