@@ -1,6 +1,6 @@
 //! Board position types.
 
-use crate::{DigitPositions, containers::Array9, index::CellIndexSemantics};
+use crate::{CellIndexIndexedArray, DigitPositions};
 
 /// Board position (x, y) where x is column and y is row.
 ///
@@ -74,7 +74,7 @@ impl Position {
     ///     assert_eq!(pos.y(), 3);
     /// }
     /// ```
-    pub const ROWS: Array9<[Position; 9], CellIndexSemantics> = {
+    pub const ROWS: CellIndexIndexedArray<[Position; 9]> = {
         let mut rows = [[Position::new(0, 0); 9]; 9];
         let mut y = 0;
         while y < 9 {
@@ -85,7 +85,7 @@ impl Position {
             }
             y += 1;
         }
-        Array9::from_array(rows)
+        CellIndexIndexedArray::from_array(rows)
     };
 
     /// All positions in each column, indexed by column number (0-8).
@@ -101,7 +101,7 @@ impl Position {
     ///     assert_eq!(pos.x(), 5);
     /// }
     /// ```
-    pub const COLUMNS: Array9<[Position; 9], CellIndexSemantics> = {
+    pub const COLUMNS: CellIndexIndexedArray<[Position; 9]> = {
         let mut columns = [[Position::new(0, 0); 9]; 9];
         let mut x = 0;
         while x < 9 {
@@ -112,7 +112,7 @@ impl Position {
             }
             x += 1;
         }
-        Array9::from_array(columns)
+        CellIndexIndexedArray::from_array(columns)
     };
 
     /// All positions in each 3×3 box, indexed by box number (0-8).
@@ -136,7 +136,7 @@ impl Position {
     ///     assert_eq!(pos.box_index(), 4);
     /// }
     /// ```
-    pub const BOXES: Array9<[Position; 9], CellIndexSemantics> = {
+    pub const BOXES: CellIndexIndexedArray<[Position; 9]> = {
         let mut boxes = [[Position::new(0, 0); 9]; 9];
         let mut box_index = 0;
         while box_index < 9 {
@@ -148,7 +148,7 @@ impl Position {
             }
             box_index += 1;
         }
-        Array9::from_array(boxes)
+        CellIndexIndexedArray::from_array(boxes)
     };
 
     /// Creates a new position from column and row coordinates.

@@ -3,8 +3,8 @@
 use std::iter;
 
 use crate::{
-    DigitGrid, House,
-    containers::{Array9, BitSet9, BitSet81},
+    CellIndexIndexedArray, DigitGrid, DigitIndexedArray, House,
+    containers::{BitSet9, BitSet81},
     digit::Digit,
     index::{CellIndexSemantics, DigitSemantics, Index9, Index9Semantics, PositionSemantics},
     position::Position,
@@ -30,7 +30,7 @@ impl DigitPositions {
     /// Precomputed positions for each row.
     ///
     /// `ROW_POSITIONS[y]` contains all 9 positions in row `y`.
-    pub const ROW_POSITIONS: Array9<DigitPositions, CellIndexSemantics> = {
+    pub const ROW_POSITIONS: CellIndexIndexedArray<DigitPositions> = {
         let mut masks = [DigitPositions::EMPTY; 9];
         let mut y = 0u8;
         while y < 9 {
@@ -44,13 +44,13 @@ impl DigitPositions {
             masks[y as usize] = DigitPositions::from_bits(bits);
             y += 1;
         }
-        Array9::from_array(masks)
+        CellIndexIndexedArray::from_array(masks)
     };
 
     /// Precomputed positions for each column.
     ///
     /// `COLUMN_POSITIONS[x]` contains all 9 positions in column `x`.
-    pub const COLUMN_POSITIONS: Array9<DigitPositions, CellIndexSemantics> = {
+    pub const COLUMN_POSITIONS: CellIndexIndexedArray<DigitPositions> = {
         let mut masks = [DigitPositions::EMPTY; 9];
         let mut x = 0u8;
         while x < 9 {
@@ -64,14 +64,14 @@ impl DigitPositions {
             masks[x as usize] = DigitPositions::from_bits(bits);
             x += 1;
         }
-        Array9::from_array(masks)
+        CellIndexIndexedArray::from_array(masks)
     };
 
     /// Precomputed positions for each 3×3 box.
     ///
     /// `BOX_POSITIONS[box_index]` contains all 9 positions in that box.
     /// Boxes are numbered 0-8 from left to right, top to bottom.
-    pub const BOX_POSITIONS: Array9<DigitPositions, CellIndexSemantics> = {
+    pub const BOX_POSITIONS: CellIndexIndexedArray<DigitPositions> = {
         let mut masks = [DigitPositions::EMPTY; 9];
         let mut box_index = 0u8;
         while box_index < 9 {
@@ -93,7 +93,7 @@ impl DigitPositions {
             masks[box_index as usize] = DigitPositions::from_bits(bits);
             box_index += 1;
         }
-        Array9::from_array(masks)
+        CellIndexIndexedArray::from_array(masks)
     };
 
     /// Returns a bitmask of positions in the specified house.
@@ -217,7 +217,7 @@ pub type HouseMask = BitSet9<CellIndexSemantics>;
 /// Internally stores 9 [`DigitPositions`] (one per digit), each tracking the 81 grid
 /// positions where that digit can be placed.
 ///
-/// The internal representation uses [`Array9`] with [`DigitSemantics`] to ensure
+/// The internal representation uses [`Array9`](crate::containers::Array9) with [`DigitSemantics`](crate::index::DigitSemantics) to ensure
 /// type-safe indexing through the [Semantics Pattern](crate#semantics-pattern-type-safe-indexing).
 ///
 /// Used for detecting Hidden Singles, Naked Singles, and other solving techniques.
@@ -244,7 +244,7 @@ pub type HouseMask = BitSet9<CellIndexSemantics>;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CandidateGrid {
     /// `digit_positions[digit]` represents possible positions for that digit
-    digit_positions: Array9<DigitPositions, DigitSemantics>,
+    digit_positions: DigitIndexedArray<DigitPositions>,
 }
 
 impl CandidateGrid {
@@ -355,7 +355,7 @@ impl CandidateGrid {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            digit_positions: Array9::from([DigitPositions::FULL; 9]),
+            digit_positions: DigitIndexedArray::from([DigitPositions::FULL; 9]),
         }
     }
 

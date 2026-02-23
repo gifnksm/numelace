@@ -1,7 +1,7 @@
 use std::{iter, ops::ControlFlow};
 
 use numelace_core::{
-    Digit, DigitPositions, DigitSet, Position, containers::Array9, index::CellIndexSemantics,
+    CellIndexIndexedArray, Digit, DigitPositions, DigitSet, Position, containers::Array9,
 };
 use tinyvec::{ArrayVec, array_vec};
 
@@ -32,7 +32,7 @@ impl TwoStringKite {
     fn collect_line_pairs_by_box<A: AxisOps>(
         grid: &TechniqueGrid,
         digit: Digit,
-    ) -> (Array9<ArrayVec<[(u8, u8, u8); 3]>, CellIndexSemantics>, u8) {
+    ) -> (CellIndexIndexedArray<ArrayVec<[(u8, u8, u8); 3]>>, u8) {
         let digit_positions = grid.digit_positions(digit);
         let mut line_pairs = Array9::from_array([array_vec!([(u8, u8, u8); 3]); 9]);
         let mut found_lines = 0;

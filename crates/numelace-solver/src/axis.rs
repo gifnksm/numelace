@@ -1,12 +1,10 @@
-use numelace_core::{
-    Digit, DigitPositions, HouseMask, Position, containers::Array9, index::CellIndexSemantics,
-};
+use numelace_core::{CellIndexIndexedArray, Digit, DigitPositions, HouseMask, Position};
 
 use crate::TechniqueGrid;
 
 pub(crate) trait AxisOps {
-    const LINE_POSITIONS: Array9<DigitPositions, CellIndexSemantics>;
-    const CROSS_POSITIONS: Array9<DigitPositions, CellIndexSemantics>;
+    const LINE_POSITIONS: CellIndexIndexedArray<DigitPositions>;
+    const CROSS_POSITIONS: CellIndexIndexedArray<DigitPositions>;
 
     fn line_mask(grid: &TechniqueGrid, index: u8, digit: Digit) -> HouseMask;
     fn cross_index(pos: Position) -> u8;
@@ -20,10 +18,8 @@ pub(crate) struct RowAxis;
 pub(crate) struct ColumnAxis;
 
 impl AxisOps for RowAxis {
-    const LINE_POSITIONS: Array9<DigitPositions, CellIndexSemantics> =
-        DigitPositions::ROW_POSITIONS;
-    const CROSS_POSITIONS: Array9<DigitPositions, CellIndexSemantics> =
-        DigitPositions::COLUMN_POSITIONS;
+    const LINE_POSITIONS: CellIndexIndexedArray<DigitPositions> = DigitPositions::ROW_POSITIONS;
+    const CROSS_POSITIONS: CellIndexIndexedArray<DigitPositions> = DigitPositions::COLUMN_POSITIONS;
 
     #[inline]
     fn line_mask(grid: &TechniqueGrid, index: u8, digit: Digit) -> HouseMask {
@@ -42,10 +38,8 @@ impl AxisOps for RowAxis {
 }
 
 impl AxisOps for ColumnAxis {
-    const LINE_POSITIONS: Array9<DigitPositions, CellIndexSemantics> =
-        DigitPositions::COLUMN_POSITIONS;
-    const CROSS_POSITIONS: Array9<DigitPositions, CellIndexSemantics> =
-        DigitPositions::ROW_POSITIONS;
+    const LINE_POSITIONS: CellIndexIndexedArray<DigitPositions> = DigitPositions::COLUMN_POSITIONS;
+    const CROSS_POSITIONS: CellIndexIndexedArray<DigitPositions> = DigitPositions::ROW_POSITIONS;
 
     #[inline]
     fn line_mask(grid: &TechniqueGrid, index: u8, digit: Digit) -> HouseMask {

@@ -80,3 +80,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-17: Remove `find_best_assumption` micro benchmark from `numelace-solver` benches — runtime is too short and noisy, causing large swings from small changes despite low impact on end-to-end backtracking solver performance; keep benchmark focus on more stable solver-level measurements.
 - 2026-02-21: Consolidate technique steps into shared `TechniqueStepData` — reduces per-technique boilerplate while keeping a clear path for future per-technique extensions.
 - 2026-02-21: Alert dialog body now supports structured variants (e.g., solvability stats) via an `AlertBody` enum — keeps alert metadata generic while enabling collapsible detail UI.
+- 2026-02-23: Add indexed array aliases (`DigitIndexedArray`, `CellIndexIndexedArray`, `PositionIndexedArray`) and re-export them from the crate root — improves readability while preserving semantics safety.

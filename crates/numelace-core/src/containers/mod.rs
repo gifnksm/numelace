@@ -33,6 +33,8 @@
 //!
 //! ## Using [`BitSet9`] with [`DigitSemantics`]
 //!
+//! [`DigitSemantics`]: crate::index::DigitSemantics
+//!
 //! ```
 //! use numelace_core::{Digit, DigitSet};
 //!
@@ -52,6 +54,8 @@
 //!
 //! ## Using [`BitSet81`] with [`PositionSemantics`]
 //!
+//! [`PositionSemantics`]: crate::index::PositionSemantics
+//!
 //! ```
 //! use numelace_core::{DigitPositions, Position};
 //!
@@ -65,30 +69,31 @@
 //! assert!(!positions.contains(Position::new(3, 3)));
 //! ```
 //!
-//! ## Using [`Array9`] with [`DigitSemantics`]
+//! ## Using [`DigitIndexedArray`]
 //!
-//! [`DigitSemantics`]: crate::index::DigitSemantics
-//! [`PositionSemantics`]: crate::index::PositionSemantics
+//! [`DigitIndexedArray`]: crate::DigitIndexedArray
 //!
 //! ```
-//! use numelace_core::{Digit, DigitPositions, containers::Array9, index::DigitSemantics};
+//! use numelace_core::{Digit, DigitPositions, DigitIndexedArray};
 //!
 //! // Create an array indexed by digits 1-9
-//! let mut digit_array: Array9<DigitPositions, DigitSemantics> =
-//!     Array9::from([DigitPositions::FULL; 9]);
+//! let mut digit_array: DigitIndexedArray<DigitPositions> =
+//!     DigitIndexedArray::from([DigitPositions::FULL; 9]);
 //!
 //! // Access by digit (1-9), not index (0-8)
 //! let positions = &digit_array[Digit::D5]; // digit 5
 //! assert_eq!(positions.len(), 81); // All positions initially
 //! ```
 //!
-//! ## Using [`Array81`] with [`PositionSemantics`]
+//! ## Using [`PositionIndexedArray`]
+//!
+//! [`PositionIndexedArray`]: crate::PositionIndexedArray
 //!
 //! ```
-//! use numelace_core::{Digit, Position, containers::Array81, index::PositionSemantics};
+//! use numelace_core::{Digit, Position, PositionIndexedArray};
 //!
 //! // Create an array representing cell values in a Sudoku grid
-//! let mut grid: Array81<Option<Digit>, PositionSemantics> = Array81::from([None; 81]);
+//! let mut grid: PositionIndexedArray<Option<Digit>> = PositionIndexedArray::from([None; 81]);
 //!
 //! // Set a value at a specific position
 //! let center = Position::new(4, 4);
@@ -98,8 +103,10 @@
 //! assert_eq!(grid[center], Some(Digit::D5));
 //! assert_eq!(grid[Position::new(0, 0)], None);
 //! ```
+
 pub use self::{array_9::*, array_81::*, bit_set_9::*, bit_set_81::*};
 
+pub(crate) mod aliases;
 mod array_81;
 mod array_9;
 mod bit_set_81;

@@ -1,7 +1,5 @@
 use numelace_core::{
-    Digit, DigitPositions, DigitSet, Position,
-    containers::{Array9, Array81},
-    index::{DigitSemantics, PositionSemantics},
+    Digit, DigitIndexedArray, DigitPositions, DigitSet, Position, PositionIndexedArray,
 };
 use numelace_game::CellState;
 use numelace_solver::TechniqueApplication;
@@ -23,10 +21,7 @@ pub(crate) fn build_toolbar_vm(app_state: &AppState, _ui_state: &UiState) -> Too
     ToolbarViewModel::new(app_state.can_undo(), app_state.can_redo())
 }
 
-fn fill_notes_for_empty_cell(
-    grid: &mut Array81<GridCell, PositionSemantics>,
-    pos: Position,
-) -> DigitSet {
+fn fill_notes_for_empty_cell(grid: &mut PositionIndexedArray<GridCell>, pos: Position) -> DigitSet {
     assert!(grid[pos].content.is_empty());
     let mut notes = DigitSet::FULL;
     for peer_pos in pos.house_peers() {
@@ -39,7 +34,7 @@ fn fill_notes_for_empty_cell(
 }
 
 fn apply_conflict_ghost(
-    grid: &mut Array81<GridCell, PositionSemantics>,
+    grid: &mut PositionIndexedArray<GridCell>,
     pos: Position,
     ghost: GhostType,
 ) {
@@ -58,7 +53,7 @@ fn apply_conflict_ghost(
 }
 
 fn effective_hint_applications(
-    grid: &Array81<GridCell, PositionSemantics>,
+    grid: &PositionIndexedArray<GridCell>,
     hint_state: &HintState,
 ) -> Vec<TechniqueApplication> {
     let mut apps = Vec::new();
@@ -71,8 +66,8 @@ fn effective_hint_applications(
                 }
             }
             TechniqueApplication::CandidateElimination { positions, digits } => {
-                let mut by_digits: Array9<DigitPositions, DigitSemantics> =
-                    Array9::from_fn(|_| DigitPositions::EMPTY);
+                let mut by_digits: DigitIndexedArray<DigitPositions> =
+                    DigitIndexedArray::from_fn(|_| DigitPositions::EMPTY);
                 for pos in positions {
                     let notes = if grid[pos].content.is_empty() {
                         let mut notes = DigitSet::FULL;
@@ -108,7 +103,7 @@ fn effective_hint_applications(
     apps
 }
 
-fn apply_hint_ghost(grid: &mut Array81<GridCell, PositionSemantics>, hint_state: &HintState) {
+fn apply_hint_ghost(grid: &mut PositionIndexedArray<GridCell>, hint_state: &HintState) {
     if hint_state.stage >= HintStage::Stage3Apply {
         return;
     }
@@ -158,7 +153,7 @@ fn apply_hint_ghost(grid: &mut Array81<GridCell, PositionSemantics>, hint_state:
     }
 }
 
-fn apply_hint_visuals(grid: &mut Array81<GridCell, PositionSemantics>, hint_state: &HintState) {
+fn apply_hint_visuals(grid: &mut PositionIndexedArray<GridCell>, hint_state: &HintState) {
     if hint_state.stage >= HintStage::Stage3Apply {
         return;
     }
@@ -211,14 +206,14 @@ fn apply_hint_visuals(grid: &mut Array81<GridCell, PositionSemantics>, hint_stat
     }
 }
 
-fn apply_selection_highlights(grid: &mut Array81<GridCell, PositionSemantics>, pos: Position) {
+fn apply_selection_highlights(grid: &mut PositionIndexedArray<GridCell>, pos: Position) {
     grid[pos].visual_state |= GridVisualState::SELECTED;
     for house_pos in pos.house_positions() {
         grid[house_pos].visual_state |= GridVisualState::HOUSE_SELECTED;
     }
 }
 
-fn apply_conflict_highlights(grid: &mut Array81<GridCell, PositionSemantics>) {
+fn apply_conflict_highlights(grid: &mut PositionIndexedArray<GridCell>) {
     for pos in Position::ALL {
         let Some(digit) = grid[pos].content.as_digit() else {
             continue;
@@ -239,7 +234,7 @@ fn apply_conflict_highlights(grid: &mut Array81<GridCell, PositionSemantics>) {
     }
 }
 
-fn apply_selected_digit_highlights(grid: &mut Array81<GridCell, PositionSemantics>, digit: Digit) {
+fn apply_selected_digit_highlights(grid: &mut PositionIndexedArray<GridCell>, digit: Digit) {
     for pos in Position::ALL {
         if grid[pos].content.as_digit() == Some(digit) {
             grid[pos].visual_state |= GridVisualState::SAME_DIGIT;
@@ -258,8 +253,8 @@ fn apply_selected_digit_highlights(grid: &mut Array81<GridCell, PositionSemantic
     }
 }
 
-fn build_grid(app_state: &AppState, ui_state: &UiState) -> Array81<GridCell, PositionSemantics> {
-    let mut grid = Array81::from_fn(|pos| GridCell {
+fn build_grid(app_state: &AppState, ui_state: &UiState) -> PositionIndexedArray<GridCell> {
+    let mut grid = PositionIndexedArray::from_fn(|pos| GridCell {
         content: *app_state.game.cell(pos),
         visual_state: GridVisualState::empty(),
         note_visual_state: NoteVisualState::default(),
@@ -311,7 +306,7 @@ pub(crate) fn build_game_screen_view_model<'a>(
 
     let policy = app_state.rule_check_policy();
     let decided_digit_count = game.decided_digit_count();
-    let digit_capabilities = Array9::from_fn(|digit| {
+    let digit_capabilities = DigitIndexedArray::from_fn(|digit| {
         let set_digit = selected_cell.map(|pos| game.set_digit_capability(pos, digit, policy));
         let toggle_note = selected_cell.map(|pos| game.toggle_note_capability(pos, digit, policy));
         DigitKeyState::new(set_digit, toggle_note, decided_digit_count[digit])

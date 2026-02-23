@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::{CandidateGrid, Digit, Position, containers::Array81, index::PositionSemantics};
+use crate::{CandidateGrid, Digit, Position, PositionIndexedArray};
 
 /// A simple cell-centric grid for storing Sudoku digits.
 ///
@@ -14,7 +14,7 @@ use crate::{CandidateGrid, Digit, Position, containers::Array81, index::Position
 ///
 /// # Type-Safe Indexing
 ///
-/// `DigitGrid` uses [`Array81<Option<Digit>, PositionSemantics>`][Array81] to provide
+/// `DigitGrid` uses [`PositionIndexedArray<Option<Digit>>`](crate::PositionIndexedArray) to provide
 /// **compile-time safety** through the [Semantics Pattern](crate#semantics-pattern-type-safe-indexing),
 /// ensuring cells can only be indexed by [`Position`].
 ///
@@ -43,10 +43,10 @@ use crate::{CandidateGrid, Digit, Position, containers::Array81, index::Position
 ///         .unwrap();
 /// ```
 ///
-/// [Array81]: crate::containers::Array81
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DigitGrid {
-    cells: Array81<Option<Digit>, PositionSemantics>,
+    cells: PositionIndexedArray<Option<Digit>>,
 }
 
 impl Default for DigitGrid {
@@ -68,7 +68,7 @@ impl DigitGrid {
     #[must_use]
     pub fn from_array(cells: [Option<Digit>; 81]) -> Self {
         Self {
-            cells: Array81::from(cells),
+            cells: PositionIndexedArray::from(cells),
         }
     }
 

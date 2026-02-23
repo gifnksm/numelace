@@ -3,7 +3,7 @@ use std::sync::Arc;
 use eframe::egui::{
     Align2, Color32, FontId, Painter, Pos2, Rect, Sense, Stroke, StrokeKind, Ui, Vec2,
 };
-use numelace_core::{Digit, DigitSet, Position, containers::Array81, index::PositionSemantics};
+use numelace_core::{Digit, DigitSet, Position, PositionIndexedArray};
 use numelace_game::CellState;
 
 use crate::{
@@ -91,14 +91,14 @@ impl NoteVisualState {
 
 #[derive(Debug, Clone)]
 pub(crate) struct GridViewModel {
-    grid: Array81<GridCell, PositionSemantics>,
+    grid: PositionIndexedArray<GridCell>,
     enabled_highlights: GridVisualState,
 }
 
 impl GridViewModel {
     #[must_use]
     pub(crate) fn new(
-        grid: Array81<GridCell, PositionSemantics>,
+        grid: PositionIndexedArray<GridCell>,
         highlight_settings: &HighlightSettings,
     ) -> Self {
         let mut enabled_highlights = GridVisualState::SELECTED

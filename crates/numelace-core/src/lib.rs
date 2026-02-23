@@ -230,4 +230,6 @@ pub mod index;
 mod position;
 
 // Re-export commonly used types
-pub use self::{candidate_grid::*, digit::*, digit_grid::*, house::*, position::*};
+pub use self::{
+    candidate_grid::*, containers::aliases::*, digit::*, digit_grid::*, house::*, position::*,
+};

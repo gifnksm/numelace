@@ -3,7 +3,7 @@ use std::sync::Arc;
 use eframe::egui::{
     self, Align2, Button, Color32, FontId, Grid, RichText, Ui, UiBuilder, Vec2, Visuals,
 };
-use numelace_core::{Digit, containers::Array9, index::DigitSemantics};
+use numelace_core::{Digit, DigitIndexedArray};
 use numelace_game::{InputBlockReason, InputOperation};
 
 use crate::{
@@ -16,7 +16,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub(crate) struct KeypadViewModel {
-    digit_states: Array9<DigitKeyState, DigitSemantics>,
+    digit_states: DigitIndexedArray<DigitKeyState>,
     has_removable_input: bool,
     notes_mode: bool,
     auto_fill_capability: Option<Result<InputOperation, InputBlockReason>>,
@@ -47,7 +47,7 @@ impl DigitKeyState {
 impl KeypadViewModel {
     #[must_use]
     pub(crate) fn new(
-        digit_states: Array9<DigitKeyState, DigitSemantics>,
+        digit_states: DigitIndexedArray<DigitKeyState>,
         has_removable_input: bool,
         notes_mode: bool,
         auto_fill_capability: Option<Result<InputOperation, InputBlockReason>>,

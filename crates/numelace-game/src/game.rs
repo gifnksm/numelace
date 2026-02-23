@@ -1,7 +1,6 @@
 use numelace_core::{
-    CandidateGrid, Digit, DigitGrid, DigitPositions, DigitSet, Position,
-    containers::{Array9, Array81},
-    index::{DigitSemantics, PositionSemantics},
+    CandidateGrid, Digit, DigitGrid, DigitIndexedArray, DigitPositions, DigitSet, Position,
+    PositionIndexedArray,
 };
 use numelace_generator::GeneratedPuzzle;
 use numelace_solver::{TechniqueApplication, TechniqueStep};
@@ -33,7 +32,7 @@ use crate::{
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Game {
-    grid: Array81<CellState, PositionSemantics>,
+    grid: PositionIndexedArray<CellState>,
     solution: DigitGrid,
 }
 
@@ -63,7 +62,7 @@ impl Game {
             solution,
             seed: _,
         } = puzzle;
-        let mut grid = Array81::from_array([const { CellState::Empty }; 81]);
+        let mut grid = PositionIndexedArray::from_array([const { CellState::Empty }; 81]);
         for pos in Position::ALL {
             if let Some(digit) = problem[pos] {
                 grid[pos] = CellState::Given(digit);
@@ -89,7 +88,7 @@ impl Game {
         filled: &DigitGrid,
         notes: &[[u16; 9]; 9],
     ) -> Result<Self, GameError> {
-        let mut grid = Array81::from_array([const { CellState::Empty }; 81]);
+        let mut grid = PositionIndexedArray::from_array([const { CellState::Empty }; 81]);
         for pos in Position::ALL {
             if let Some(digit) = problem[pos] {
                 grid[pos] = CellState::Given(digit);
@@ -550,8 +549,8 @@ impl Game {
     /// The returned array is indexed by [`Digit`] and includes both given and
     /// player-filled cells.
     #[must_use]
-    pub fn decided_digit_count(&self) -> Array9<usize, DigitSemantics> {
-        let mut counts = Array9::from_array([0; 9]);
+    pub fn decided_digit_count(&self) -> DigitIndexedArray<usize> {
+        let mut counts = DigitIndexedArray::from_array([0; 9]);
         for pos in Position::ALL {
             if let Some(digit) = self.cell(pos).as_digit() {
                 counts[digit] += 1;
