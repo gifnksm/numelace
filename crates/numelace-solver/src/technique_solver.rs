@@ -118,7 +118,7 @@ impl TechniqueSolverStats {
 /// let mut grid = TechniqueGrid::new();
 /// let mut stats = solver.new_stats();
 ///
-/// while solver.step(&mut grid, &mut stats)? {
+/// while solver.step(&mut grid, &mut stats)? > 0 {
 ///     println!("Progress made! Step {}", stats.total_steps());
 ///     if grid.is_solved()? {
 ///         break;
@@ -201,8 +201,8 @@ impl TechniqueSolver {
     ///
     /// # Returns
     ///
-    /// * `Ok(true)` - A technique was applied and made progress
-    /// * `Ok(false)` - No technique could make progress (solver is stuck)
+    /// * `Ok(n)` - The number of applications performed by the first technique that made progress
+    /// * `Ok(0)` - No technique could make progress (solver is stuck)
     ///
     /// # Errors
     ///
@@ -218,7 +218,7 @@ impl TechniqueSolver {
     /// let mut grid = TechniqueGrid::new();
     /// let mut stats = solver.new_stats();
     ///
-    /// if solver.step(&mut grid, &mut stats)? {
+    /// if solver.step(&mut grid, &mut stats)? > 0 {
     ///     println!("Made progress!");
     /// } else {
     ///     println!("Stuck - no technique can help");
@@ -229,19 +229,20 @@ impl TechniqueSolver {
         &self,
         grid: &mut TechniqueGrid,
         stats: &mut TechniqueSolverStats,
-    ) -> Result<bool, SolverError> {
+    ) -> Result<usize, SolverError> {
         debug_assert_eq!(self.techniques.len(), stats.applications.len());
         grid.check_consistency()?;
 
         for (i, technique) in self.techniques.iter().enumerate() {
-            if technique.apply(grid)? {
-                stats.applications[i] += 1;
-                stats.total_steps += 1;
+            let progress = technique.apply(grid)?;
+            if progress > 0 {
+                stats.applications[i] += progress;
+                stats.total_steps += progress;
                 grid.check_consistency()?;
-                return Ok(true);
+                return Ok(progress);
             }
         }
-        Ok(false)
+        Ok(0)
     }
 
     /// Finds the next available hint step without mutating the grid.
@@ -353,7 +354,7 @@ impl TechniqueSolver {
         grid: &mut TechniqueGrid,
         stats: &mut TechniqueSolverStats,
     ) -> Result<bool, SolverError> {
-        while self.step(grid, stats)? {
+        while self.step(grid, stats)? > 0 {
             if grid.is_solved()? {
                 return Ok(true);
             }
@@ -387,7 +388,7 @@ mod tests {
         // On a fresh grid with all candidates, no technique can make progress yet
         let result = solver.step(&mut grid, &mut stats);
         assert!(result.is_ok());
-        assert!(!result.unwrap());
+        assert_eq!(result.unwrap(), 0);
         assert_eq!(stats.total_steps, 0);
     }
 
@@ -406,7 +407,7 @@ mod tests {
 
         let result = solver.step(&mut grid, &mut stats);
         assert!(result.is_ok());
-        assert!(result.unwrap());
+        assert_eq!(result.unwrap(), 1);
         assert_eq!(stats.total_steps, 1);
 
         let i = solver

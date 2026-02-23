@@ -42,7 +42,6 @@ use crate::{CandidateGrid, Digit, Position, PositionIndexedArray};
 ///         .parse()
 ///         .unwrap();
 /// ```
-///
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DigitGrid {

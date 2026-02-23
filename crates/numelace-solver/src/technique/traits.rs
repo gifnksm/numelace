@@ -28,13 +28,12 @@ pub trait Technique: Debug + Send + Sync {
     ///
     /// # Returns
     ///
-    /// * `Ok(true)` - The technique was applied and the grid was updated
-    /// * `Ok(false)` - The technique was applied but the grid was not updated
+    /// * `Ok(n)` - The number of applications performed (0 means no progress)
     ///
     /// # Errors
     ///
     /// Returns an error if the technique detects an invalid state in the grid.
-    fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError>;
+    fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError>;
 }
 
 /// Difficulty tier used to order techniques from easiest to hardest.

@@ -109,10 +109,10 @@ impl Technique for YWing {
         Ok(step)
     }
 
-    fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, crate::SolverError> {
-        let mut changed = false;
+    fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, crate::SolverError> {
+        let mut changed = 0;
         Self::apply_with_control_flow(grid, |_, _, _| {
-            changed = true;
+            changed += 1;
             ControlFlow::Continue(())
         });
         Ok(changed)

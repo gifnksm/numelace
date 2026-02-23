@@ -74,7 +74,7 @@
 //! [`DigitIndexedArray`]: crate::DigitIndexedArray
 //!
 //! ```
-//! use numelace_core::{Digit, DigitPositions, DigitIndexedArray};
+//! use numelace_core::{Digit, DigitIndexedArray, DigitPositions};
 //!
 //! // Create an array indexed by digits 1-9
 //! let mut digit_array: DigitIndexedArray<DigitPositions> =

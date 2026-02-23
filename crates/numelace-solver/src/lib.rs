@@ -112,7 +112,7 @@
 //! let mut stats = solver.new_stats();
 //!
 //! // Apply one technique at a time
-//! while solver.step(&mut grid, &mut stats)? {
+//! while solver.step(&mut grid, &mut stats)? > 0 {
 //!     println!("Progress! Total steps: {}", stats.total_steps());
 //!
 //!     if grid.is_solved()? {
@@ -200,10 +200,10 @@
 //!         Ok(None)
 //!     }
 //!
-//!     fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+//!     fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
 //!         // Apply your technique logic here
-//!         // Return Ok(true) if progress was made
-//!         Ok(false)
+//!         // Return Ok(n) (n > 0) if progress was made
+//!         Ok(0)
 //!     }
 //! }
 //! ```

@@ -8,13 +8,14 @@
 //! ```
 //! # use numelace_solver::testing::TechniqueTester;
 //! # use numelace_solver::technique::{BoxedTechniqueStep, Technique};
+//! # use numelace_solver::TechniqueGrid;
 //! # use numelace_core::{Position, Digit};
 //! # #[derive(Debug)] struct DummyTechnique;
 //! # impl Technique for DummyTechnique {
 //! #     fn name(&self) -> &str { "dummy" }
 //! #     fn clone_box(&self) -> Box<dyn Technique> { Box::new(DummyTechnique) }
-//! #     fn find_step(&self, _: &numelace_core::CandidateGrid) -> Result<Option<BoxedTechniqueStep>, numelace_solver::SolverError> { Ok(None) }
-//! #     fn apply(&self, _: &mut numelace_core::CandidateGrid) -> Result<bool, numelace_solver::SolverError> { Ok(false) }
+//! #     fn find_step(&self, _: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, numelace_solver::SolverError> { Ok(None) }
+//! #     fn apply(&self, _: &mut TechniqueGrid) -> Result<usize, numelace_solver::SolverError> { Ok(0) }
 //! # }
 //! # let technique = DummyTechnique;
 //! TechniqueTester::from_str("
@@ -160,7 +161,7 @@ impl TechniqueTester {
             if self.check_find_step_consistency {
                 Self::assert_find_step_consistent_once(technique, &before, &self.current, changed);
             }
-            if !changed {
+            if changed == 0 {
                 break;
             }
         }
@@ -192,7 +193,7 @@ impl TechniqueTester {
         technique: &T,
         before: &TechniqueGrid,
         after: &TechniqueGrid,
-        changed: bool,
+        changed: usize,
     ) where
         T: Technique,
     {
@@ -200,15 +201,15 @@ impl TechniqueTester {
         let step = technique.find_step(before).unwrap();
         match step {
             None => {
-                assert!(
-                    !changed,
+                assert_eq!(
+                    changed, 0,
                     "Expected {name} to report no change when find_step returned None"
                 );
                 Self::assert_candidates_unchanged(before, after);
             }
             Some(step) => {
-                assert!(
-                    changed,
+                assert_ne!(
+                    changed, 0,
                     "Expected {name} to report a change when find_step returned a step"
                 );
                 Self::assert_step_application_applied(before, &step, after);
@@ -409,8 +410,8 @@ mod tests {
             Ok(None)
         }
 
-        fn apply(&self, _grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-            Ok(false)
+        fn apply(&self, _grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+            Ok(0)
         }
     }
 
@@ -475,14 +476,14 @@ mod tests {
             }
         }
 
-        fn apply(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+        fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
             let pos = Position::new(0, 0);
             let candidates = grid.candidates_at(pos);
             if candidates.len() == 1 {
-                Ok(false)
+                Ok(0)
             } else {
                 grid.place(pos, Digit::D1);
-                Ok(true)
+                Ok(1)
             }
         }
     }
@@ -510,8 +511,8 @@ mod tests {
             Ok(Some(Box::new(PlaceD1At00Step)))
         }
 
-        fn apply(&self, _grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-            Ok(false)
+        fn apply(&self, _grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+            Ok(0)
         }
     }
 
@@ -572,7 +573,7 @@ mod tests {
         ",
         );
 
-        // PlaceD1At00 will apply once, then return false
+        // PlaceD1At00 will apply once, then return 0
         let result = tester.apply_until_stuck(&PlaceD1At00);
         let _ = result;
     }
