@@ -6,6 +6,7 @@ use tinyvec::array_vec;
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
     TechniqueTier,
+    axis::{AxisOps, ColumnAxis, RowAxis},
 };
 
 const NAME: &str = "Skyscraper";
@@ -18,63 +19,6 @@ const NAME: &str = "Skyscraper";
 /// that see both roofs.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Skyscraper {}
-
-trait AxisOps {
-    fn line_positions(index: u8) -> DigitPositions;
-    fn cross_positions(index: u8) -> DigitPositions;
-    fn cross_index(pos: Position) -> u8;
-    fn make_pos(line: u8, cross: u8) -> Position;
-}
-
-#[derive(Debug, Clone, Copy)]
-struct RowAxis;
-
-#[derive(Debug, Clone, Copy)]
-struct ColumnAxis;
-
-impl AxisOps for RowAxis {
-    #[inline]
-    fn line_positions(index: u8) -> DigitPositions {
-        DigitPositions::ROW_POSITIONS[index]
-    }
-
-    #[inline]
-    fn cross_positions(index: u8) -> DigitPositions {
-        DigitPositions::COLUMN_POSITIONS[index]
-    }
-
-    #[inline]
-    fn cross_index(pos: Position) -> u8 {
-        pos.x()
-    }
-
-    #[inline]
-    fn make_pos(line: u8, cross: u8) -> Position {
-        Position::new(cross, line)
-    }
-}
-
-impl AxisOps for ColumnAxis {
-    #[inline]
-    fn line_positions(index: u8) -> DigitPositions {
-        DigitPositions::COLUMN_POSITIONS[index]
-    }
-
-    #[inline]
-    fn cross_positions(index: u8) -> DigitPositions {
-        DigitPositions::ROW_POSITIONS[index]
-    }
-
-    #[inline]
-    fn cross_index(pos: Position) -> u8 {
-        pos.y()
-    }
-
-    #[inline]
-    fn make_pos(line: u8, cross: u8) -> Position {
-        Position::new(line, cross)
-    }
-}
 
 impl Skyscraper {
     /// Creates a new `Skyscraper` instance.
@@ -101,8 +45,8 @@ impl Skyscraper {
         let digit_positions = grid.digit_positions(digit);
 
         let mut lines_with_two = array_vec!([(u8, u8, u8); 9]);
-        for line in 0..9u8 {
-            let positions = digit_positions & A::line_positions(line);
+        for line in 0..9 {
+            let positions = digit_positions & A::LINE_POSITIONS[line];
             let Some((pos_a, pos_b)) = positions.as_double() else {
                 continue;
             };
@@ -133,9 +77,9 @@ impl Skyscraper {
                     };
                 let line1_roof_box = A::make_pos(line1, line1_roof_cross).box_index();
                 let line2_roof_box = A::make_pos(line2, line2_roof_cross).box_index();
-                let eliminations = (A::cross_positions(line2_roof_cross)
+                let eliminations = (A::CROSS_POSITIONS[line2_roof_cross]
                     & DigitPositions::BOX_POSITIONS[line1_roof_box])
-                    | (A::cross_positions(line1_roof_cross)
+                    | (A::CROSS_POSITIONS[line1_roof_cross]
                         & DigitPositions::BOX_POSITIONS[line2_roof_box]);
                 if grid.remove_candidate_with_mask(eliminations, digit)
                     && let ControlFlow::Break(step) = on_condition(
@@ -247,12 +191,12 @@ mod tests {
         let col1_roof_row = 3;
         let col2_roof_row = 4;
 
-        for row in 0..9u8 {
+        for row in 0..9 {
             if row != base_row && row != col1_roof_row {
                 grid.remove_candidate(Position::new(col1, row), digit);
             }
         }
-        for row in 0..9u8 {
+        for row in 0..9 {
             if row != base_row && row != col2_roof_row {
                 grid.remove_candidate(Position::new(col2, row), digit);
             }
@@ -274,12 +218,12 @@ mod tests {
         let row1_roof_col = 3;
         let row2_roof_col = 4;
 
-        for col in 0..9u8 {
+        for col in 0..9 {
             if col != base_col && col != row1_roof_col {
                 grid.remove_candidate(Position::new(col, row1), digit);
             }
         }
-        for col in 0..9u8 {
+        for col in 0..9 {
             if col != base_col && col != row2_roof_col {
                 grid.remove_candidate(Position::new(col, row2), digit);
             }

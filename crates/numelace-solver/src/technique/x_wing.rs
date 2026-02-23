@@ -6,6 +6,7 @@ use tinyvec::array_vec;
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
     TechniqueTier,
+    axis::{AxisOps, ColumnAxis, RowAxis},
 };
 
 const NAME: &str = "X-Wing";
@@ -27,6 +28,55 @@ impl XWing {
     }
 
     #[inline]
+    fn apply_axis_with_control_flow<A, F>(
+        grid: &mut TechniqueGrid,
+        digit: Digit,
+        mut on_condition: F,
+    ) -> Result<Option<BoxedTechniqueStep>, SolverError>
+    where
+        A: AxisOps,
+        F: for<'a> FnMut(
+            &'a mut TechniqueGrid,
+            Digit,
+            (u8, u8),
+            (u8, u8),
+        ) -> ControlFlow<BoxedTechniqueStep>,
+    {
+        let mut line_masks = array_vec!([(u8, (u8, u8)); 9]);
+        for line in 0..9 {
+            let Some(crosses) = A::line_mask(grid, line, digit).as_double() else {
+                continue;
+            };
+            line_masks.push((line, crosses));
+        }
+        let mut line_masks = line_masks.iter();
+        while let Some(&(line1, crosses1 @ (cross1, cross2))) = line_masks.next() {
+            for &(line2, crosses2) in line_masks.as_slice() {
+                if crosses1 != crosses2 {
+                    continue;
+                }
+                // If all four corners land in one box, each row would require a placement
+                // while the box allows only one. This is a candidate constraint violation.
+                if line1 / 3 == line2 / 3 && cross1 / 3 == cross2 / 3 {
+                    return Err(ConsistencyError::CandidateConstraintViolation.into());
+                }
+                let eliminations = (A::CROSS_POSITIONS[cross1] | A::CROSS_POSITIONS[cross2])
+                    & !(A::LINE_POSITIONS[line1] | A::LINE_POSITIONS[line2]);
+                if grid.remove_candidate_with_mask(eliminations, digit)
+                    && let ControlFlow::Break(value) = {
+                        let pos1 = A::make_pos(line1, cross1);
+                        let pos2 = A::make_pos(line2, cross2);
+                        on_condition(grid, digit, (pos1.x(), pos2.x()), (pos1.y(), pos2.y()))
+                    }
+                {
+                    return Ok(Some(value));
+                }
+            }
+        }
+        Ok(None)
+    }
+
+    #[inline]
     fn apply_with_control_flow<F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,
@@ -40,69 +90,17 @@ impl XWing {
         ) -> ControlFlow<BoxedTechniqueStep>,
     {
         for digit in Digit::ALL {
-            let mut row_masks = array_vec!([(u8, (u8, u8)); 9]);
-            for y in 0..9 {
-                let Some(xs) = grid.row_mask(y, digit).as_double() else {
-                    continue;
-                };
-                row_masks.push((y, xs));
+            if let Some(step) =
+                Self::apply_axis_with_control_flow::<ColumnAxis, _>(grid, digit, &mut on_condition)?
+            {
+                return Ok(Some(step));
             }
-            let mut row_masks = row_masks.iter();
-            while let Some(&(y1, xs1 @ (x1, x2))) = row_masks.next() {
-                for &(y2, xs2) in row_masks.as_slice() {
-                    if xs1 != xs2 {
-                        continue;
-                    }
-                    // If all four corners land in one box, each row would require a placement
-                    // while the box allows only one. This is a candidate constraint violation.
-                    if y1 / 3 == y2 / 3 && x1 / 3 == x2 / 3 {
-                        return Err(ConsistencyError::CandidateConstraintViolation.into());
-                    }
-                    let mut eliminations =
-                        DigitPositions::COLUMN_POSITIONS[x1] | DigitPositions::COLUMN_POSITIONS[x2];
-                    eliminations &=
-                        !(DigitPositions::ROW_POSITIONS[y1] | DigitPositions::ROW_POSITIONS[y2]);
-                    if grid.remove_candidate_with_mask(eliminations, digit)
-                        && let ControlFlow::Break(value) =
-                            on_condition(grid, digit, (x1, x2), (y1, y2))
-                    {
-                        return Ok(Some(value));
-                    }
-                }
-            }
-
-            let mut col_masks = array_vec!([(u8, (u8, u8)); 9]);
-            for x in 0..9 {
-                let Some(ys) = grid.col_mask(x, digit).as_double() else {
-                    continue;
-                };
-                col_masks.push((x, ys));
-            }
-            let mut col_masks = col_masks.iter();
-            while let Some(&(x1, ys1 @ (y1, y2))) = col_masks.next() {
-                for &(x2, ys2) in col_masks.as_slice() {
-                    if ys1 != ys2 {
-                        continue;
-                    }
-                    // If all four corners land in one box, each column would require a placement
-                    // while the box allows only one. This is a candidate constraint violation.
-                    if x1 / 3 == x2 / 3 && y1 / 3 == y2 / 3 {
-                        return Err(ConsistencyError::CandidateConstraintViolation.into());
-                    }
-                    let mut eliminations =
-                        DigitPositions::ROW_POSITIONS[y1] | DigitPositions::ROW_POSITIONS[y2];
-                    eliminations &= !(DigitPositions::COLUMN_POSITIONS[x1]
-                        | DigitPositions::COLUMN_POSITIONS[x2]);
-                    if grid.remove_candidate_with_mask(eliminations, digit)
-                        && let ControlFlow::Break(value) =
-                            on_condition(grid, digit, (x1, x2), (y1, y2))
-                    {
-                        return Ok(Some(value));
-                    }
-                }
+            if let Some(step) =
+                Self::apply_axis_with_control_flow::<RowAxis, _>(grid, digit, &mut on_condition)?
+            {
+                return Ok(Some(step));
             }
         }
-
         Ok(None)
     }
 }

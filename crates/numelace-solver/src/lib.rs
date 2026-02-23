@@ -233,6 +233,7 @@ pub use self::{
     technique_step::*,
 };
 
+mod axis;
 pub mod backtrack;
 mod backtrack_solver;
 mod error;
