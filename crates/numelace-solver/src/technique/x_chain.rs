@@ -189,7 +189,7 @@ impl Technique for XChain {
     }
 
     fn tier(&self) -> TechniqueTier {
-        TechniqueTier::UpperIntermediate
+        TechniqueTier::Advanced
     }
 
     fn clone_box(&self) -> crate::BoxedTechnique {

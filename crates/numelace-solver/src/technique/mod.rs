@@ -29,10 +29,7 @@ mod x_chain;
 mod x_wing;
 mod y_wing;
 
-/// Returns all available techniques.
-///
-/// Techniques are ordered from easiest to hardest.
-/// This list may grow as new techniques are implemented.
+/// Returns all available techniques, ordered from easiest to hardest.
 #[must_use]
 pub fn all_techniques() -> Vec<BoxedTechnique> {
     vec![
@@ -53,10 +50,7 @@ pub fn all_techniques() -> Vec<BoxedTechnique> {
     ]
 }
 
-/// Returns the fundamental techniques.
-///
-/// This includes techniques at or below the fundamental tier, and stays stable
-/// as a baseline set even when [`all_techniques`] grows.
+/// Returns the fundamental techniques at or below the fundamental tier.
 #[must_use]
 pub fn fundamental_techniques() -> Vec<BoxedTechnique> {
     all_techniques()
@@ -65,9 +59,7 @@ pub fn fundamental_techniques() -> Vec<BoxedTechnique> {
         .collect()
 }
 
-/// Returns the basic techniques used by the solver.
-///
-/// This includes techniques at or below the basic tier.
+/// Returns the basic techniques at or below the basic tier.
 #[must_use]
 pub fn basic_techniques() -> Vec<BoxedTechnique> {
     all_techniques()
@@ -76,9 +68,7 @@ pub fn basic_techniques() -> Vec<BoxedTechnique> {
         .collect()
 }
 
-/// Returns the intermediate techniques used by the solver.
-///
-/// This includes techniques at or below the intermediate tier.
+/// Returns the intermediate techniques at or below the intermediate tier.
 #[must_use]
 pub fn intermediate_techniques() -> Vec<BoxedTechnique> {
     all_techniques()
@@ -87,14 +77,20 @@ pub fn intermediate_techniques() -> Vec<BoxedTechnique> {
         .collect()
 }
 
-/// Returns the upper-intermediate techniques used by the solver.
-///
-/// This includes techniques at or below the upper-intermediate tier. Additional
-/// techniques may be appended here as they are implemented.
+/// Returns the upper-intermediate techniques at or below the upper-intermediate tier.
 #[must_use]
 pub fn upper_intermediate_techniques() -> Vec<BoxedTechnique> {
     all_techniques()
         .into_iter()
         .filter(|tech| tech.tier() <= TechniqueTier::UpperIntermediate)
+        .collect()
+}
+
+/// Returns the advanced techniques at or below the advanced tier.
+#[must_use]
+pub fn advanced_techniques() -> Vec<BoxedTechnique> {
+    all_techniques()
+        .into_iter()
+        .filter(|tech| tech.tier() <= TechniqueTier::Advanced)
         .collect()
 }
