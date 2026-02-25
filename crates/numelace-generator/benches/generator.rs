@@ -81,6 +81,12 @@ fn bench_generator_intermediate(c: &mut Criterion) {
     bench_generator_cases(c, "generator_intermediate", &generator);
 }
 
+fn bench_generator_upper_intermediate(c: &mut Criterion) {
+    let solver = TechniqueSolver::new(technique::upper_intermediate_techniques());
+    let generator = PuzzleGenerator::new(&solver);
+    bench_generator_cases(c, "generator_upper_intermediate", &generator);
+}
+
 criterion_group!(
     name = benches_fundamental;
     config =
@@ -109,4 +115,18 @@ criterion_group!(
         bench_generator_intermediate,
 );
 
-criterion_main!(benches_fundamental, benches_basic, benches_intermediate);
+criterion_group!(
+    name = benches_upper_intermediate;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_generator_upper_intermediate,
+);
+
+criterion_main!(
+    benches_fundamental,
+    benches_basic,
+    benches_intermediate,
+    benches_upper_intermediate,
+);

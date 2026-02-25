@@ -17,7 +17,7 @@ use numelace_solver::{
     Technique, TechniqueGrid,
     technique::{
         HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedQuad,
-        NakedSingle, NakedTriple, Skyscraper, TwoStringKite, XWing, YWing,
+        NakedSingle, NakedTriple, Skyscraper, TwoStringKite, XChain, XWing, YWing,
     },
 };
 
@@ -265,6 +265,29 @@ fn y_wing_grid() -> TechniqueGrid {
     TechniqueGrid::from(grid)
 }
 
+fn x_chain_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let digit = Digit::D1;
+    let chain_start = Position::new(0, 0);
+    let strong_link_partner = Position::new(4, 0);
+
+    for pos in Position::ROWS[0] {
+        if pos != chain_start && pos != strong_link_partner {
+            grid.remove_candidate(pos, digit);
+        }
+    }
+
+    let weak_link_node = Position::new(3, 1);
+    let chain_end = Position::new(3, 7);
+    for pos in Position::COLUMNS[3] {
+        if pos != weak_link_node && pos != chain_end {
+            grid.remove_candidate(pos, digit);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
 fn bench_naked_single_apply(c: &mut Criterion) {
     let puzzles = [
         ("naked_single", naked_single_grid()),
@@ -374,6 +397,12 @@ fn bench_y_wing_apply(c: &mut Criterion) {
     let puzzles = [("y_wing", y_wing_grid()), ("empty", TechniqueGrid::new())];
     let technique = YWing::new();
     bench_apply_cases(c, "y_wing_apply", &technique, &puzzles);
+}
+
+fn bench_x_chain_apply(c: &mut Criterion) {
+    let puzzles = [("x_chain", x_chain_grid()), ("empty", TechniqueGrid::new())];
+    let technique = XChain::new();
+    bench_apply_cases(c, "x_chain_apply", &technique, &puzzles);
 }
 
 criterion_group!(
@@ -493,6 +522,15 @@ criterion_group!(
         bench_y_wing_apply,
 );
 
+criterion_group!(
+    name = benches_x_chain;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_x_chain_apply,
+);
+
 criterion_main!(
     benches_naked_single,
     benches_hidden_single,
@@ -507,4 +545,5 @@ criterion_main!(
     benches_skyscraper,
     benches_two_string_kite,
     benches_y_wing,
+    benches_x_chain,
 );

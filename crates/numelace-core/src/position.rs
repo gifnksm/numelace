@@ -1,13 +1,25 @@
 //! Board position types.
 
+use std::fmt;
+
 use crate::{CellIndexIndexedArray, DigitPositions};
 
 /// Board position (x, y) where x is column and y is row.
 ///
 /// Both coordinates are in the range 0-8.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Position {
     index: u8,
+}
+
+impl fmt::Debug for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Position")
+            .field("index", &self.index)
+            .field("x", &self.x())
+            .field("y", &self.y())
+            .finish()
+    }
 }
 
 impl PartialOrd for Position {

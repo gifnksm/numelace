@@ -33,7 +33,7 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] Tier 3 (upper-intermediate): Skyscraper
   - [X] Tier 3 (upper-intermediate): 2-String Kite
   - [X] Tier 3 (upper-intermediate): Y-Wing
-  - [ ] Tier 3 (upper-intermediate): X-Chain
+  - [X] Tier 3 (upper-intermediate): X-Chain
   - [ ] Tier 4 (advanced): Swordfish
   - [ ] Tier 4 (advanced): Jellyfish
   - [ ] Tier 4 (advanced): XY-Chain

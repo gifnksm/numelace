@@ -9,9 +9,9 @@
 pub use self::{
     hidden_pair::*, hidden_quad::*, hidden_single::*, hidden_triple::*, locked_candidates::*,
     naked_pair::*, naked_quad::*, naked_single::*, naked_triple::*, skyscraper::*,
-    two_string_kite::*, x_wing::*, y_wing::*,
+    two_string_kite::*, x_chain::*, x_wing::*, y_wing::*,
 };
-use crate::TechniqueTier;
+use crate::{BoxedTechnique, TechniqueTier};
 
 mod hidden_pair;
 mod hidden_quad;
@@ -25,6 +25,7 @@ mod naked_triple;
 mod skyscraper;
 pub(crate) mod traits;
 mod two_string_kite;
+mod x_chain;
 mod x_wing;
 mod y_wing;
 
@@ -33,7 +34,7 @@ mod y_wing;
 /// Techniques are ordered from easiest to hardest.
 /// This list may grow as new techniques are implemented.
 #[must_use]
-pub fn all_techniques() -> Vec<crate::BoxedTechnique> {
+pub fn all_techniques() -> Vec<BoxedTechnique> {
     vec![
         Box::new(NakedSingle::new()),
         Box::new(HiddenSingle::new()),
@@ -48,7 +49,7 @@ pub fn all_techniques() -> Vec<crate::BoxedTechnique> {
         Box::new(Skyscraper::new()),
         Box::new(TwoStringKite::new()),
         Box::new(YWing::new()),
-        // Box::new(XChain::new()),
+        Box::new(XChain::new()),
     ]
 }
 
@@ -57,7 +58,7 @@ pub fn all_techniques() -> Vec<crate::BoxedTechnique> {
 /// This includes techniques at or below the fundamental tier, and stays stable
 /// as a baseline set even when [`all_techniques`] grows.
 #[must_use]
-pub fn fundamental_techniques() -> Vec<crate::BoxedTechnique> {
+pub fn fundamental_techniques() -> Vec<BoxedTechnique> {
     all_techniques()
         .into_iter()
         .filter(|tech| tech.tier() <= TechniqueTier::Fundamental)
@@ -68,7 +69,7 @@ pub fn fundamental_techniques() -> Vec<crate::BoxedTechnique> {
 ///
 /// This includes techniques at or below the basic tier.
 #[must_use]
-pub fn basic_techniques() -> Vec<crate::BoxedTechnique> {
+pub fn basic_techniques() -> Vec<BoxedTechnique> {
     all_techniques()
         .into_iter()
         .filter(|tech| tech.tier() <= TechniqueTier::Basic)
@@ -79,7 +80,7 @@ pub fn basic_techniques() -> Vec<crate::BoxedTechnique> {
 ///
 /// This includes techniques at or below the intermediate tier.
 #[must_use]
-pub fn intermediate_techniques() -> Vec<crate::BoxedTechnique> {
+pub fn intermediate_techniques() -> Vec<BoxedTechnique> {
     all_techniques()
         .into_iter()
         .filter(|tech| tech.tier() <= TechniqueTier::Intermediate)
@@ -91,7 +92,7 @@ pub fn intermediate_techniques() -> Vec<crate::BoxedTechnique> {
 /// This includes techniques at or below the upper-intermediate tier. Additional
 /// techniques may be appended here as they are implemented.
 #[must_use]
-pub fn upper_intermediate_techniques() -> Vec<crate::BoxedTechnique> {
+pub fn upper_intermediate_techniques() -> Vec<BoxedTechnique> {
     all_techniques()
         .into_iter()
         .filter(|tech| tech.tier() <= TechniqueTier::UpperIntermediate)
