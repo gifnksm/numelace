@@ -17,6 +17,7 @@ This backlog is the single source of truth for tasks and ideas.
 
 - [ ] Difficulty-based puzzle generation
 - [ ] Seeded generation and regenerate by seed
+  - [ ] Reproducible generation requires seed + enabled techniques (or tier)
 - [ ] Technique explanations for hints (may overlap with hint system)
 - Generator-aligned technique expansion (solver + generator; tiered checklist)
   - [X] Tier 0 (fundamental): Naked Single
