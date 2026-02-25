@@ -252,7 +252,7 @@ impl<'a> PuzzleGenerator<'a> {
             stack.push((grid.clone(), (pos, digits)));
             grid.place(pos, digit);
             // Use the solver to fill in cells that can be determined logically
-            let Ok((solved, _)) = self.solver.solve(&mut grid) else {
+            let Ok((solved, _)) = self.solver.solve_with_pass(&mut grid) else {
                 continue; // Contradiction found, backtrack
             };
             if solved {
@@ -288,7 +288,7 @@ impl<'a> PuzzleGenerator<'a> {
             let mut removed = problem.clone();
             removed.set(pos, None);
             let mut test_grid = TechniqueGrid::from_digit_grid(&removed);
-            let result = self.solver.solve(&mut test_grid);
+            let result = self.solver.solve_with_pass(&mut test_grid);
             if result.is_ok_and(|(solved, _)| solved) {
                 problem = removed;
             }
@@ -523,7 +523,7 @@ mod tests {
 
         // Solve the problem
         let mut test_grid = TechniqueGrid::from_digit_grid(&problem);
-        let result = generator.solver.solve(&mut test_grid);
+        let result = generator.solver.solve_with_pass(&mut test_grid);
 
         assert!(result.is_ok());
         assert!(result.unwrap().0); // solved
@@ -644,7 +644,7 @@ mod tests {
                 let puzzle = generator.generate_with_seed(PuzzleSeed(seed));
 
                 let mut test_grid = TechniqueGrid::from_digit_grid(&puzzle.problem);
-                let result = generator.solver.solve(&mut test_grid);
+                let result = generator.solver.solve_with_pass(&mut test_grid);
 
                 prop_assert!(result.is_ok());
                 prop_assert!(result.unwrap().0); // solved

@@ -79,7 +79,7 @@ impl BacktrackSolverStats {
 /// let grid = TechniqueGrid::new();
 ///
 /// // Get first solution
-/// if let Some((solution, stats)) = solver.solve(grid)?.next() {
+/// if let Some((solution, stats)) = solver.solve_with_pass(grid)?.next() {
 ///     println!("Solved with {} assumptions", stats.assumptions().len());
 ///     if stats.solved_without_assumptions() {
 ///         println!("No backtracking needed!");
@@ -97,7 +97,7 @@ impl BacktrackSolverStats {
 /// let grid = TechniqueGrid::new();
 ///
 /// // Check for unique solution
-/// let solutions: Vec<_> = solver.solve(grid)?.take(2).collect();
+/// let solutions: Vec<_> = solver.solve_with_pass(grid)?.take(2).collect();
 /// match solutions.len() {
 ///     0 => println!("No solution"),
 ///     1 => println!("Unique solution"),
@@ -144,38 +144,14 @@ impl BacktrackSolver {
         BacktrackSolverStats::with_technique(self.technique.new_stats())
     }
 
-    /// Solves the puzzle and returns an iterator over all solutions.
-    ///
-    /// The iterator yields solutions in the order they are found during the
-    /// search. Each solution comes with statistics about how it was found.
+    /// Solves using step-based technique application before backtracking.
     ///
     /// # Errors
     ///
-    /// Returns [`SolverError::Inconsistent`] if the initial grid is inconsistent
-    /// (has cells with no candidates or contradictory placements).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use numelace_solver::{BacktrackSolver, TechniqueGrid};
-    ///
-    /// let solver = BacktrackSolver::with_all_techniques();
-    /// let grid = TechniqueGrid::new();
-    ///
-    /// // Get first solution only
-    /// match solver.solve(grid)?.next() {
-    ///     Some((solution, stats)) => {
-    ///         println!("Found solution!");
-    ///         println!("Assumptions: {}", stats.assumptions().len());
-    ///         println!("Backtracks: {}", stats.backtrack_count());
-    ///     }
-    ///     None => println!("No solution exists"),
-    /// }
-    /// # Ok::<(), numelace_solver::SolverError>(())
-    /// ```
-    pub fn solve(&self, mut grid: TechniqueGrid) -> Result<Solutions<'_>, SolverError> {
+    /// Returns [`SolverError::Inconsistent`] if the initial grid is inconsistent.
+    pub fn solve_with_step(&self, mut grid: TechniqueGrid) -> Result<Solutions<'_>, SolverError> {
         let mut stats = self.new_stats();
-        let solved = self.solve_by_technique(&mut grid, &mut stats)?;
+        let solved = self.solve_by_technique_with_step(&mut grid, &mut stats)?;
         let solutions = if solved {
             Solutions::solved(self, grid, stats)
         } else {
@@ -185,21 +161,49 @@ impl BacktrackSolver {
         Ok(solutions)
     }
 
-    fn solve_by_technique(
+    fn solve_by_technique_with_step(
         &self,
         grid: &mut TechniqueGrid,
         stats: &mut BacktrackSolverStats,
     ) -> Result<bool, SolverError> {
         let solved = self
             .technique
-            .solve_with_stats(grid, &mut stats.technique)?;
+            .solve_with_step_stats(grid, &mut stats.technique)?;
+        Ok(solved)
+    }
+
+    /// Solves using pass-based technique application before backtracking.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SolverError::Inconsistent`] if the initial grid is inconsistent.
+    pub fn solve_with_pass(&self, mut grid: TechniqueGrid) -> Result<Solutions<'_>, SolverError> {
+        let mut stats = self.new_stats();
+        let solved = self.solve_by_technique_with_pass(&mut grid, &mut stats)?;
+        let solutions = if solved {
+            Solutions::solved(self, grid, stats)
+        } else {
+            let assumption = backtrack::find_best_assumption(&grid);
+            Solutions::with_assumptions(self, grid, stats, assumption)
+        };
+        Ok(solutions)
+    }
+
+    fn solve_by_technique_with_pass(
+        &self,
+        grid: &mut TechniqueGrid,
+        stats: &mut BacktrackSolverStats,
+    ) -> Result<bool, SolverError> {
+        let solved = self
+            .technique
+            .solve_with_pass_stats(grid, &mut stats.technique)?;
         Ok(solved)
     }
 }
 
 /// An iterator over solutions to a Sudoku puzzle.
 ///
-/// Created by [`BacktrackSolver::solve`]. Yields solutions along with statistics
+/// Created by [`BacktrackSolver::solve_with_pass`]. Yields solutions along with statistics
 /// about how each solution was found.
 
 #[derive(Debug, Clone)]
@@ -280,7 +284,10 @@ impl Iterator for Solutions<'_> {
 
             stats.assumptions.push((pos, digit));
             grid.place(pos, digit);
-            let Ok(solved) = self.solver.solve_by_technique(&mut grid, &mut stats) else {
+            let Ok(solved) = self
+                .solver
+                .solve_by_technique_with_pass(&mut grid, &mut stats)
+            else {
                 stats.backtrack_count += 1;
                 continue;
             };
@@ -307,7 +314,7 @@ mod tests {
         let grid = TechniqueGrid::new();
 
         // Should be able to solve even without techniques
-        let result = solver.solve(grid);
+        let result = solver.solve_with_pass(grid);
         assert!(result.is_ok());
     }
 
@@ -319,7 +326,7 @@ mod tests {
         // Create a naked single
         grid.place(Position::new(4, 4), Digit::D5);
 
-        let result = solver.solve(grid);
+        let result = solver.solve_with_pass(grid);
         assert!(result.is_ok());
     }
 
@@ -331,7 +338,7 @@ mod tests {
         // Simple setup
         grid.place(Position::new(0, 0), Digit::D1);
 
-        let solutions = solver.solve(grid).unwrap();
+        let solutions = solver.solve_with_pass(grid).unwrap();
 
         // Should be able to iterate
         let count = solutions.take(5).count();
@@ -378,7 +385,7 @@ mod tests {
             grid.remove_candidate(Position::new(0, 0), digit);
         }
 
-        let result = solver.solve(grid);
+        let result = solver.solve_with_pass(grid);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), SolverError::Inconsistent(_)));
     }
@@ -389,7 +396,7 @@ mod tests {
         let grid = TechniqueGrid::new();
 
         // Empty grid has multiple solutions - verify we can get at least 2
-        let solutions: Vec<_> = solver.solve(grid).unwrap().take(2).collect();
+        let solutions: Vec<_> = solver.solve_with_pass(grid).unwrap().take(2).collect();
         assert_eq!(solutions.len(), 2);
 
         // Verify that solutions are different
@@ -409,7 +416,11 @@ mod tests {
         grid.place(Position::new(2, 2), Digit::D3);
 
         // Should still have multiple solutions
-        let solutions: Vec<_> = solver.solve(grid.into()).unwrap().take(3).collect();
+        let solutions: Vec<_> = solver
+            .solve_with_pass(grid.into())
+            .unwrap()
+            .take(3)
+            .collect();
         assert_eq!(solutions.len(), 3);
 
         // Verify all solutions are valid and different
@@ -445,7 +456,7 @@ mod tests {
 
         // Solve and check that some backtracking occurred
         // (We can't guarantee backtracking will happen, but it's likely with this setup)
-        let mut solutions = solver.solve(grid.into()).unwrap();
+        let mut solutions = solver.solve_with_pass(grid.into()).unwrap();
         let (_, stats) = solutions.next().unwrap();
 
         // Should have made assumptions
@@ -465,7 +476,11 @@ mod tests {
         grid.place(Position::new(0, 4), Digit::D5);
 
         // Get multiple solutions to increase chances of backtracking
-        let solutions: Vec<_> = solver.solve(grid.into()).unwrap().take(5).collect();
+        let solutions: Vec<_> = solver
+            .solve_with_pass(grid.into())
+            .unwrap()
+            .take(5)
+            .collect();
 
         // At least one solution should have backtracked
         // (This is probabilistic but very likely with multiple solutions)
@@ -488,7 +503,7 @@ mod tests {
         // Start with a partial grid
         grid.place(Position::new(4, 4), Digit::D5);
 
-        let (solution, _) = solver.solve(grid.into()).unwrap().next().unwrap();
+        let (solution, _) = solver.solve_with_pass(grid.into()).unwrap().next().unwrap();
 
         // Solution should be complete (all 81 cells filled)
         assert!(solution.is_solved().unwrap());
@@ -515,7 +530,7 @@ mod tests {
         let solver = BacktrackSolver::with_techniques(techniques);
 
         let grid = TechniqueGrid::new();
-        let result = solver.solve(grid);
+        let result = solver.solve_with_pass(grid);
         assert!(result.is_ok());
     }
 }

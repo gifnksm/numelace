@@ -33,7 +33,7 @@ fn bench_apply_cases<T>(
         c.bench_with_input(BenchmarkId::new(bench_name, param), grid, |b, grid| {
             b.iter_batched_ref(
                 || grid.clone(),
-                |grid| technique.apply(grid).unwrap(),
+                |grid| technique.apply_pass(grid).unwrap(),
                 BatchSize::SmallInput,
             );
         });

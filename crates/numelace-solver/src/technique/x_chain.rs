@@ -97,10 +97,7 @@ impl XChain {
     }
 
     #[inline]
-    fn apply_with_control_flow<F>(
-        grid: &mut TechniqueGrid,
-        mut on_condition: F,
-    ) -> Option<BoxedTechniqueStep>
+    fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
         F: for<'a> FnMut(
             &'a TechniqueGrid,
@@ -108,7 +105,7 @@ impl XChain {
             Position,
             &[TraversalStackItem],
             bool,
-        ) -> ControlFlow<BoxedTechniqueStep>,
+        ) -> ControlFlow<T>,
     {
         for digit in Digit::ALL {
             let digit_positions = grid.digit_positions(digit);
@@ -217,24 +214,33 @@ impl Technique for XChain {
                 } else {
                     vec![]
                 };
-                ControlFlow::Break(Box::new(TechniqueStepData::from_diff_with_extra(
+                ControlFlow::Break(TechniqueStepData::from_diff_with_extra(
                     NAME,
                     positions,
                     vec![(positions, DigitSet::from_elem(digit))],
                     grid,
                     after_grid,
                     extra,
-                )))
+                ))
             },
         );
         Ok(step)
     }
 
-    fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+    fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+        let mut changed = false;
+        Self::apply_with_control_flow(grid, |_, _, _, _, _| {
+            changed = true;
+            ControlFlow::Break(())
+        });
+        Ok(changed)
+    }
+
+    fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
         Self::apply_with_control_flow(grid, |_, _, _, _, _| {
             changed += 1;
-            ControlFlow::Continue(())
+            ControlFlow::<()>::Continue(())
         });
         Ok(changed)
     }
@@ -269,7 +275,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&XChain::new())
+            .apply_pass(&XChain::new())
             .assert_removed_includes(Position::new(0, 7), [digit]);
     }
 
@@ -293,7 +299,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&XChain::new())
+            .apply_pass(&XChain::new())
             .assert_placed(chain_start, digit);
     }
 
@@ -302,7 +308,7 @@ mod tests {
         let grid = CandidateGrid::new();
 
         TechniqueTester::new(grid)
-            .apply_once(&XChain::new())
+            .apply_pass(&XChain::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
     }

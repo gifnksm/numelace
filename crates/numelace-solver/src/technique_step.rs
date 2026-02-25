@@ -50,23 +50,23 @@ pub struct TechniqueStepData {
 }
 
 impl TechniqueStepData {
-    /// Creates a new `TechniqueStepData`.
+    /// Creates a new boxed `TechniqueStepData`.
     #[must_use]
-    pub fn new(
+    pub fn new_boxed(
         technique_name: &'static str,
         condition_cells: ConditionCells,
         condition_digit_cells: ConditionDigitCells,
         application: Vec<TechniqueApplication>,
-    ) -> Self {
-        Self {
+    ) -> BoxedTechniqueStep {
+        Box::new(Self {
             technique_name,
             condition_cells,
             condition_digit_cells,
             application,
-        }
+        })
     }
 
-    /// Creates a new `TechniqueStepData` from a before/after grid diff.
+    /// Creates a new boxed `TechniqueStepData` from a before/after grid diff.
     #[must_use]
     pub fn from_diff(
         technique_name: &'static str,
@@ -74,7 +74,7 @@ impl TechniqueStepData {
         condition_digit_cells: ConditionDigitCells,
         before: &TechniqueGrid,
         after: &TechniqueGrid,
-    ) -> Self {
+    ) -> BoxedTechniqueStep {
         Self::from_diff_with_extra(
             technique_name,
             condition_cells,
@@ -85,7 +85,7 @@ impl TechniqueStepData {
         )
     }
 
-    /// Creates a new `TechniqueStepData` from a before/after grid diff,
+    /// Creates a new boxed `TechniqueStepData` from a before/after grid diff,
     /// appending extra applications.
     #[must_use]
     pub fn from_diff_with_extra(
@@ -95,10 +95,10 @@ impl TechniqueStepData {
         before: &TechniqueGrid,
         after: &TechniqueGrid,
         mut extra_application: Vec<TechniqueApplication>,
-    ) -> Self {
+    ) -> BoxedTechniqueStep {
         let mut application = collect_applications_from_diff(before, after);
         application.append(&mut extra_application);
-        Self::new(
+        Self::new_boxed(
             technique_name,
             condition_cells,
             condition_digit_cells,

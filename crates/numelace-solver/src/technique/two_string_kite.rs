@@ -57,17 +57,9 @@ impl TwoStringKite {
     }
 
     #[inline]
-    fn apply_with_control_flow<F>(
-        grid: &mut TechniqueGrid,
-        mut on_condition: F,
-    ) -> Option<BoxedTechniqueStep>
+    fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
-        F: for<'a> FnMut(
-            &'a mut TechniqueGrid,
-            Digit,
-            LinePair,
-            LinePair,
-        ) -> ControlFlow<BoxedTechniqueStep>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, Digit, LinePair, LinePair) -> ControlFlow<T>,
     {
         for digit in Digit::ALL {
             let (box_rows, found_rows) = Self::collect_line_pairs_by_box::<RowAxis>(grid, digit);
@@ -130,23 +122,32 @@ impl Technique for TwoStringKite {
                     Position::new(col, col_box_row),
                     Position::new(col, col_other_row),
                 ]);
-                ControlFlow::Break(Box::new(TechniqueStepData::from_diff(
+                ControlFlow::Break(TechniqueStepData::from_diff(
                     NAME,
                     condition_cells,
                     vec![(condition_cells, DigitSet::from_elem(digit))],
                     grid,
                     after_grid,
-                )))
+                ))
             },
         );
         Ok(step)
     }
 
-    fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+    fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+        let mut changed = false;
+        Self::apply_with_control_flow(grid, |_, _, _, _| {
+            changed = true;
+            ControlFlow::Break(())
+        });
+        Ok(changed)
+    }
+
+    fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
         Self::apply_with_control_flow(grid, |_, _, _, _| {
             changed += 1;
-            ControlFlow::Continue(())
+            ControlFlow::<()>::Continue(())
         });
         Ok(changed)
     }
@@ -182,7 +183,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&TwoStringKite::new())
+            .apply_pass(&TwoStringKite::new())
             .assert_removed_includes(Position::new(row_other_col, col_other_row), [digit]);
     }
 
@@ -209,7 +210,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&TwoStringKite::new())
+            .apply_pass(&TwoStringKite::new())
             .assert_no_change(Position::new(row_other_col, col_other_row));
     }
 
@@ -218,7 +219,7 @@ mod tests {
         let grid = CandidateGrid::new();
 
         TechniqueTester::new(grid)
-            .apply_once(&TwoStringKite::new())
+            .apply_pass(&TwoStringKite::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
     }

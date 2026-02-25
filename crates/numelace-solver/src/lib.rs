@@ -72,7 +72,7 @@
 //! let grid = TechniqueGrid::new();
 //!
 //! // Get first solution
-//! if let Some((solution, stats)) = solver.solve(grid)?.next() {
+//! if let Some((solution, stats)) = solver.solve_with_pass(grid)?.next() {
 //!     println!("Solved!");
 //!     println!("Assumptions made: {}", stats.assumptions().len());
 //!     println!("Technique steps: {}", stats.technique().total_steps());
@@ -92,7 +92,7 @@
 //! let solver = TechniqueSolver::with_all_techniques();
 //! let mut grid = TechniqueGrid::new();
 //!
-//! let (solved, stats) = solver.solve(&mut grid)?;
+//! let (solved, stats) = solver.solve_with_pass(&mut grid)?;
 //! if solved {
 //!     println!("Solved with techniques only!");
 //! } else {
@@ -111,8 +111,8 @@
 //! let mut grid = TechniqueGrid::new();
 //! let mut stats = solver.new_stats();
 //!
-//! // Apply one technique at a time
-//! while solver.step(&mut grid, &mut stats)? > 0 {
+//! // Apply one technique step at a time
+//! while solver.apply_step(&mut grid, &mut stats)? {
 //!     println!("Progress! Total steps: {}", stats.total_steps());
 //!
 //!     if grid.is_solved()? {
@@ -132,7 +132,7 @@
 //! let grid = TechniqueGrid::new();
 //!
 //! // Check if puzzle has a unique solution
-//! let solutions: Vec<_> = solver.solve(grid)?.take(2).collect();
+//! let solutions: Vec<_> = solver.solve_with_pass(grid)?.take(2).collect();
 //! match solutions.len() {
 //!     0 => println!("No solution"),
 //!     1 => println!("Unique solution - valid puzzle"),
@@ -151,7 +151,7 @@
 //! let solver = BacktrackSolver::with_techniques(techniques);
 //!
 //! let grid = TechniqueGrid::new();
-//! if let Some((solution, _)) = solver.solve(grid)?.next() {
+//! if let Some((solution, _)) = solver.solve_with_pass(grid)?.next() {
 //!     println!("Solved!");
 //! }
 //! # Ok::<(), numelace_solver::SolverError>(())
@@ -200,7 +200,13 @@
 //!         Ok(None)
 //!     }
 //!
-//!     fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+//!     fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+//!         // Apply your technique logic here
+//!         // Return Ok(true) if progress was made
+//!         Ok(false)
+//!     }
+//!
+//!     fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
 //!         // Apply your technique logic here
 //!         // Return Ok(n) (n > 0) if progress was made
 //!         Ok(0)

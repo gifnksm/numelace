@@ -13,7 +13,7 @@ use crate::{BoxedTechnique, BoxedTechniqueStep, SolverError, TechniqueGrid, tech
 /// let solver = TechniqueSolver::with_all_techniques();
 /// let mut grid = TechniqueGrid::new();
 ///
-/// let (_solved, stats) = solver.solve(&mut grid)?;
+/// let (_solved, stats) = solver.solve_with_pass(&mut grid)?;
 /// println!("Total steps: {}", stats.total_steps());
 ///
 /// if let Some((i, _)) = solver
@@ -46,7 +46,7 @@ impl TechniqueSolverStats {
     /// let mut grid = TechniqueGrid::new();
     /// let mut stats = solver.new_stats();
     ///
-    /// let _ = solver.solve_with_stats(&mut grid, &mut stats)?;
+    /// let _ = solver.solve_with_pass_stats(&mut grid, &mut stats)?;
     ///
     /// for (i, count) in stats.applications().iter().enumerate() {
     ///     println!("{}: {} times", solver.techniques()[i].name(), count);
@@ -100,7 +100,7 @@ impl TechniqueSolverStats {
 /// let mut grid = TechniqueGrid::new();
 ///
 /// // Solve completely
-/// let (solved, stats) = solver.solve(&mut grid)?;
+/// let (solved, stats) = solver.solve_with_pass(&mut grid)?;
 /// if solved {
 ///     println!("Puzzle solved in {} steps!", stats.total_steps());
 /// } else {
@@ -118,7 +118,7 @@ impl TechniqueSolverStats {
 /// let mut grid = TechniqueGrid::new();
 /// let mut stats = solver.new_stats();
 ///
-/// while solver.step(&mut grid, &mut stats)? > 0 {
+/// while solver.apply_step(&mut grid, &mut stats)? {
 ///     println!("Progress made! Step {}", stats.total_steps());
 ///     if grid.is_solved()? {
 ///         break;
@@ -188,63 +188,6 @@ impl TechniqueSolver {
         &self.techniques
     }
 
-    /// Applies one step of solving by trying each technique in order.
-    ///
-    /// Iterates through the list of techniques, applying the first one that
-    /// makes progress. When a technique succeeds, the statistics are updated
-    /// and the method returns immediately.
-    ///
-    /// # Arguments
-    ///
-    /// * `grid` - The candidate grid to solve
-    /// * `stats` - Statistics object to record which technique was applied
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(n)` - The number of applications performed by the first technique that made progress
-    /// * `Ok(0)` - No technique could make progress (solver is stuck)
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent
-    /// after applying a technique.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use numelace_solver::{TechniqueGrid, TechniqueSolver};
-    ///
-    /// let solver = TechniqueSolver::with_all_techniques();
-    /// let mut grid = TechniqueGrid::new();
-    /// let mut stats = solver.new_stats();
-    ///
-    /// if solver.step(&mut grid, &mut stats)? > 0 {
-    ///     println!("Made progress!");
-    /// } else {
-    ///     println!("Stuck - no technique can help");
-    /// }
-    /// # Ok::<(), numelace_solver::SolverError>(())
-    /// ```
-    pub fn step(
-        &self,
-        grid: &mut TechniqueGrid,
-        stats: &mut TechniqueSolverStats,
-    ) -> Result<usize, SolverError> {
-        debug_assert_eq!(self.techniques.len(), stats.applications.len());
-        grid.check_consistency()?;
-
-        for (i, technique) in self.techniques.iter().enumerate() {
-            let progress = technique.apply(grid)?;
-            if progress > 0 {
-                stats.applications[i] += progress;
-                stats.total_steps += progress;
-                grid.check_consistency()?;
-                return Ok(progress);
-            }
-        }
-        Ok(0)
-    }
-
     /// Finds the next available hint step without mutating the grid.
     ///
     /// Returns `Ok(None)` when no technique can provide a step.
@@ -265,96 +208,117 @@ impl TechniqueSolver {
         Ok(None)
     }
 
-    /// Applies techniques repeatedly until the grid is solved or no progress can be made.
+    /// Applies a single step by scanning techniques in order.
     ///
-    /// This method calls [`step`](Self::step) in a loop until either the grid is
-    /// completely solved or no technique can make further progress. Statistics are
-    /// collected throughout the solving process.
-    ///
-    /// # Arguments
-    ///
-    /// * `grid` - The candidate grid to solve
-    ///
-    /// # Returns
-    ///
-    /// Returns a tuple `(solved, stats)` where:
-    /// * `solved` - `true` if the grid is completely solved, `false` if stuck
-    /// * `stats` - Statistics about which techniques were applied and how many times
+    /// Returns `Ok(true)` when a technique makes progress, otherwise `Ok(false)`.
     ///
     /// # Errors
     ///
-    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent
-    /// during solving.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use numelace_solver::{TechniqueGrid, TechniqueSolver};
-    ///
-    /// let solver = TechniqueSolver::with_all_techniques();
-    /// let mut grid = TechniqueGrid::new();
-    ///
-    /// let (solved, stats) = solver.solve(&mut grid)?;
-    /// if solved {
-    ///     println!("Solved in {} steps", stats.total_steps());
-    /// } else {
-    ///     println!(
-    ///         "Stuck after {} steps - backtracking needed",
-    ///         stats.total_steps()
-    ///     );
-    /// }
-    /// # Ok::<(), numelace_solver::SolverError>(())
-    /// ```
-    pub fn solve(
-        &self,
-        grid: &mut TechniqueGrid,
-    ) -> Result<(bool, TechniqueSolverStats), SolverError> {
-        let mut stats = self.new_stats();
-        let solved = self.solve_with_stats(grid, &mut stats)?;
-        Ok((solved, stats))
-    }
-
-    /// Applies techniques repeatedly until the grid is solved or no progress can be made,
-    /// using the provided statistics object.
-    ///
-    /// This is similar to [`solve`](Self::solve), but allows reusing an existing
-    /// statistics object. This is useful when you want to accumulate statistics
-    /// across multiple solving attempts or when you need more control over the
-    /// statistics lifecycle.
-    ///
-    /// # Arguments
-    ///
-    /// * `grid` - The candidate grid to solve
-    /// * `stats` - Statistics object to accumulate technique application data
-    ///
-    /// # Returns
-    ///
-    /// Returns `true` if the grid is completely solved, `false` if stuck.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent
-    /// during solving.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use numelace_solver::{TechniqueGrid, TechniqueSolver};
-    ///
-    /// let solver = TechniqueSolver::with_all_techniques();
-    /// let mut grid = TechniqueGrid::new();
-    /// let mut stats = solver.new_stats();
-    ///
-    /// let solved = solver.solve_with_stats(&mut grid, &mut stats)?;
-    /// println!("Solved: {}, Steps: {}", solved, stats.total_steps());
-    /// # Ok::<(), numelace_solver::SolverError>(())
-    /// ```
-    pub fn solve_with_stats(
+    /// Returns [`SolverError::Inconsistent`] if the grid is inconsistent.
+    pub fn apply_step(
         &self,
         grid: &mut TechniqueGrid,
         stats: &mut TechniqueSolverStats,
     ) -> Result<bool, SolverError> {
-        while self.step(grid, stats)? > 0 {
+        debug_assert_eq!(self.techniques.len(), stats.applications.len());
+        grid.check_consistency()?;
+
+        for (i, technique) in self.techniques.iter().enumerate() {
+            if technique.apply_step(grid)? {
+                stats.applications[i] += 1;
+                stats.total_steps += 1;
+                grid.check_consistency()?;
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// Applies a single pass by scanning techniques in order.
+    ///
+    /// Returns `Ok(n)` when a technique makes progress, otherwise `Ok(0)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent
+    /// after applying a technique.
+    pub fn apply_pass(
+        &self,
+        grid: &mut TechniqueGrid,
+        stats: &mut TechniqueSolverStats,
+    ) -> Result<usize, SolverError> {
+        debug_assert_eq!(self.techniques.len(), stats.applications.len());
+        grid.check_consistency()?;
+
+        for (i, technique) in self.techniques.iter().enumerate() {
+            let progress = technique.apply_pass(grid)?;
+            if progress > 0 {
+                stats.applications[i] += progress;
+                stats.total_steps += progress;
+                grid.check_consistency()?;
+                return Ok(progress);
+            }
+        }
+        Ok(0)
+    }
+
+    /// Solves by repeatedly applying single steps until no progress is made.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent.
+    pub fn solve_with_step(
+        &self,
+        grid: &mut TechniqueGrid,
+    ) -> Result<(bool, TechniqueSolverStats), SolverError> {
+        let mut stats = self.new_stats();
+        let solved = self.solve_with_step_stats(grid, &mut stats)?;
+        Ok((solved, stats))
+    }
+
+    /// Solves by repeatedly applying passes until no progress is made.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent.
+    pub fn solve_with_pass(
+        &self,
+        grid: &mut TechniqueGrid,
+    ) -> Result<(bool, TechniqueSolverStats), SolverError> {
+        let mut stats = self.new_stats();
+        let solved = self.solve_with_pass_stats(grid, &mut stats)?;
+        Ok((solved, stats))
+    }
+
+    /// Solves by repeatedly applying single steps, using the provided statistics.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent.
+    pub fn solve_with_step_stats(
+        &self,
+        grid: &mut TechniqueGrid,
+        stats: &mut TechniqueSolverStats,
+    ) -> Result<bool, SolverError> {
+        while self.apply_step(grid, stats)? {
+            if grid.is_solved()? {
+                return Ok(true);
+            }
+        }
+        Ok(grid.is_solved()?)
+    }
+
+    /// Solves by repeatedly applying passes, using the provided statistics.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SolverError::Inconsistent`] if the grid becomes inconsistent.
+    pub fn solve_with_pass_stats(
+        &self,
+        grid: &mut TechniqueGrid,
+        stats: &mut TechniqueSolverStats,
+    ) -> Result<bool, SolverError> {
+        while self.apply_pass(grid, stats)? > 0 {
             if grid.is_solved()? {
                 return Ok(true);
             }
@@ -380,20 +344,32 @@ mod tests {
     }
 
     #[test]
-    fn test_step_returns_false_when_no_progress() {
+    fn test_apply_pass_returns_zero_when_no_progress() {
         let solver = create_test_solver();
         let mut grid = TechniqueGrid::from(CandidateGrid::new());
         let mut stats = solver.new_stats();
 
         // On a fresh grid with all candidates, no technique can make progress yet
-        let result = solver.step(&mut grid, &mut stats);
+        let result = solver.apply_pass(&mut grid, &mut stats);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 0);
         assert_eq!(stats.total_steps, 0);
     }
 
     #[test]
-    fn test_step_returns_true_when_progress_made() {
+    fn test_apply_step_returns_false_when_no_progress() {
+        let solver = create_test_solver();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
+        let mut stats = solver.new_stats();
+
+        let result = solver.apply_step(&mut grid, &mut stats);
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+        assert_eq!(stats.total_steps, 0);
+    }
+
+    #[test]
+    fn test_apply_step_returns_true_when_progress_made() {
         let solver = create_test_solver();
         let mut grid = TechniqueGrid::from(CandidateGrid::new());
         let mut stats = solver.new_stats();
@@ -405,7 +381,33 @@ mod tests {
             }
         }
 
-        let result = solver.step(&mut grid, &mut stats);
+        let result = solver.apply_step(&mut grid, &mut stats);
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+        assert_eq!(stats.total_steps, 1);
+
+        let i = solver
+            .techniques()
+            .iter()
+            .position(|t| t.name() == NakedSingle::new().name())
+            .unwrap();
+        assert_eq!(stats.applications()[i], 1);
+    }
+
+    #[test]
+    fn test_apply_pass_returns_count_when_progress_made() {
+        let solver = create_test_solver();
+        let mut grid = TechniqueGrid::from(CandidateGrid::new());
+        let mut stats = solver.new_stats();
+
+        // Create a naked single: only D5 at (4, 4)
+        for digit in Digit::ALL {
+            if digit != Digit::D5 {
+                grid.remove_candidate(Position::new(4, 4), digit);
+            }
+        }
+
+        let result = solver.apply_pass(&mut grid, &mut stats);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 1);
         assert_eq!(stats.total_steps, 1);
@@ -419,7 +421,7 @@ mod tests {
     }
 
     #[test]
-    fn test_step_records_stats() {
+    fn test_apply_pass_records_stats() {
         let solver = create_test_solver();
         let mut grid = TechniqueGrid::from(CandidateGrid::new());
         let mut stats = solver.new_stats();
@@ -431,7 +433,7 @@ mod tests {
             }
         }
 
-        solver.step(&mut grid, &mut stats).unwrap();
+        solver.apply_pass(&mut grid, &mut stats).unwrap();
 
         assert_eq!(stats.total_steps, 1);
         let i = solver
@@ -447,7 +449,7 @@ mod tests {
         let solver = create_test_solver();
         let mut grid = TechniqueGrid::from(CandidateGrid::new());
 
-        let result = solver.solve(&mut grid);
+        let result = solver.solve_with_pass(&mut grid);
         assert!(result.is_ok());
 
         let (is_solved, stats) = result.unwrap();
@@ -467,7 +469,7 @@ mod tests {
             }
         }
 
-        let result = solver.solve(&mut grid);
+        let result = solver.solve_with_pass(&mut grid);
         assert!(result.is_ok());
 
         let (_solved, stats) = result.unwrap();
@@ -496,7 +498,7 @@ mod tests {
             }
         }
 
-        let result = solver.solve(&mut grid);
+        let result = solver.solve_with_pass(&mut grid);
 
         // Should make progress and detect the naked single
         assert!(result.is_ok());
@@ -563,7 +565,7 @@ mod tests {
     }
 
     #[test]
-    fn test_solve_with_stats() {
+    fn test_solve_with_pass_stats() {
         let solver = create_test_solver();
         let mut grid = TechniqueGrid::from(CandidateGrid::new());
         let mut stats = solver.new_stats();
@@ -575,14 +577,14 @@ mod tests {
             }
         }
 
-        let result = solver.solve_with_stats(&mut grid, &mut stats);
+        let result = solver.solve_with_pass_stats(&mut grid, &mut stats);
         assert!(result.is_ok());
         // The naked single should have been detected and placed
         assert!(stats.total_steps() >= 1);
     }
 
     #[test]
-    fn test_solve_with_stats_accumulates() {
+    fn test_solve_with_pass_stats_accumulates() {
         let solver = create_test_solver();
         let mut grid1 = TechniqueGrid::from(CandidateGrid::new());
         let mut grid2 = TechniqueGrid::from(CandidateGrid::new());
@@ -594,7 +596,7 @@ mod tests {
                 grid1.remove_candidate(Position::new(0, 0), digit);
             }
         }
-        let _ = solver.solve_with_stats(&mut grid1, &mut stats);
+        let _ = solver.solve_with_pass_stats(&mut grid1, &mut stats);
         let first_steps = stats.total_steps();
 
         // Second solve accumulates - create another naked single
@@ -603,7 +605,7 @@ mod tests {
                 grid2.remove_candidate(Position::new(1, 1), digit);
             }
         }
-        let _ = solver.solve_with_stats(&mut grid2, &mut stats);
+        let _ = solver.solve_with_pass_stats(&mut grid2, &mut stats);
 
         assert!(stats.total_steps() >= first_steps);
     }

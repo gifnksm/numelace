@@ -24,7 +24,20 @@ pub trait Technique: Debug + Send + Sync {
     /// Returns an error if the technique detects an invalid state in the grid.
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError>;
 
-    /// Applies the technique to a technique grid.
+    /// Applies a single technique step.
+    ///
+    /// Implementations should apply at most one logical step and return `Ok(true)`
+    /// when any progress is made.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the technique detects an invalid state in the grid.
+    fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError>;
+
+    /// Applies the technique across the grid in a single pass.
+    ///
+    /// This performs a full sweep for the technique, potentially applying multiple
+    /// steps in one call. It does not loop until stuck.
     ///
     /// # Returns
     ///
@@ -33,7 +46,7 @@ pub trait Technique: Debug + Send + Sync {
     /// # Errors
     ///
     /// Returns an error if the technique detects an invalid state in the grid.
-    fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError>;
+    fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError>;
 }
 
 /// Difficulty tier used to order techniques from easiest to hardest.

@@ -235,7 +235,7 @@ fn technique_name_matches(name: &str, available: &[&'static str]) -> bool {
 
 fn solve_stats(solver: &TechniqueSolver, puzzle: &GeneratedPuzzle) -> TechniqueSolverStats {
     let mut grid = TechniqueGrid::from(puzzle.problem.clone());
-    let (is_solved, stats) = solver.solve(&mut grid).unwrap();
+    let (is_solved, stats) = solver.solve_with_pass(&mut grid).unwrap();
     assert!(is_solved);
     stats
 }

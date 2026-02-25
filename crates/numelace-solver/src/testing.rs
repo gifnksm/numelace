@@ -1,58 +1,9 @@
-//! Test utilities for technique implementations.
-//!
-//! This module provides [`TechniqueTester`], a testing harness for verifying
-//! that sudoku solving techniques work as expected.
-//!
-//! # Example
-//!
-//! ```
-//! # use numelace_solver::testing::TechniqueTester;
-//! # use numelace_solver::technique::{BoxedTechniqueStep, Technique};
-//! # use numelace_solver::TechniqueGrid;
-//! # use numelace_core::{Position, Digit};
-//! # #[derive(Debug)] struct DummyTechnique;
-//! # impl Technique for DummyTechnique {
-//! #     fn name(&self) -> &str { "dummy" }
-//! #     fn clone_box(&self) -> Box<dyn Technique> { Box::new(DummyTechnique) }
-//! #     fn find_step(&self, _: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, numelace_solver::SolverError> { Ok(None) }
-//! #     fn apply(&self, _: &mut TechniqueGrid) -> Result<usize, numelace_solver::SolverError> { Ok(0) }
-//! # }
-//! # let technique = DummyTechnique;
-//! TechniqueTester::from_str("
-//!     5__ ___ ___
-//!     ___ ___ ___
-//!     ___ ___ ___
-//!     ___ ___ ___
-//!     ___ ___ ___
-//!     ___ ___ ___
-//!     ___ ___ ___
-//!     ___ ___ ___
-//!     ___ ___ ___
-//! ")
-//! .apply_once(&technique)
-//! .assert_placed(Position::new(1, 0), Digit::D1);
-//! ```
-
 use std::str::FromStr as _;
 
 use numelace_core::{Digit, DigitGrid, DigitSet, Position};
 
 use crate::{BoxedTechniqueStep, Technique, TechniqueApplication, TechniqueGrid};
 
-/// A test harness for verifying technique implementations.
-///
-/// `TechniqueTester` tracks the initial and current state of a sudoku grid,
-/// allowing you to apply techniques and assert that they produce the expected
-/// changes.
-///
-/// # Method Chaining
-///
-/// All methods return `self`, enabling fluent method chaining for readable tests.
-///
-/// # Panics
-///
-/// All assertion methods panic with detailed messages on failure, using
-/// `#[track_caller]` to report the correct source location.
 #[derive(Debug)]
 pub struct TechniqueTester {
     initial: TechniqueGrid,
@@ -61,7 +12,6 @@ pub struct TechniqueTester {
 }
 
 impl TechniqueTester {
-    /// Creates a new tester from an initial grid state.
     pub fn new<T>(initial: T) -> Self
     where
         T: Into<TechniqueGrid>,
@@ -75,44 +25,12 @@ impl TechniqueTester {
         }
     }
 
-    /// Creates a new tester from a grid string.
-    ///
-    /// The string format matches [`DigitGrid::from_str`]:
-    /// - Digits 1-9 represent filled cells
-    /// - `.`, `_`, or `0` represent empty cells
-    /// - Whitespace is ignored
-    ///
-    /// # Panics
-    ///
-    /// Panics if the string cannot be parsed as a valid grid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use numelace_solver::testing::TechniqueTester;
-    /// let tester = TechniqueTester::from_str(
-    ///     "
-    ///     53_ _7_ ___
-    ///     6__ 195 ___
-    ///     _98 ___ _6_
-    ///     8__ _6_ __3
-    ///     4__ 8_3 __1
-    ///     7__ _2_ __6
-    ///     _6_ ___ 28_
-    ///     ___ 419 __5
-    ///     ___ _8_ _79
-    /// ",
-    /// );
-    /// ```
     #[track_caller]
     pub fn from_str(s: &str) -> Self {
         let grid = DigitGrid::from_str(s).unwrap();
         Self::new(grid)
     }
 
-    /// Enables or disables `find_step` consistency checks.
-    ///
-    /// When enabled, `apply_*` methods assert that `find_step` and `apply` are consistent.
     #[must_use]
     #[expect(dead_code)]
     pub fn with_find_step_consistency(mut self, enabled: bool) -> Self {
@@ -120,36 +38,25 @@ impl TechniqueTester {
         self
     }
 
-    /// Disables `find_step`/`apply` consistency checks for this tester.
     #[must_use]
     pub fn without_find_step_consistency(mut self) -> Self {
         self.check_find_step_consistency = false;
         self
     }
 
-    /// Applies the technique once and returns self for chaining.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the technique returns an error.
     #[track_caller]
-    pub fn apply_once<T>(mut self, technique: &T) -> Self
+    pub fn apply_pass<T>(mut self, technique: &T) -> Self
     where
         T: Technique,
     {
         let before = self.current.clone();
-        let changed = technique.apply(&mut self.current).unwrap();
+        let changed = technique.apply_pass(&mut self.current).unwrap();
         if self.check_find_step_consistency {
             Self::assert_find_step_consistent_once(technique, &before, &self.current, changed);
         }
         self
     }
 
-    /// Applies the technique repeatedly until it makes no more progress.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the technique returns an error.
     #[track_caller]
     pub fn apply_until_stuck<T>(mut self, technique: &T) -> Self
     where
@@ -157,7 +64,7 @@ impl TechniqueTester {
     {
         loop {
             let before = self.current.clone();
-            let changed = technique.apply(&mut self.current).unwrap();
+            let changed = technique.apply_pass(&mut self.current).unwrap();
             if self.check_find_step_consistency {
                 Self::assert_find_step_consistent_once(technique, &before, &self.current, changed);
             }
@@ -168,11 +75,6 @@ impl TechniqueTester {
         self
     }
 
-    /// Applies the technique a specific number of times.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the technique returns an error.
     #[track_caller]
     pub fn apply_times<T>(mut self, technique: &T, times: usize) -> Self
     where
@@ -180,7 +82,7 @@ impl TechniqueTester {
     {
         for _ in 0..times {
             let before = self.current.clone();
-            let changed = technique.apply(&mut self.current).unwrap();
+            let changed = technique.apply_pass(&mut self.current).unwrap();
             if self.check_find_step_consistency {
                 Self::assert_find_step_consistent_once(technique, &before, &self.current, changed);
             }
@@ -268,16 +170,6 @@ impl TechniqueTester {
         }
     }
 
-    /// Asserts that a cell was placed (decided) with the given digit.
-    ///
-    /// This verifies that:
-    /// - The cell was initially undecided (had multiple candidates)
-    /// - The cell is now decided (has exactly one candidate)
-    /// - That candidate is the expected digit
-    ///
-    /// # Panics
-    ///
-    /// Panics if the cell was not placed as expected.
     #[track_caller]
     pub fn assert_placed(self, pos: Position, digit: Digit) -> Self {
         let initial = self.initial.candidates_at(pos);
@@ -302,18 +194,6 @@ impl TechniqueTester {
         self
     }
 
-    /// Asserts that all specified candidates were removed from a cell.
-    ///
-    /// This verifies that:
-    /// - The specified digits were initially present in the cell's candidates
-    /// - All of those digits have been removed from the current candidates
-    ///
-    /// Other candidates may also have been removed; this method only checks
-    /// that the specified ones are gone.
-    ///
-    /// # Panics
-    ///
-    /// Panics if any of the specified digits are still present in the cell's candidates.
     #[track_caller]
     pub fn assert_removed_includes<C>(self, pos: Position, digits: C) -> Self
     where
@@ -335,14 +215,6 @@ impl TechniqueTester {
         self
     }
 
-    /// Asserts that exactly the specified candidates were removed from a cell.
-    ///
-    /// This verifies that the set of removed candidates exactly matches the
-    /// specified set - no more, no less.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the removed candidates don't exactly match the specified set.
     #[track_caller]
     pub fn assert_removed_exact<C>(self, pos: Position, digits: C) -> Self
     where
@@ -359,11 +231,6 @@ impl TechniqueTester {
         self
     }
 
-    /// Asserts that a cell's candidates have not changed.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the cell's candidates differ from the initial state.
     #[track_caller]
     pub fn assert_no_change(self, pos: Position) -> Self {
         let initial = self.initial.candidates_at(pos);
@@ -410,7 +277,11 @@ mod tests {
             Ok(None)
         }
 
-        fn apply(&self, _grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+        fn apply_step(&self, _grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+            Ok(false)
+        }
+
+        fn apply_pass(&self, _grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
             Ok(0)
         }
     }
@@ -476,7 +347,18 @@ mod tests {
             }
         }
 
-        fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+        fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+            let pos = Position::new(0, 0);
+            let candidates = grid.candidates_at(pos);
+            if candidates.len() == 1 {
+                Ok(false)
+            } else {
+                grid.place(pos, Digit::D1);
+                Ok(true)
+            }
+        }
+
+        fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
             let pos = Position::new(0, 0);
             let candidates = grid.candidates_at(pos);
             if candidates.len() == 1 {
@@ -511,7 +393,11 @@ mod tests {
             Ok(Some(Box::new(PlaceD1At00Step)))
         }
 
-        fn apply(&self, _grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+        fn apply_step(&self, _grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+            Ok(false)
+        }
+
+        fn apply_pass(&self, _grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
             Ok(0)
         }
     }
@@ -537,7 +423,7 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_once() {
+    fn test_apply_pass() {
         let tester = TechniqueTester::from_str(
             "
             ___ ___ ___
@@ -552,8 +438,8 @@ mod tests {
         ",
         );
 
-        let result = tester.apply_once(&PlaceD1At00);
-        // Should not panic - technique was applied once
+        let result = tester.apply_pass(&PlaceD1At00);
+        // Should not panic - technique was applied in one pass
         let _ = result;
     }
 
@@ -614,7 +500,7 @@ mod tests {
             ___ ___ ___
         ",
         )
-        .apply_once(&InconsistentTechnique);
+        .apply_pass(&InconsistentTechnique);
     }
 
     #[test]
@@ -633,7 +519,7 @@ mod tests {
         ",
         )
         .without_find_step_consistency()
-        .apply_once(&InconsistentTechnique);
+        .apply_pass(&InconsistentTechnique);
     }
 
     #[test]
@@ -653,7 +539,7 @@ mod tests {
         );
 
         tester
-            .apply_once(&PlaceD1At00)
+            .apply_pass(&PlaceD1At00)
             .assert_placed(Position::new(0, 0), Digit::D1);
     }
 
@@ -675,7 +561,7 @@ mod tests {
         );
 
         tester
-            .apply_once(&NoOpTechnique)
+            .apply_pass(&NoOpTechnique)
             .assert_placed(Position::new(0, 0), Digit::D1);
     }
 
@@ -696,7 +582,7 @@ mod tests {
         );
 
         tester
-            .apply_once(&NoOpTechnique)
+            .apply_pass(&NoOpTechnique)
             .assert_no_change(Position::new(0, 0));
     }
 
@@ -718,7 +604,7 @@ mod tests {
         );
 
         tester
-            .apply_once(&PlaceD1At00)
+            .apply_pass(&PlaceD1At00)
             .assert_no_change(Position::new(0, 0));
     }
 
@@ -739,9 +625,9 @@ mod tests {
         );
 
         tester
-            .apply_once(&PlaceD1At00)
+            .apply_pass(&PlaceD1At00)
             .assert_placed(Position::new(0, 0), Digit::D1)
-            .apply_once(&NoOpTechnique)
+            .apply_pass(&NoOpTechnique)
             .assert_no_change(Position::new(5, 5));
     }
 }

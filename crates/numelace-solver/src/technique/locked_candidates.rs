@@ -34,10 +34,7 @@ impl LockedCandidates {
     }
 
     #[inline]
-    fn apply_with_control_flow<F>(
-        grid: &mut TechniqueGrid,
-        mut on_condition: F,
-    ) -> Option<BoxedTechniqueStep>
+    fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
         F: for<'a> FnMut(
             &'a mut TechniqueGrid,
@@ -46,7 +43,7 @@ impl LockedCandidates {
             u8,
             House,
             DigitPositions,
-        ) -> ControlFlow<BoxedTechniqueStep>,
+        ) -> ControlFlow<T>,
     {
         let decided_cells = grid.decided_cells();
         for box_index in 0..9 {
@@ -130,7 +127,7 @@ impl Technique for LockedCandidates {
         let step = Self::apply_with_control_flow(
             &mut after_grid,
             |after_grid, kind, digit, box_index, row_or_col, intersection| {
-                ControlFlow::Break(Box::new(TechniqueStepData::from_diff(
+                ControlFlow::Break(TechniqueStepData::from_diff(
                     match kind {
                         LockedCandidatesKind::Pointing => NAME_POINTING,
                         LockedCandidatesKind::Claiming => NAME_CLAIMING,
@@ -139,17 +136,26 @@ impl Technique for LockedCandidates {
                     vec![(intersection, DigitSet::from_elem(digit))],
                     grid,
                     after_grid,
-                )))
+                ))
             },
         );
         Ok(step)
     }
 
-    fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+    fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+        let mut changed = false;
+        Self::apply_with_control_flow(grid, |_, _, _, _, _, _| {
+            changed = true;
+            ControlFlow::Break(())
+        });
+        Ok(changed)
+    }
+
+    fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
         Self::apply_with_control_flow(grid, |_, _, _, _, _, _| {
             changed += 1;
-            ControlFlow::Continue(())
+            ControlFlow::<()>::Continue(())
         });
         Ok(changed)
     }
@@ -173,7 +179,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&LockedCandidates::new())
+            .apply_pass(&LockedCandidates::new())
             // D5 removed from the rest of row 0 outside the box.
             .assert_removed_includes(Position::new(3, 0), [Digit::D5])
             .assert_removed_includes(Position::new(8, 0), [Digit::D5]);
@@ -190,7 +196,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&LockedCandidates::new())
+            .apply_pass(&LockedCandidates::new())
             // D7 removed from the rest of box 0 outside row 0.
             .assert_removed_includes(Position::new(0, 1), [Digit::D7])
             .assert_removed_includes(Position::new(2, 2), [Digit::D7]);
@@ -202,7 +208,7 @@ mod tests {
         let grid = CandidateGrid::new();
 
         TechniqueTester::new(grid)
-            .apply_once(&LockedCandidates::new())
+            .apply_pass(&LockedCandidates::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
     }

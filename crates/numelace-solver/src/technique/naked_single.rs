@@ -49,21 +49,18 @@ impl NakedSingle {
             position: pos,
             digit,
         });
-        Some(Box::new(TechniqueStepData::new(
+        Some(TechniqueStepData::new_boxed(
             NAME,
             DigitPositions::from_elem(pos),
             vec![(DigitPositions::from_elem(pos), DigitSet::from_elem(digit))],
             application,
-        )))
+        ))
     }
 
     #[inline]
-    fn apply_with_control_flow<F>(
-        grid: &mut TechniqueGrid,
-        mut on_condition: F,
-    ) -> Option<BoxedTechniqueStep>
+    fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
-        F: for<'a> FnMut(&'a mut TechniqueGrid, Position, Digit) -> ControlFlow<BoxedTechniqueStep>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, Position, Digit) -> ControlFlow<T>,
     {
         let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
@@ -102,7 +99,7 @@ impl Technique for NakedSingle {
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let mut after_grid = grid.clone();
         let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, pos, digit| {
-            ControlFlow::Break(Box::new(TechniqueStepData::from_diff_with_extra(
+            ControlFlow::Break(TechniqueStepData::from_diff_with_extra(
                 NAME,
                 DigitPositions::from_elem(pos),
                 vec![(DigitPositions::from_elem(pos), DigitSet::from_elem(digit))],
@@ -112,16 +109,25 @@ impl Technique for NakedSingle {
                     position: pos,
                     digit,
                 }],
-            )))
+            ))
         });
         Ok(step)
     }
 
-    fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+    fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+        let mut changed = false;
+        Self::apply_with_control_flow(grid, |_, _, _| {
+            changed = true;
+            ControlFlow::Break(())
+        });
+        Ok(changed)
+    }
+
+    fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
         Self::apply_with_control_flow(grid, |_, _, _| {
             changed += 1;
-            ControlFlow::Continue(())
+            ControlFlow::<()>::Continue(())
         });
         Ok(changed)
     }
@@ -144,7 +150,7 @@ mod tests {
         grid.place(Position::new(0, 0), Digit::D5);
 
         TechniqueTester::new(grid)
-            .apply_once(&NakedSingle::new())
+            .apply_pass(&NakedSingle::new())
             // D5 removed from same row
             .assert_removed_exact(Position::new(1, 0), [Digit::D5])
             // D5 removed from same column
@@ -165,7 +171,7 @@ mod tests {
         grid.place(Position::new(5, 5), Digit::D7);
 
         TechniqueTester::new(grid)
-            .apply_once(&NakedSingle::new())
+            .apply_pass(&NakedSingle::new())
             // D3 removed from a cell in same row as (0, 0)
             .assert_removed_exact(Position::new(1, 0), [Digit::D3])
             // D7 removed from a cell in same column as (5, 5)
@@ -178,7 +184,7 @@ mod tests {
         let grid = CandidateGrid::new();
 
         TechniqueTester::new(grid)
-            .apply_once(&NakedSingle::new())
+            .apply_pass(&NakedSingle::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
     }

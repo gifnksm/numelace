@@ -93,11 +93,11 @@ fn bench_technique_solver_cases(
         let given = grid.iter().filter(|o| o.is_some()).count();
         let grid = TechniqueGrid::from(grid);
         c.bench_with_input(
-            BenchmarkId::new(bench_name, format!("{param}_{given}")),
+            BenchmarkId::new(bench_name, format!("{param}_{given}_step")),
             &grid,
             |b, grid| {
                 let mut test_grid = grid.clone();
-                let (puzzle_solved, _stats) = solver.solve(&mut test_grid).unwrap();
+                let (puzzle_solved, _stats) = solver.solve_with_step(&mut test_grid).unwrap();
                 assert!(
                     puzzle_solved,
                     "puzzle should be solvable by selected techniques"
@@ -106,7 +106,27 @@ fn bench_technique_solver_cases(
 
                 b.iter_batched_ref(
                     || grid.clone(),
-                    |grid| solver.solve(grid).unwrap(),
+                    |grid| solver.solve_with_step(grid).unwrap(),
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        c.bench_with_input(
+            BenchmarkId::new(bench_name, format!("{param}_{given}_pass")),
+            &grid,
+            |b, grid| {
+                let mut test_grid = grid.clone();
+                let (puzzle_solved, _stats) = solver.solve_with_pass(&mut test_grid).unwrap();
+                assert!(
+                    puzzle_solved,
+                    "puzzle should be solvable by selected techniques"
+                );
+                assert_eq!(test_grid.to_digit_grid().to_string(), *expected_solution);
+
+                b.iter_batched_ref(
+                    || grid.clone(),
+                    |grid| solver.solve_with_pass(grid).unwrap(),
                     BatchSize::SmallInput,
                 );
             },
@@ -168,13 +188,16 @@ fn bench_backtrack_solver_fundamental(c: &mut Criterion) {
         let given = grid.iter().filter(|o| o.is_some()).count();
         let grid = TechniqueGrid::from(grid);
         c.bench_with_input(
-            BenchmarkId::new("backtrack_solver_fundamental", format!("{param}_{given}")),
+            BenchmarkId::new(
+                "backtrack_solver_fundamental",
+                format!("{param}_{given}_step"),
+            ),
             &grid,
             |b, grid| {
                 // ensure that the puzzle has the expected number of solutions
                 let test_grid = grid.clone();
                 let solutions = solver
-                    .solve(test_grid)
+                    .solve_with_step(test_grid)
                     .unwrap()
                     .take(100) // iterate up to first 100 solutions
                     .collect::<Vec<_>>();
@@ -190,7 +213,51 @@ fn bench_backtrack_solver_fundamental(c: &mut Criterion) {
 
                 b.iter_batched(
                     || grid.clone(),
-                    |grid| solver.solve(grid).unwrap().take(100).collect::<Vec<_>>(),
+                    |grid| {
+                        solver
+                            .solve_with_step(grid)
+                            .unwrap()
+                            .take(100)
+                            .collect::<Vec<_>>()
+                    },
+                    BatchSize::SmallInput,
+                );
+            },
+        );
+
+        c.bench_with_input(
+            BenchmarkId::new(
+                "backtrack_solver_fundamental",
+                format!("{param}_{given}_pass"),
+            ),
+            &grid,
+            |b, grid| {
+                // ensure that the puzzle has the expected number of solutions
+                let test_grid = grid.clone();
+                let solutions = solver
+                    .solve_with_pass(test_grid)
+                    .unwrap()
+                    .take(100) // iterate up to first 100 solutions
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    solutions.len(),
+                    expected_solutions,
+                    "{param} should have {expected_solutions} solutions"
+                );
+                // if unique solution, ensure that it matches the known solution
+                if solutions.len() == 1 {
+                    assert_eq!(solutions[0].0.to_digit_grid().to_string(), SOLUTION);
+                }
+
+                b.iter_batched(
+                    || grid.clone(),
+                    |grid| {
+                        solver
+                            .solve_with_pass(grid)
+                            .unwrap()
+                            .take(100)
+                            .collect::<Vec<_>>()
+                    },
                     BatchSize::SmallInput,
                 );
             },

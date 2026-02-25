@@ -24,16 +24,12 @@ impl HiddenTriple {
         Self {}
     }
 
-    fn apply_with_control_flow<F>(
+    fn apply_with_control_flow<T, F>(
         grid: &mut TechniqueGrid,
         mut on_condition: F,
-    ) -> Result<Option<BoxedTechniqueStep>, SolverError>
+    ) -> Result<Option<T>, SolverError>
     where
-        F: for<'a> FnMut(
-            &'a mut TechniqueGrid,
-            DigitPositions,
-            DigitSet,
-        ) -> ControlFlow<BoxedTechniqueStep>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, DigitPositions, DigitSet) -> ControlFlow<T>,
     {
         for house in House::ALL {
             let house_positions = house.positions();
@@ -113,22 +109,31 @@ impl Technique for HiddenTriple {
         let mut after_grid = grid.clone();
         let step =
             Self::apply_with_control_flow(&mut after_grid, |after_grid, positions, digits| {
-                ControlFlow::Break(Box::new(TechniqueStepData::from_diff(
+                ControlFlow::Break(TechniqueStepData::from_diff(
                     NAME,
                     positions,
                     vec![(positions, digits)],
                     grid,
                     after_grid,
-                )))
+                ))
             })?;
         Ok(step)
     }
 
-    fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+    fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+        let mut changed = false;
+        Self::apply_with_control_flow(grid, |_, _, _| {
+            changed = true;
+            ControlFlow::Break(())
+        })?;
+        Ok(changed)
+    }
+
+    fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
         Self::apply_with_control_flow(grid, |_, _, _| {
             changed += 1;
-            ControlFlow::Continue(())
+            ControlFlow::<()>::Continue(())
         })?;
         Ok(changed)
     }
@@ -157,7 +162,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&HiddenTriple::new())
+            .apply_pass(&HiddenTriple::new())
             .assert_removed_includes(pos1, [Digit::D4])
             .assert_removed_includes(pos2, [Digit::D4])
             .assert_removed_includes(pos3, [Digit::D4]);
@@ -188,7 +193,7 @@ mod tests {
         let grid = CandidateGrid::new();
 
         TechniqueTester::new(grid)
-            .apply_once(&HiddenTriple::new())
+            .apply_pass(&HiddenTriple::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
     }
@@ -217,7 +222,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&HiddenTriple::new())
+            .apply_pass(&HiddenTriple::new())
             .assert_no_change(Position::new(1, 0))
             .assert_no_change(Position::new(0, 1));
     }
@@ -239,7 +244,7 @@ mod tests {
         }
 
         let mut grid = TechniqueGrid::from(grid);
-        let result = HiddenTriple::new().apply(&mut grid);
+        let result = HiddenTriple::new().apply_pass(&mut grid);
         assert!(matches!(
             result,
             Err(SolverError::Inconsistent(

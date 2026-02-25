@@ -26,17 +26,9 @@ impl HiddenSingle {
     }
 
     #[inline]
-    fn apply_with_control_flow<F>(
-        grid: &mut TechniqueGrid,
-        mut on_condition: F,
-    ) -> Option<BoxedTechniqueStep>
+    fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
-        F: for<'a> FnMut(
-            &'a mut TechniqueGrid,
-            House,
-            Position,
-            Digit,
-        ) -> ControlFlow<BoxedTechniqueStep>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, House, Position, Digit) -> ControlFlow<T>,
     {
         let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
@@ -74,7 +66,7 @@ impl Technique for HiddenSingle {
         let mut after_grid = grid.clone();
         let step =
             Self::apply_with_control_flow(&mut after_grid, |after_grid, house, pos, digit| {
-                ControlFlow::Break(Box::new(TechniqueStepData::from_diff_with_extra(
+                ControlFlow::Break(TechniqueStepData::from_diff_with_extra(
                     NAME,
                     house.positions(),
                     vec![(house.positions(), DigitSet::from_elem(digit))],
@@ -84,16 +76,25 @@ impl Technique for HiddenSingle {
                         position: pos,
                         digit,
                     }],
-                )))
+                ))
             });
         Ok(step)
     }
 
-    fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+    fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+        let mut changed = false;
+        Self::apply_with_control_flow(grid, |_, _, _, _| {
+            changed = true;
+            ControlFlow::Break(())
+        });
+        Ok(changed)
+    }
+
+    fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
         Self::apply_with_control_flow(grid, |_, _, _, _| {
             changed += 1;
-            ControlFlow::Continue(())
+            ControlFlow::<()>::Continue(())
         });
         Ok(changed)
     }
@@ -119,7 +120,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&HiddenSingle::new())
+            .apply_pass(&HiddenSingle::new())
             // D5 should be placed at (3, 0)
             .assert_placed(Position::new(3, 0), Digit::D5);
     }
@@ -137,7 +138,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&HiddenSingle::new())
+            .apply_pass(&HiddenSingle::new())
             // D7 should be placed at (5, 4)
             .assert_placed(Position::new(5, 4), Digit::D7);
     }
@@ -156,7 +157,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&HiddenSingle::new())
+            .apply_pass(&HiddenSingle::new())
             // D9 should be placed at (4, 4)
             .assert_placed(Position::new(4, 4), Digit::D9);
     }
@@ -181,7 +182,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&HiddenSingle::new())
+            .apply_pass(&HiddenSingle::new())
             // D3 placed at (2, 0)
             .assert_placed(Position::new(2, 0), Digit::D3)
             // D8 placed at (7, 6)
@@ -194,7 +195,7 @@ mod tests {
         let grid = CandidateGrid::new();
 
         TechniqueTester::new(grid)
-            .apply_once(&HiddenSingle::new())
+            .apply_pass(&HiddenSingle::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
     }

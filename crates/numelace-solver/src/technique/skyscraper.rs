@@ -28,11 +28,11 @@ impl Skyscraper {
     }
 
     #[inline]
-    fn apply_axis_with_control_flow<A, F>(
+    fn apply_axis_with_control_flow<A, T, F>(
         grid: &mut TechniqueGrid,
         digit: Digit,
         on_condition: &mut F,
-    ) -> Option<BoxedTechniqueStep>
+    ) -> Option<T>
     where
         A: AxisOps,
         F: for<'a> FnMut(
@@ -40,7 +40,7 @@ impl Skyscraper {
             Digit,
             (Position, Position),
             (Position, Position),
-        ) -> ControlFlow<BoxedTechniqueStep>,
+        ) -> ControlFlow<T>,
     {
         let digit_positions = grid.digit_positions(digit);
 
@@ -103,26 +103,25 @@ impl Skyscraper {
     }
 
     #[inline]
-    fn apply_with_control_flow<F>(
-        grid: &mut TechniqueGrid,
-        mut on_condition: F,
-    ) -> Option<BoxedTechniqueStep>
+    fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
         F: for<'a> FnMut(
             &'a mut TechniqueGrid,
             Digit,
             (Position, Position),
             (Position, Position),
-        ) -> ControlFlow<BoxedTechniqueStep>,
+        ) -> ControlFlow<T>,
     {
         for digit in Digit::ALL {
-            if let Some(step) =
-                Self::apply_axis_with_control_flow::<ColumnAxis, _>(grid, digit, &mut on_condition)
-            {
+            if let Some(step) = Self::apply_axis_with_control_flow::<ColumnAxis, T, _>(
+                grid,
+                digit,
+                &mut on_condition,
+            ) {
                 return Some(step);
             }
             if let Some(step) =
-                Self::apply_axis_with_control_flow::<RowAxis, _>(grid, digit, &mut on_condition)
+                Self::apply_axis_with_control_flow::<RowAxis, T, _>(grid, digit, &mut on_condition)
             {
                 return Some(step);
             }
@@ -149,7 +148,7 @@ impl Technique for Skyscraper {
         let step = Self::apply_with_control_flow(
             &mut after_grid,
             |after_grid, digit, (base_pos1, base_pos2), (ceil_pos1, ceil_pos2)| {
-                ControlFlow::Break(Box::new(TechniqueStepData::from_diff(
+                ControlFlow::Break(TechniqueStepData::from_diff(
                     NAME,
                     DigitPositions::from_iter([base_pos1, base_pos2, ceil_pos1, ceil_pos2]),
                     vec![(
@@ -158,17 +157,26 @@ impl Technique for Skyscraper {
                     )],
                     grid,
                     after_grid,
-                )))
+                ))
             },
         );
         Ok(step)
     }
 
-    fn apply(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
+    fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
+        let mut changed = false;
+        Self::apply_with_control_flow(grid, |_, _, _, _| {
+            changed = true;
+            ControlFlow::Break(())
+        });
+        Ok(changed)
+    }
+
+    fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
         Self::apply_with_control_flow(grid, |_, _, _, _| {
             changed += 1;
-            ControlFlow::Continue(())
+            ControlFlow::<()>::Continue(())
         });
         Ok(changed)
     }
@@ -203,7 +211,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&Skyscraper::new())
+            .apply_pass(&Skyscraper::new())
             .assert_removed_includes(Position::new(0, 4), [digit])
             .assert_removed_includes(Position::new(8, 3), [digit]);
     }
@@ -230,7 +238,7 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_once(&Skyscraper::new())
+            .apply_pass(&Skyscraper::new())
             .assert_removed_includes(Position::new(4, 1), [digit])
             .assert_removed_includes(Position::new(3, 5), [digit]);
     }
@@ -240,7 +248,7 @@ mod tests {
         let grid = CandidateGrid::new();
 
         TechniqueTester::new(grid)
-            .apply_once(&Skyscraper::new())
+            .apply_pass(&Skyscraper::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
     }
