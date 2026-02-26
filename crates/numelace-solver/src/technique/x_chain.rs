@@ -30,13 +30,27 @@ impl Condition<'_> {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let mut positions = DigitPositions::new();
+        let digit_positions = before_grid.digit_positions(self.digit);
+        let mut condition_cells = DigitPositions::new();
+        let mut condition_digit_positions = DigitPositions::new();
         for item in self.stack {
-            positions.insert(item.strong_link_start);
-            positions.insert(item.strong_link_end);
+            let pos1 = item.strong_link_start;
+            let pos2 = item.strong_link_end;
+            condition_digit_positions.insert(pos1);
+            condition_digit_positions.insert(pos2);
+
+            if pos1.y() == pos2.y() && digit_positions.row_mask(pos1.y()).len() == 2 {
+                condition_cells |= DigitPositions::ROW_POSITIONS[pos1.y()];
+            } else if pos1.x() == pos2.x() && digit_positions.col_mask(pos1.x()).len() == 2 {
+                condition_cells |= DigitPositions::COLUMN_POSITIONS[pos1.x()];
+            } else {
+                debug_assert_eq!(pos1.box_index(), pos2.box_index());
+                debug_assert_eq!(digit_positions.box_mask(pos1.box_index()).len(), 2);
+                condition_cells |= DigitPositions::BOX_POSITIONS[pos1.box_index()];
+            }
         }
-        let condition_cells = positions;
-        let condition_digit_cells = vec![(condition_cells, DigitSet::from_elem(self.digit))];
+        let condition_digit_cells =
+            vec![(condition_digit_positions, DigitSet::from_elem(self.digit))];
         let extra = if self.is_placement {
             vec![TechniqueApplication::Placement {
                 position: self.stack[0].strong_link_start,
