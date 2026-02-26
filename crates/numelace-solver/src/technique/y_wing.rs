@@ -37,7 +37,7 @@ impl YWing {
         for pivot in pair_candidate_cells {
             let pivot_peers = pivot.house_peers() & pair_candidate_cells;
             let pivot_digits = grid.candidates_at(pivot);
-            let Some((d1, d2)) = pivot_digits.as_double() else {
+            let Some([d1, d2]) = pivot_digits.as_double() else {
                 // `grid.remove_candidate_with_mask` may have changed the candidates at pivot, so we need to check again
                 continue;
             };

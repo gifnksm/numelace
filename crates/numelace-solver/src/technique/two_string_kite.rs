@@ -41,7 +41,7 @@ impl TwoStringKite {
         let mut found_lines = 0;
         for line in 0..9 {
             let positions = digit_positions & A::LINE_POSITIONS[line];
-            let Some((pos_a, pos_b)) = positions.as_double() else {
+            let Some([pos_a, pos_b]) = positions.as_double() else {
                 continue;
             };
             let cross_a = A::cross_index(pos_a);

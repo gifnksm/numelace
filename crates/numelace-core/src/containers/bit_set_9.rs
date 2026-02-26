@@ -305,13 +305,13 @@ where
     /// Returns the two elements in the set, or `None` if the set does not have exactly two elements.
     #[must_use]
     #[inline]
-    pub fn as_double(mut self) -> Option<(S::Value, S::Value)> {
+    pub fn as_double(mut self) -> Option<[S::Value; 2]> {
         let first = self.pop_first()?;
         let second = self.pop_first()?;
         if !self.is_empty() {
             return None;
         }
-        Some((first, second))
+        Some([first, second])
     }
 
     /// Removes and returns the smallest element in the set, if any.
@@ -936,7 +936,7 @@ mod tests {
     fn test_as_double() {
         assert_eq!(set![].as_double(), None);
         assert_eq!(set![3].as_double(), None);
-        assert_eq!(set![4, 2].as_double(), Some((2, 4)));
+        assert_eq!(set![4, 2].as_double(), Some([2, 4]));
         assert_eq!(set![2, 6, 0].as_double(), None);
     }
 

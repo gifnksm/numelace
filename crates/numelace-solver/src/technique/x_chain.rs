@@ -114,7 +114,7 @@ impl XChain {
                 PositionIndexedArray::from_array([array_vec!([Position; 3]); 81]);
             for house in House::ALL {
                 let house_positions = digit_positions & house.positions();
-                let Some((pos1, pos2)) = house_positions.as_double() else {
+                let Some([pos1, pos2]) = house_positions.as_double() else {
                     continue;
                 };
                 strong_link_positions.insert(pos1);

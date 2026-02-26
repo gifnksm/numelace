@@ -47,7 +47,7 @@ impl Skyscraper {
         let mut lines_with_two = array_vec!([(u8, u8, u8); 9]);
         for line in 0..9 {
             let positions = digit_positions & A::LINE_POSITIONS[line];
-            let Some((pos_a, pos_b)) = positions.as_double() else {
+            let Some([pos_a, pos_b]) = positions.as_double() else {
                 continue;
             };
             let cross_a = A::cross_index(pos_a);

@@ -37,7 +37,7 @@ impl XWing {
         A: AxisOps,
         F: for<'a> FnMut(&'a mut TechniqueGrid, Digit, (u8, u8), (u8, u8)) -> ControlFlow<T>,
     {
-        let mut line_masks = array_vec!([(u8, (u8, u8)); 9]);
+        let mut line_masks = array_vec!([(u8, [u8; 2]); 9]);
         for line in 0..9 {
             let Some(crosses) = A::line_mask(grid, line, digit).as_double() else {
                 continue;
@@ -45,7 +45,7 @@ impl XWing {
             line_masks.push((line, crosses));
         }
         let mut line_masks = line_masks.iter();
-        while let Some(&(line1, crosses1 @ (cross1, cross2))) = line_masks.next() {
+        while let Some(&(line1, crosses1 @ [cross1, cross2])) = line_masks.next() {
             for &(line2, crosses2) in line_masks.as_slice() {
                 if crosses1 != crosses2 {
                     continue;
