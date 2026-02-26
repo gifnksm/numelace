@@ -83,3 +83,6 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-23: Add indexed array aliases (`DigitIndexedArray`, `CellIndexIndexedArray`, `PositionIndexedArray`) and re-export them from the crate root — improves readability while preserving semantics safety.
 - 2026-02-26: Define `condition_cells` as the cells needed to judge technique applicability — keeps hint data aligned with applicability checks across techniques.
 - 2026-02-26: User-facing solver stats use step-based solving; generator/internal stats may use pass-based solving — aligns displayed counts with visible technique applications while keeping generation fast.
+- 2026-02-26: Use a dedicated New Game options dialog with conditional confirmation (skip when solved) and a non-cancelable first-run dialog — keeps options explicit while avoiding redundant prompts.
+- 2026-02-26: Difficulty uses radio presets with a Custom option; technique edits auto-select Custom and live under difficulty details — keeps presets simple while enabling fine-tuning.
+- 2026-02-26: Seed input is an optional field in the New Game dialog; blank seeds are random and specified seeds generate with the selected techniques — preserves reproducibility without adding extra modes.

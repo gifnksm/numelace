@@ -7,6 +7,7 @@ use crate::{
     TechniqueTier,
 };
 
+const ID: &str = "locked_candidates";
 const NAME: &str = "Locked Candidates";
 const NAME_POINTING: &str = "Locked Candidates (Pointing)";
 const NAME_CLAIMING: &str = "Locked Candidates (Claiming)";
@@ -136,6 +137,10 @@ impl LockedCandidates {
 }
 
 impl Technique for LockedCandidates {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

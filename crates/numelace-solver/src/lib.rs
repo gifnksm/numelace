@@ -181,8 +181,12 @@
 //! struct MyTechnique;
 //!
 //! impl Technique for MyTechnique {
+//!     fn id(&self) -> &'static str {
+//!         "my_technique"
+//!     }
+//!
 //!     fn name(&self) -> &'static str {
-//!         "my technique"
+//!         "My Technique"
 //!     }
 //!
 //!     fn tier(&self) -> TechniqueTier {

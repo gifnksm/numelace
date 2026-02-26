@@ -7,6 +7,7 @@ use crate::{
     TechniqueTier,
 };
 
+const ID: &str = "hidden_triple";
 const NAME: &str = "Hidden Triple";
 
 /// A technique that removes candidates using a hidden triple within a house.
@@ -123,6 +124,10 @@ impl HiddenTriple {
 }
 
 impl Technique for HiddenTriple {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

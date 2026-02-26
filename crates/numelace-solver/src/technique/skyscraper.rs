@@ -9,6 +9,7 @@ use crate::{
     axis::{AxisOps, ColumnAxis, RowAxis},
 };
 
+const ID: &str = "skyscraper";
 const NAME: &str = "Skyscraper";
 
 /// A technique that removes candidates using a Skyscraper pattern.
@@ -153,6 +154,10 @@ impl Skyscraper {
 }
 
 impl Technique for Skyscraper {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

@@ -1,12 +1,13 @@
-use std::{fmt::Write, num::NonZero};
+use std::{collections::BTreeMap, fmt::Write, num::NonZero};
 
 use numelace_core::{DigitGrid, DigitGridParseError, Position, PositionNewError};
 use numelace_game::{CellState, Game, GameError};
+use numelace_solver::technique;
 use serde::{Deserialize, Serialize};
 
 use crate::state::{
-    AppState, AssistSettings, HighlightSettings, History, HistorySnapshot, InputMode,
-    NotesSettings, Settings,
+    AppState, AssistSettings, DifficultyPreset, HighlightSettings, History, HistorySnapshot,
+    InputMode, NewGameOptions, NotesSettings, Settings,
 };
 
 // DTO defaulting guidance:
@@ -22,6 +23,8 @@ pub(crate) struct PersistedState {
     #[serde(default)]
     input_mode: InputModeDto,
     #[serde(default)]
+    new_game_options: NewGameOptionsDto,
+    #[serde(default)]
     settings: SettingsDto,
     #[serde(default)]
     history: HistoryDto,
@@ -33,6 +36,7 @@ impl From<&AppState> for PersistedState {
             game: GameDto::from(&value.game),
             selected_cell: value.selected_cell.map(PositionDto::from),
             input_mode: value.input_mode.into(),
+            new_game_options: NewGameOptionsDto::from(&value.new_game_options),
             settings: SettingsDto::from(&value.settings),
             history: HistoryDto::from(value.history()),
         }
@@ -57,6 +61,7 @@ impl TryFrom<PersistedState> for AppState {
             value.game.try_into()?,
             value.selected_cell.map(Position::try_from).transpose()?,
             value.input_mode.into(),
+            value.new_game_options.into(),
             value.settings.into(),
             value.history.try_into()?,
         ))
@@ -70,6 +75,8 @@ pub(crate) struct GameDto {
     filled: String,
     #[serde(default)]
     notes: [[u16; 9]; 9],
+    #[serde(default)]
+    initialized: bool,
 }
 
 impl From<&Game> for GameDto {
@@ -106,6 +113,7 @@ impl From<&Game> for GameDto {
             solution,
             filled,
             notes,
+            initialized: value.is_initialized(),
         }
     }
 }
@@ -120,15 +128,20 @@ impl TryFrom<GameDto> for Game {
     type Error = AppStateConversionError;
 
     fn try_from(value: GameDto) -> Result<Self, Self::Error> {
-        let problem: DigitGrid = value.problem.parse()?;
-        let solution: DigitGrid = value.solution.parse()?;
-        let filled: DigitGrid = value.filled.parse()?;
-        Ok(Game::from_problem_filled_notes(
-            &problem,
-            &solution,
-            &filled,
-            &value.notes,
-        )?)
+        if value.initialized {
+            let problem: DigitGrid = value.problem.parse()?;
+            let solution: DigitGrid = value.solution.parse()?;
+            let filled: DigitGrid = value.filled.parse()?;
+            Ok(Game::from_problem_filled_notes(
+                &problem,
+                &solution,
+                &filled,
+                &value.notes,
+            )?)
+        } else {
+            // Uninitialized games are treated as empty, ignoring problem/solution/notes.
+            Ok(Game::new_empty())
+        }
     }
 }
 
@@ -247,6 +260,77 @@ impl From<InputModeDto> for InputMode {
             InputModeDto::Fill => Self::Fill,
             InputModeDto::Notes => Self::Notes,
         }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(default)]
+pub(crate) struct NewGameOptionsDto {
+    difficulty: String,
+    #[serde(default)]
+    techniques: BTreeMap<String, bool>,
+    #[serde(default)]
+    seed: String,
+    #[serde(default = "NewGameOptions::default_max_attempts")]
+    max_attempts: usize,
+}
+
+impl Default for NewGameOptionsDto {
+    fn default() -> Self {
+        NewGameOptions::default().into()
+    }
+}
+
+impl From<&NewGameOptions> for NewGameOptionsDto {
+    fn from(value: &NewGameOptions) -> Self {
+        let NewGameOptions {
+            difficulty,
+            techniques,
+            seed,
+            max_attempts,
+        } = value;
+        let techniques = techniques
+            .iter()
+            .map(|(id, enabled)| (id.to_string(), *enabled))
+            .collect();
+        Self {
+            difficulty: difficulty.label().to_string(),
+            techniques,
+            seed: seed.clone(),
+            max_attempts: *max_attempts,
+        }
+    }
+}
+
+impl From<NewGameOptions> for NewGameOptionsDto {
+    fn from(value: NewGameOptions) -> Self {
+        Self::from(&value)
+    }
+}
+
+impl From<NewGameOptionsDto> for NewGameOptions {
+    fn from(value: NewGameOptionsDto) -> Self {
+        let difficulty = DifficultyPreset::parse(&value.difficulty).unwrap_or_default();
+        let mut options = NewGameOptions {
+            difficulty,
+            seed: value.seed,
+            techniques: BTreeMap::new(),
+            max_attempts: value.max_attempts,
+        };
+        let enabled = value
+            .techniques
+            .iter()
+            .filter_map(|(id, enabled)| {
+                if *enabled {
+                    technique::find_technique_by_id(id).map(|technique| technique.id())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        options.set_enabled_techniques(enabled);
+        options.apply_preset(difficulty);
+        options
     }
 }
 

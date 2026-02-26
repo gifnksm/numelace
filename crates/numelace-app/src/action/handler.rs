@@ -4,8 +4,8 @@ use numelace_game::{Game, GameError, RuleCheckPolicy};
 use crate::{
     action::{
         Action, ActionRequestQueue, AppAction, BoardMutationAction, FlowAction, HistoryAction,
-        InputModeAction, NotesFillScope, PuzzleLifecycleAction, SelectionAction, SettingsAction,
-        StateQueryAction, UiAction,
+        InputModeAction, NotesFillScope, PuzzleLifecycleAction, SelectionAction, StateQueryAction,
+        UiAction, UpdateStateAction,
     },
     flow,
     state::{AppState, AppStateAccess, GhostType, InputMode, UiState},
@@ -59,7 +59,7 @@ impl AppAction {
             AppAction::StateQuery(action) => action.execute(app_state, ui_state),
             AppAction::Selection(action) => action.execute(app_state),
             AppAction::InputMode(action) => action.execute(app_state),
-            AppAction::Settings(action) => action.execute(app_state),
+            AppAction::UpdateState(action) => action.execute(app_state),
         }
     }
 }
@@ -193,10 +193,13 @@ impl InputModeAction {
     }
 }
 
-impl SettingsAction {
+impl UpdateStateAction {
     fn execute(self, app_state: &mut AppState) {
         match self {
-            SettingsAction::UpdateSettings(settings) => {
+            UpdateStateAction::UpdateNewGameOptions(new_game_options) => {
+                app_state.new_game_options = new_game_options;
+            }
+            UpdateStateAction::UpdateSettings(settings) => {
                 app_state.settings = settings;
             }
         }
@@ -232,7 +235,7 @@ impl FlowAction {
     fn execute(self, app_state: &AppState, ui_state: &mut UiState) {
         match self {
             FlowAction::StartNewGame => {
-                flow::tasks::spawn_new_game_flow(&mut ui_state.executor);
+                flow::tasks::spawn_new_game_flow(&mut ui_state.executor, &app_state.game);
             }
             FlowAction::ResetInputs => {
                 flow::tasks::spawn_reset_inputs_flow(&mut ui_state.executor);

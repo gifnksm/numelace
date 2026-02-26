@@ -33,6 +33,7 @@ wasm-bindgen = "0.2.108"
 wasm-bindgen-futures = "0.4.58"
 futures-channel = "0.3.31"
 portable-atomic = "1.13.1"
+sha2 = "0.10.9"
 tinyvec = "1.10.0"
 web-sys = "0.3.85"
 

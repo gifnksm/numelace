@@ -34,6 +34,7 @@ use crate::{
 pub struct Game {
     grid: PositionIndexedArray<CellState>,
     solution: DigitGrid,
+    initialized: bool,
 }
 
 impl Game {
@@ -68,7 +69,30 @@ impl Game {
                 grid[pos] = CellState::Given(digit);
             }
         }
-        Self { grid, solution }
+        Self {
+            grid,
+            solution,
+            initialized: true,
+        }
+    }
+
+    /// Creates an uninitialized game placeholder with an empty grid.
+    ///
+    /// This is used before a generated puzzle is available (for example on
+    /// first launch when the New Game dialog must be shown).
+    #[must_use]
+    pub fn new_empty() -> Self {
+        Self {
+            grid: PositionIndexedArray::from_array([CellState::Empty; 81]),
+            solution: DigitGrid::new(),
+            initialized: false,
+        }
+    }
+
+    /// Returns whether the game has been initialized with a generated puzzle.
+    #[must_use]
+    pub fn is_initialized(&self) -> bool {
+        self.initialized
     }
 
     /// Creates a game from a problem grid, solution grid, and a filled (player input) grid.
@@ -98,6 +122,7 @@ impl Game {
         let mut this = Self {
             grid,
             solution: solution.clone(),
+            initialized: true,
         };
         for pos in Position::ALL {
             if let Some(digit) = filled[pos] {

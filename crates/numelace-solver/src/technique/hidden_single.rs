@@ -7,6 +7,7 @@ use crate::{
     TechniqueGrid, TechniqueStepData, TechniqueTier,
 };
 
+const ID: &str = "hidden_single";
 const NAME: &str = "Hidden Single";
 
 struct Condition {
@@ -89,6 +90,10 @@ impl HiddenSingle {
 }
 
 impl Technique for HiddenSingle {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

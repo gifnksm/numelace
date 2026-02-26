@@ -8,6 +8,7 @@ use crate::{
     TechniqueStepData, TechniqueTier,
 };
 
+const ID: &str = "x_chain";
 const NAME: &str = "X-Chain";
 
 /// A technique that removes candidates using an X-Chain pattern.
@@ -236,6 +237,10 @@ impl XChain {
 }
 
 impl Technique for XChain {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

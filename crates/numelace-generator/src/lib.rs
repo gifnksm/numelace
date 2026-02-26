@@ -116,6 +116,7 @@ use rand::{
     seq::SliceRandom,
 };
 use rand_pcg::Pcg64;
+use sha2::{Digest as _, Sha256};
 
 /// A Sudoku puzzle generator that creates puzzles with unique solutions.
 ///
@@ -351,6 +352,19 @@ impl FromStr for PuzzleSeed {
                 .map_err(|_| format!("invalid hexadecimal byte: {byte_str}"))?;
         }
         Ok(PuzzleSeed(bytes))
+    }
+}
+
+impl PuzzleSeed {
+    /// Creates a seed by hashing arbitrary bytes with SHA-256.
+    #[must_use]
+    pub fn from_arbitrary_bytes(bytes: &[u8]) -> Self {
+        let mut hasher = Sha256::new();
+        hasher.update(bytes);
+        let digest = hasher.finalize();
+        #[expect(clippy::missing_panics_doc)]
+        let bytes = digest.as_slice().try_into().unwrap();
+        Self(bytes)
     }
 }
 

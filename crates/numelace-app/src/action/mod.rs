@@ -6,7 +6,7 @@ use numelace_generator::GeneratedPuzzle;
 use numelace_solver::BoxedTechniqueStep;
 
 use crate::{
-    state::{HintState, Settings},
+    state::{HintState, NewGameOptions, Settings},
     worker::tasks::SolvabilityStatsDto,
 };
 
@@ -27,7 +27,7 @@ pub(crate) enum AppAction {
     StateQuery(StateQueryAction),
     Selection(SelectionAction),
     InputMode(InputModeAction),
-    Settings(SettingsAction),
+    UpdateState(UpdateStateAction),
 }
 
 #[derive(Debug)]
@@ -69,7 +69,8 @@ pub(crate) enum InputModeAction {
 }
 
 #[derive(Debug)]
-pub(crate) enum SettingsAction {
+pub(crate) enum UpdateStateAction {
+    UpdateNewGameOptions(NewGameOptions),
     UpdateSettings(Settings),
 }
 
@@ -127,8 +128,8 @@ impl From<InputModeAction> for Action {
     }
 }
 
-impl From<SettingsAction> for Action {
-    fn from(action: SettingsAction) -> Self {
+impl From<UpdateStateAction> for Action {
+    fn from(action: UpdateStateAction) -> Self {
         Action::App(action.into())
     }
 }
@@ -164,6 +165,7 @@ pub(crate) type Responder<T> = futures_channel::oneshot::Sender<T>;
 pub(crate) type ConfirmResponder = Responder<ConfirmResult>;
 pub(crate) type AlertResponder = Responder<AlertResult>;
 pub(crate) type UndoGamesResponder = Responder<Vec<Game>>;
+pub(crate) type NewGameOptionsResponder = Responder<Option<NewGameOptions>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ConfirmKind {
@@ -196,6 +198,10 @@ pub(crate) enum ModalRequest {
     Alert {
         kind: AlertKind,
         responder: Option<AlertResponder>,
+    },
+    NewGameOptions {
+        can_cancel: bool,
+        responder: Option<NewGameOptionsResponder>,
     },
     Settings,
 }

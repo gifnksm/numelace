@@ -18,8 +18,7 @@ use eframe::{
 use numelace_game::Game;
 
 use crate::{
-    action::{self, ActionRequestQueue},
-    game_factory,
+    action::{self, ActionRequestQueue, FlowAction},
     persistence::storage,
     state::{AppState, UiState},
     ui, view_model_builder, worker,
@@ -34,10 +33,10 @@ pub struct NumelaceApp {
 impl NumelaceApp {
     pub fn new(cc: &CreationContext<'_>) -> Self {
         let _ = worker::warm_up();
-        let app_state = cc.storage.and_then(storage::load_state).unwrap_or_else(|| {
-            let puzzle = game_factory::generate_random_puzzle();
-            AppState::new_with_settings_applied(Game::new(puzzle))
-        });
+        let app_state = cc
+            .storage
+            .and_then(storage::load_state)
+            .unwrap_or_else(|| AppState::new_with_settings_applied(Game::new_empty()));
         let ui_state = UiState::new();
         Self {
             app_state,
@@ -67,6 +66,10 @@ impl App for NumelaceApp {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
         let mut action_queue = ActionRequestQueue::default();
 
+        if !self.app_state.game.is_initialized() {
+            action_queue.request(FlowAction::StartNewGame.into());
+        }
+
         self.ui_state.executor.poll(&mut action_queue);
         action::handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);
 
@@ -89,8 +92,16 @@ impl App for NumelaceApp {
         });
 
         if let Some(modal_request) = &mut self.ui_state.active_modal {
+            let new_game_options_vm =
+                view_model_builder::build_new_game_options_view_model(&self.app_state);
             let settings_vm = view_model_builder::build_settings_view_model(&self.app_state);
-            ui::modal::show(ctx, &mut action_queue, modal_request, &settings_vm);
+            ui::modal::show(
+                ctx,
+                &mut action_queue,
+                modal_request,
+                &new_game_options_vm,
+                &settings_vm,
+            );
         }
 
         if let Some(spinner) = self.ui_state.spinner_state.active_kind() {

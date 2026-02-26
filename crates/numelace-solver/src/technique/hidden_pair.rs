@@ -7,6 +7,7 @@ use crate::{
     TechniqueTier,
 };
 
+const ID: &str = "hidden_pair";
 const NAME: &str = "Hidden Pair";
 
 /// A technique that removes candidates using a hidden pair within a house.
@@ -92,6 +93,10 @@ impl HiddenPair {
 }
 
 impl Technique for HiddenPair {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

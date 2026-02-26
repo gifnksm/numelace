@@ -6,6 +6,9 @@ use crate::{BoxedTechniqueStep, SolverError, TechniqueGrid};
 ///
 /// Each technique operates on a [`TechniqueGrid`] and updates cell values or candidates.
 pub trait Technique: Debug + Send + Sync {
+    /// Returns the ID of the technique.
+    fn id(&self) -> &'static str;
+
     /// Returns the name of the technique.
     fn name(&self) -> &'static str;
 
@@ -50,7 +53,7 @@ pub trait Technique: Debug + Send + Sync {
 }
 
 /// Difficulty tier used to order techniques from easiest to hardest.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::IsVariant)]
 pub enum TechniqueTier {
     /// Fundamental techniques (baseline essentials).
     Fundamental,

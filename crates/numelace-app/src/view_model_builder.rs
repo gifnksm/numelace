@@ -10,7 +10,7 @@ use crate::{
         game_screen::GameScreenViewModel,
         grid::{GridCell, GridViewModel, GridVisualState, NoteVisualState},
         keypad::{DigitKeyState, KeypadViewModel},
-        modal::SettingsViewModel,
+        modal::{NewGameOptionsViewModel, SettingsViewModel},
         status_line::{GameStatus, StatusLineViewModel},
         toolbar::ToolbarViewModel,
     },
@@ -321,6 +321,14 @@ pub(crate) fn build_game_screen_view_model<'a>(
     );
 
     GameScreenViewModel::new(toolbar_vm, status_line_vm, grid_vm, keypad_vm)
+}
+
+#[must_use]
+pub(crate) fn build_new_game_options_view_model(
+    app_state: &AppState,
+) -> NewGameOptionsViewModel<'_> {
+    let new_game_options = &app_state.new_game_options;
+    NewGameOptionsViewModel::new(new_game_options)
 }
 
 #[must_use]

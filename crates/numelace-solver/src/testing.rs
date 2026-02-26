@@ -258,8 +258,12 @@ mod tests {
     struct NoOpTechnique;
 
     impl Technique for NoOpTechnique {
+        fn id(&self) -> &'static str {
+            "no_op"
+        }
+
         fn name(&self) -> &'static str {
-            "no-op"
+            "No-op"
         }
 
         fn tier(&self) -> TechniqueTier {
@@ -322,8 +326,12 @@ mod tests {
     struct PlaceD1At00;
 
     impl Technique for PlaceD1At00 {
+        fn id(&self) -> &'static str {
+            "place_d1_at_00"
+        }
+
         fn name(&self) -> &'static str {
-            "place-d1-at-00"
+            "Place D1 at (0, 0)"
         }
 
         fn tier(&self) -> TechniqueTier {
@@ -374,8 +382,12 @@ mod tests {
     struct InconsistentTechnique;
 
     impl Technique for InconsistentTechnique {
-        fn name(&self) -> &'static str {
+        fn id(&self) -> &'static str {
             "inconsistent"
+        }
+
+        fn name(&self) -> &'static str {
+            "Inconsistent"
         }
 
         fn tier(&self) -> TechniqueTier {
@@ -485,7 +497,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Expected inconsistent to report a change")]
+    #[should_panic(expected = "Expected Inconsistent to report a change")]
     fn test_find_step_consistency_panics_on_inconsistent_apply() {
         TechniqueTester::from_str(
             "

@@ -10,6 +10,7 @@ use crate::{
     axis::{AxisOps, ColumnAxis, RowAxis},
 };
 
+const ID: &str = "two_string_kite";
 const NAME: &str = "2-String Kite";
 
 /// A technique that removes candidates using a 2-String Kite pattern.
@@ -133,6 +134,10 @@ impl TwoStringKite {
 }
 
 impl Technique for TwoStringKite {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

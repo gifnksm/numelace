@@ -7,6 +7,7 @@ use crate::{
     TechniqueGrid, TechniqueStepData, TechniqueTier,
 };
 
+const ID: &str = "naked_single";
 const NAME: &str = "Naked Single";
 
 /// A technique that finds cells with only one remaining candidate and propagates constraints.
@@ -120,6 +121,10 @@ impl NakedSingle {
 }
 
 impl Technique for NakedSingle {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

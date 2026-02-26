@@ -6,6 +6,7 @@ use crate::{
     BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData, TechniqueTier,
 };
 
+const ID: &str = "y_wing";
 const NAME: &str = "Y-Wing";
 
 /// A technique that removes candidates using a Y-Wing pattern.
@@ -108,6 +109,10 @@ impl YWing {
 }
 
 impl Technique for YWing {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

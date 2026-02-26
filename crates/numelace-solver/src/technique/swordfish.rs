@@ -9,6 +9,7 @@ use crate::{
     axis::{AxisOps, ColumnAxis, RowAxis},
 };
 
+const ID: &str = "swordfish";
 const NAME: &str = "Swordfish";
 
 /// A technique that removes candidates using a Swordfish pattern.
@@ -159,6 +160,10 @@ impl Swordfish {
 }
 
 impl Technique for Swordfish {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

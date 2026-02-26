@@ -1,7 +1,8 @@
-pub(crate) use self::{app_state::*, history::*, settings::*, ui_state::*};
+pub(crate) use self::{app_state::*, history::*, new_game_options::*, settings::*, ui_state::*};
 
 mod app_state;
 mod history;
+mod new_game_options;
 mod settings;
 mod ui_state;
 

@@ -1,7 +1,7 @@
 use numelace_core::Position;
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
-use crate::state::{History, HistorySource, HistoryTarget, Settings};
+use crate::state::{History, HistorySource, HistoryTarget, NewGameOptions, Settings};
 
 // AppState holds persisted state (game/session + settings + history). It is serialized for resume.
 #[derive(Debug)]
@@ -9,6 +9,7 @@ pub(crate) struct AppState {
     pub(crate) game: Game,
     pub(crate) selected_cell: Option<Position>,
     pub(crate) input_mode: InputMode,
+    pub(crate) new_game_options: NewGameOptions,
     pub(crate) settings: Settings,
     history: History,
     dirty: bool,
@@ -21,6 +22,7 @@ impl AppState {
             game,
             selected_cell: None,
             input_mode: InputMode::Fill,
+            new_game_options: NewGameOptions::default(),
             settings: Settings::default(),
             history: History::new(),
             dirty: false,
@@ -42,6 +44,7 @@ impl AppState {
         game: Game,
         selected_cell: Option<Position>,
         input_mode: InputMode,
+        new_game_options: NewGameOptions,
         settings: Settings,
         history: History,
     ) -> AppState {
@@ -49,6 +52,7 @@ impl AppState {
             game,
             selected_cell,
             input_mode,
+            new_game_options,
             settings,
             history,
             dirty: false,

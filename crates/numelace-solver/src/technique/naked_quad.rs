@@ -7,6 +7,7 @@ use crate::{
     TechniqueTier,
 };
 
+const ID: &str = "naked_quad";
 const NAME: &str = "Naked Quad";
 
 /// A technique that removes candidates using a naked quad within a house.
@@ -133,6 +134,10 @@ impl NakedQuad {
 }
 
 impl Technique for NakedQuad {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

@@ -7,6 +7,7 @@ use crate::{
     TechniqueTier,
 };
 
+const ID: &str = "naked_pair";
 const NAME: &str = "Naked Pair";
 
 /// A technique that removes candidates using a naked pair within a house.
@@ -102,6 +103,10 @@ impl NakedPair {
 }
 
 impl Technique for NakedPair {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

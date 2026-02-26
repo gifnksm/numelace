@@ -11,13 +11,14 @@ use std::{
     task::{Context, Poll},
 };
 
+use platform::WorkHandle;
 pub(crate) use platform::warm_up;
-use platform::{WorkHandle, enqueue};
 
 use self::tasks::{
     CandidateGridPairDto, CandidateGridPairsDto, GeneratedPuzzleDto, SolvabilityResultDto,
     SolvabilityUndoScanResultDto,
 };
+use crate::worker::tasks::GeneratePuzzleRequestDto;
 
 pub(crate) mod api;
 mod platform;
@@ -29,7 +30,7 @@ pub(crate) mod tasks;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 enum WorkRequest {
     /// Generate a Sudoku puzzle.
-    GeneratePuzzle,
+    GeneratePuzzle(GeneratePuzzleRequestDto),
     /// Check solvability for a given puzzle state.
     CheckSolvability(CandidateGridPairDto),
     /// Scan undo history for a solvable state.
@@ -81,8 +82,8 @@ impl WorkRequest {
     #[must_use]
     fn handle(self) -> WorkResponse {
         match self {
-            WorkRequest::GeneratePuzzle => {
-                WorkResponse::GeneratedPuzzleReady(tasks::generate_puzzle())
+            WorkRequest::GeneratePuzzle(request) => {
+                WorkResponse::GeneratedPuzzleReady(tasks::generate_puzzle(&request))
             }
             WorkRequest::CheckSolvability(request) => {
                 match tasks::handle_solvability_request(request) {
@@ -144,13 +145,15 @@ impl Future for WorkResponseFuture {
 
 /// Enqueue background work and return a future for the response.
 #[must_use]
-fn request(request: WorkRequest) -> WorkResponseFuture {
-    WorkResponseFuture::new(enqueue(request))
+fn send_request(request: WorkRequest) -> WorkResponseFuture {
+    WorkResponseFuture::new(platform::enqueue(request))
 }
 
 /// Enqueue background work for a generated puzzle and return the DTO.
-pub(crate) async fn request_generate_puzzle() -> Result<GeneratedPuzzleDto, WorkError> {
-    match request(WorkRequest::GeneratePuzzle).await {
+pub(crate) async fn request_generate_puzzle(
+    request: GeneratePuzzleRequestDto,
+) -> Result<GeneratedPuzzleDto, WorkError> {
+    match send_request(WorkRequest::GeneratePuzzle(request)).await {
         WorkResponse::GeneratedPuzzleReady(dto) => Ok(dto),
         WorkResponse::Error(err) => Err(err),
         _ => Err(WorkError::UnexpectedResponse),
@@ -159,9 +162,9 @@ pub(crate) async fn request_generate_puzzle() -> Result<GeneratedPuzzleDto, Work
 
 /// Enqueue background work for solvability check and return the state.
 pub(crate) async fn request_solvability(
-    solvability_request: CandidateGridPairDto,
+    grid: CandidateGridPairDto,
 ) -> Result<SolvabilityResultDto, WorkError> {
-    match request(WorkRequest::CheckSolvability(solvability_request)).await {
+    match send_request(WorkRequest::CheckSolvability(grid)).await {
         WorkResponse::SolvabilityReady(state) => Ok(state),
         WorkResponse::Error(err) => Err(err),
         _ => Err(WorkError::UnexpectedResponse),
@@ -171,7 +174,7 @@ pub(crate) async fn request_solvability(
 pub(crate) async fn request_solvability_undo_scan(
     undo_grids: CandidateGridPairsDto,
 ) -> Result<SolvabilityUndoScanResultDto, WorkError> {
-    match request(WorkRequest::CheckSolvabilityUndoScan(undo_grids)).await {
+    match send_request(WorkRequest::CheckSolvabilityUndoScan(undo_grids)).await {
         WorkResponse::SolvabilityUndoScanReady(result) => Ok(result),
         WorkResponse::Error(err) => Err(err),
         _ => Err(WorkError::UnexpectedResponse),

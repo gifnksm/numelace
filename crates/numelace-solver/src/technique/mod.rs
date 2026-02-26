@@ -30,6 +30,12 @@ mod x_chain;
 mod x_wing;
 mod y_wing;
 
+/// Finds a technique by its stable ID.
+#[must_use]
+pub fn find_technique_by_id(id: &str) -> Option<BoxedTechnique> {
+    all_techniques().into_iter().find(|tech| tech.id() == id)
+}
+
 /// Returns all available techniques, ordered from easiest to hardest.
 #[must_use]
 pub fn all_techniques() -> Vec<BoxedTechnique> {

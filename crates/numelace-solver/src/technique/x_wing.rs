@@ -9,6 +9,7 @@ use crate::{
     axis::{AxisOps, ColumnAxis, RowAxis},
 };
 
+const ID: &str = "x_wing";
 const NAME: &str = "X-Wing";
 
 /// A technique that removes candidates using an X-Wing pattern.
@@ -135,6 +136,10 @@ impl XWing {
 }
 
 impl Technique for XWing {
+    fn id(&self) -> &'static str {
+        ID
+    }
+
     fn name(&self) -> &'static str {
         NAME
     }

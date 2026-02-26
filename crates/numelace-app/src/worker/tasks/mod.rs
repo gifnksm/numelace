@@ -4,8 +4,11 @@ pub(crate) mod solvability;
 pub(crate) use generate_puzzle::*;
 use numelace_core::{CandidateGrid, Digit, DigitSet, Position};
 use numelace_game::Game;
+use numelace_solver::technique;
 use serde::{Deserialize, Serialize};
 pub(crate) use solvability::*;
+
+use crate::state::NewGameOptions;
 
 /// Compact candidate grid DTO.
 ///
@@ -103,5 +106,34 @@ impl From<Vec<Game>> for CandidateGridPairsDto {
     fn from(games: Vec<Game>) -> Self {
         let grids = games.into_iter().map(CandidateGridPairDto::from).collect();
         Self { grids }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct GeneratePuzzleRequestDto {
+    pub(crate) techniques: Vec<String>,
+    pub(crate) seed: String,
+    pub(crate) max_attempts: usize,
+}
+
+impl From<NewGameOptions> for GeneratePuzzleRequestDto {
+    fn from(value: NewGameOptions) -> Self {
+        let mut techniques = vec![];
+        for technique in technique::all_techniques() {
+            if value
+                .techniques
+                .get(&technique.id())
+                .copied()
+                .unwrap_or_default()
+            {
+                techniques.push(technique.id().to_string());
+            }
+        }
+
+        Self {
+            techniques,
+            seed: value.seed,
+            max_attempts: value.max_attempts,
+        }
     }
 }

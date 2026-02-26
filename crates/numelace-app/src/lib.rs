@@ -4,7 +4,6 @@
 pub(crate) mod action;
 pub(crate) mod app;
 pub(crate) mod flow;
-pub(crate) mod game_factory;
 pub(crate) mod persistence;
 pub(crate) mod state;
 pub(crate) mod ui;

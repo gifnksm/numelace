@@ -12,6 +12,7 @@ rand.workspace = true
 rand_pcg.workspace = true
 numelace-core.workspace = true
 numelace-solver.workspace = true
+sha2.workspace = true
 
 [lints]
 workspace = true
