@@ -124,7 +124,7 @@ fn check_grid_solvability(grid: TechniqueGrid, with_user_notes: bool) -> Solvabi
     }
 
     let solver = numelace_solver::BacktrackSolver::with_all_techniques();
-    match solver.solve_with_pass(grid).map(|mut sol| sol.next()) {
+    match solver.solve_with_step(grid).map(|mut sol| sol.next()) {
         Ok(Some((_grid, stats))) => SolvabilityResultDto::Solvable {
             with_user_notes,
             stats: stats.into(),
