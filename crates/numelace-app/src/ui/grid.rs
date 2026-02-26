@@ -275,7 +275,7 @@ impl EffectiveGridVisualState {
     fn hint_corner_border(self, palette: &GridPalette, base_border: f32) -> Option<Stroke> {
         if self.0.intersects(GridVisualState::HINT_CONDITION_CELL) {
             return Some(Stroke::new(
-                base_border * 3.0,
+                base_border * 2.0,
                 palette.border_hint_condition,
             ));
         }
@@ -284,7 +284,7 @@ impl EffectiveGridVisualState {
                 | GridVisualState::HINT_APPLICATION_PLACEMENT,
         ) {
             return Some(Stroke::new(
-                base_border * 1.0,
+                base_border * 2.0,
                 palette.border_hint_application,
             ));
         }
@@ -312,7 +312,7 @@ impl EffectiveGridVisualState {
             .intersects(GridVisualState::HINT_APPLICATION_ELIMINATION)
         {
             return Some(Stroke::new(
-                rect.width() * 0.08,
+                rect.width() * 0.2,
                 palette.border_hint_condition,
             ));
         }
@@ -463,7 +463,7 @@ fn draw_box_borders(painter: &Painter, inner_rect: Rect, cell_size: f32, stroke:
 fn draw_hint_digit_pill(painter: &Painter, center: Pos2, cell_size: f32, color: Color32) {
     let size = cell_size * 0.55;
     let rect = Rect::from_center_size(center, Vec2::splat(size));
-    painter.rect_filled(rect, size * 0.2, color);
+    painter.rect_filled(rect, size * 0.5, color);
 }
 
 fn draw_hint_corners(painter: &Painter, rect: Rect, stroke: Stroke) {
