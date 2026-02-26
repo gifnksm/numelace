@@ -17,6 +17,46 @@ const NAME: &str = "Y-Wing";
 #[derive(Debug, Default, Clone, Copy)]
 pub struct YWing {}
 
+struct Condition {
+    pivot: Position,
+    wing1: Position,
+    wing2: Position,
+    d1: Digit,
+    d2: Digit,
+    d3: Digit,
+}
+
+impl Condition {
+    fn build_step(
+        &self,
+        before_grid: &TechniqueGrid,
+        after_grid: &TechniqueGrid,
+    ) -> BoxedTechniqueStep {
+        let condition_cells = DigitPositions::from_iter([self.pivot, self.wing1, self.wing2]);
+        let condition_digit_cells = vec![
+            (
+                DigitPositions::from_elem(self.pivot),
+                DigitSet::from_iter([self.d1, self.d2]),
+            ),
+            (
+                DigitPositions::from_elem(self.wing1),
+                DigitSet::from_iter([self.d1, self.d3]),
+            ),
+            (
+                DigitPositions::from_elem(self.wing2),
+                DigitSet::from_iter([self.d2, self.d3]),
+            ),
+        ];
+        TechniqueStepData::from_diff(
+            NAME,
+            condition_cells,
+            condition_digit_cells,
+            before_grid,
+            after_grid,
+        )
+    }
+}
+
 impl YWing {
     /// Creates a new `YWing` technique.
     #[must_use]
@@ -27,11 +67,7 @@ impl YWing {
     #[inline]
     fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
-        F: for<'a> FnMut(
-            &'a mut TechniqueGrid,
-            (Position, Position, Position),
-            (Digit, Digit, Digit),
-        ) -> ControlFlow<T>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
         let pair_candidate_cells = grid.classify_cells::<3>()[2];
         for pivot in pair_candidate_cells {
@@ -50,8 +86,17 @@ impl YWing {
                     let elimination_cells =
                         (wing1.house_peers() & wing2.house_peers()) & grid.digit_positions(d3);
                     if grid.remove_candidate_with_mask(elimination_cells, d3)
-                        && let ControlFlow::Break(value) =
-                            on_condition(grid, (pivot, wing1, wing2), (d1, d2, d3))
+                        && let ControlFlow::Break(value) = on_condition(
+                            grid,
+                            &Condition {
+                                pivot,
+                                wing1,
+                                wing2,
+                                d1,
+                                d2,
+                                d3,
+                            },
+                        )
                     {
                         return Some(value);
                     }
@@ -77,46 +122,20 @@ impl Technique for YWing {
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let mut after_grid = grid.clone();
-        let step = Self::apply_with_control_flow(
-            &mut after_grid,
-            |after_grid, (pivot, wing1, wing2), (d1, d2, d3)| {
-                ControlFlow::Break(TechniqueStepData::from_diff(
-                    NAME,
-                    DigitPositions::from_iter([pivot, wing1, wing2]),
-                    vec![
-                        (
-                            DigitPositions::from_elem(pivot),
-                            DigitSet::from_iter([d1, d2]),
-                        ),
-                        (
-                            DigitPositions::from_elem(wing1),
-                            DigitSet::from_iter([d1, d3]),
-                        ),
-                        (
-                            DigitPositions::from_elem(wing2),
-                            DigitSet::from_iter([d2, d3]),
-                        ),
-                    ],
-                    grid,
-                    after_grid,
-                ))
-            },
-        );
+        let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, condition| {
+            ControlFlow::Break(condition.build_step(grid, after_grid))
+        });
         Ok(step)
     }
 
     fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let mut changed = false;
-        Self::apply_with_control_flow(grid, |_, _, _| {
-            changed = true;
-            ControlFlow::Break(())
-        });
+        let changed = Self::apply_with_control_flow(grid, |_, _| ControlFlow::Break(())).is_some();
         Ok(changed)
     }
 
     fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
-        Self::apply_with_control_flow(grid, |_, _, _| {
+        Self::apply_with_control_flow(grid, |_, _| {
             changed += 1;
             ControlFlow::<()>::Continue(())
         });

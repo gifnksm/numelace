@@ -20,10 +20,37 @@ const NAME: &str = "Swordfish";
 pub struct Swordfish {}
 
 #[derive(Debug, Clone, Copy)]
-struct SwordfishCondition {
+struct Condition {
     digit: Digit,
     base_houses: [House; 3],
     cover_houses: [House; 3],
+}
+
+impl Condition {
+    fn build_step(
+        &self,
+        before_grid: &TechniqueGrid,
+        after_grid: &TechniqueGrid,
+    ) -> BoxedTechniqueStep {
+        let condition_cells = self.base_houses.into_iter().map(House::positions).sum();
+        let crosses = self.cover_houses.into_iter().map(House::positions).sum();
+        let cross_cells = self
+            .base_houses
+            .into_iter()
+            .map(|house| house.positions() & crosses)
+            .sum::<DigitPositions>();
+        let condition_digit_cells = vec![(
+            cross_cells & before_grid.digit_positions(self.digit),
+            DigitSet::from_elem(self.digit),
+        )];
+        TechniqueStepData::from_diff(
+            NAME,
+            condition_cells,
+            condition_digit_cells,
+            before_grid,
+            after_grid,
+        )
+    }
 }
 
 impl Swordfish {
@@ -41,7 +68,7 @@ impl Swordfish {
     ) -> Result<Option<T>, SolverError>
     where
         A: AxisOps,
-        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a SwordfishCondition) -> ControlFlow<T>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
         let mut line_masks = array_vec!([(u8, HouseMask); 9]);
         for line in 0..9 {
@@ -82,7 +109,7 @@ impl Swordfish {
                     if grid.remove_candidate_with_mask(eliminations, digit)
                         && let ControlFlow::Break(value) = on_condition(
                             grid,
-                            &SwordfishCondition {
+                            &Condition {
                                 digit,
                                 base_houses: [
                                     A::LINE_HOUSES[line1],
@@ -111,7 +138,7 @@ impl Swordfish {
         mut on_condition: F,
     ) -> Result<Option<T>, SolverError>
     where
-        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a SwordfishCondition) -> ControlFlow<T>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
         for digit in Digit::ALL {
             if let Some(result) = Self::apply_axis_with_control_flow::<ColumnAxis, _, _>(
@@ -147,42 +174,13 @@ impl Technique for Swordfish {
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let mut after_grid = grid.clone();
         let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, condition| {
-            let condition_cells = condition
-                .base_houses
-                .into_iter()
-                .map(House::positions)
-                .sum();
-            let crosses = condition
-                .cover_houses
-                .into_iter()
-                .map(House::positions)
-                .sum();
-            let cross_cells = condition
-                .base_houses
-                .into_iter()
-                .map(|house| house.positions() & crosses)
-                .sum::<DigitPositions>();
-            let condition_digit_cells = vec![(
-                cross_cells & grid.digit_positions(condition.digit),
-                DigitSet::from_elem(condition.digit),
-            )];
-            ControlFlow::Break(TechniqueStepData::from_diff(
-                NAME,
-                condition_cells,
-                condition_digit_cells,
-                grid,
-                after_grid,
-            ))
+            ControlFlow::Break(condition.build_step(grid, after_grid))
         })?;
         Ok(step)
     }
 
     fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let mut changed = false;
-        Self::apply_with_control_flow(grid, |_, _| {
-            changed = true;
-            ControlFlow::Break(())
-        })?;
+        let changed = Self::apply_with_control_flow(grid, |_, _| ControlFlow::Break(()))?.is_some();
         Ok(changed)
     }
 

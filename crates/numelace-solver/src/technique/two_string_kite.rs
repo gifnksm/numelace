@@ -1,7 +1,7 @@
 use std::{iter, ops::ControlFlow};
 
 use numelace_core::{
-    CellIndexIndexedArray, Digit, DigitPositions, DigitSet, Position, containers::Array9,
+    CellIndexIndexedArray, Digit, DigitPositions, DigitSet, House, Position, containers::Array9,
 };
 use tinyvec::ArrayVec;
 
@@ -20,6 +20,35 @@ const NAME: &str = "2-String Kite";
 /// of the other row candidate and the other column candidate.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TwoStringKite {}
+
+#[derive(Debug, Clone, Copy)]
+struct Condition {
+    digit: Digit,
+    row: House,
+    col: House,
+    positions: [Position; 4],
+}
+
+impl Condition {
+    fn build_step(
+        &self,
+        before_grid: &TechniqueGrid,
+        after_grid: &TechniqueGrid,
+    ) -> BoxedTechniqueStep {
+        let condition_cells = self.row.positions() | self.col.positions();
+        let condition_digit_cells = vec![(
+            DigitPositions::from_iter(self.positions),
+            DigitSet::from_elem(self.digit),
+        )];
+        TechniqueStepData::from_diff(
+            NAME,
+            condition_cells,
+            condition_digit_cells,
+            before_grid,
+            after_grid,
+        )
+    }
+}
 
 type LinePair = (u8, (u8, u8));
 type LinePairs = ArrayVec<[LinePair; 3]>;
@@ -59,7 +88,7 @@ impl TwoStringKite {
     #[inline]
     fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
-        F: for<'a> FnMut(&'a mut TechniqueGrid, Digit, LinePair, LinePair) -> ControlFlow<T>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
         for digit in Digit::ALL {
             let (box_rows, found_rows) = Self::collect_line_pairs_by_box::<RowAxis>(grid, digit);
@@ -80,9 +109,17 @@ impl TwoStringKite {
                         if grid.remove_candidate(eliminate_pos, digit)
                             && let ControlFlow::Break(step) = on_condition(
                                 grid,
-                                digit,
-                                (row, (row_box_col, row_other_col)),
-                                (col, (col_box_row, col_other_row)),
+                                &Condition {
+                                    digit,
+                                    row: House::Row { y: row },
+                                    col: House::Column { x: col },
+                                    positions: [
+                                        Position::new(row_box_col, row),
+                                        Position::new(row_other_col, row),
+                                        Position::new(col, col_box_row),
+                                        Position::new(col, col_other_row),
+                                    ],
+                                },
                             )
                         {
                             return Some(step);
@@ -110,42 +147,20 @@ impl Technique for TwoStringKite {
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let mut after_grid = grid.clone();
-        let step = Self::apply_with_control_flow(
-            &mut after_grid,
-            |after_grid,
-             digit,
-             (row, (row_box_col, row_other_col)),
-             (col, (col_box_row, col_other_row))| {
-                let condition_cells = DigitPositions::from_iter([
-                    Position::new(row_box_col, row),
-                    Position::new(row_other_col, row),
-                    Position::new(col, col_box_row),
-                    Position::new(col, col_other_row),
-                ]);
-                ControlFlow::Break(TechniqueStepData::from_diff(
-                    NAME,
-                    condition_cells,
-                    vec![(condition_cells, DigitSet::from_elem(digit))],
-                    grid,
-                    after_grid,
-                ))
-            },
-        );
+        let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, condition| {
+            ControlFlow::Break(condition.build_step(grid, after_grid))
+        });
         Ok(step)
     }
 
     fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let mut changed = false;
-        Self::apply_with_control_flow(grid, |_, _, _, _| {
-            changed = true;
-            ControlFlow::Break(())
-        });
+        let changed = Self::apply_with_control_flow(grid, |_, _| ControlFlow::Break(())).is_some();
         Ok(changed)
     }
 
     fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
-        Self::apply_with_control_flow(grid, |_, _, _, _| {
+        Self::apply_with_control_flow(grid, |_, _| {
             changed += 1;
             ControlFlow::<()>::Continue(())
         });

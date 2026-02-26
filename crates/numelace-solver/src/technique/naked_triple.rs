@@ -17,6 +17,30 @@ const NAME: &str = "Naked Triple";
 #[derive(Debug, Default, Clone, Copy)]
 pub struct NakedTriple {}
 
+struct Condition {
+    house: House,
+    digits: DigitSet,
+    positions: DigitPositions,
+}
+
+impl Condition {
+    fn build_step(
+        &self,
+        before_grid: &TechniqueGrid,
+        after_grid: &TechniqueGrid,
+    ) -> BoxedTechniqueStep {
+        let condition_cells = self.house.positions();
+        let condition_digit_cells = vec![(self.positions, self.digits)];
+        TechniqueStepData::from_diff(
+            NAME,
+            condition_cells,
+            condition_digit_cells,
+            before_grid,
+            after_grid,
+        )
+    }
+}
+
 impl NakedTriple {
     /// Creates a new `NakedTriple` technique.
     #[must_use]
@@ -29,7 +53,7 @@ impl NakedTriple {
         mut on_condition: F,
     ) -> Result<Option<T>, SolverError>
     where
-        F: for<'a> FnMut(&'a mut TechniqueGrid, DigitPositions, DigitSet) -> ControlFlow<T>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
         let classes = grid.classify_cells::<4>();
         let triple_candidate_cells = classes[2] | classes[3];
@@ -80,8 +104,11 @@ impl NakedTriple {
                         if grid.remove_candidate_set_with_mask(eliminate_positions, digits123)
                             && let ControlFlow::Break(step) = on_condition(
                                 grid,
-                                DigitPositions::from_iter([pos1, pos2, pos3]),
-                                digits123,
+                                &Condition {
+                                    house,
+                                    digits: digits123,
+                                    positions: DigitPositions::from_iter([pos1, pos2, pos3]),
+                                },
                             )
                         {
                             return Ok(Some(step));
@@ -109,31 +136,20 @@ impl Technique for NakedTriple {
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let mut after_grid = grid.clone();
-        let step =
-            Self::apply_with_control_flow(&mut after_grid, |after_grid, positions, digits| {
-                ControlFlow::Break(TechniqueStepData::from_diff(
-                    NAME,
-                    positions,
-                    vec![(positions, digits)],
-                    grid,
-                    after_grid,
-                ))
-            })?;
+        let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, condition| {
+            ControlFlow::Break(condition.build_step(grid, after_grid))
+        })?;
         Ok(step)
     }
 
     fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let mut changed = false;
-        Self::apply_with_control_flow(grid, |_, _, _| {
-            changed = true;
-            ControlFlow::Break(())
-        })?;
+        let changed = Self::apply_with_control_flow(grid, |_, _| ControlFlow::Break(()))?.is_some();
         Ok(changed)
     }
 
     fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
-        Self::apply_with_control_flow(grid, |_, _, _| {
+        Self::apply_with_control_flow(grid, |_, _| {
             changed += 1;
             ControlFlow::<()>::Continue(())
         })?;

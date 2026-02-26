@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use numelace_core::{Digit, DigitPositions, DigitSet, Position};
+use numelace_core::{Digit, DigitPositions, DigitSet, House, Position};
 use tinyvec::array_vec;
 
 use crate::{
@@ -20,6 +20,35 @@ const NAME: &str = "Skyscraper";
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Skyscraper {}
 
+struct Condition {
+    digit: Digit,
+    lines: [House; 2],
+    base_positions: [Position; 2],
+    roof_positions: [Position; 2],
+}
+
+impl Condition {
+    fn build_step(
+        &self,
+        before_grid: &TechniqueGrid,
+        after_grid: &TechniqueGrid,
+    ) -> BoxedTechniqueStep {
+        let condition_cells = self.lines.into_iter().map(House::positions).sum();
+        let condition_digit_cells = vec![(
+            DigitPositions::from_iter(self.base_positions)
+                | DigitPositions::from_iter(self.roof_positions),
+            DigitSet::from_elem(self.digit),
+        )];
+        TechniqueStepData::from_diff(
+            NAME,
+            condition_cells,
+            condition_digit_cells,
+            before_grid,
+            after_grid,
+        )
+    }
+}
+
 impl Skyscraper {
     /// Creates a new `Skyscraper` instance.
     #[must_use]
@@ -35,12 +64,7 @@ impl Skyscraper {
     ) -> Option<T>
     where
         A: AxisOps,
-        F: for<'a> FnMut(
-            &'a mut TechniqueGrid,
-            Digit,
-            (Position, Position),
-            (Position, Position),
-        ) -> ControlFlow<T>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
         let digit_positions = grid.digit_positions(digit);
 
@@ -84,15 +108,18 @@ impl Skyscraper {
                 if grid.remove_candidate_with_mask(eliminations, digit)
                     && let ControlFlow::Break(step) = on_condition(
                         grid,
-                        digit,
-                        (
-                            A::make_pos(line1, base_cross),
-                            A::make_pos(line2, base_cross),
-                        ),
-                        (
-                            A::make_pos(line1, line1_roof_cross),
-                            A::make_pos(line2, line2_roof_cross),
-                        ),
+                        &Condition {
+                            digit,
+                            lines: [A::LINE_HOUSES[line1], A::LINE_HOUSES[line2]],
+                            base_positions: [
+                                A::make_pos(line1, base_cross),
+                                A::make_pos(line2, base_cross),
+                            ],
+                            roof_positions: [
+                                A::make_pos(line1, line1_roof_cross),
+                                A::make_pos(line2, line2_roof_cross),
+                            ],
+                        },
                     )
                 {
                     return Some(step);
@@ -105,12 +132,7 @@ impl Skyscraper {
     #[inline]
     fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
-        F: for<'a> FnMut(
-            &'a mut TechniqueGrid,
-            Digit,
-            (Position, Position),
-            (Position, Position),
-        ) -> ControlFlow<T>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
         for digit in Digit::ALL {
             if let Some(step) = Self::apply_axis_with_control_flow::<ColumnAxis, T, _>(
@@ -145,36 +167,20 @@ impl Technique for Skyscraper {
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let mut after_grid = grid.clone();
-        let step = Self::apply_with_control_flow(
-            &mut after_grid,
-            |after_grid, digit, (base_pos1, base_pos2), (ceil_pos1, ceil_pos2)| {
-                ControlFlow::Break(TechniqueStepData::from_diff(
-                    NAME,
-                    DigitPositions::from_iter([base_pos1, base_pos2, ceil_pos1, ceil_pos2]),
-                    vec![(
-                        DigitPositions::from_iter([base_pos1, base_pos2, ceil_pos1, ceil_pos2]),
-                        DigitSet::from_elem(digit),
-                    )],
-                    grid,
-                    after_grid,
-                ))
-            },
-        );
+        let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, condition| {
+            ControlFlow::Break(condition.build_step(grid, after_grid))
+        });
         Ok(step)
     }
 
     fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let mut changed = false;
-        Self::apply_with_control_flow(grid, |_, _, _, _| {
-            changed = true;
-            ControlFlow::Break(())
-        });
+        let changed = Self::apply_with_control_flow(grid, |_, _| ControlFlow::Break(())).is_some();
         Ok(changed)
     }
 
     fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
-        Self::apply_with_control_flow(grid, |_, _, _, _| {
+        Self::apply_with_control_flow(grid, |_, _| {
             changed += 1;
             ControlFlow::<()>::Continue(())
         });

@@ -18,6 +18,44 @@ const NAME: &str = "X-Chain";
 #[derive(Debug, Default, Clone, Copy)]
 pub struct XChain {}
 
+struct Condition<'a> {
+    digit: Digit,
+    stack: &'a [TraversalStackItem],
+    is_placement: bool,
+}
+
+impl Condition<'_> {
+    fn build_step(
+        &self,
+        before_grid: &TechniqueGrid,
+        after_grid: &TechniqueGrid,
+    ) -> BoxedTechniqueStep {
+        let mut positions = DigitPositions::new();
+        for item in self.stack {
+            positions.insert(item.strong_link_start);
+            positions.insert(item.strong_link_end);
+        }
+        let condition_cells = positions;
+        let condition_digit_cells = vec![(condition_cells, DigitSet::from_elem(self.digit))];
+        let extra = if self.is_placement {
+            vec![TechniqueApplication::Placement {
+                position: self.stack[0].strong_link_start,
+                digit: self.digit,
+            }]
+        } else {
+            vec![]
+        };
+        TechniqueStepData::from_diff_with_extra(
+            NAME,
+            condition_cells,
+            condition_digit_cells,
+            before_grid,
+            after_grid,
+            extra,
+        )
+    }
+}
+
 #[derive(Debug)]
 struct TraversalGraph {
     strong_link_positions: DigitPositions,
@@ -28,6 +66,7 @@ struct TraversalGraph {
 struct TraversalStackItem {
     visited_strong_link_starts: DigitPositions,
     visited_strong_link_ends: DigitPositions,
+    strong_link_start: Position,
     strong_link_end: Position,
     remaining_strong_link_ends: DigitPositions,
     remaining_strong_link_starts: DigitPositions,
@@ -51,6 +90,7 @@ impl TraversalStackItem {
         let mut this = Self {
             visited_strong_link_starts,
             visited_strong_link_ends,
+            strong_link_start,
             strong_link_end: Position::default(),
             remaining_strong_link_ends,
             remaining_strong_link_starts: DigitPositions::default(),
@@ -99,13 +139,7 @@ impl XChain {
     #[inline]
     fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
-        F: for<'a> FnMut(
-            &'a TechniqueGrid,
-            Digit,
-            Position,
-            &[TraversalStackItem],
-            bool,
-        ) -> ControlFlow<T>,
+        F: for<'a> FnMut(&'a TechniqueGrid, &'a Condition<'a>) -> ControlFlow<T>,
     {
         for digit in Digit::ALL {
             let digit_positions = grid.digit_positions(digit);
@@ -147,10 +181,12 @@ impl XChain {
                     let elimination = chain_start.house_peers() & strong_link_end.house_peers();
                     (grid.remove_candidate_with_mask(elimination, digit), false)
                 };
-                if applied
-                    && let ControlFlow::Break(step) =
-                        on_condition(grid, digit, chain_start, &stack, is_placement)
-                {
+                let condition = &Condition {
+                    digit,
+                    stack: &stack,
+                    is_placement,
+                };
+                if applied && let ControlFlow::Break(step) = on_condition(grid, condition) {
                     return Some(step);
                 }
                 while let Some(item) = stack.last_mut() {
@@ -164,10 +200,12 @@ impl XChain {
                                 chain_start.house_peers() & strong_link_end.house_peers();
                             (grid.remove_candidate_with_mask(elimination, digit), false)
                         };
-                        if applied
-                            && let ControlFlow::Break(step) =
-                                on_condition(grid, digit, chain_start, &stack, is_placement)
-                        {
+                        let condition = &Condition {
+                            digit,
+                            stack: &stack,
+                            is_placement,
+                        };
+                        if applied && let ControlFlow::Break(step) = on_condition(grid, condition) {
                             return Some(step);
                         }
                         continue;
@@ -198,47 +236,20 @@ impl Technique for XChain {
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let mut after_grid = grid.clone();
-        let step = Self::apply_with_control_flow(
-            &mut after_grid,
-            |after_grid, digit, chain_start, stack, is_placement| {
-                let mut positions = DigitPositions::new();
-                positions.insert(chain_start);
-                for item in stack {
-                    positions.insert(item.strong_link_end);
-                }
-                let extra = if is_placement {
-                    vec![TechniqueApplication::Placement {
-                        position: chain_start,
-                        digit,
-                    }]
-                } else {
-                    vec![]
-                };
-                ControlFlow::Break(TechniqueStepData::from_diff_with_extra(
-                    NAME,
-                    positions,
-                    vec![(positions, DigitSet::from_elem(digit))],
-                    grid,
-                    after_grid,
-                    extra,
-                ))
-            },
-        );
+        let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, condition| {
+            ControlFlow::Break(condition.build_step(grid, after_grid))
+        });
         Ok(step)
     }
 
     fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let mut changed = false;
-        Self::apply_with_control_flow(grid, |_, _, _, _, _| {
-            changed = true;
-            ControlFlow::Break(())
-        });
+        let changed = Self::apply_with_control_flow(grid, |_, _| ControlFlow::Break(())).is_some();
         Ok(changed)
     }
 
     fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
-        Self::apply_with_control_flow(grid, |_, _, _, _, _| {
+        Self::apply_with_control_flow(grid, |_, _| {
             changed += 1;
             ControlFlow::<()>::Continue(())
         });

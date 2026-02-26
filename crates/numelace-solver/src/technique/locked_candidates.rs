@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use numelace_core::{Digit, DigitPositions, DigitSet, House, Position};
+use numelace_core::{Digit, DigitSet, House, Position};
 
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
@@ -20,10 +20,41 @@ const NAME_CLAIMING: &str = "Locked Candidates (Claiming)";
 #[derive(Debug, Default, Clone, Copy)]
 pub struct LockedCandidates {}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LockedCandidatesKind {
     Pointing,
     Claiming,
+}
+
+struct Condition {
+    kind: LockedCandidatesKind,
+    digit: Digit,
+    box_: House,
+    line: House,
+}
+
+impl Condition {
+    fn build_step(
+        &self,
+        before_grid: &TechniqueGrid,
+        after_grid: &TechniqueGrid,
+    ) -> BoxedTechniqueStep {
+        let condition_cells = self.box_.positions() | self.line.positions();
+        let condition_digit_cells = vec![(
+            self.box_.positions() & self.line.positions(),
+            DigitSet::from_elem(self.digit),
+        )];
+        TechniqueStepData::from_diff(
+            match self.kind {
+                LockedCandidatesKind::Pointing => NAME_POINTING,
+                LockedCandidatesKind::Claiming => NAME_CLAIMING,
+            },
+            condition_cells,
+            condition_digit_cells,
+            before_grid,
+            after_grid,
+        )
+    }
 }
 
 impl LockedCandidates {
@@ -36,20 +67,13 @@ impl LockedCandidates {
     #[inline]
     fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
-        F: for<'a> FnMut(
-            &'a mut TechniqueGrid,
-            LockedCandidatesKind,
-            Digit,
-            u8,
-            House,
-            DigitPositions,
-        ) -> ControlFlow<T>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
         let decided_cells = grid.decided_cells();
         for box_index in 0..9 {
             let box_ = House::Box { index: box_index };
             let origin = Position::box_origin(box_index);
-            let row_or_cols = [
+            let lines = [
                 House::Row { y: origin.y() },
                 House::Row { y: origin.y() + 1 },
                 House::Row { y: origin.y() + 2 },
@@ -58,14 +82,14 @@ impl LockedCandidates {
                 House::Column { x: origin.x() + 2 },
             ];
 
-            for row_or_col in row_or_cols {
-                let intersection = box_.positions() & row_or_col.positions();
+            for line in lines {
+                let intersection = box_.positions() & line.positions();
                 if (intersection & !decided_cells).is_empty() {
                     continue;
                 }
 
                 let rest_in_box = box_.positions() & !intersection;
-                let rest_in_row_or_col = row_or_col.positions() & !intersection;
+                let rest_in_line = line.positions() & !intersection;
                 for digit in Digit::ALL {
                     let undecided_positions = grid.digit_positions(digit) & !decided_cells;
                     if (undecided_positions & intersection).is_empty() {
@@ -73,30 +97,32 @@ impl LockedCandidates {
                     }
                     if (undecided_positions & rest_in_box).is_empty() {
                         // Pointing
-                        let eliminations = undecided_positions & rest_in_row_or_col;
+                        let eliminations = undecided_positions & rest_in_line;
                         if grid.remove_candidate_with_mask(eliminations, digit)
                             && let ControlFlow::Break(value) = on_condition(
                                 grid,
-                                LockedCandidatesKind::Pointing,
-                                digit,
-                                box_index,
-                                row_or_col,
-                                undecided_positions & intersection,
+                                &Condition {
+                                    kind: LockedCandidatesKind::Pointing,
+                                    digit,
+                                    box_,
+                                    line,
+                                },
                             )
                         {
                             return Some(value);
                         }
-                    } else if (undecided_positions & rest_in_row_or_col).is_empty() {
+                    } else if (undecided_positions & rest_in_line).is_empty() {
                         // Claiming
                         let eliminations = undecided_positions & rest_in_box;
                         if grid.remove_candidate_with_mask(eliminations, digit)
                             && let ControlFlow::Break(value) = on_condition(
                                 grid,
-                                LockedCandidatesKind::Claiming,
-                                digit,
-                                box_index,
-                                row_or_col,
-                                undecided_positions & intersection,
+                                &Condition {
+                                    kind: LockedCandidatesKind::Claiming,
+                                    digit,
+                                    box_,
+                                    line,
+                                },
                             )
                         {
                             return Some(value);
@@ -124,36 +150,20 @@ impl Technique for LockedCandidates {
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let mut after_grid = grid.clone();
-        let step = Self::apply_with_control_flow(
-            &mut after_grid,
-            |after_grid, kind, digit, box_index, row_or_col, intersection| {
-                ControlFlow::Break(TechniqueStepData::from_diff(
-                    match kind {
-                        LockedCandidatesKind::Pointing => NAME_POINTING,
-                        LockedCandidatesKind::Claiming => NAME_CLAIMING,
-                    },
-                    House::Box { index: box_index }.positions() | row_or_col.positions(),
-                    vec![(intersection, DigitSet::from_elem(digit))],
-                    grid,
-                    after_grid,
-                ))
-            },
-        );
+        let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, condition| {
+            ControlFlow::Break(condition.build_step(grid, after_grid))
+        });
         Ok(step)
     }
 
     fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let mut changed = false;
-        Self::apply_with_control_flow(grid, |_, _, _, _, _, _| {
-            changed = true;
-            ControlFlow::Break(())
-        });
+        let changed = Self::apply_with_control_flow(grid, |_, _| ControlFlow::Break(())).is_some();
         Ok(changed)
     }
 
     fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
-        Self::apply_with_control_flow(grid, |_, _, _, _, _, _| {
+        Self::apply_with_control_flow(grid, |_, _| {
             changed += 1;
             ControlFlow::<()>::Continue(())
         });

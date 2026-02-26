@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use numelace_core::{Digit, DigitSet, House, Position};
+use numelace_core::{Digit, DigitPositions, DigitSet, House, Position};
 
 use crate::{
     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueApplication,
@@ -8,6 +8,38 @@ use crate::{
 };
 
 const NAME: &str = "Hidden Single";
+
+struct Condition {
+    house: House,
+    digit: Digit,
+    position: Position,
+}
+
+impl Condition {
+    fn build_step(
+        &self,
+        before_grid: &TechniqueGrid,
+        after_grid: &TechniqueGrid,
+    ) -> BoxedTechniqueStep {
+        let condition_cells = self.house.positions();
+        let condition_digit_cells = vec![(
+            DigitPositions::from_elem(self.position),
+            DigitSet::from_elem(self.digit),
+        )];
+        let extra = vec![TechniqueApplication::Placement {
+            position: self.position,
+            digit: self.digit,
+        }];
+        TechniqueStepData::from_diff_with_extra(
+            NAME,
+            condition_cells,
+            condition_digit_cells,
+            before_grid,
+            after_grid,
+            extra,
+        )
+    }
+}
 
 /// A technique that finds digits that can only go in one position within a house.
 ///
@@ -28,7 +60,7 @@ impl HiddenSingle {
     #[inline]
     fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
-        F: for<'a> FnMut(&'a mut TechniqueGrid, House, Position, Digit) -> ControlFlow<T>,
+        F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
         let decided_cells = grid.decided_cells();
         for digit in Digit::ALL {
@@ -38,7 +70,14 @@ impl HiddenSingle {
                 if let Some(x) = house_mask.as_single() {
                     let pos = house.position_from_cell_index(x);
                     if grid.place(pos, digit)
-                        && let ControlFlow::Break(value) = on_condition(grid, house, pos, digit)
+                        && let ControlFlow::Break(value) = on_condition(
+                            grid,
+                            &Condition {
+                                house,
+                                digit,
+                                position: pos,
+                            },
+                        )
                     {
                         return Some(value);
                     }
@@ -64,35 +103,20 @@ impl Technique for HiddenSingle {
 
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError> {
         let mut after_grid = grid.clone();
-        let step =
-            Self::apply_with_control_flow(&mut after_grid, |after_grid, house, pos, digit| {
-                ControlFlow::Break(TechniqueStepData::from_diff_with_extra(
-                    NAME,
-                    house.positions(),
-                    vec![(house.positions(), DigitSet::from_elem(digit))],
-                    grid,
-                    after_grid,
-                    vec![TechniqueApplication::Placement {
-                        position: pos,
-                        digit,
-                    }],
-                ))
-            });
+        let step = Self::apply_with_control_flow(&mut after_grid, |after_grid, condition| {
+            ControlFlow::Break(condition.build_step(grid, after_grid))
+        });
         Ok(step)
     }
 
     fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-        let mut changed = false;
-        Self::apply_with_control_flow(grid, |_, _, _, _| {
-            changed = true;
-            ControlFlow::Break(())
-        });
+        let changed = Self::apply_with_control_flow(grid, |_, _| ControlFlow::Break(())).is_some();
         Ok(changed)
     }
 
     fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
         let mut changed = 0;
-        Self::apply_with_control_flow(grid, |_, _, _, _| {
+        Self::apply_with_control_flow(grid, |_, _| {
             changed += 1;
             ControlFlow::<()>::Continue(())
         });
