@@ -8,7 +8,7 @@
 use std::{
     fmt::{self, Debug},
     hash::{Hash, Hasher},
-    iter::FusedIterator,
+    iter::{FusedIterator, Product, Sum},
     marker::PhantomData,
     ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Not, RangeBounds},
 };
@@ -314,6 +314,19 @@ where
         Some([first, second])
     }
 
+    /// Returns the three elements in the set, or `None` if the set does not have exactly three elements.
+    #[must_use]
+    #[inline]
+    pub fn as_triple(mut self) -> Option<[S::Value; 3]> {
+        let first = self.pop_first()?;
+        let second = self.pop_first()?;
+        let third = self.pop_first()?;
+        if !self.is_empty() {
+            return None;
+        }
+        Some([first, second, third])
+    }
+
     /// Removes and returns the smallest element in the set, if any.
     #[inline]
     pub fn pop_first(&mut self) -> Option<S::Value> {
@@ -508,6 +521,24 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_set().entries(self).finish()
+    }
+}
+
+impl<S> Sum for BitSet9<S>
+where
+    S: Index9Semantics,
+{
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::new(), Self::union)
+    }
+}
+
+impl<S> Product for BitSet9<S>
+where
+    S: Index9Semantics,
+{
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::FULL, Self::intersection)
     }
 }
 

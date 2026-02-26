@@ -1,7 +1,7 @@
 use std::iter::FusedIterator;
 
 use crate::{
-    Digit, DigitPositions, Position,
+    CellIndexIndexedArray, Digit, DigitPositions, Position,
     index::{DigitSemantics, Index9, Index9Semantics as _},
 };
 
@@ -27,7 +27,7 @@ pub enum House {
 
 impl House {
     /// Array containing all rows (0-8).
-    pub const ROWS: [Self; 9] = [
+    pub const ROWS: CellIndexIndexedArray<Self> = CellIndexIndexedArray::from_array([
         Self::Row { y: 0 },
         Self::Row { y: 1 },
         Self::Row { y: 2 },
@@ -37,10 +37,10 @@ impl House {
         Self::Row { y: 6 },
         Self::Row { y: 7 },
         Self::Row { y: 8 },
-    ];
+    ]);
 
     /// Array containing all columns (0-8).
-    pub const COLUMNS: [Self; 9] = [
+    pub const COLUMNS: CellIndexIndexedArray<Self> = CellIndexIndexedArray::from_array([
         Self::Column { x: 0 },
         Self::Column { x: 1 },
         Self::Column { x: 2 },
@@ -50,10 +50,10 @@ impl House {
         Self::Column { x: 6 },
         Self::Column { x: 7 },
         Self::Column { x: 8 },
-    ];
+    ]);
 
     /// Array containing all boxes (0-8).
-    pub const BOXES: [Self; 9] = [
+    pub const BOXES: CellIndexIndexedArray<Self> = CellIndexIndexedArray::from_array([
         Self::Box { index: 0 },
         Self::Box { index: 1 },
         Self::Box { index: 2 },
@@ -63,7 +63,7 @@ impl House {
         Self::Box { index: 6 },
         Self::Box { index: 7 },
         Self::Box { index: 8 },
-    ];
+    ]);
 
     /// Array containing all houses in row, column, box order.
     pub const ALL: [Self; 27] = {
