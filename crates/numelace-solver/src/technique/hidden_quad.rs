@@ -99,6 +99,9 @@ impl HiddenQuad {
                             if quad_positions.len() > 4 {
                                 continue;
                             }
+                            // If four digits only cover fewer than four positions, each digit
+                            // would still require a placement while the positions cannot host them all.
+                            // This is a candidate constraint violation.
                             if quad_positions.len() < 4 {
                                 return Err(ConsistencyError::CandidateConstraintViolation.into());
                             }
@@ -110,6 +113,8 @@ impl HiddenQuad {
                                 if !other_positions.is_empty()
                                     && other_positions.is_subset(quad_positions)
                                 {
+                                    // Another digit shares the same four positions, which would force
+                                    // five digits into four cells. This is a candidate constraint violation.
                                     return Err(
                                         ConsistencyError::CandidateConstraintViolation.into()
                                     );

@@ -16,8 +16,9 @@ use numelace_core::{CandidateGrid, Digit, Position};
 use numelace_solver::{
     Technique, TechniqueGrid,
     technique::{
-        HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, LockedCandidates, NakedPair, NakedQuad,
-        NakedSingle, NakedTriple, Skyscraper, Swordfish, TwoStringKite, XChain, XWing, YWing,
+        HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, Jellyfish, LockedCandidates, NakedPair,
+        NakedQuad, NakedSingle, NakedTriple, Skyscraper, Swordfish, TwoStringKite, XChain, XWing,
+        YWing,
     },
 };
 
@@ -196,6 +197,23 @@ fn swordfish_grid() -> TechniqueGrid {
     let digit = Digit::D1;
     let rows = [0u8, 4, 8];
     let cols = [1u8, 4, 7];
+
+    for &row in &rows {
+        for x in 0..9u8 {
+            if !cols.contains(&x) {
+                grid.remove_candidate(Position::new(x, row), digit);
+            }
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
+fn jellyfish_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let digit = Digit::D1;
+    let rows = [0u8, 2, 5, 8];
+    let cols = [1u8, 4, 6, 8];
 
     for &row in &rows {
         for x in 0..9u8 {
@@ -401,6 +419,15 @@ fn bench_swordfish_apply(c: &mut Criterion) {
     bench_apply_cases(c, "swordfish_apply", &technique, &puzzles);
 }
 
+fn bench_jellyfish_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("jellyfish", jellyfish_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+    let technique = Jellyfish::new();
+    bench_apply_cases(c, "jellyfish_apply", &technique, &puzzles);
+}
+
 fn bench_skyscraper_apply(c: &mut Criterion) {
     let puzzles = [
         ("skyscraper", skyscraper_grid()),
@@ -531,6 +558,15 @@ criterion_group!(
 );
 
 criterion_group!(
+    name = benches_jellyfish;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_jellyfish_apply,
+);
+
+criterion_group!(
     name = benches_skyscraper;
     config =
         Criterion::default()
@@ -578,6 +614,7 @@ criterion_main!(
     benches_hidden_quad,
     benches_x_wing,
     benches_swordfish,
+    benches_jellyfish,
     benches_skyscraper,
     benches_two_string_kite,
     benches_y_wing,

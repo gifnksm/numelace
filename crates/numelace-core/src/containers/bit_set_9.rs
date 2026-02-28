@@ -327,6 +327,20 @@ where
         Some([first, second, third])
     }
 
+    /// Returns the four elements in the set, or `None` if the set does not have exactly four elements.
+    #[must_use]
+    #[inline]
+    pub fn as_quad(mut self) -> Option<[S::Value; 4]> {
+        let first = self.pop_first()?;
+        let second = self.pop_first()?;
+        let third = self.pop_first()?;
+        let fourth = self.pop_first()?;
+        if !self.is_empty() {
+            return None;
+        }
+        Some([first, second, third, fourth])
+    }
+
     /// Removes and returns the smallest element in the set, if any.
     #[inline]
     pub fn pop_first(&mut self) -> Option<S::Value> {

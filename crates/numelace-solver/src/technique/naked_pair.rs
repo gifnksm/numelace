@@ -74,6 +74,9 @@ impl NakedPair {
                 for d in pair_digits {
                     matching_pair_cells &= grid.digit_positions(d);
                 }
+                // If more than two cells share the same pair candidates, each of those cells
+                // would still require a placement, but the pair only provides two slots.
+                // This is a candidate constraint violation.
                 if matching_pair_cells.len() > 1 {
                     return Err(ConsistencyError::CandidateConstraintViolation.into());
                 }

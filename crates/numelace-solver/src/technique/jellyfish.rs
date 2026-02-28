@@ -9,22 +9,22 @@ use crate::{
     axis::{AxisOps, ColumnAxis, RowAxis},
 };
 
-const ID: &str = "swordfish";
-const NAME: &str = "Swordfish";
+const ID: &str = "jellyfish";
+const NAME: &str = "Jellyfish";
 
-/// A technique that removes candidates using a Swordfish pattern.
+/// A technique that removes candidates using a Jellyfish pattern.
 ///
-/// A "Swordfish" occurs when a digit appears in 2-3 cells across each of three rows
-/// (or columns) and those candidates align within the same three columns (or rows).
+/// A "Jellyfish" occurs when a digit appears in 2-4 cells across each of four rows
+/// (or columns) and those candidates align within the same four columns (or rows).
 /// The digit can then be eliminated from the other cells in the cover columns (or rows).
 #[derive(Debug, Default, Clone, Copy)]
-pub struct Swordfish {}
+pub struct Jellyfish {}
 
 #[derive(Debug, Clone, Copy)]
 struct Condition {
     digit: Digit,
-    base_houses: [House; 3],
-    cover_houses: [House; 3],
+    base_houses: [House; 4],
+    cover_houses: [House; 4],
 }
 
 impl Condition {
@@ -54,8 +54,8 @@ impl Condition {
     }
 }
 
-impl Swordfish {
-    /// Creates a new `Swordfish` technique.
+impl Jellyfish {
+    /// Creates a new `Jellyfish` technique.
     #[must_use]
     pub const fn new() -> Self {
         Self {}
@@ -74,65 +74,66 @@ impl Swordfish {
         let mut line_masks = array_vec!([(u8, HouseMask); 9]);
         for line in 0..9 {
             let mask = A::line_mask(grid, line, digit);
-            if !(1..=3).contains(&mask.len()) {
+            if !(1..=4).contains(&mask.len()) {
                 continue;
             }
             line_masks.push((line, mask));
         }
-        let mut line_masks1 = line_masks.iter();
-        while let Some(&(line1, crosses1)) = line_masks1.next() {
-            let mut line_masks2 = line_masks1.as_slice().iter();
+        let mut line_masks = line_masks.iter();
+        while let Some(&(line1, crosses1)) = line_masks.next() {
+            let mut line_masks2 = line_masks.as_slice().iter();
             while let Some(&(line2, crosses2)) = line_masks2.next() {
                 let crosses12 = crosses1 | crosses2;
-                if crosses12.len() > 3 {
+                if crosses12.len() > 4 {
                     continue;
                 }
-                for &(line3, crosses3) in line_masks2.as_slice() {
+                let mut line_masks3 = line_masks2.as_slice().iter();
+                while let Some(&(line3, crosses3)) = line_masks3.next() {
                     let crosses123 = crosses12 | crosses3;
-                    if crosses123.len() > 3 {
+                    if crosses123.len() > 4 {
                         continue;
                     }
-                    // If three base houses only cover fewer than three crosses, each base house
-                    // would still require a placement while the cover set cannot host them all.
-                    // This is a candidate constraint violation.
-                    let Some([cross1, cross2, cross3]) = crosses123.as_triple() else {
-                        return Err(ConsistencyError::CandidateConstraintViolation.into());
-                    };
-                    // If all base houses are in one band and all cover houses in one stack,
-                    // each box would require a placement while the box allows only one.
-                    // This is a candidate constraint violation.
-                    if line1 / 3 == line2 / 3
-                        && line2 / 3 == line3 / 3
-                        && cross1 / 3 == cross2 / 3
-                        && cross2 / 3 == cross3 / 3
-                    {
-                        return Err(ConsistencyError::CandidateConstraintViolation.into());
-                    }
-                    let eliminations = (A::CROSS_POSITIONS[cross1]
-                        | A::CROSS_POSITIONS[cross2]
-                        | A::CROSS_POSITIONS[cross3])
-                        & !(A::LINE_POSITIONS[line1]
-                            | A::LINE_POSITIONS[line2]
-                            | A::LINE_POSITIONS[line3]);
-                    if grid.remove_candidate_with_mask(eliminations, digit)
-                        && let ControlFlow::Break(value) = on_condition(
-                            grid,
-                            &Condition {
-                                digit,
-                                base_houses: [
-                                    A::LINE_HOUSES[line1],
-                                    A::LINE_HOUSES[line2],
-                                    A::LINE_HOUSES[line3],
-                                ],
-                                cover_houses: [
-                                    A::CROSS_HOUSES[cross1],
-                                    A::CROSS_HOUSES[cross2],
-                                    A::CROSS_HOUSES[cross3],
-                                ],
-                            },
-                        )
-                    {
-                        return Ok(Some(value));
+                    for &(line4, crosses4) in line_masks3.as_slice() {
+                        let crosses1234 = crosses123 | crosses4;
+                        if crosses1234.len() > 4 {
+                            continue;
+                        }
+                        // If four base houses only cover fewer than four crosses, each base house
+                        // would still require a placement while the cover set cannot host them all.
+                        // This is a candidate constraint violation.
+                        let Some([cross1, cross2, cross3, cross4]) = crosses1234.as_quad() else {
+                            return Err(ConsistencyError::CandidateConstraintViolation.into());
+                        };
+                        let eliminations = (A::CROSS_POSITIONS[cross1]
+                            | A::CROSS_POSITIONS[cross2]
+                            | A::CROSS_POSITIONS[cross3]
+                            | A::CROSS_POSITIONS[cross4])
+                            & !(A::LINE_POSITIONS[line1]
+                                | A::LINE_POSITIONS[line2]
+                                | A::LINE_POSITIONS[line3]
+                                | A::LINE_POSITIONS[line4]);
+                        if grid.remove_candidate_with_mask(eliminations, digit)
+                            && let ControlFlow::Break(value) = on_condition(
+                                grid,
+                                &Condition {
+                                    digit,
+                                    base_houses: [
+                                        A::LINE_HOUSES[line1],
+                                        A::LINE_HOUSES[line2],
+                                        A::LINE_HOUSES[line3],
+                                        A::LINE_HOUSES[line4],
+                                    ],
+                                    cover_houses: [
+                                        A::CROSS_HOUSES[cross1],
+                                        A::CROSS_HOUSES[cross2],
+                                        A::CROSS_HOUSES[cross3],
+                                        A::CROSS_HOUSES[cross4],
+                                    ],
+                                },
+                            )
+                        {
+                            return Ok(Some(value));
+                        }
                     }
                 }
             }
@@ -166,7 +167,7 @@ impl Swordfish {
     }
 }
 
-impl Technique for Swordfish {
+impl Technique for Jellyfish {
     fn id(&self) -> &'static str {
         ID
     }
@@ -214,11 +215,11 @@ mod tests {
     use crate::{SolverError, TechniqueGrid, testing::TechniqueTester};
 
     #[test]
-    fn test_eliminates_swordfish_candidates_in_rows() {
+    fn test_eliminates_jellyfish_candidates_in_rows() {
         let mut grid = CandidateGrid::new();
         let digit = Digit::D1;
-        let rows = [0u8, 4, 8];
-        let cols = [1u8, 4, 7];
+        let rows = [0u8, 2, 5, 8];
+        let cols = [1u8, 4, 6, 8];
 
         for &row in &rows {
             for x in 0..9u8 {
@@ -229,27 +230,27 @@ mod tests {
         }
 
         TechniqueTester::new(grid)
-            .apply_pass(&Swordfish::new())
-            .assert_removed_includes(Position::new(cols[0], 2), [digit])
-            .assert_removed_includes(Position::new(cols[2], 6), [digit]);
+            .apply_pass(&Jellyfish::new())
+            .assert_removed_includes(Position::new(cols[0], 1), [digit])
+            .assert_removed_includes(Position::new(cols[2], 7), [digit]);
     }
 
     #[test]
-    fn test_no_change_when_no_swordfish() {
+    fn test_no_change_when_no_jellyfish() {
         let grid = CandidateGrid::new();
 
         TechniqueTester::new(grid)
-            .apply_pass(&Swordfish::new())
+            .apply_pass(&Jellyfish::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
     }
 
     #[test]
-    fn test_inconsistent_when_only_two_cover_columns() {
+    fn test_inconsistent_when_only_three_cover_columns() {
         let mut grid = CandidateGrid::new();
         let digit = Digit::D1;
-        let rows = [0u8, 3, 6];
-        let cols = [1u8, 5];
+        let rows = [0u8, 2, 5, 8];
+        let cols = [1u8, 5, 7];
 
         for &row in &rows {
             for x in 0..9u8 {
@@ -260,7 +261,7 @@ mod tests {
         }
 
         let mut grid = TechniqueGrid::from(grid);
-        let result = Swordfish::new().apply_pass(&mut grid);
+        let result = Jellyfish::new().apply_pass(&mut grid);
         assert!(matches!(
             result,
             Err(SolverError::Inconsistent(

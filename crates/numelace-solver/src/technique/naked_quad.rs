@@ -92,6 +92,8 @@ impl NakedQuad {
                             if digits1234.len() > 4 {
                                 continue;
                             }
+                            // Four cells forming fewer than four digits implies the house
+                            // cannot satisfy all placements. This is a candidate constraint violation.
                             if digits1234.len() < 4 {
                                 return Err(ConsistencyError::CandidateConstraintViolation.into());
                             }
@@ -101,6 +103,8 @@ impl NakedQuad {
                             let has_fifth_cell = remaining_pos4
                                 .iter()
                                 .any(|pos| grid.candidates_at(pos).is_subset(digits1234));
+                            // A fifth cell sharing the same quad digits means the constraint
+                            // cannot be satisfied within the house. This is a candidate constraint violation.
                             if has_fifth_cell {
                                 return Err(ConsistencyError::CandidateConstraintViolation.into());
                             }

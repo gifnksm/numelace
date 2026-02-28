@@ -85,6 +85,9 @@ impl NakedTriple {
                         if digits123.len() > 3 {
                             continue;
                         }
+                        // If three cells only cover fewer than three digits, each cell would still
+                        // require a placement while the digit set cannot host them all.
+                        // This is a candidate constraint violation.
                         if digits123.len() < 3 {
                             return Err(ConsistencyError::CandidateConstraintViolation.into());
                         }
@@ -94,6 +97,9 @@ impl NakedTriple {
                         let has_fourth_cell = remaining_pos3
                             .iter()
                             .any(|pos| grid.candidates_at(pos).is_subset(digits123));
+                        // If a fourth cell is also restricted to the same three digits,
+                        // the house would require four placements from three digits.
+                        // This is a candidate constraint violation.
                         if has_fourth_cell {
                             return Err(ConsistencyError::CandidateConstraintViolation.into());
                         }

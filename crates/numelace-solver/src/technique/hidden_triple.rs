@@ -86,6 +86,9 @@ impl HiddenTriple {
                         if triple_positions.len() > 3 {
                             continue;
                         }
+                        // If three digits only cover fewer than three positions, each digit
+                        // would still require a placement while the positions cannot host them all.
+                        // This is a candidate constraint violation.
                         if triple_positions.len() < 3 {
                             return Err(ConsistencyError::CandidateConstraintViolation.into());
                         }
@@ -94,6 +97,9 @@ impl HiddenTriple {
                         // so only the remaining digits need to be validated here.
                         for d in remaining_digits3 {
                             let other_positions = grid.digit_positions(d) & house_positions;
+                            // If another digit is constrained to the same three positions, the house
+                            // requires at least four placements within three cells, which is impossible.
+                            // This is a candidate constraint violation.
                             if !other_positions.is_empty()
                                 && other_positions.is_subset(triple_positions)
                             {

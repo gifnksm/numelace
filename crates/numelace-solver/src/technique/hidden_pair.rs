@@ -69,6 +69,9 @@ impl HiddenPair {
                 let Some(d2) = candidate_digits.next() else {
                     continue;
                 };
+                // If more than two digits share the same two positions, a placement is forced
+                // in those cells while additional digits still require them. This is a
+                // candidate constraint violation.
                 if candidate_digits.next().is_some() {
                     return Err(ConsistencyError::CandidateConstraintViolation.into());
                 }
