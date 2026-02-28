@@ -16,13 +16,13 @@
 //! specified techniques within the sampling budget:
 //!
 //! ```sh
-//! cargo run --example generate_puzzle -- --technique "Locked Candidates"
+//! cargo run --example generate_puzzle -- --technique locked_candidates
 //! ```
 //!
 //! Control the sampling budget (default: 10000):
 //!
 //! ```sh
-//! cargo run --example generate_puzzle -- --technique "Locked Candidates" --max-tries 10000
+//! cargo run --example generate_puzzle -- --technique locked_candidates --max-tries 10000
 //! ```
 //!
 //! Select the solver technique set (fundamental or basic):
@@ -34,7 +34,7 @@
 //! Multiple techniques can be required (case-insensitive), including tiers:
 //!
 //! ```sh
-//! cargo run --example generate_puzzle -- --technique "Locked Candidates" --technique intermediate
+//! cargo run --example generate_puzzle -- --technique locked_candidates --technique intermediate
 //! ```
 
 use std::{
@@ -46,7 +46,7 @@ use std::{
 use clap::{Parser, ValueEnum};
 use numelace_generator::{GeneratedPuzzle, PuzzleGenerator};
 use numelace_solver::{
-    TechniqueGrid, TechniqueSolver, TechniqueSolverStats, TechniqueTier, technique,
+    BoxedTechnique, TechniqueGrid, TechniqueSolver, TechniqueSolverStats, TechniqueTier, technique,
 };
 use rayon::prelude::*;
 
@@ -59,24 +59,21 @@ enum SolverKind {
 
 #[derive(Debug, Clone)]
 enum TechniqueSelector {
-    Name(String),
+    Technique(BoxedTechnique),
     Tier(TechniqueTier),
 }
 
 impl TechniqueSelector {
-    fn parse(
-        input: &str,
-        available_names: &[&'static str],
-        available_tiers: &BTreeSet<TechniqueTier>,
-    ) -> Option<Self> {
+    fn parse(input: &str, techniques: &[BoxedTechnique]) -> Option<Self> {
         if let Some(tier) = parse_tier(input) {
-            return available_tiers
-                .contains(&tier)
+            return techniques
+                .iter()
+                .any(|technique| technique.tier() == tier)
                 .then_some(TechniqueSelector::Tier(tier));
         }
 
-        if technique_name_matches(input, available_names) {
-            return Some(TechniqueSelector::Name(input.to_string()));
+        if let Some(technique) = find_technique_by_name_or_id(input, techniques) {
+            return Some(TechniqueSelector::Technique(technique.clone()));
         }
 
         None
@@ -84,14 +81,16 @@ impl TechniqueSelector {
 
     fn label(&self) -> String {
         match self {
-            TechniqueSelector::Name(name) => name.clone(),
+            TechniqueSelector::Technique(technique) => technique.name().to_owned(),
             TechniqueSelector::Tier(tier) => tier_label(*tier).to_string(),
         }
     }
 
     fn score(&self, solver: &TechniqueSolver, stats: &TechniqueSolverStats) -> usize {
         match self {
-            TechniqueSelector::Name(name) => technique_count(solver, stats, name),
+            TechniqueSelector::Technique(technique) => {
+                technique_count(solver, stats, technique.id())
+            }
             TechniqueSelector::Tier(tier) => technique_tier_count(solver, stats, *tier),
         }
     }
@@ -104,7 +103,7 @@ struct Args {
     #[arg(long, value_name = "KIND", default_value = "all")]
     solver: SolverKind,
 
-    /// Technique name or tier to require in stats (case-insensitive). Repeatable.
+    /// Technique id/name or tier to require in stats (case-insensitive). Repeatable.
     #[arg(short, long = "technique", value_name = "TECHNIQUE", num_args = 1..)]
     techniques: Vec<String>,
 
@@ -115,19 +114,23 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    let (solver, available_names, available_tiers) = build_solver(args.solver);
+    let solver = build_solver(args.solver);
     let generator = PuzzleGenerator::new(&solver);
 
-    let (selectors, unknown) =
-        parse_technique_selectors(&args.techniques, &available_names, &available_tiers);
+    let (selectors, unknown) = parse_technique_selectors(&args.techniques, solver.techniques());
 
     if !unknown.is_empty() {
         eprintln!("Unknown technique(s)/tier(s): {}", unknown.join(", "));
         eprintln!("Available techniques:");
-        for name in &available_names {
-            eprintln!("  {name}");
+        for technique in solver.techniques() {
+            eprintln!("  {} ({})", technique.id(), technique.name());
         }
         eprintln!("Available tiers:");
+        let available_tiers = solver
+            .techniques()
+            .iter()
+            .map(|t| t.tier())
+            .collect::<BTreeSet<_>>();
         for tier in &available_tiers {
             eprintln!("  {}", tier_label(*tier));
         }
@@ -167,33 +170,24 @@ fn main() {
     );
 }
 
-fn build_solver(kind: SolverKind) -> (TechniqueSolver, Vec<&'static str>, BTreeSet<TechniqueTier>) {
+fn build_solver(kind: SolverKind) -> TechniqueSolver {
     let techniques = match kind {
         SolverKind::All => technique::all_techniques(),
         SolverKind::Fundamental => technique::fundamental_techniques(),
         SolverKind::Basic => technique::basic_techniques(),
     };
-    let names = techniques
-        .iter()
-        .map(|technique| technique.name())
-        .collect();
-    let tiers = techniques
-        .iter()
-        .map(|technique| technique.tier())
-        .collect();
-    (TechniqueSolver::new(techniques), names, tiers)
+    TechniqueSolver::new(techniques)
 }
 
 fn parse_technique_selectors(
     inputs: &[String],
-    available_names: &[&'static str],
-    available_tiers: &BTreeSet<TechniqueTier>,
+    techniques: &[BoxedTechnique],
 ) -> (Vec<TechniqueSelector>, Vec<String>) {
     let mut selectors = Vec::new();
     let mut unknown = Vec::new();
 
     for input in inputs {
-        if let Some(selector) = TechniqueSelector::parse(input, available_names, available_tiers) {
+        if let Some(selector) = TechniqueSelector::parse(input, techniques) {
             selectors.push(selector);
         } else {
             unknown.push(input.clone());
@@ -227,10 +221,17 @@ fn tier_label(tier: TechniqueTier) -> &'static str {
     }
 }
 
-fn technique_name_matches(name: &str, available: &[&'static str]) -> bool {
-    available
+fn find_technique_by_name_or_id(
+    name_or_id: &str,
+    techniques: &[BoxedTechnique],
+) -> Option<BoxedTechnique> {
+    techniques
         .iter()
-        .any(|available| available.eq_ignore_ascii_case(name))
+        .find(|technique| {
+            technique.id().eq_ignore_ascii_case(name_or_id)
+                || technique.name().eq_ignore_ascii_case(name_or_id)
+        })
+        .cloned()
 }
 
 fn solve_stats(solver: &TechniqueSolver, puzzle: &GeneratedPuzzle) -> TechniqueSolverStats {
@@ -251,11 +252,15 @@ fn techniques_score(
         .sum()
 }
 
-fn technique_count(solver: &TechniqueSolver, stats: &TechniqueSolverStats, name: &str) -> usize {
+fn technique_count(
+    solver: &TechniqueSolver,
+    stats: &TechniqueSolverStats,
+    technique_id: &str,
+) -> usize {
     let Some(i) = solver
         .techniques()
         .iter()
-        .position(|technique| technique.name().eq_ignore_ascii_case(name))
+        .position(|technique| technique.id() == technique_id)
     else {
         return 0;
     };
