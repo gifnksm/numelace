@@ -5,7 +5,7 @@ use numelace_game::CellState;
 use numelace_solver::TechniqueApplication;
 
 use crate::{
-    state::{AppState, GhostType, HintStage, HintState, UiState},
+    state::{AppState, GhostType, HintStage, HintState, Settings, UiState},
     ui::{
         game_screen::GameScreenViewModel,
         grid::{GridCell, GridViewModel, GridVisualState, NoteVisualState},
@@ -56,6 +56,7 @@ fn apply_conflict_ghost(
 fn effective_hint_applications(
     grid: &PositionIndexedArray<GridCell>,
     hint_state: &HintState,
+    settings: &Settings,
 ) -> Vec<TechniqueApplication> {
     let mut apps = Vec::new();
 
@@ -64,6 +65,18 @@ fn effective_hint_applications(
             TechniqueApplication::Placement { position, digit } => {
                 if grid[position].content.as_digit() != Some(digit) {
                     apps.push(TechniqueApplication::Placement { position, digit });
+                }
+                if settings.assist.notes.auto_remove_peer_notes_on_fill {
+                    for peer_pos in position.house_peers() {
+                        if let Some(notes) = grid[peer_pos].content.as_notes()
+                            && notes.contains(digit)
+                        {
+                            apps.push(TechniqueApplication::CandidateElimination {
+                                positions: DigitPositions::from_elem(peer_pos),
+                                digits: DigitSet::from_elem(digit),
+                            });
+                        }
+                    }
                 }
             }
             TechniqueApplication::CandidateElimination { positions, digits } => {
@@ -104,7 +117,11 @@ fn effective_hint_applications(
     apps
 }
 
-fn apply_hint_ghost(grid: &mut PositionIndexedArray<GridCell>, hint_state: &HintState) {
+fn apply_hint_ghost(
+    grid: &mut PositionIndexedArray<GridCell>,
+    hint_state: &HintState,
+    settings: &Settings,
+) {
     if hint_state.stage >= HintStage::Stage3Apply {
         return;
     }
@@ -118,7 +135,7 @@ fn apply_hint_ghost(grid: &mut PositionIndexedArray<GridCell>, hint_state: &Hint
     }
 
     if hint_state.stage >= HintStage::Stage3Preview {
-        for app in effective_hint_applications(grid, hint_state) {
+        for app in effective_hint_applications(grid, hint_state, settings) {
             match app {
                 TechniqueApplication::Placement { position, digit } => {
                     if grid[position].content.as_digit() != Some(digit) {
@@ -154,7 +171,11 @@ fn apply_hint_ghost(grid: &mut PositionIndexedArray<GridCell>, hint_state: &Hint
     }
 }
 
-fn apply_hint_visuals(grid: &mut PositionIndexedArray<GridCell>, hint_state: &HintState) {
+fn apply_hint_visuals(
+    grid: &mut PositionIndexedArray<GridCell>,
+    hint_state: &HintState,
+    settings: &Settings,
+) {
     if hint_state.stage >= HintStage::Stage3Apply {
         return;
     }
@@ -186,7 +207,7 @@ fn apply_hint_visuals(grid: &mut PositionIndexedArray<GridCell>, hint_state: &Hi
     }
 
     if hint_state.stage >= HintStage::Stage3Preview {
-        for app in effective_hint_applications(grid, hint_state) {
+        for app in effective_hint_applications(grid, hint_state, settings) {
             match app {
                 TechniqueApplication::Placement { position, digit: _ } => {
                     grid[position].visual_state |= GridVisualState::HINT_APPLICATION_PLACEMENT;
@@ -224,10 +245,15 @@ fn apply_conflict_highlights(grid: &mut PositionIndexedArray<GridCell>) {
             if grid[peer_pos].content.as_digit() == Some(digit) {
                 grid[peer_pos].visual_state |= GridVisualState::CONFLICT;
             }
+
             if grid[peer_pos]
                 .content
                 .as_notes()
                 .is_some_and(|notes| notes.contains(digit))
+                && !grid[peer_pos]
+                    .note_visual_state
+                    .hint_application_elimination
+                    .contains(digit)
             {
                 grid[peer_pos].note_visual_state.conflict.insert(digit);
             }
@@ -266,8 +292,8 @@ fn build_grid(app_state: &AppState, ui_state: &UiState) -> PositionIndexedArray<
     }
 
     if let Some(hint_state) = &ui_state.hint_state {
-        apply_hint_ghost(&mut grid, hint_state);
-        apply_hint_visuals(&mut grid, hint_state);
+        apply_hint_ghost(&mut grid, hint_state, &app_state.settings);
+        apply_hint_visuals(&mut grid, hint_state, &app_state.settings);
     }
 
     apply_conflict_highlights(&mut grid);
