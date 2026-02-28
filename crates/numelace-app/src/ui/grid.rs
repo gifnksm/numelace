@@ -254,15 +254,6 @@ impl EffectiveGridVisualState {
                 palette.border_hint_condition,
             ));
         }
-        if self.0.intersects(
-            GridVisualState::HINT_APPLICATION_ELIMINATION
-                | GridVisualState::HINT_APPLICATION_PLACEMENT,
-        ) {
-            return Some(Stroke::new(
-                base_border * 2.0,
-                palette.border_hint_application,
-            ));
-        }
         None
     }
 

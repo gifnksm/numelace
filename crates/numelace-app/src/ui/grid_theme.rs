@@ -23,7 +23,6 @@ pub(crate) struct GridPalette {
     pub(crate) border_same_digit: Color32,
     pub(crate) border_conflict: Color32,
     pub(crate) border_hint_condition: Color32,
-    pub(crate) border_hint_application: Color32,
 
     pub(crate) underline_hint_condition: Color32,
     pub(crate) underline_hint_application: Color32,
@@ -88,7 +87,6 @@ impl GridPalette {
             border_same_digit: visuals.selection.stroke.color,
             border_conflict: visuals.error_fg_color, // dark/light=(255, 0, 0)
             border_hint_condition: hint_accent,
-            border_hint_application: hint_accent_soft,
 
             underline_hint_condition: hint_accent_soft,
             underline_hint_application: hint_accent_soft,
