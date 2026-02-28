@@ -16,15 +16,24 @@ pub(crate) fn spawn_check_solvability_flow(executor: &mut FlowExecutor, game: &G
     if !executor.is_idle() {
         return;
     }
+    let is_solved = game.is_solved();
     let handle = executor.handle();
     let request = game.into();
-    executor.spawn(check_solvability_flow(handle, request));
+    executor.spawn(check_solvability_flow(handle, request, is_solved));
 }
 
 /// Async flow for solvability check work dispatch.
 ///
 /// Runs the background request and awaits the response.
-async fn check_solvability_flow(handle: FlowHandle, request: CandidateGridPairDto) {
+async fn check_solvability_flow(
+    handle: FlowHandle,
+    request: CandidateGridPairDto,
+    is_solved: bool,
+) {
+    if is_solved {
+        let _ = helpers::show_alert_dialog(&handle, AlertKind::SolvabilityAlreadySolved).await;
+        return;
+    }
     let work = worker::request_solvability(request);
     let state = helpers::with_spinner(&handle, SpinnerKind::CheckSolvability, work)
         .await

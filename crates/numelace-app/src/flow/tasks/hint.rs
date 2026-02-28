@@ -34,15 +34,20 @@ pub(crate) fn spawn_hint_flow(
     if !executor.is_idle() {
         return;
     }
+    let is_solved = game.is_solved();
     let handle = executor.handle();
     let request = HintRequest {
         game: game.clone(),
         hint_state,
     };
-    executor.spawn(hint_flow(handle, request));
+    executor.spawn(hint_flow(handle, request, is_solved));
 }
 
-async fn hint_flow(handle: FlowHandle, request: HintRequest) {
+async fn hint_flow(handle: FlowHandle, request: HintRequest, is_solved: bool) {
+    if is_solved {
+        let _ = helpers::show_alert_dialog(&handle, AlertKind::HintAlreadySolved).await;
+        return;
+    }
     match request.hint_state {
         None
         | Some(HintState {

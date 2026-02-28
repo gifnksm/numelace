@@ -168,6 +168,14 @@ impl AlertKind {
                 body: AlertBody::Text(Cow::Borrowed("Undo did not find a solvable state.")),
                 ok_label: "OK",
             },
+            AlertKind::SolvabilityAlreadySolved => AlertDialogSpec {
+                id: Id::new("solvability_already_solved"),
+                heading: "Already Solved",
+                body: AlertBody::Text(Cow::Borrowed(
+                    "The puzzle is already solved, so no solvability check is needed.",
+                )),
+                ok_label: "OK",
+            },
             AlertKind::HintUndoNotice { steps } => AlertDialogSpec {
                 id: Id::new("hint_undo_notice"),
                 heading: "Undo Complete",
@@ -196,6 +204,14 @@ impl AlertKind {
                 id: Id::new("hint_inconsistent_after_rollback"),
                 heading: "No Hint Found",
                 body: AlertBody::Text(Cow::Borrowed("Undo did not find a consistent state.")),
+                ok_label: "OK",
+            },
+            AlertKind::HintAlreadySolved => AlertDialogSpec {
+                id: Id::new("hint_already_solved"),
+                heading: "Already Solved",
+                body: AlertBody::Text(Cow::Borrowed(
+                    "The puzzle is already solved, so no hint is available.",
+                )),
                 ok_label: "OK",
             },
         }

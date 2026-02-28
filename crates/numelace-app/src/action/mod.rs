@@ -183,10 +183,12 @@ pub(crate) enum AlertKind {
     SolvabilitySolvable { stats: SolvabilityStatsDto },
     SolvabilityUndoNotice { steps: usize },
     SolvabilityUndoNotFound,
+    SolvabilityAlreadySolved,
     HintUndoNotice { steps: usize },
     HintStuckNoStep,
     HintStuckAfterRollback,
     HintInconsistentAfterRollback,
+    HintAlreadySolved,
 }
 
 #[derive(Debug)]
