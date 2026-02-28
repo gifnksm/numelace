@@ -13,6 +13,18 @@ pub(crate) enum DifficultyPreset {
     Custom,
 }
 
+impl From<TechniqueTier> for DifficultyPreset {
+    fn from(tier: TechniqueTier) -> Self {
+        match tier {
+            TechniqueTier::Fundamental | TechniqueTier::Basic => Self::Basic,
+            TechniqueTier::Intermediate => Self::Intermediate,
+            TechniqueTier::UpperIntermediate => Self::UpperIntermediate,
+            TechniqueTier::Advanced => Self::Advanced,
+            TechniqueTier::Expert => Self::Expert,
+        }
+    }
+}
+
 impl DifficultyPreset {
     #[must_use]
     pub(crate) const fn label(self) -> &'static str {

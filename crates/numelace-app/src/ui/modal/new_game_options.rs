@@ -53,8 +53,13 @@ pub(crate) fn show(
                 for technique in technique::all_techniques() {
                     let mut enabled = draft.is_technique_enabled(technique.id());
                     let can_toggle = !technique.tier().is_fundamental();
+                    let label = format!(
+                        "{} ({})",
+                        technique.name(),
+                        DifficultyPreset::from(technique.tier()).label()
+                    );
                     if ui
-                        .add_enabled(can_toggle, Checkbox::new(&mut enabled, technique.name()))
+                        .add_enabled(can_toggle, Checkbox::new(&mut enabled, label))
                         .changed()
                     {
                         changed = true;
