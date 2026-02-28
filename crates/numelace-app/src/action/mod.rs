@@ -28,6 +28,7 @@ pub(crate) enum AppAction {
     Selection(SelectionAction),
     InputMode(InputModeAction),
     UpdateState(UpdateStateAction),
+    CancelContextual,
 }
 
 #[derive(Debug)]
@@ -59,7 +60,6 @@ pub(crate) enum StateQueryAction {
 #[derive(Debug)]
 pub(crate) enum SelectionAction {
     SelectCell(Position),
-    ClearSelection,
     MoveSelection(MoveDirection),
 }
 

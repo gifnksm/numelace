@@ -109,10 +109,7 @@ const SHORTCUTS: [Shortcut; 35] = [
     Shortcut::plain(Key::ArrowDown, move_selection_action(MoveDirection::Down)),
     Shortcut::plain(Key::ArrowLeft, move_selection_action(MoveDirection::Left)),
     Shortcut::plain(Key::ArrowRight, move_selection_action(MoveDirection::Right)),
-    Shortcut::plain(
-        Key::Escape,
-        selection_action(SelectionAction::ClearSelection),
-    ),
+    Shortcut::plain(Key::Escape, Action::App(AppAction::CancelContextual)),
     Shortcut::plain(Key::S, input_mode_action(InputModeAction::ToggleInputMode)),
     Shortcut::plain(
         Key::A,

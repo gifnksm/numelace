@@ -60,7 +60,18 @@ impl AppAction {
             AppAction::Selection(action) => action.execute(app_state),
             AppAction::InputMode(action) => action.execute(app_state),
             AppAction::UpdateState(action) => action.execute(app_state),
+            AppAction::CancelContextual => execute_cancel_contextual(app_state, ui_state),
         }
+    }
+}
+
+fn execute_cancel_contextual(app_state: &mut AppState, ui_state: &mut UiState) {
+    if ui_state.hint_state.is_some() {
+        ui_state.hint_state = None;
+        return;
+    }
+    if app_state.selected_cell.is_some() {
+        app_state.selected_cell = None;
     }
 }
 
@@ -174,7 +185,6 @@ impl SelectionAction {
 
         match self {
             SelectionAction::SelectCell(pos) => app_state.selected_cell = Some(pos),
-            SelectionAction::ClearSelection => app_state.selected_cell = None,
             SelectionAction::MoveSelection(move_direction) => {
                 let pos = app_state.selected_cell.get_or_insert(DEFAULT_POSITION);
                 if let Some(new_pos) = move_direction.apply_to(*pos) {
