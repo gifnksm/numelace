@@ -42,7 +42,7 @@ Planned features are tracked in docs/BACKLOG.md.
 
 - **Movement & selection**
   - <kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>←</kbd>/<kbd>→</kbd>: move the selected cell.
-  - <kbd>Esc</kbd>: clear selection.
+  - <kbd>Esc</kbd>: cancel hint during hint sequence; otherwise clear selection.
 - **Digit entry & notes**
   - <kbd>1</kbd>–<kbd>9</kbd>: enter a digit for the selected cell.
   - <kbd>S</kbd>: toggle between Fill and Notes modes.
@@ -62,6 +62,8 @@ Planned features are tracked in docs/BACKLOG.md.
 
 ### Mouse
 
+- **Selection**
+  - Click the selected cell again to clear selection.
 - **Keypad**
   - <kbd>1</kbd>–<kbd>9</kbd> + <kbd>Delete</kbd>: entry and clearing.
   - Notes toggle button (pencil): switch input mode.

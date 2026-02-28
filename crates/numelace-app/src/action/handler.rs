@@ -184,7 +184,13 @@ impl SelectionAction {
         const DEFAULT_POSITION: Position = Position::new(0, 0);
 
         match self {
-            SelectionAction::SelectCell(pos) => app_state.selected_cell = Some(pos),
+            SelectionAction::SelectOrClearCell(pos) => {
+                if app_state.selected_cell == Some(pos) {
+                    app_state.selected_cell = None;
+                } else {
+                    app_state.selected_cell = Some(pos);
+                }
+            }
             SelectionAction::MoveSelection(move_direction) => {
                 let pos = app_state.selected_cell.get_or_insert(DEFAULT_POSITION);
                 if let Some(new_pos) = move_direction.apply_to(*pos) {

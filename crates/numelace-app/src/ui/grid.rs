@@ -397,7 +397,7 @@ pub(crate) fn show(
 
             let response = ui.interact(cell_rect, ui.id().with((x, y)), Sense::click());
             if response.clicked() {
-                action_queue.request(SelectionAction::SelectCell(pos).into());
+                action_queue.request(SelectionAction::SelectOrClearCell(pos).into());
             }
         }
     }

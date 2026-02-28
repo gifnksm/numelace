@@ -59,7 +59,7 @@ pub(crate) enum StateQueryAction {
 
 #[derive(Debug)]
 pub(crate) enum SelectionAction {
-    SelectCell(Position),
+    SelectOrClearCell(Position),
     MoveSelection(MoveDirection),
 }
 
