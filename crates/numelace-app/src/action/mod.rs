@@ -229,8 +229,9 @@ impl MoveDirection {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::IsVariant)]
 pub(crate) enum NotesFillScope {
-    Cell,
     AllCells,
+    EmptyCells,
+    SelectedCell,
 }
 
 #[derive(Debug, Default)]

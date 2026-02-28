@@ -109,13 +109,16 @@ impl BoardMutationAction {
                 }
             }
             BoardMutationAction::AutoFillNotes { scope } => match scope {
-                NotesFillScope::Cell => {
+                NotesFillScope::AllCells => {
+                    app_state.game.auto_fill_notes_all_cells();
+                }
+                NotesFillScope::EmptyCells => {
+                    app_state.game.auto_fill_notes_empty_cells();
+                }
+                NotesFillScope::SelectedCell => {
                     if let Some(pos) = app_state.selected_cell {
                         let _ = app_state.game.auto_fill_cell_notes(pos);
                     }
-                }
-                NotesFillScope::AllCells => {
-                    app_state.game.auto_fill_notes_all_cells();
                 }
             },
             BoardMutationAction::ResetInputs => {
@@ -353,7 +356,7 @@ mod tests {
             &mut app_state,
             &mut ui_state,
             BoardMutationAction::AutoFillNotes {
-                scope: NotesFillScope::Cell,
+                scope: NotesFillScope::SelectedCell,
             }
             .into(),
         );

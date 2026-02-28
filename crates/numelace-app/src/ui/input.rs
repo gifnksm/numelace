@@ -114,7 +114,7 @@ const SHORTCUTS: [Shortcut; 35] = [
     Shortcut::plain(
         Key::A,
         board_mutation_action(BoardMutationAction::AutoFillNotes {
-            scope: NotesFillScope::Cell,
+            scope: NotesFillScope::SelectedCell,
         }),
     ),
     Shortcut::shift(

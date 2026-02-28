@@ -199,7 +199,7 @@ pub(crate) fn show(
                                 if show_auto_fill_button(ui, button_size, vm.auto_fill_capability) {
                                     action_queue.request(
                                         BoardMutationAction::AutoFillNotes {
-                                            scope: NotesFillScope::Cell,
+                                            scope: NotesFillScope::SelectedCell,
                                         }
                                         .into(),
                                     );

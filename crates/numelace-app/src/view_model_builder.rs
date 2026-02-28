@@ -19,7 +19,14 @@ use crate::{
 
 #[must_use]
 pub(crate) fn build_toolbar_vm(app_state: &AppState, _ui_state: &UiState) -> ToolbarViewModel {
-    ToolbarViewModel::new(app_state.can_undo(), app_state.can_redo())
+    let auto_fill_capability = app_state
+        .selected_cell
+        .map(|pos| app_state.game.auto_fill_cell_notes_capability(pos));
+    ToolbarViewModel::new(
+        app_state.can_undo(),
+        app_state.can_redo(),
+        auto_fill_capability,
+    )
 }
 
 fn fill_notes_for_empty_cell(grid: &mut PositionIndexedArray<GridCell>, pos: Position) -> DigitSet {
