@@ -176,12 +176,6 @@ struct EffectiveGridVisualState(GridVisualState);
 
 impl EffectiveGridVisualState {
     fn text_color(self, is_given: bool, palette: &GridPalette) -> Color32 {
-        if self
-            .0
-            .intersects(GridVisualState::HINT_APPLICATION_PLACEMENT)
-        {
-            return palette.text_normal;
-        }
         if self.0.intersects(GridVisualState::CONFLICT) {
             return palette.text_conflict;
         }
@@ -196,12 +190,6 @@ impl EffectiveGridVisualState {
         if self.0.intersects(GridVisualState::SELECTED) {
             return palette.cell_bg_selected;
         }
-        if self
-            .0
-            .intersects(GridVisualState::HINT_APPLICATION_PLACEMENT)
-        {
-            return palette.cell_bg_hint_application;
-        }
         if self.0.intersects(GridVisualState::SAME_DIGIT) {
             return palette.cell_bg_same_digit;
         }
@@ -215,19 +203,6 @@ impl EffectiveGridVisualState {
     }
 
     fn note_fill_color(self, palette: &GridPalette) -> Option<Color32> {
-        if self.0.intersects(GridVisualState::HINT_CONDITION_DIGIT) {
-            return Some(palette.note_bg_hint);
-        }
-
-        if self
-            .0
-            .intersects(GridVisualState::HINT_APPLICATION_TEMPORARY)
-        {
-            return Some(palette.note_bg_hint_application);
-        }
-        if self.0.intersects(GridVisualState::HINT_CONDITION_TEMPORARY) {
-            return Some(palette.note_bg_hint_temporary);
-        }
         if self.0.intersects(GridVisualState::SAME_DIGIT) {
             return Some(palette.note_bg_same_digit);
         }
@@ -293,17 +268,41 @@ impl EffectiveGridVisualState {
 
     fn hint_digit_pill_color(self, palette: &GridPalette) -> Option<Color32> {
         if self.0.contains(GridVisualState::HINT_CONDITION_DIGIT) {
-            return Some(palette.cell_bg_hint);
+            return Some(palette.pill_hint);
         }
         None
     }
 
-    fn note_fill_rounding(self, rect: Rect) -> f32 {
-        if self.0.intersects(GridVisualState::HINT_CONDITION_DIGIT) {
-            rect.width() * 0.5
-        } else {
-            0.0
+    fn cell_underline_stroke(self, rect: Rect, palette: &GridPalette) -> Option<Stroke> {
+        if self
+            .0
+            .intersects(GridVisualState::HINT_APPLICATION_PLACEMENT)
+        {
+            return Some(Stroke::new(
+                rect.height() * 0.1,
+                palette.underline_hint_application,
+            ));
         }
+        None
+    }
+
+    fn note_underline_stroke(self, rect: Rect, palette: &GridPalette) -> Option<Stroke> {
+        if self
+            .0
+            .intersects(GridVisualState::HINT_APPLICATION_TEMPORARY)
+        {
+            return Some(Stroke::new(
+                rect.height() * 0.2,
+                palette.underline_hint_application,
+            ));
+        }
+        if self.0.intersects(GridVisualState::HINT_CONDITION_TEMPORARY) {
+            return Some(Stroke::new(
+                rect.height() * 0.2,
+                palette.underline_hint_condition,
+            ));
+        }
+        None
     }
 
     fn note_elimination_stroke(self, rect: Rect, palette: &GridPalette) -> Option<Stroke> {
@@ -362,7 +361,7 @@ pub(crate) fn show(
             draw_cell_border(painter, cell_rect, vs.cell_border(palette, cell_size));
 
             if let Some(stroke) = vs.hint_corner_border(palette, base_border) {
-                draw_hint_corners(painter, cell_rect, stroke);
+                draw_corners(painter, cell_rect, stroke);
             }
 
             if let Some(digits) = cell.content.as_notes() {
@@ -377,7 +376,7 @@ pub(crate) fn show(
                 );
             } else if let Some(digit) = cell.content.as_digit() {
                 if let Some(color) = vs.hint_digit_pill_color(palette) {
-                    draw_hint_digit_pill(painter, cell_rect.center(), cell_size, color);
+                    draw_digit_pill(painter, cell_rect.center(), cell_size, color);
                 }
                 draw_cell_digit(
                     painter,
@@ -386,6 +385,14 @@ pub(crate) fn show(
                     digit,
                     vs.text_color(cell.content.is_given(), palette),
                 );
+                let digit_rect = cell_rect.shrink(base_border);
+                if let Some(stroke) = vs.cell_underline_stroke(digit_rect, palette) {
+                    let offset = digit_rect.height() * 0.15;
+                    let y = digit_rect.bottom() - stroke.width;
+                    let start = Pos2::new(digit_rect.left() + offset, y);
+                    let end = Pos2::new(digit_rect.right() - offset, y);
+                    painter.line_segment([start, end], stroke);
+                }
             }
 
             let response = ui.interact(cell_rect, ui.id().with((x, y)), Sense::click());
@@ -460,13 +467,12 @@ fn draw_box_borders(painter: &Painter, inner_rect: Rect, cell_size: f32, stroke:
     }
 }
 
-fn draw_hint_digit_pill(painter: &Painter, center: Pos2, cell_size: f32, color: Color32) {
-    let size = cell_size * 0.55;
-    let rect = Rect::from_center_size(center, Vec2::splat(size));
-    painter.rect_filled(rect, size * 0.5, color);
+fn draw_digit_pill(painter: &Painter, center: Pos2, cell_size: f32, color: Color32) {
+    let radius = cell_size * 0.55 * 0.5;
+    painter.circle_filled(center, radius, color);
 }
 
-fn draw_hint_corners(painter: &Painter, rect: Rect, stroke: Stroke) {
+fn draw_corners(painter: &Painter, rect: Rect, stroke: Stroke) {
     let corner_len = rect.width().min(rect.height()) * 0.25;
     let thickness = stroke.width.max(1.0);
     let min = rect.min;
@@ -538,8 +544,17 @@ fn draw_notes(
         let text_color = vs.text_color(false, palette);
         let fill_rect = Rect::from_center_size(center, Vec2::splat(f32::min(cell_w, cell_h)) * 0.9);
         if let Some(fill_color) = vs.note_fill_color(palette) {
-            let rounding = vs.note_fill_rounding(fill_rect);
-            painter.rect_filled(fill_rect, rounding, fill_color);
+            painter.rect_filled(fill_rect, 0.0, fill_color);
+        }
+        if let Some(stroke) = vs.note_underline_stroke(fill_rect, palette) {
+            let y = fill_rect.bottom() - stroke.width / 2.0;
+            let start = Pos2::new(fill_rect.left(), y);
+            let end = Pos2::new(fill_rect.right(), y);
+            painter.line_segment([start, end], stroke);
+        }
+        if let Some(pill_color) = vs.hint_digit_pill_color(palette) {
+            let pill_radius = f32::min(cell_w, cell_h) * 0.8 * 0.5;
+            painter.circle_filled(center, pill_radius, pill_color);
         }
         if let Some(stroke) = vs.note_elimination_stroke(fill_rect, palette) {
             let offset = fill_rect.width() * 0.15;

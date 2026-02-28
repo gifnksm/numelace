@@ -12,14 +12,11 @@ pub(crate) struct GridPalette {
     pub(crate) cell_bg_same_digit: Color32,
     pub(crate) cell_bg_house_selected: Color32,
     pub(crate) cell_bg_house_same_digit: Color32,
-    pub(crate) cell_bg_hint: Color32,
-    pub(crate) cell_bg_hint_application: Color32,
 
     pub(crate) note_bg_same_digit: Color32,
     pub(crate) note_bg_house_same_digit: Color32,
-    pub(crate) note_bg_hint: Color32,
-    pub(crate) note_bg_hint_application: Color32,
-    pub(crate) note_bg_hint_temporary: Color32,
+
+    pub(crate) pill_hint: Color32,
 
     pub(crate) border_inactive: Color32,
     pub(crate) border_selected: Color32,
@@ -27,6 +24,9 @@ pub(crate) struct GridPalette {
     pub(crate) border_conflict: Color32,
     pub(crate) border_hint_condition: Color32,
     pub(crate) border_hint_application: Color32,
+
+    pub(crate) underline_hint_condition: Color32,
+    pub(crate) underline_hint_application: Color32,
 
     pub(crate) text_normal: Color32,
     pub(crate) text_given: Color32,
@@ -77,14 +77,11 @@ impl GridPalette {
             cell_bg_same_digit: cell_bg_selected,
             cell_bg_house_selected,
             cell_bg_house_same_digit,
-            cell_bg_hint: hint_accent,
-            cell_bg_hint_application: hint_accent_soft,
 
             note_bg_same_digit: cell_bg_selected,
             note_bg_house_same_digit,
-            note_bg_hint: hint_accent,
-            note_bg_hint_application: hint_accent_soft,
-            note_bg_hint_temporary: hint_accent_soft,
+
+            pill_hint: hint_accent,
 
             border_inactive: visuals.widgets.inactive.fg_stroke.color, // dark=(180, 180, 180) light=(60, 60, 60)
             border_selected: visuals.selection.stroke.color, // dark=(192, 222, 255) light=(0, 83, 125)
@@ -92,6 +89,9 @@ impl GridPalette {
             border_conflict: visuals.error_fg_color, // dark/light=(255, 0, 0)
             border_hint_condition: hint_accent,
             border_hint_application: hint_accent_soft,
+
+            underline_hint_condition: hint_accent_soft,
+            underline_hint_application: hint_accent_soft,
 
             text_normal: visuals.text_color(), // dark=(140, 140, 140) light=(80, 80, 80)
             text_given: visuals.strong_text_color(), // dark=(255, 255, 255) light=(0, 0, 0)
