@@ -301,10 +301,7 @@ impl EffectiveGridVisualState {
             .0
             .intersects(GridVisualState::HINT_APPLICATION_ELIMINATION)
         {
-            return Some(Stroke::new(
-                rect.width() * 0.2,
-                palette.border_hint_condition,
-            ));
+            return Some(Stroke::new(rect.width() * 0.2, palette.elimination_stroke));
         }
         None
     }
@@ -547,12 +544,6 @@ fn draw_notes(
             let pill_radius = f32::min(cell_w, cell_h) * 0.8 * 0.5;
             painter.circle_filled(center, pill_radius, pill_color);
         }
-        if let Some(stroke) = vs.note_elimination_stroke(fill_rect, palette) {
-            let offset = fill_rect.width() * 0.15;
-            let start = Pos2::new(fill_rect.left() + offset, fill_rect.top() + offset);
-            let end = Pos2::new(fill_rect.right() - offset, fill_rect.bottom() - offset);
-            painter.line_segment([start, end], stroke);
-        }
         painter.text(
             center,
             Align2::CENTER_CENTER,
@@ -560,5 +551,11 @@ fn draw_notes(
             note_font.clone(),
             text_color,
         );
+        if let Some(stroke) = vs.note_elimination_stroke(fill_rect, palette) {
+            let offset = fill_rect.width() * 0.15;
+            let start = Pos2::new(fill_rect.left() + offset, fill_rect.top() + offset);
+            let end = Pos2::new(fill_rect.right() - offset, fill_rect.bottom() - offset);
+            painter.line_segment([start, end], stroke);
+        }
     }
 }

@@ -27,6 +27,8 @@ pub(crate) struct GridPalette {
     pub(crate) underline_hint_condition: Color32,
     pub(crate) underline_hint_application: Color32,
 
+    pub(crate) elimination_stroke: Color32,
+
     pub(crate) text_normal: Color32,
     pub(crate) text_given: Color32,
     pub(crate) text_conflict: Color32,
@@ -90,6 +92,8 @@ impl GridPalette {
 
             underline_hint_condition: hint_accent_soft,
             underline_hint_application: hint_accent_soft,
+
+            elimination_stroke: visuals.error_fg_color, // dark/light=(255, 0, 0)
 
             text_normal: visuals.text_color(), // dark=(140, 140, 140) light=(80, 80, 80)
             text_given: visuals.strong_text_color(), // dark=(255, 255, 255) light=(0, 0, 0)
