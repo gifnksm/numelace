@@ -73,19 +73,26 @@ impl App for NumelaceApp {
         self.ui_state.executor.poll(&mut action_queue);
         action::handler::handle_all(&mut self.app_state, &mut self.ui_state, &mut action_queue);
 
-        if self.ui_state.active_modal.is_none() && !self.ui_state.spinner_state.is_active() {
-            ctx.input(|i| {
-                ui::input::handle_input(i, &mut action_queue);
+        let allow_input =
+            self.ui_state.active_modal.is_none() && !self.ui_state.spinner_state.is_active();
+        let input_context = ctx.input(|i| {
+            let context = ui::input::build_input_context(i, allow_input);
+            if allow_input {
+                ui::input::handle_input(i, &context, &mut action_queue);
                 action::handler::handle_all(
                     &mut self.app_state,
                     &mut self.ui_state,
                     &mut action_queue,
                 );
-            });
-        }
+            }
+            context
+        });
 
-        let game_screen_vm =
-            view_model_builder::build_game_screen_view_model(&self.app_state, &self.ui_state);
+        let game_screen_vm = view_model_builder::build_game_screen_view_model(
+            &self.app_state,
+            &self.ui_state,
+            &input_context,
+        );
 
         CentralPanel::default().show(ctx, |ui| {
             ui::game_screen::show(ui, &game_screen_vm, &mut action_queue);

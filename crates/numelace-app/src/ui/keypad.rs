@@ -15,10 +15,32 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
+pub(crate) struct KeypadInputModeState {
+    base_notes_mode: bool,
+    swap_input_mode: bool,
+    effective_notes_mode: bool,
+}
+
+impl KeypadInputModeState {
+    #[must_use]
+    pub(crate) fn new(
+        base_notes_mode: bool,
+        swap_input_mode: bool,
+        effective_notes_mode: bool,
+    ) -> Self {
+        Self {
+            base_notes_mode,
+            swap_input_mode,
+            effective_notes_mode,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub(crate) struct KeypadViewModel {
     digit_states: DigitIndexedArray<DigitKeyState>,
     has_removable_input: bool,
-    notes_mode: bool,
+    input_mode: KeypadInputModeState,
     auto_fill_capability: Option<Result<InputOperation, InputBlockReason>>,
 }
 
@@ -49,13 +71,13 @@ impl KeypadViewModel {
     pub(crate) fn new(
         digit_states: DigitIndexedArray<DigitKeyState>,
         has_removable_input: bool,
-        notes_mode: bool,
+        input_mode: KeypadInputModeState,
         auto_fill_capability: Option<Result<InputOperation, InputBlockReason>>,
     ) -> Self {
         Self {
             digit_states,
             has_removable_input,
-            notes_mode,
+            input_mode,
             auto_fill_capability,
         }
     }
@@ -137,8 +159,8 @@ pub(crate) fn show(
     let rect = ui.available_rect_before_wrap();
     let rect = egui::Rect::from_min_max(rect.min + padding, rect.max);
 
-    let swap_input_mode = ui.input(|i| i.modifiers.command);
-    let effective_notes_mode = vm.notes_mode ^ swap_input_mode;
+    let swap_input_mode = vm.input_mode.swap_input_mode;
+    let effective_notes_mode = vm.input_mode.effective_notes_mode;
     ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
         ui.spacing_mut().item_spacing = Vec2::ZERO;
         Grid::new(ui.id().with("keypad_grid"))
@@ -184,7 +206,11 @@ pub(crate) fn show(
                                 }
                             }
                             Some(ButtonType::ToggleInputMode) => {
-                                if show_toggle_input_mode_button(ui, button_size, vm.notes_mode) {
+                                if show_toggle_input_mode_button(
+                                    ui,
+                                    button_size,
+                                    vm.input_mode.base_notes_mode,
+                                ) {
                                     action_queue.request(InputModeAction::ToggleInputMode.into());
                                 }
                             }
