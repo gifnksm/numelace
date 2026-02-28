@@ -45,23 +45,42 @@ pub(crate) fn show(ui: &mut Ui, vm: &StatusLineViewModel, scale: &LayoutScale) {
                 format!("{} Solved! Congratulations!", icon::TROPHY),
                 ui.visuals().warn_fg_color,
             ),
-            GameStatus::Hint(hint) => (
-                match hint.stage {
-                    HintStage::Stage1 => {
-                        format!("{} Hint: Focus on the highlighted area.", icon::LIGHTBULB)
-                    }
-                    HintStage::Stage2 => {
-                        format!("{} Hint: {}.", icon::LIGHTBULB, hint.step.technique_name())
-                    }
-                    HintStage::Stage3Preview => {
-                        format!("{} Hint: This step will make progress.", icon::LIGHTBULB)
-                    }
-                    HintStage::Stage3Apply => {
-                        format!("{} Hint: Applied.", icon::LIGHTBULB)
-                    }
-                },
-                ui.visuals().warn_fg_color,
-            ),
+            GameStatus::Hint(hint) => {
+                let technique = hint.step.technique_name();
+                (
+                    match hint.stage {
+                        HintStage::Stage1 => {
+                            format!(
+                                "{} Hint: {} Focus on the highlighted area",
+                                icon::LIGHTBULB,
+                                icon::FOUR_CORNERS,
+                            )
+                        }
+                        HintStage::Stage2 => {
+                            format!(
+                                "{} Hint: {} {technique} is applicable here",
+                                icon::LIGHTBULB,
+                                icon::EXCLAMATION_MARK,
+                            )
+                        }
+                        HintStage::Stage3Preview => {
+                            format!(
+                                "{} Hint: {} Previewing {technique} changes",
+                                icon::LIGHTBULB,
+                                icon::EYE,
+                            )
+                        }
+                        HintStage::Stage3Apply => {
+                            format!(
+                                "{} Hint: {} Applied {technique}",
+                                icon::LIGHTBULB,
+                                icon::CHECK,
+                            )
+                        }
+                    },
+                    ui.visuals().warn_fg_color,
+                )
+            }
         };
         Label::new(
             RichText::new(status_text)
