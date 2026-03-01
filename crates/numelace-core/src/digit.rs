@@ -25,10 +25,11 @@ use std::fmt::{self, Display};
 ///     println!("{}", digit);
 /// }
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u8)]
 pub enum Digit {
     /// The digit 1.
+    #[default]
     D1 = 1,
     /// The digit 2.
     D2 = 2,

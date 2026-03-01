@@ -6,7 +6,8 @@ use numelace_core::{
 use tinyvec::ArrayVec;
 
 use crate::{
-    BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData, TechniqueTier,
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
+    TechniqueTier,
     axis::{AxisOps, ColumnAxis, RowAxis},
 };
 
@@ -146,7 +147,7 @@ impl Technique for TwoStringKite {
         TechniqueTier::UpperIntermediate
     }
 
-    fn clone_box(&self) -> Box<dyn Technique> {
+    fn clone_box(&self) -> BoxedTechnique {
         Box::new(*self)
     }
 

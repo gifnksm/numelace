@@ -18,7 +18,7 @@ use numelace_solver::{
     technique::{
         HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, Jellyfish, LockedCandidates, NakedPair,
         NakedQuad, NakedSingle, NakedTriple, RemotePair, Skyscraper, Swordfish, TwoStringKite,
-        XChain, XWing, YWing,
+        XChain, XWing, XyChain, YWing,
     },
 };
 
@@ -344,6 +344,33 @@ fn x_chain_grid() -> TechniqueGrid {
     TechniqueGrid::from(grid)
 }
 
+fn xy_chain_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let start = Position::new(1, 1);
+    let mid = Position::new(1, 5);
+    let end = Position::new(5, 5);
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D2 {
+            grid.remove_candidate(start, digit);
+        }
+    }
+
+    for digit in Digit::ALL {
+        if digit != Digit::D2 && digit != Digit::D3 {
+            grid.remove_candidate(mid, digit);
+        }
+    }
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D3 {
+            grid.remove_candidate(end, digit);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
 fn bench_naked_single_apply(c: &mut Criterion) {
     let puzzles = [
         ("naked_single", naked_single_grid()),
@@ -486,6 +513,15 @@ fn bench_x_chain_apply(c: &mut Criterion) {
     let puzzles = [("x_chain", x_chain_grid()), ("empty", TechniqueGrid::new())];
     let technique = XChain::new();
     bench_apply_cases(c, "x_chain_apply", &technique, &puzzles);
+}
+
+fn bench_xy_chain_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("xy_chain", xy_chain_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+    let technique = XyChain::new();
+    bench_apply_cases(c, "xy_chain_apply", &technique, &puzzles);
 }
 
 criterion_group!(
@@ -641,6 +677,15 @@ criterion_group!(
         bench_x_chain_apply,
 );
 
+criterion_group!(
+    name = benches_xy_chain;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_xy_chain_apply,
+);
+
 criterion_main!(
     benches_naked_single,
     benches_hidden_single,
@@ -659,4 +704,5 @@ criterion_main!(
     benches_y_wing,
     benches_remote_pair,
     benches_x_chain,
+    benches_xy_chain,
 );

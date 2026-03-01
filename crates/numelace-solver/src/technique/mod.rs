@@ -10,7 +10,7 @@ pub use self::{
     hidden_pair::*, hidden_quad::*, hidden_single::*, hidden_triple::*, jellyfish::*,
     locked_candidates::*, naked_pair::*, naked_quad::*, naked_single::*, naked_triple::*,
     remote_pair::*, skyscraper::*, swordfish::*, two_string_kite::*, x_chain::*, x_wing::*,
-    y_wing::*,
+    xy_chain::*, y_wing::*,
 };
 use crate::{BoxedTechnique, TechniqueTier};
 
@@ -31,6 +31,7 @@ pub(crate) mod traits;
 mod two_string_kite;
 mod x_chain;
 mod x_wing;
+mod xy_chain;
 mod y_wing;
 
 /// Finds a technique by its stable ID.
@@ -60,6 +61,7 @@ pub fn all_techniques() -> Vec<BoxedTechnique> {
         Box::new(Jellyfish::new()),
         Box::new(RemotePair::new()),
         Box::new(XChain::new()),
+        Box::new(XyChain::new()),
     ]
 }
 

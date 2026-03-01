@@ -4,7 +4,8 @@ use numelace_core::{Digit, DigitPositions, DigitSet, House, Position, PositionIn
 use tinyvec::{ArrayVec, array_vec};
 
 use crate::{
-    BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData, TechniqueTier,
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
+    TechniqueTier,
 };
 
 const ID: &str = "remote_pair";
@@ -200,7 +201,7 @@ impl Technique for RemotePair {
         TechniqueTier::Advanced
     }
 
-    fn clone_box(&self) -> Box<dyn Technique> {
+    fn clone_box(&self) -> BoxedTechnique {
         Box::new(*self)
     }
 

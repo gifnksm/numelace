@@ -174,7 +174,7 @@
 //!
 //! ```
 //! use numelace_solver::{
-//!     BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueTier,
+//!     BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueTier,
 //! };
 //!
 //! #[derive(Debug, Clone)]
@@ -193,7 +193,7 @@
 //!         TechniqueTier::Fundamental
 //!     }
 //!
-//!     fn clone_box(&self) -> Box<dyn Technique> {
+//!     fn clone_box(&self) -> BoxedTechnique {
 //!         Box::new(self.clone())
 //!     }
 //!
