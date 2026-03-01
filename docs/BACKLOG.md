@@ -36,10 +36,10 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] Tier 3 (upper-intermediate): Y-Wing
   - [X] Tier 4 (advanced): Swordfish
   - [X] Tier 4 (advanced): Jellyfish
+  - [X] Tier 4 (advanced): Remote Pair
   - [X] Tier 4 (advanced): X-Chain
   - [ ] Tier 4 (advanced): XY-Chain
   - [ ] Tier 4 (advanced): XYZ-Wing
-  - [ ] Tier 4 (advanced): Remote Pairs
   - [ ] Tier 5 (expert): WXYZ-Wing
   - [ ] Tier 5 (expert): BUG+1 (Bivalue Universal Grave +1)
 
