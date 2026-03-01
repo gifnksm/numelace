@@ -107,3 +107,15 @@ pub fn advanced_techniques() -> Vec<BoxedTechnique> {
         .filter(|tech| tech.tier() <= TechniqueTier::Advanced)
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_technieues_sorted_by_tier() {
+        for techniques in all_techniques().windows(2) {
+            assert!(techniques[0].tier() <= techniques[1].tier());
+        }
+    }
+}
