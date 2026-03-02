@@ -152,6 +152,36 @@ impl XChain {
     }
 
     #[inline]
+    fn apply_chain_effect(
+        grid: &mut TechniqueGrid,
+        digit: Digit,
+        stack: &[TraversalStackItem],
+    ) -> (bool, bool) {
+        let chain_start = stack.first().unwrap().strong_link_start;
+        let chain_end = stack.last().unwrap().strong_link_end;
+
+        // X-Cycle: discontinuous strong-strong
+        if chain_start == chain_end {
+            let changed = grid.place(chain_start, digit);
+            return (changed, true);
+        }
+
+        // X-Chain (equivalent to X-Cycle: discontinuous weak-weak) or X-Cycle: continuous strong-strong
+        let mut elimination = chain_start.house_peers() & chain_end.house_peers();
+
+        // X-Cycle: continuous strong-weak
+        if chain_start.house_peers().contains(chain_end) {
+            for items in stack.windows(2) {
+                elimination |= items[0].strong_link_end.house_peers()
+                    & items[1].strong_link_start.house_peers();
+            }
+        }
+
+        let changed = grid.remove_candidate_with_mask(elimination, digit);
+        (changed, false)
+    }
+
+    #[inline]
     fn apply_with_control_flow<T, F>(grid: &mut TechniqueGrid, mut on_condition: F) -> Option<T>
     where
         F: for<'a> FnMut(&'a TechniqueGrid, &'a Condition<'a>) -> ControlFlow<T>,
@@ -187,40 +217,26 @@ impl XChain {
                 ) else {
                     continue;
                 };
-
-                let strong_link_end = item.strong_link_end;
                 stack.push(item);
-                let (applied, is_placement) = if chain_start == strong_link_end {
-                    (grid.place(chain_start, digit), true)
-                } else {
-                    let elimination = chain_start.house_peers() & strong_link_end.house_peers();
-                    (grid.remove_candidate_with_mask(elimination, digit), false)
-                };
+                let (changed, is_placement) = Self::apply_chain_effect(grid, digit, &stack);
                 let condition = &Condition {
                     digit,
                     stack: &stack,
                     is_placement,
                 };
-                if applied && let ControlFlow::Break(step) = on_condition(grid, condition) {
+                if changed && let ControlFlow::Break(step) = on_condition(grid, condition) {
                     return Some(step);
                 }
                 while let Some(item) = stack.last_mut() {
                     if let Some(next_item) = item.next_item(&graph) {
-                        let strong_link_end = next_item.strong_link_end;
                         stack.push(next_item);
-                        let (applied, is_placement) = if chain_start == strong_link_end {
-                            (grid.place(chain_start, digit), true)
-                        } else {
-                            let elimination =
-                                chain_start.house_peers() & strong_link_end.house_peers();
-                            (grid.remove_candidate_with_mask(elimination, digit), false)
-                        };
+                        let (changed, is_placement) = Self::apply_chain_effect(grid, digit, &stack);
                         let condition = &Condition {
                             digit,
                             stack: &stack,
                             is_placement,
                         };
-                        if applied && let ControlFlow::Break(step) = on_condition(grid, condition) {
+                        if changed && let ControlFlow::Break(step) = on_condition(grid, condition) {
                             return Some(step);
                         }
                         continue;
@@ -341,5 +357,71 @@ mod tests {
             .apply_pass(&XChain::new())
             .assert_no_change(Position::new(0, 0))
             .assert_no_change(Position::new(4, 4));
+    }
+
+    #[test]
+    fn test_continuous_strong_weak_x_cycle() {
+        // Continuous strong-weak X-Cycle: chain_start and chain_end are house peers
+        // This enables elimination at weak link junctions along the chain.
+        //
+        // Position::new(x, y) where x=column, y=row
+        // Position::ROWS[y] = all positions in row y
+        // Position::COLUMNS[x] = all positions in column x
+        //
+        // Chain structure (for digit D1):
+        //   Strong link 1: (0,0)-(8,0) in row 0 (x=0,y=0 to x=8,y=0)
+        //   Strong link 2: (0,8)-(8,8) in row 8 (x=0,y=8 to x=8,y=8)
+        //   Weak links: (8,0)-(8,8) in col 8, and (0,0)-(0,8) in col 0 (closing the cycle)
+        //
+        // chain_start = (0,0), chain_end = (0,8)
+        // They are in the same column (col 0), so chain_start.house_peers().contains(chain_end)
+        //
+        // The weak link junction at (8,0)-(8,8) allows elimination of cells that see both.
+
+        let mut grid = CandidateGrid::new();
+        let digit = Digit::D1;
+
+        // Set up strong link in row 0: only (0,0) and (8,0) have digit
+        for pos in Position::ROWS[0] {
+            if pos != Position::new(0, 0) && pos != Position::new(8, 0) {
+                grid.remove_candidate(pos, digit);
+            }
+        }
+
+        // Set up strong link in row 8: only (0,8) and (8,8) have digit
+        for pos in Position::ROWS[8] {
+            if pos != Position::new(0, 8) && pos != Position::new(8, 8) {
+                grid.remove_candidate(pos, digit);
+            }
+        }
+
+        // Set up strong link in col 8: only (8,0) and (8,8) have digit
+        for pos in Position::COLUMNS[8] {
+            if pos != Position::new(8, 0) && pos != Position::new(8, 8) {
+                grid.remove_candidate(pos, digit);
+            }
+        }
+
+        // col 0 should NOT be a strong link (more than 2 candidates)
+        // so keep (0,4) with the candidate as well
+        for pos in Position::COLUMNS[0] {
+            if pos != Position::new(0, 0)
+                && pos != Position::new(0, 8)
+                && pos != Position::new(0, 4)
+            {
+                grid.remove_candidate(pos, digit);
+            }
+        }
+
+        // Now the chain: (0,0) --strong--> (8,0) --weak--> (8,8) --strong--> (0,8)
+        // chain_start (0,0) and chain_end (0,8) are in col 0, so continuous strong-weak applies.
+        // The weak link junction (8,0)-(8,8) should eliminate candidates in their common peers.
+        // But col 8 only has (8,0) and (8,8) with digit, so no elimination there.
+        // The main elimination is at cells that see both chain_start and chain_end.
+        // (0,4) sees both (0,0) and (0,8), so it should be eliminated.
+
+        TechniqueTester::new(grid)
+            .apply_pass(&XChain::new())
+            .assert_removed_includes(Position::new(0, 4), [digit]);
     }
 }

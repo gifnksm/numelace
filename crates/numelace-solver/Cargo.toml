@@ -8,7 +8,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-derive_more = { workspace = true, features = ["display", "error", "from"] }
+derive_more = { workspace = true, features = ["display", "error", "from", "is_variant"] }
 numelace-core.workspace = true
 tinyvec = { workspace = true, features = ["latest_stable_rust"] }
 
