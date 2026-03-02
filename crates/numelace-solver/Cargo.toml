@@ -16,6 +16,7 @@ tinyvec = { workspace = true, features = ["latest_stable_rust"] }
 workspace = true
 
 [dev-dependencies]
+clap = { workspace = true, features = ["derive"] }
 criterion.workspace = true
 
 [[bench]]

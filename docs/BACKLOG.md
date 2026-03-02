@@ -19,6 +19,7 @@ This backlog is the single source of truth for tasks and ideas.
 - [X] Seeded generation and regenerate by seed
   - [X] Reproducible generation requires seed + enabled techniques (or tier)
 - [ ] Technique explanations for hints (may overlap with hint system)
+- [X] Add `solve_puzzle` CLI example in numelace-solver (step output, backtracking trace, grid rendering)
 - Generator-aligned technique expansion (solver + generator; tiered checklist)
   - [X] Tier 0 (fundamental): Naked Single
   - [X] Tier 0 (fundamental): Hidden Single

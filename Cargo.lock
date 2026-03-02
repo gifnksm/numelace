@@ -2530,6 +2530,7 @@ dependencies = [
 name = "numelace-solver"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "criterion",
  "derive_more",
  "numelace-core",
