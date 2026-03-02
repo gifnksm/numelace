@@ -4,8 +4,7 @@ use numelace_core::{Digit, DigitPositions, DigitSet, House, Position, PositionIn
 use tinyvec::{ArrayVec, array_vec};
 
 use crate::{
-    BoxedTechniqueStep, SolverError, Technique, TechniqueApplication, TechniqueGrid,
-    TechniqueStepData, TechniqueTier,
+    BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData, TechniqueTier,
 };
 
 const ID: &str = "x_chain";
@@ -22,7 +21,6 @@ pub struct XChain {}
 struct Condition<'a> {
     digit: Digit,
     stack: &'a [TraversalStackItem],
-    is_placement: bool,
 }
 
 impl Condition<'_> {
@@ -52,21 +50,12 @@ impl Condition<'_> {
         }
         let condition_digit_cells =
             vec![(condition_digit_positions, DigitSet::from_elem(self.digit))];
-        let extra = if self.is_placement {
-            vec![TechniqueApplication::Placement {
-                position: self.stack[0].strong_link_start,
-                digit: self.digit,
-            }]
-        } else {
-            vec![]
-        };
-        TechniqueStepData::from_diff_with_extra(
+        TechniqueStepData::from_diff(
             NAME,
             condition_cells,
             condition_digit_cells,
             before_grid,
             after_grid,
-            extra,
         )
     }
 }
@@ -156,14 +145,13 @@ impl XChain {
         grid: &mut TechniqueGrid,
         digit: Digit,
         stack: &[TraversalStackItem],
-    ) -> (bool, bool) {
+    ) -> bool {
         let chain_start = stack.first().unwrap().strong_link_start;
         let chain_end = stack.last().unwrap().strong_link_end;
 
         // X-Cycle: discontinuous strong-strong
         if chain_start == chain_end {
-            let changed = grid.place(chain_start, digit);
-            return (changed, true);
+            return grid.place(chain_start, digit);
         }
 
         // X-Chain (equivalent to X-Cycle: discontinuous weak-weak) or X-Cycle: continuous strong-strong
@@ -177,8 +165,7 @@ impl XChain {
             }
         }
 
-        let changed = grid.remove_candidate_with_mask(elimination, digit);
-        (changed, false)
+        grid.remove_candidate_with_mask(elimination, digit)
     }
 
     #[inline]
@@ -218,11 +205,10 @@ impl XChain {
                     continue;
                 };
                 stack.push(item);
-                let (changed, is_placement) = Self::apply_chain_effect(grid, digit, &stack);
+                let changed = Self::apply_chain_effect(grid, digit, &stack);
                 let condition = &Condition {
                     digit,
                     stack: &stack,
-                    is_placement,
                 };
                 if changed && let ControlFlow::Break(step) = on_condition(grid, condition) {
                     return Some(step);
@@ -230,11 +216,10 @@ impl XChain {
                 while let Some(item) = stack.last_mut() {
                     if let Some(next_item) = item.next_item(&graph) {
                         stack.push(next_item);
-                        let (changed, is_placement) = Self::apply_chain_effect(grid, digit, &stack);
+                        let changed = Self::apply_chain_effect(grid, digit, &stack);
                         let condition = &Condition {
                             digit,
                             stack: &stack,
-                            is_placement,
                         };
                         if changed && let ControlFlow::Break(step) = on_condition(grid, condition) {
                             return Some(step);

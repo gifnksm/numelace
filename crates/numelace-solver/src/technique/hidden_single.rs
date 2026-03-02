@@ -3,8 +3,8 @@ use std::ops::ControlFlow;
 use numelace_core::{Digit, DigitPositions, DigitSet, House, Position};
 
 use crate::{
-    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueApplication,
-    TechniqueGrid, TechniqueStepData, TechniqueTier,
+    BoxedTechnique, BoxedTechniqueStep, SolverError, Technique, TechniqueGrid, TechniqueStepData,
+    TechniqueTier,
 };
 
 const ID: &str = "hidden_single";
@@ -27,17 +27,12 @@ impl Condition {
             DigitPositions::from_elem(self.position),
             DigitSet::from_elem(self.digit),
         )];
-        let extra = vec![TechniqueApplication::Placement {
-            position: self.position,
-            digit: self.digit,
-        }];
-        TechniqueStepData::from_diff_with_extra(
+        TechniqueStepData::from_diff(
             NAME,
             condition_cells,
             condition_digit_cells,
             before_grid,
             after_grid,
-            extra,
         )
     }
 }

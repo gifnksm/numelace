@@ -75,29 +75,7 @@ impl TechniqueStepData {
         before: &TechniqueGrid,
         after: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        Self::from_diff_with_extra(
-            technique_name,
-            condition_cells,
-            condition_digit_cells,
-            before,
-            after,
-            Vec::new(),
-        )
-    }
-
-    /// Creates a new boxed `TechniqueStepData` from a before/after grid diff,
-    /// appending extra applications.
-    #[must_use]
-    pub fn from_diff_with_extra(
-        technique_name: &'static str,
-        condition_cells: ConditionCells,
-        condition_digit_cells: ConditionDigitCells,
-        before: &TechniqueGrid,
-        after: &TechniqueGrid,
-        mut extra_application: Vec<TechniqueApplication>,
-    ) -> BoxedTechniqueStep {
-        let mut application = collect_applications_from_diff(before, after);
-        application.append(&mut extra_application);
+        let application = collect_applications_from_diff(before, after);
         Self::new_boxed(
             technique_name,
             condition_cells,
@@ -162,17 +140,25 @@ fn collect_applications_from_diff(
     after: &TechniqueGrid,
 ) -> Vec<TechniqueApplication> {
     let mut app = vec![];
+    let decided_cells = after.decided_propagated();
+    let mut candidate_changed_cells = DigitPositions::EMPTY;
     for digit in DigitSet::FULL {
         let before_positions = before.digit_positions(digit);
         let after_positions = after.digit_positions(digit);
         debug_assert!(before_positions.is_superset(after_positions));
         let diff = before_positions.difference(after_positions);
-        if !diff.is_empty() {
+        candidate_changed_cells |= diff;
+        let elimination = diff & !decided_cells;
+        if !elimination.is_empty() {
             app.push(TechniqueApplication::CandidateElimination {
-                positions: diff,
+                positions: elimination,
                 digits: DigitSet::from_elem(digit),
             });
         }
+    }
+    for position in decided_cells & candidate_changed_cells {
+        let digit = after.candidates_at(position).as_single().unwrap();
+        app.push(TechniqueApplication::Placement { position, digit });
     }
     app
 }

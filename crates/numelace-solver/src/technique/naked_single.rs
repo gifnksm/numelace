@@ -39,16 +39,12 @@ impl Condition {
             DigitPositions::from_elem(self.position),
             DigitSet::from_elem(self.digit),
         )];
-        TechniqueStepData::from_diff_with_extra(
+        TechniqueStepData::from_diff(
             NAME,
             condition_cells,
             condition_digit_cells,
             before_grid,
             after_grid,
-            vec![TechniqueApplication::Placement {
-                position: self.position,
-                digit: self.digit,
-            }],
         )
     }
 }
