@@ -10,11 +10,20 @@ use crate::{
 const ID: &str = "x_chain";
 const NAME: &str = "X-Chain";
 
-/// A technique that removes candidates using an X-Chain pattern.
+/// A technique that applies X-Chain and X-Cycle rules for a single digit.
 ///
-/// An "X-Chain" forms a chain of alternating strong and weak links for a digit.
-/// If the endpoints of an odd-length chain share a common peer, that peer cannot
-/// contain the digit and can be eliminated.
+/// Traversal walks strong links (exactly two candidates in a house), while
+/// weak connectivity is represented by house-peer relations between consecutive
+/// strong links in the chain.
+///
+/// Implemented effects:
+/// - X-Chain endpoint elimination:
+///   remove the digit from common peers of chain endpoints.
+///   This is the discontinuous weak-weak X-Cycle case.
+/// - X-Cycle discontinuous (strong-strong):
+///   if chain start == chain end, place the digit at that cell.
+/// - X-Cycle continuous:
+///   when endpoints are peers, also eliminate via internal weak junctions.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct XChain {}
 
@@ -149,16 +158,19 @@ impl XChain {
         let chain_start = stack.first().unwrap().strong_link_start;
         let chain_end = stack.last().unwrap().strong_link_end;
 
-        // X-Cycle: discontinuous strong-strong
         if chain_start == chain_end {
+            // X-Cycle (discontinuous, strong-strong at one node): placement.
             return grid.place(chain_start, digit);
         }
 
-        // X-Chain (equivalent to X-Cycle: discontinuous weak-weak) or X-Cycle: continuous strong-strong
+        // X-Chain endpoint elimination (discontinuous weak-weak X-Cycle).
+        // This also captures weak-weak-equivalent eliminations in the same
+        // common-peers form.
         let mut elimination = chain_start.house_peers() & chain_end.house_peers();
 
-        // X-Cycle: continuous strong-weak
         if chain_start.house_peers().contains(chain_end) {
+            // X-Cycle (continuous): if endpoints are peers, the chain can be closed
+            // by a weak link; add eliminations from each internal weak junction.
             for items in stack.windows(2) {
                 elimination |= items[0].strong_link_end.house_peers()
                     & items[1].strong_link_start.house_peers();
@@ -345,9 +357,9 @@ mod tests {
     }
 
     #[test]
-    fn test_continuous_strong_weak_x_cycle() {
-        // Continuous strong-weak X-Cycle: chain_start and chain_end are house peers
-        // This enables elimination at weak link junctions along the chain.
+    fn test_continuous_x_cycle_eliminates_at_internal_weak_junctions() {
+        // Continuous X-Cycle: chain_start and chain_end are house peers.
+        // This enables elimination at weak-link junctions along the chain.
         //
         // Position::new(x, y) where x=column, y=row
         // Position::ROWS[y] = all positions in row y
@@ -399,8 +411,8 @@ mod tests {
         }
 
         // Now the chain: (0,0) --strong--> (8,0) --weak--> (8,8) --strong--> (0,8)
-        // chain_start (0,0) and chain_end (0,8) are in col 0, so continuous strong-weak applies.
-        // The weak link junction (8,0)-(8,8) should eliminate candidates in their common peers.
+        // chain_start (0,0) and chain_end (0,8) are in col 0, so continuous X-Cycle applies.
+        // The weak-link junction (8,0)-(8,8) should eliminate candidates in their common peers.
         // But col 8 only has (8,0) and (8,8) with digit, so no elimination there.
         // The main elimination is at cells that see both chain_start and chain_end.
         // (0,4) sees both (0,0) and (0,8), so it should be eliminated.
