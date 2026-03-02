@@ -208,6 +208,24 @@ impl TechniqueSolver {
         Ok(None)
     }
 
+    /// Finds all steps produced by the first technique that yields progress without mutating the grid.
+    ///
+    /// Returns an empty vector when no technique can produce steps.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SolverError::Inconsistent`] if the grid is inconsistent.
+    pub fn find_pass(&self, grid: &TechniqueGrid) -> Result<Vec<BoxedTechniqueStep>, SolverError> {
+        grid.check_consistency()?;
+        for technique in &self.techniques {
+            let steps = technique.find_pass(grid)?;
+            if !steps.is_empty() {
+                return Ok(steps);
+            }
+        }
+        Ok(vec![])
+    }
+
     /// Applies a single step by scanning techniques in order.
     ///
     /// Returns `Ok(true)` when a technique makes progress, otherwise `Ok(false)`.

@@ -132,7 +132,6 @@ impl TechniqueGrid {
     ///
     /// This mirrors [`CandidateGrid::remove_candidate_set_with_mask`].
     #[inline]
-    #[must_use]
     pub fn remove_candidate_set_with_mask(
         &mut self,
         mask: DigitPositions,

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{BoxedTechniqueStep, SolverError, TechniqueGrid};
+use crate::{BoxedTechniqueStep, SolverError, TechniqueApplication, TechniqueGrid};
 
 /// A trait representing a Sudoku solving technique.
 ///
@@ -26,6 +26,38 @@ pub trait Technique: Debug + Send + Sync {
     ///
     /// Returns an error if the technique detects an invalid state in the grid.
     fn find_step(&self, grid: &TechniqueGrid) -> Result<Option<BoxedTechniqueStep>, SolverError>;
+
+    /// Finds all steps produced by this technique in a single pass without mutating the grid.
+    ///
+    /// This repeats [`Technique::find_step`] against a cloned grid, applying each step's
+    /// [`TechniqueApplication`] to advance the pass until no further steps are found.
+    ///
+    /// # Returns
+    ///
+    /// Returns the ordered list of steps discovered during the pass.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the technique detects an invalid state in the grid.
+    fn find_pass(&self, grid: &TechniqueGrid) -> Result<Vec<BoxedTechniqueStep>, SolverError> {
+        let mut steps = Vec::new();
+        let mut current_grid = grid.clone();
+        while let Some(step) = self.find_step(&current_grid)? {
+            for app in step.application() {
+                match app {
+                    TechniqueApplication::Placement { position, digit } => {
+                        current_grid.place(position, digit);
+                    }
+                    TechniqueApplication::CandidateElimination { positions, digits } => {
+                        current_grid.remove_candidate_set_with_mask(positions, digits);
+                    }
+                }
+            }
+            current_grid.check_consistency()?;
+            steps.push(step);
+        }
+        Ok(steps)
+    }
 
     /// Applies a single technique step.
     ///
