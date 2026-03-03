@@ -20,29 +20,35 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] Reproducible generation requires seed + enabled techniques (or tier)
 - [ ] Technique explanations for hints (may overlap with hint system)
 - [X] Add `solve_puzzle` CLI example in numelace-solver (step output, backtracking trace, grid rendering)
-- Generator-aligned technique expansion (solver + generator; tiered checklist)
-  - [X] Tier 0 (fundamental): Naked Single
-  - [X] Tier 0 (fundamental): Hidden Single
-  - [X] Tier 1 (basic): Locked Candidates (Pointing)
-  - [X] Tier 1 (basic): Locked Candidates (Claiming)
-  - [X] Tier 2 (intermediate): Naked Pair
-  - [X] Tier 2 (intermediate): Hidden Pair
-  - [X] Tier 2 (intermediate): Naked Triple
-  - [X] Tier 2 (intermediate): Hidden Triple
-  - [X] Tier 3 (upper-intermediate): Naked Quad
-  - [X] Tier 3 (upper-intermediate): Hidden Quad
-  - [X] Tier 3 (upper-intermediate): X-Wing
-  - [X] Tier 3 (upper-intermediate): Skyscraper
-  - [X] Tier 3 (upper-intermediate): 2-String Kite
-  - [X] Tier 3 (upper-intermediate): Y-Wing
-  - [X] Tier 4 (advanced): Swordfish
-  - [X] Tier 4 (advanced): Jellyfish
-  - [X] Tier 4 (advanced): Remote Pair
-  - [X] Tier 4 (advanced): X-Chain
-  - [X] Tier 4 (advanced): XY-Chain
-  - [ ] Tier 4 (advanced): XYZ-Wing
-  - [ ] Tier 5 (expert): WXYZ-Wing
-  - [ ] Tier 5 (expert): BUG+1 (Bivalue Universal Grave +1)
+- Generator-aligned technique expansion (solver + generator)
+  - Tier 0 (fundamental):
+    - [X] Naked Single
+    - [X] Hidden Single
+  - Tier 1 (basic):
+    - [X] Locked Candidates (Pointing)
+    - [X] Locked Candidates (Claiming)
+  - Tier 2 (intermediate):
+    - [X] Naked Pair
+    - [X] Hidden Pair
+    - [X] Naked Triple
+    - [X] Hidden Triple
+  - Tier 3 (upper-intermediate):
+    - [X] Naked Quad
+    - [X] Hidden Quad
+    - [X] X-Wing
+    - [X] Skyscraper
+    - [X] 2-String Kite
+    - [X] Y-Wing
+  - Tier 4 (advanced):
+    - [X] Swordfish
+    - [X] Jellyfish
+    - [X] Remote Pair
+    - [X] X-Chain
+    - [X] XY-Chain
+    - [ ] XYZ-Wing
+  - Tier 5 (expert):
+    - [ ] WXYZ-Wing
+    - [ ] BUG+1 (Bivalue Universal Grave +1)
 
 ### Optional assist features
 
