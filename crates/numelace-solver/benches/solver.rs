@@ -329,7 +329,8 @@ criterion_group!(
     name = benches_technique_advanced;
     config =
         Criterion::default()
-            .plotting_backend(PlottingBackend::Plotters);
+            .plotting_backend(PlottingBackend::Plotters)
+            .measurement_time(Duration::from_secs(10));
     targets =
         bench_technique_solver_advanced,
 );
