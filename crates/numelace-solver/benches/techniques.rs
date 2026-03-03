@@ -192,40 +192,6 @@ fn x_wing_grid() -> TechniqueGrid {
     TechniqueGrid::from(grid)
 }
 
-fn swordfish_grid() -> TechniqueGrid {
-    let mut grid = CandidateGrid::new();
-    let digit = Digit::D1;
-    let rows = [0u8, 4, 8];
-    let cols = [1u8, 4, 7];
-
-    for &row in &rows {
-        for x in 0..9u8 {
-            if !cols.contains(&x) {
-                grid.remove_candidate(Position::new(x, row), digit);
-            }
-        }
-    }
-
-    TechniqueGrid::from(grid)
-}
-
-fn jellyfish_grid() -> TechniqueGrid {
-    let mut grid = CandidateGrid::new();
-    let digit = Digit::D1;
-    let rows = [0u8, 2, 5, 8];
-    let cols = [1u8, 4, 6, 8];
-
-    for &row in &rows {
-        for x in 0..9u8 {
-            if !cols.contains(&x) {
-                grid.remove_candidate(Position::new(x, row), digit);
-            }
-        }
-    }
-
-    TechniqueGrid::from(grid)
-}
-
 fn skyscraper_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
     let digit = Digit::D1;
@@ -300,27 +266,34 @@ fn y_wing_grid() -> TechniqueGrid {
     TechniqueGrid::from(grid)
 }
 
-fn xyz_wing_grid() -> TechniqueGrid {
+fn swordfish_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let pivot = Position::new(1, 1);
-    let wing1 = Position::new(1, 2);
-    let wing2 = Position::new(2, 1);
+    let digit = Digit::D1;
+    let rows = [0u8, 4, 8];
+    let cols = [1u8, 4, 7];
 
-    for digit in Digit::ALL {
-        if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {
-            grid.remove_candidate(pivot, digit);
+    for &row in &rows {
+        for x in 0..9u8 {
+            if !cols.contains(&x) {
+                grid.remove_candidate(Position::new(x, row), digit);
+            }
         }
     }
 
-    for digit in Digit::ALL {
-        if digit != Digit::D1 && digit != Digit::D2 {
-            grid.remove_candidate(wing1, digit);
-        }
-    }
+    TechniqueGrid::from(grid)
+}
 
-    for digit in Digit::ALL {
-        if digit != Digit::D1 && digit != Digit::D3 {
-            grid.remove_candidate(wing2, digit);
+fn jellyfish_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let digit = Digit::D1;
+    let rows = [0u8, 2, 5, 8];
+    let cols = [1u8, 4, 6, 8];
+
+    for &row in &rows {
+        for x in 0..9u8 {
+            if !cols.contains(&x) {
+                grid.remove_candidate(Position::new(x, row), digit);
+            }
         }
     }
 
@@ -392,6 +365,33 @@ fn xy_chain_grid() -> TechniqueGrid {
     for digit in Digit::ALL {
         if digit != Digit::D1 && digit != Digit::D3 {
             grid.remove_candidate(end, digit);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
+fn xyz_wing_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let pivot = Position::new(1, 1);
+    let wing1 = Position::new(1, 2);
+    let wing2 = Position::new(2, 1);
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {
+            grid.remove_candidate(pivot, digit);
+        }
+    }
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D2 {
+            grid.remove_candidate(wing1, digit);
+        }
+    }
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D3 {
+            grid.remove_candidate(wing2, digit);
         }
     }
 
@@ -485,24 +485,6 @@ fn bench_x_wing_apply(c: &mut Criterion) {
     bench_apply_cases(c, "x_wing_apply", &technique, &puzzles);
 }
 
-fn bench_swordfish_apply(c: &mut Criterion) {
-    let puzzles = [
-        ("swordfish", swordfish_grid()),
-        ("empty", TechniqueGrid::new()),
-    ];
-    let technique = Swordfish::new();
-    bench_apply_cases(c, "swordfish_apply", &technique, &puzzles);
-}
-
-fn bench_jellyfish_apply(c: &mut Criterion) {
-    let puzzles = [
-        ("jellyfish", jellyfish_grid()),
-        ("empty", TechniqueGrid::new()),
-    ];
-    let technique = Jellyfish::new();
-    bench_apply_cases(c, "jellyfish_apply", &technique, &puzzles);
-}
-
 fn bench_skyscraper_apply(c: &mut Criterion) {
     let puzzles = [
         ("skyscraper", skyscraper_grid()),
@@ -527,13 +509,22 @@ fn bench_y_wing_apply(c: &mut Criterion) {
     bench_apply_cases(c, "y_wing_apply", &technique, &puzzles);
 }
 
-fn bench_xyz_wing_apply(c: &mut Criterion) {
+fn bench_swordfish_apply(c: &mut Criterion) {
     let puzzles = [
-        ("xyz_wing", xyz_wing_grid()),
+        ("swordfish", swordfish_grid()),
         ("empty", TechniqueGrid::new()),
     ];
-    let technique = XyzWing::new();
-    bench_apply_cases(c, "xyz_wing_apply", &technique, &puzzles);
+    let technique = Swordfish::new();
+    bench_apply_cases(c, "swordfish_apply", &technique, &puzzles);
+}
+
+fn bench_jellyfish_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("jellyfish", jellyfish_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+    let technique = Jellyfish::new();
+    bench_apply_cases(c, "jellyfish_apply", &technique, &puzzles);
 }
 
 fn bench_remote_pair_apply(c: &mut Criterion) {
@@ -558,6 +549,15 @@ fn bench_xy_chain_apply(c: &mut Criterion) {
     ];
     let technique = XyChain::new();
     bench_apply_cases(c, "xy_chain_apply", &technique, &puzzles);
+}
+
+fn bench_xyz_wing_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("xyz_wing", xyz_wing_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+    let technique = XyzWing::new();
+    bench_apply_cases(c, "xyz_wing_apply", &technique, &puzzles);
 }
 
 criterion_group!(
@@ -651,24 +651,6 @@ criterion_group!(
 );
 
 criterion_group!(
-    name = benches_swordfish;
-    config =
-        Criterion::default()
-            .plotting_backend(PlottingBackend::Plotters);
-    targets =
-        bench_swordfish_apply,
-);
-
-criterion_group!(
-    name = benches_jellyfish;
-    config =
-        Criterion::default()
-            .plotting_backend(PlottingBackend::Plotters);
-    targets =
-        bench_jellyfish_apply,
-);
-
-criterion_group!(
     name = benches_skyscraper;
     config =
         Criterion::default()
@@ -696,12 +678,21 @@ criterion_group!(
 );
 
 criterion_group!(
-    name = benches_xyz_wing;
+    name = benches_swordfish;
     config =
         Criterion::default()
             .plotting_backend(PlottingBackend::Plotters);
     targets =
-        bench_xyz_wing_apply,
+        bench_swordfish_apply,
+);
+
+criterion_group!(
+    name = benches_jellyfish;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_jellyfish_apply,
 );
 
 criterion_group!(
@@ -731,6 +722,15 @@ criterion_group!(
         bench_xy_chain_apply,
 );
 
+criterion_group!(
+    name = benches_xyz_wing;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_xyz_wing_apply,
+);
+
 criterion_main!(
     benches_naked_single,
     benches_hidden_single,
@@ -742,13 +742,13 @@ criterion_main!(
     benches_naked_quad,
     benches_hidden_quad,
     benches_x_wing,
-    benches_swordfish,
-    benches_jellyfish,
     benches_skyscraper,
     benches_two_string_kite,
     benches_y_wing,
-    benches_xyz_wing,
+    benches_swordfish,
+    benches_jellyfish,
     benches_remote_pair,
     benches_x_chain,
     benches_xy_chain,
+    benches_xyz_wing,
 );
