@@ -33,21 +33,21 @@ impl Condition {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let condition_cells = self.base_houses.into_iter().map(House::positions).sum();
+        let condition_positions = self.base_houses.into_iter().map(House::positions).sum();
         let crosses = self.cover_houses.into_iter().map(House::positions).sum();
-        let cross_cells = self
+        let cross_positions = self
             .base_houses
             .into_iter()
             .map(|house| house.positions() & crosses)
             .sum::<DigitPositions>();
-        let condition_digit_cells = vec![(
-            cross_cells & before_grid.digit_positions(self.digit),
+        let condition_digit_positions = vec![(
+            cross_positions & before_grid.digit_positions(self.digit),
             DigitSet::from_elem(self.digit),
         )];
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )

@@ -30,12 +30,12 @@ impl Condition {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let condition_cells = self.house.positions();
-        let condition_digit_cells = vec![(self.positions, self.digits)];
+        let condition_positions = self.house.positions();
+        let condition_digit_positions = vec![(self.positions, self.digits)];
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )

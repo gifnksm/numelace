@@ -29,14 +29,14 @@ mod tests {
     #[test]
     fn test_consistency_error_conversion_with_question_mark() {
         fn check() -> Result<(), SolverError> {
-            Err(ConsistencyError::DuplicatedDecidedDigits)?
+            Err(ConsistencyError::DuplicatedUnivalueDigits)?
         }
 
         let result = check();
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
-            SolverError::Inconsistent(ConsistencyError::DuplicatedDecidedDigits)
+            SolverError::Inconsistent(ConsistencyError::DuplicatedUnivalueDigits)
         ));
     }
 }

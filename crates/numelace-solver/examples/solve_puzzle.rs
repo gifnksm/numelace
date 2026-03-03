@@ -65,7 +65,7 @@ enum StepMode {
 #[derive(Debug, Clone, Copy, Default)]
 struct CellDiff {
     removed: DigitSet,
-    decided: bool,
+    univalue: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -399,13 +399,13 @@ fn build_diffs(before: &TechniqueGrid, after: &TechniqueGrid) -> PositionIndexed
         let before_set = before.candidates_at(pos);
         let after_set = after.candidates_at(pos);
         if after_set.len() < before_set.len() {
-            let decided = after_set.len() == 1 && before_set.len() > 1;
-            let removed = if decided {
+            let univalue = after_set.len() == 1 && before_set.len() > 1;
+            let removed = if univalue {
                 DigitSet::EMPTY
             } else {
                 before_set.difference(after_set)
             };
-            diffs[pos] = CellDiff { removed, decided };
+            diffs[pos] = CellDiff { removed, univalue };
         }
     }
     diffs
@@ -445,9 +445,9 @@ fn format_grid(grid: &TechniqueGrid, diffs: Option<&PositionIndexedArray<CellDif
 }
 
 fn build_cell_lines(candidates: DigitSet, diff: CellDiff) -> [String; 3] {
-    let decided_digit = candidates.as_single();
+    let univalue_digit = candidates.as_single();
     let mut chars = [[' '; 3]; 3];
-    if let Some(digit) = decided_digit {
+    if let Some(digit) = univalue_digit {
         let value = u32::from(digit.value());
         chars[1][1] = char::from_digit(value, 10).unwrap_or('?');
     } else {
@@ -462,16 +462,16 @@ fn build_cell_lines(candidates: DigitSet, diff: CellDiff) -> [String; 3] {
         }
     }
 
-    let base_style = if diff.decided {
+    let base_style = if diff.univalue {
         CellStyle { fg: 30, bg: 42 }
-    } else if decided_digit.is_some() {
+    } else if univalue_digit.is_some() {
         CellStyle { fg: 37, bg: 40 }
     } else {
         CellStyle { fg: 30, bg: 47 }
     };
     let mut styles = [[base_style; 3]; 3];
 
-    if !diff.decided {
+    if !diff.univalue {
         for digit in diff.removed {
             let idx = digit.value() - 1;
             let row = (idx / 3) as usize;

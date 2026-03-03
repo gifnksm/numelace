@@ -251,7 +251,7 @@ impl CandidateGrid {
     /// Creates a `CandidateGrid` from a `DigitGrid`.
     ///
     /// Each digit in the input grid is placed into the corresponding position,
-    /// removing other candidates from that cell.
+    /// removing other candidates from that position.
     ///
     /// # Example
     ///
@@ -296,20 +296,20 @@ impl Default for CandidateGrid {
 /// Error returned when a candidate grid is in an inconsistent state.
 ///
 /// This error indicates that the grid violates Sudoku constraints:
-/// - At least one cell has no remaining candidates (empty cell), or
-/// - Duplicate decided digits (cells with exactly one candidate) exist in the same row, column, or box
-/// - Candidate constraints violate Sudoku rules even without empty cells or duplicate decided digits
+/// - At least one position has no remaining candidates (empty position), or
+/// - Duplicate univalue digits (positions with exactly one candidate) exist in the same row, column, or box
+/// - Candidate constraints violate Sudoku rules even without empty positions or duplicate univalue digits
 ///
 /// An inconsistent grid cannot be solved and typically results from
 /// incorrect placements or contradictory constraints.
 ///
 /// This error distinguishes between three types of inconsistencies that can occur in a candidate grid:
-/// - [`NoCandidates`]: A cell has no remaining candidates, making it impossible to place a digit
-/// - [`DuplicatedDecidedDigits`]: Multiple cells in the same row, column, or box have the same decided digit
+/// - [`NoCandidates`]: A position has no remaining candidates, making it impossible to place a digit
+/// - [`DuplicatedUnivalueDigits`]: Multiple positions in the same row, column, or box have the same univalue digit
 /// - [`CandidateConstraintViolation`]: Candidate constraints violate Sudoku rules
 ///
 /// [`NoCandidates`]: ConsistencyError::NoCandidates
-/// [`DuplicatedDecidedDigits`]: ConsistencyError::DuplicatedDecidedDigits
+/// [`DuplicatedUnivalueDigits`]: ConsistencyError::DuplicatedUnivalueDigits
 /// [`CandidateConstraintViolation`]: ConsistencyError::CandidateConstraintViolation
 ///
 /// # Examples
@@ -319,7 +319,7 @@ impl Default for CandidateGrid {
 ///
 /// let mut grid = CandidateGrid::new();
 ///
-/// // Create a contradiction by removing all candidates from a cell
+/// // Create a contradiction by removing all candidates from a position
 /// let pos = Position::new(0, 0);
 /// for digit in Digit::ALL {
 ///     grid.remove_candidate(pos, digit);
@@ -330,22 +330,22 @@ impl Default for CandidateGrid {
 /// ```
 #[derive(Debug, Clone, Copy, derive_more::Display, derive_more::Error)]
 pub enum ConsistencyError {
-    /// A cell has no remaining candidates.
+    /// A position has no remaining candidates.
     ///
-    /// This occurs when candidate removal results in a cell with no possible digits,
+    /// This occurs when candidate removal results in a position with no possible digits,
     /// making the puzzle unsolvable.
-    #[display("candidate grid has cells with no candidates")]
+    #[display("candidate grid has positions with no candidates")]
     NoCandidates,
-    /// Multiple cells in the same constraint region have the same decided digit.
+    /// Multiple positions in the same constraint region have the same univalue digit.
     ///
     /// This occurs when the same digit appears more than once in a row, column, or box,
     /// violating Sudoku rules.
-    #[display("candidate grid has duplicated decided digits")]
-    DuplicatedDecidedDigits,
+    #[display("candidate grid has duplicated univalue digits")]
+    DuplicatedUnivalueDigits,
     /// Candidate constraints violate Sudoku rules.
     ///
     /// This occurs when candidate distributions imply an impossible state without
-    /// necessarily creating empty cells or duplicate decided digits.
+    /// necessarily creating empty positions or duplicate univalue digits.
     #[display("candidate grid violates candidate constraints")]
     CandidateConstraintViolation,
 }
@@ -359,10 +359,10 @@ impl CandidateGrid {
         }
     }
 
-    /// Converts the candidate grid to a digit grid containing only decided cells.
+    /// Converts the candidate grid to a digit grid containing only univalue positions.
     ///
-    /// A cell is considered "decided" when it has exactly one candidate remaining.
-    /// Only these decided cells are populated in the returned grid; all other cells
+    /// A position is considered "univalue" when it has exactly one candidate remaining.
+    /// Only these univalue positions are populated in the returned grid; all other positions
     /// remain empty (`None`).
     ///
     /// This is useful for extracting the current solved state of the puzzle from
@@ -380,16 +380,16 @@ impl CandidateGrid {
     /// let digit_grid = grid.to_digit_grid();
     /// assert_eq!(digit_grid.get(Position::new(0, 0)), Some(Digit::D1));
     /// assert_eq!(digit_grid.get(Position::new(1, 0)), Some(Digit::D2));
-    /// assert_eq!(digit_grid.get(Position::new(2, 0)), None); // Not decided yet
+    /// assert_eq!(digit_grid.get(Position::new(2, 0)), None); // Not univalue yet
     /// ```
     #[must_use]
     pub fn to_digit_grid(&self) -> DigitGrid {
         let mut grid = DigitGrid::new();
-        let [_empty_cells, decided_cells] = self.classify_cells();
-        // For each digit, find cells where it's the only candidate and place it
+        let [_empty_positions, univalue_positions] = self.classify_positions();
+        // For each digit, find positions where it's the only candidate and place it
         for digit in Digit::ALL {
-            let digit_cells = &self.digit_positions[digit];
-            for pos in *digit_cells & decided_cells {
+            let digit_positions = &self.digit_positions[digit];
+            for pos in *digit_positions & univalue_positions {
                 grid.set(pos, Some(digit));
             }
         }
@@ -398,13 +398,13 @@ impl CandidateGrid {
 
     /// Places a digit at a position by removing all other candidates from that position.
     ///
-    /// This only affects the placed cell itself - other cells in the same row, column,
+    /// This only affects the placed position itself - other positions in the same row, column,
     /// or box are not modified.
     ///
     /// # Returns
     ///
     /// Returns `true` if any candidates were changed, `false` if the operation
-    /// had no effect (e.g., placing the same digit again at an already decided position).
+    /// had no effect (e.g., placing the same digit again at an already univalue position).
     ///
     /// # Example
     ///
@@ -569,11 +569,11 @@ impl CandidateGrid {
     /// Checks if the grid is in a consistent state.
     ///
     /// Returns `Ok(())` if the grid is consistent, or `Err(ConsistencyError)` if:
-    /// - Any cell has no remaining candidates (empty cell), or
-    /// - Duplicate decided digits (cells with exactly one candidate) exist in the same row, column, or box
+    /// - Any position has no remaining candidates (empty position), or
+    /// - Duplicate univalue digits (positions with exactly one candidate) exist in the same row, column, or box
     ///
     /// This method is useful during solving to detect contradictions early.
-    /// Unlike [`is_solved`], this does NOT require all cells to be decided.
+    /// Unlike [`is_solved`], this does NOT require all positions to be univalue.
     ///
     /// # Errors
     ///
@@ -601,12 +601,12 @@ impl CandidateGrid {
     /// [`is_solved`]: CandidateGrid::is_solved
     #[inline]
     pub fn check_consistency(&self) -> Result<(), ConsistencyError> {
-        let [empty_cells, decided_cells] = self.classify_cells();
-        if !empty_cells.is_empty() {
+        let [empty_positions, univalue_positions] = self.classify_positions();
+        if !empty_positions.is_empty() {
             return Err(ConsistencyError::NoCandidates);
         }
-        if !self.placed_digits_are_unique(decided_cells) {
-            return Err(ConsistencyError::DuplicatedDecidedDigits);
+        if !self.placed_digits_are_unique(univalue_positions) {
+            return Err(ConsistencyError::DuplicatedUnivalueDigits);
         }
         Ok(())
     }
@@ -620,7 +620,7 @@ impl CandidateGrid {
     ///
     /// # Errors
     ///
-    /// Returns [`ConsistencyError`] if the grid is inconsistent (has empty cells
+    /// Returns [`ConsistencyError`] if the grid is inconsistent (has empty positions
     /// or duplicate digits).
     ///
     /// # Examples
@@ -633,19 +633,19 @@ impl CandidateGrid {
     /// ```
     #[inline]
     pub fn is_solved(&self) -> Result<bool, ConsistencyError> {
-        let [empty_cells, decided_cells] = self.classify_cells();
-        if !empty_cells.is_empty() {
+        let [empty_positions, univalue_positions] = self.classify_positions();
+        if !empty_positions.is_empty() {
             return Err(ConsistencyError::NoCandidates);
         }
-        if !self.placed_digits_are_unique(decided_cells) {
-            return Err(ConsistencyError::DuplicatedDecidedDigits);
+        if !self.placed_digits_are_unique(univalue_positions) {
+            return Err(ConsistencyError::DuplicatedUnivalueDigits);
         }
-        Ok(decided_cells.len() == 81)
+        Ok(univalue_positions.len() == 81)
     }
 
-    /// Returns all positions that have exactly one candidate (decided cells).
+    /// Returns all positions that have exactly one candidate (univalue positions).
     ///
-    /// A cell is considered "decided" when it has only one possible candidate digit,
+    /// A position is considered "univalue" when it has only one possible candidate digit,
     /// either because it was explicitly placed or because all other candidates were
     /// eliminated.
     ///
@@ -656,25 +656,24 @@ impl CandidateGrid {
     ///
     /// let mut grid = CandidateGrid::new();
     ///
-    /// // Initially no decided cells
-    /// assert_eq!(grid.decided_cells().len(), 0);
+    /// // Initially no univalue positions
+    /// assert_eq!(grid.univalue_positions().len(), 0);
     ///
     /// // Place a digit
     /// grid.place(Position::new(0, 0), Digit::D5);
-    /// assert_eq!(grid.decided_cells().len(), 1);
+    /// assert_eq!(grid.univalue_positions().len(), 1);
     /// ```
     #[must_use]
     #[inline]
-    pub fn decided_cells(&self) -> DigitPositions {
-        let [_empty_cells, decided_cells] = self.classify_cells();
-        decided_cells
+    pub fn univalue_positions(&self) -> DigitPositions {
+        let [_empty_positions, univalue_positions] = self.classify_positions();
+        univalue_positions
     }
 
     /// Classifies all grid positions by candidate count.
-    /// Classifies all cells by their candidate count.
     ///
     /// Returns an array of length `N` where the element at index `i` contains
-    /// the positions of all cells that have exactly `i` candidates.
+    /// the positions of all grid positions that have exactly `i` candidates.
     ///
     /// # Type Parameters
     ///
@@ -683,34 +682,34 @@ impl CandidateGrid {
     ///
     /// # Returns
     ///
-    /// An array `[cells_0, cells_1, ..., cells_N-1]` where:
+    /// An array `[positions_0, positions_1, ..., positions_N-1]` where:
     ///
-    /// - `cells[0]`: Positions with zero candidates (contradictions)
-    /// - `cells[1]`: Positions with exactly one candidate (decided cells)
-    /// - `cells[2]`: Positions with exactly two candidates
+    /// - `positions[0]`: Positions with zero candidates (contradictions)
+    /// - `positions[1]`: Positions with exactly one candidate (univalue positions)
+    /// - `positions[2]`: Positions with exactly two candidates
     /// - ...
-    /// - `cells[i]`: Positions with exactly `i` candidates
+    /// - `positions[i]`: Positions with exactly `i` candidates
     ///
     /// **Important**: Positions with `N` or more candidates are not included in any element.
     /// They are implicitly ignored by the algorithm.
     ///
     /// # Algorithm
     ///
-    /// This method uses a **bitwise dynamic programming** approach to classify cells efficiently:
+    /// This method uses a **bitwise dynamic programming** approach to classify positions efficiently:
     ///
-    /// 1. **Initialization**: Start with `cells[0] = FULL` (all 81 positions).
+    /// 1. **Initialization**: Start with `positions[0] = FULL` (all 81 positions).
     ///    This represents the state "before processing any digits, all positions have 0 candidates".
     ///
     /// 2. **Digit Processing**: For each of the 9 digits (D1 through D9):
     ///    - For each candidate count `i` (in reverse order from `min(n, N-1)` down to 1):
-    ///      - Remove positions where the current digit exists: `cells[i] &= !digit_pos`
-    ///      - Add positions that transition from `i-1` to `i` candidates: `cells[i] |= cells[i-1] & digit_pos`
-    ///    - Update `cells[0]` by removing positions with this digit: `cells[0] &= !digit_pos`
+    ///      - Remove positions where the current digit exists: `positions[i] &= !digit_pos`
+    ///      - Add positions that transition from `i-1` to `i` candidates: `positions[i] |= positions[i-1] & digit_pos`
+    ///    - Update `positions[0]` by removing positions with this digit: `positions[0] &= !digit_pos`
     ///
-    /// 3. **Result**: After processing all 9 digits, `cells[i]` contains positions with exactly `i` candidates.
+    /// 3. **Result**: After processing all 9 digits, `positions[i]` contains positions with exactly `i` candidates.
     ///
     /// This approach achieves **O(9 × N)** time complexity with efficient bitwise operations,
-    /// where N is typically small (2-10), making it much faster than checking each of 81 cells individually.
+    /// where N is typically small (2-10), making it much faster than checking each of 81 positions individually.
     ///
     /// # Examples
     ///
@@ -720,22 +719,22 @@ impl CandidateGrid {
     /// let mut grid = CandidateGrid::new();
     /// grid.place(Position::new(0, 0), Digit::D1);
     ///
-    /// // Get empty and decided cells only
-    /// let [empty_cells, decided_cells] = grid.classify_cells();
-    /// assert_eq!(empty_cells.len(), 0);
-    /// assert_eq!(decided_cells.len(), 1);
+    /// // Get empty and univalue positions only
+    /// let [empty_positions, univalue_positions] = grid.classify_positions();
+    /// assert_eq!(empty_positions.len(), 0);
+    /// assert_eq!(univalue_positions.len(), 1);
     ///
     /// // Get more detailed classification
-    /// let [empty, one, two, three] = grid.classify_cells();
+    /// let [empty, one, two, three] = grid.classify_positions();
     /// // empty: 0 candidates, one: 1 candidate, two: 2 candidates, three: 3 candidates
     /// ```
     #[must_use]
     #[inline]
-    pub fn classify_cells<const N: usize>(&self) -> [DigitPositions; N] {
-        let mut cells = [DigitPositions::EMPTY; N];
+    pub fn classify_positions<const N: usize>(&self) -> [DigitPositions; N] {
+        let mut positions = [DigitPositions::EMPTY; N];
 
         // Initialize: all positions start with 0 candidates (before processing any digits)
-        cells[0] = DigitPositions::FULL;
+        positions[0] = DigitPositions::FULL;
 
         // Process each digit (D1..D9) and update candidate counts
         for (n, digit_pos) in iter::zip(1.., self.digit_positions.iter().copied()) {
@@ -745,42 +744,41 @@ impl CandidateGrid {
             // positions we need to read from in the same iteration
             for i in (1..end).rev() {
                 // Remove positions where this digit exists (they already had i candidates)
-                cells[i] &= !digit_pos;
+                positions[i] &= !digit_pos;
                 // Add positions transitioning from (i-1) to i candidates
-                cells[i] |= cells[i - 1] & digit_pos;
+                positions[i] |= positions[i - 1] & digit_pos;
             }
 
             // Remove positions with this digit from the "0 candidates" set
-            cells[0] &= !digit_pos;
+            positions[0] &= !digit_pos;
         }
-        cells
+        positions
     }
 
     /// Checks that definite digits have no duplicates in rows, columns, or boxes.
     ///
-    /// For each position in `decided_cells`, verifies that its digit appears
+    /// For each position in `univalue_positions`, verifies that its digit appears
     /// exactly once in its respective row, column, and 3×3 box.
     ///
     /// # Arguments
     ///
-    /// * `decided_cells` - Positions where exactly one candidate remains
+    /// * `univalue_positions` - Positions where exactly one candidate remains
     ///
     /// # Returns
     ///
     /// `true` if all definite digits satisfy sudoku uniqueness constraints,
     /// `false` if any digit appears multiple times in the same row, column, or box.
-    fn placed_digits_are_unique(&self, decided_cells: DigitPositions) -> bool {
+    fn placed_digits_are_unique(&self, univalue_positions: DigitPositions) -> bool {
         for digit in Digit::ALL {
-            let digit_cells = &self.digit_positions[digit];
-            let decided_digit_cells = *digit_cells & decided_cells;
-            for pos in decided_digit_cells {
-                if decided_digit_cells.row_mask(pos.y()).len() != 1 {
+            let digit_positions = univalue_positions & self.digit_positions[digit];
+            for pos in digit_positions {
+                if digit_positions.row_mask(pos.y()).len() != 1 {
                     return false;
                 }
-                if decided_digit_cells.col_mask(pos.x()).len() != 1 {
+                if digit_positions.col_mask(pos.x()).len() != 1 {
                     return false;
                 }
-                if decided_digit_cells.box_mask(pos.box_index()).len() != 1 {
+                if digit_positions.box_mask(pos.box_index()).len() != 1 {
                     return false;
                 }
             }
@@ -809,7 +807,7 @@ mod tests {
         // Place is idempotent
         assert!(!grid.place(pos, D5));
 
-        // Placement reduces cell to single candidate and removes others
+        // Placement reduces position to single candidate and removes others
         let candidates = grid.candidates_at(pos);
         assert_eq!(candidates.len(), 1);
         assert!(candidates.contains(D5));
@@ -872,19 +870,19 @@ mod tests {
     }
 
     #[test]
-    fn test_decided_cells() {
+    fn test_univalue_positions() {
         let mut grid = CandidateGrid::new();
 
-        assert_eq!(grid.decided_cells().len(), 0);
+        assert_eq!(grid.univalue_positions().len(), 0);
 
         grid.place(Position::new(0, 0), D1);
         grid.place(Position::new(5, 5), D5);
 
-        // Placed cells are detected as decided
-        let decided = grid.decided_cells();
-        assert_eq!(decided.len(), 2);
-        assert!(decided.contains(Position::new(0, 0)));
-        assert!(decided.contains(Position::new(5, 5)));
+        // Placed positions are detected as univalue
+        let univalue_positions = grid.univalue_positions();
+        assert_eq!(univalue_positions.len(), 2);
+        assert!(univalue_positions.contains(Position::new(0, 0)));
+        assert!(univalue_positions.contains(Position::new(5, 5)));
     }
 
     #[test]
@@ -901,7 +899,7 @@ mod tests {
         assert!(positions.contains(Position::new(4, 0)));
         assert!(positions.contains(Position::new(3, 3)));
 
-        // Other digits eliminated from placed cell
+        // Other digits eliminated from placed position
         assert!(!grid.digit_positions(D1).contains(pos));
     }
 
@@ -959,7 +957,7 @@ mod tests {
         grid.place(Position::new(0, 0), D5);
         assert!(grid.check_consistency().is_ok());
 
-        // Detects contradiction: cell with no candidates
+        // Detects contradiction: position with no candidates
         let mut grid = CandidateGrid::new();
         let pos = Position::new(4, 4);
         for digit in Digit::ALL {
@@ -992,32 +990,32 @@ mod tests {
     }
 
     #[test]
-    fn test_classify_cells() {
+    fn test_classify_positions() {
         let grid = CandidateGrid::new();
-        let [empty, decided] = grid.classify_cells();
+        let [empty, univalue_positions] = grid.classify_positions();
         assert_eq!(empty.len(), 0);
-        assert_eq!(decided.len(), 0);
+        assert_eq!(univalue_positions.len(), 0);
 
         let mut grid = CandidateGrid::new();
         grid.place(Position::new(0, 0), D5);
-        let [empty, decided] = grid.classify_cells();
+        let [empty, univalue_positions] = grid.classify_positions();
         assert_eq!(empty.len(), 0);
-        assert_eq!(decided.len(), 1);
-        assert!(decided.contains(Position::new(0, 0)));
+        assert_eq!(univalue_positions.len(), 1);
+        assert!(univalue_positions.contains(Position::new(0, 0)));
 
-        // Detects cells with zero candidates
+        // Detects positions with zero candidates
         let mut grid = CandidateGrid::new();
         let pos = Position::new(4, 4);
         for digit in Digit::ALL {
             grid.remove_candidate(pos, digit);
         }
-        let [empty] = grid.classify_cells();
+        let [empty] = grid.classify_positions();
         assert_eq!(empty.len(), 1);
         assert!(empty.contains(pos));
     }
 
     #[test]
-    fn test_classify_cells_multiple_n() {
+    fn test_classify_positions_multiple_n() {
         let mut grid = CandidateGrid::new();
 
         let pos_one = Position::new(0, 0);
@@ -1035,17 +1033,17 @@ mod tests {
             grid.remove_candidate(pos_three, digit);
         }
 
-        // Correctly classifies cells by candidate count
-        let [empty, one, two, three] = grid.classify_cells();
+        // Correctly classifies positions by candidate count
+        let [empty, one, two, three] = grid.classify_positions();
         assert_eq!(empty.len(), 0);
         assert_eq!(one.len(), 1);
         assert_eq!(two.len(), 1);
         assert_eq!(three.len(), 1);
 
-        // Handles arbitrary N (empty grid: all 81 cells have 9 candidates)
+        // Handles arbitrary N (empty grid: all 81 positions have 9 candidates)
         let grid = CandidateGrid::new();
         let [c0, _c1, _c2, _c3, _c4, _c5, _c6, _c7, _c8, c9]: [DigitPositions; 10] =
-            grid.classify_cells();
+            grid.classify_positions();
         assert_eq!(c9.len(), 81);
         assert_eq!(c0.len(), 0);
     }
@@ -1101,7 +1099,7 @@ mod tests {
             assert_eq!(digit_grid.get(pos), None);
         }
 
-        // Only decided cells (single candidate) appear in digit grid
+        // Only univalue positions (single candidate) appear in digit grid
         let mut grid = CandidateGrid::new();
         grid.place(Position::new(0, 0), D1);
         grid.place(Position::new(4, 4), D5);
@@ -1110,7 +1108,7 @@ mod tests {
         assert_eq!(digit_grid.get(Position::new(4, 4)), Some(D5));
         assert_eq!(digit_grid.get(Position::new(1, 1)), None);
 
-        // Cells with multiple candidates are omitted
+        // Positions with multiple candidates are omitted
         let mut grid = CandidateGrid::new();
         grid.place(Position::new(0, 0), D1);
         grid.remove_candidate(Position::new(1, 1), D1);

@@ -30,12 +30,12 @@ impl Condition {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let condition_cells = self.house.positions();
-        let condition_digit_cells = vec![(self.positions, self.digits)];
+        let condition_positions = self.house.positions();
+        let condition_digit_positions = vec![(self.positions, self.digits)];
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )
@@ -56,13 +56,13 @@ impl NakedPair {
     where
         F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
-        let pair_candidate_cells = grid.classify_cells::<3>()[2];
-        if pair_candidate_cells.len() < 2 {
+        let bivalue_positions = grid.classify_positions::<3>()[2];
+        if bivalue_positions.len() < 2 {
             return Ok(None);
         }
 
         for house in House::ALL {
-            let pair_in_house = pair_candidate_cells & house.positions();
+            let pair_in_house = bivalue_positions & house.positions();
             if pair_in_house.len() < 2 {
                 continue;
             }

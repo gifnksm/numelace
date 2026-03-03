@@ -13,7 +13,7 @@ use numelace_core::{
 /// # Design Notes
 ///
 /// - `TechniqueGrid` is the only surface used by techniques to mutate candidates.
-/// - Tracking fields (like `decided_propagated`) live here to keep technique logic
+/// - Tracking fields (like `univalue_propagated`) live here to keep technique logic
 ///   simple and consistent.
 /// - Conversions from [`DigitGrid`] and [`CandidateGrid`] exist to support solver
 ///   entry points and test setups.
@@ -31,8 +31,8 @@ use numelace_core::{
 pub struct TechniqueGrid {
     /// Underlying candidate state.
     candidates: CandidateGrid,
-    /// Decided cells that have already had their peer eliminations applied.
-    decided_propagated: DigitPositions,
+    /// Univalue positions that have already had their peer eliminations applied.
+    univalue_propagated: DigitPositions,
 }
 
 impl From<DigitGrid> for TechniqueGrid {
@@ -45,7 +45,7 @@ impl From<CandidateGrid> for TechniqueGrid {
     fn from(candidates: CandidateGrid) -> Self {
         Self {
             candidates,
-            decided_propagated: DigitPositions::EMPTY,
+            univalue_propagated: DigitPositions::EMPTY,
         }
     }
 }
@@ -85,9 +85,9 @@ impl TechniqueGrid {
         self.candidates
     }
 
-    /// Returns a digit grid containing only decided cells.
+    /// Returns a digit grid containing only univalue positions.
     ///
-    /// Undecided cells are left empty in the returned grid.
+    /// Non-univalue positions are left empty in the returned grid.
     ///
     /// This mirrors [`CandidateGrid::to_digit_grid`].
     #[inline]
@@ -218,34 +218,34 @@ impl TechniqueGrid {
         self.candidates.is_solved()
     }
 
-    /// Returns all positions that have exactly one candidate (decided cells).
+    /// Returns all positions that have exactly one candidate (univalue positions).
     ///
-    /// This mirrors [`CandidateGrid::decided_cells`].
+    /// This mirrors [`CandidateGrid::univalue_positions`].
     #[inline]
     #[must_use]
-    pub fn decided_cells(&self) -> DigitPositions {
-        self.candidates.decided_cells()
+    pub fn univalue_positions(&self) -> DigitPositions {
+        self.candidates.univalue_positions()
     }
 
     /// Classifies all grid positions by candidate count.
     ///
-    /// This mirrors [`CandidateGrid::classify_cells`].
+    /// This mirrors [`CandidateGrid::classify_positions`].
     #[inline]
     #[must_use]
-    pub fn classify_cells<const N: usize>(&self) -> [DigitPositions; N] {
-        self.candidates.classify_cells()
+    pub fn classify_positions<const N: usize>(&self) -> [DigitPositions; N] {
+        self.candidates.classify_positions()
     }
 
-    /// Returns the set of decided cells that have already been propagated.
+    /// Returns the set of univalue positions that have already been propagated.
     #[inline]
     #[must_use]
-    pub fn decided_propagated(&self) -> DigitPositions {
-        self.decided_propagated
+    pub fn univalue_propagated(&self) -> DigitPositions {
+        self.univalue_propagated
     }
 
-    /// Marks a decided cell as having its peer eliminations applied.
+    /// Marks a univalue position as having its peer eliminations applied.
     #[inline]
-    pub fn insert_decided_propagated(&mut self, pos: Position) {
-        self.decided_propagated.insert(pos);
+    pub fn insert_univalue_propagated(&mut self, pos: Position) {
+        self.univalue_propagated.insert(pos);
     }
 }

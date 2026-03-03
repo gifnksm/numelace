@@ -145,7 +145,7 @@ impl TechniqueTester {
                     assert_eq!(
                         candidates.len(),
                         1,
-                        "Expected {position:?} to be decided after applying {name}, but candidates are {candidates:?}"
+                        "Expected {position:?} to be univalue after applying {name}, but candidates are {candidates:?}"
                     );
                     assert!(
                         candidates.contains(digit),
@@ -177,18 +177,18 @@ impl TechniqueTester {
 
         assert!(
             initial.len() > 1,
-            "Expected initial cell at {pos:?} to be undecided (>1 candidates), but had {} candidates: {initial:?}",
+            "Expected initial position at {pos:?} to be non-univalue (>1 candidates), but had {} candidates: {initial:?}",
             initial.len()
         );
         assert_eq!(
             current.len(),
             1,
-            "Expected cell at {pos:?} to be decided (1 candidate), but has {} candidates: {current:?}",
+            "Expected position at {pos:?} to be univalue (1 candidate), but has {} candidates: {current:?}",
             current.len()
         );
         assert!(
             current.contains(digit),
-            "Expected cell at {pos:?} to contain {digit:?}, but candidates are: {current:?}"
+            "Expected position at {pos:?} to contain {digit:?}, but candidates are: {current:?}"
         );
 
         self
@@ -249,8 +249,8 @@ mod tests {
 
     use super::*;
     use crate::{
-        BoxedTechnique, BoxedTechniqueStep, SolverError, TechniqueApplication, TechniqueStep,
-        TechniqueTier,
+        BoxedTechnique, BoxedTechniqueStep, ConditionDigitPositions, ConditionPositions,
+        SolverError, TechniqueApplication, TechniqueStep, TechniqueTier,
     };
 
     // Mock technique for testing that always returns false (no change)
@@ -302,11 +302,11 @@ mod tests {
             Box::new(self.clone())
         }
 
-        fn condition_cells(&self) -> DigitPositions {
+        fn condition_positions(&self) -> ConditionPositions {
             DigitPositions::from_elem(Position::new(0, 0))
         }
 
-        fn condition_digit_cells(&self) -> Vec<(DigitPositions, DigitSet)> {
+        fn condition_digit_positions(&self) -> ConditionDigitPositions {
             vec![(
                 DigitPositions::from_elem(Position::new(0, 0)),
                 DigitSet::from_elem(Digit::D1),
@@ -321,7 +321,7 @@ mod tests {
         }
     }
 
-    // Mock technique that places a digit at (0, 0) if it's not already decided
+    // Mock technique that places a digit at (0, 0) if it's not already univalue
     #[derive(Debug)]
     struct PlaceD1At00;
 
@@ -556,7 +556,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Expected cell at")]
+    #[should_panic(expected = "Expected position at")]
     fn test_assert_placed_fails_when_not_placed() {
         let tester = TechniqueTester::from_str(
             "

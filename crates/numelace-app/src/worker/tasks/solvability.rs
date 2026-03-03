@@ -97,7 +97,7 @@ pub(crate) fn handle_solvability_undo_scan(
 /// Runs solvability logic with fallback between user notes and raw candidates.
 ///
 /// If the `with_user_notes` grid is inconsistent or unsolvable, the task retries
-/// with a grid that keeps only decided cells.
+/// with a grid that keeps only univalue positions.
 pub(crate) fn handle_solvability_request(
     request: CandidateGridPairDto,
 ) -> Result<SolvabilityResultDto, CandidateGridDtoError> {

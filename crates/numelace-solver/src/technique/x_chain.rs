@@ -39,30 +39,32 @@ impl Condition<'_> {
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
         let digit_positions = before_grid.digit_positions(self.digit);
-        let mut condition_cells = DigitPositions::new();
-        let mut condition_digit_positions = DigitPositions::new();
+        let mut condition_positions = DigitPositions::new();
+        let mut condition_digit_position_mask = DigitPositions::new();
         for item in self.stack {
             let pos1 = item.strong_link_start;
             let pos2 = item.strong_link_end;
-            condition_digit_positions.insert(pos1);
-            condition_digit_positions.insert(pos2);
+            condition_digit_position_mask.insert(pos1);
+            condition_digit_position_mask.insert(pos2);
 
             if pos1.y() == pos2.y() && digit_positions.row_mask(pos1.y()).len() == 2 {
-                condition_cells |= DigitPositions::ROW_POSITIONS[pos1.y()];
+                condition_positions |= DigitPositions::ROW_POSITIONS[pos1.y()];
             } else if pos1.x() == pos2.x() && digit_positions.col_mask(pos1.x()).len() == 2 {
-                condition_cells |= DigitPositions::COLUMN_POSITIONS[pos1.x()];
+                condition_positions |= DigitPositions::COLUMN_POSITIONS[pos1.x()];
             } else {
                 debug_assert_eq!(pos1.box_index(), pos2.box_index());
                 debug_assert_eq!(digit_positions.box_mask(pos1.box_index()).len(), 2);
-                condition_cells |= DigitPositions::BOX_POSITIONS[pos1.box_index()];
+                condition_positions |= DigitPositions::BOX_POSITIONS[pos1.box_index()];
             }
         }
-        let condition_digit_cells =
-            vec![(condition_digit_positions, DigitSet::from_elem(self.digit))];
+        let condition_digit_positions = vec![(
+            condition_digit_position_mask,
+            DigitSet::from_elem(self.digit),
+        )];
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )

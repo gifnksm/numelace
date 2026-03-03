@@ -75,7 +75,7 @@ impl TryFrom<CandidateGridDto> for CandidateGrid {
 /// DTO containing candidate grids for solvability checks.
 ///
 /// The task first checks the grid with user notes. If that is inconsistent or
-/// has no solution, it falls back to the grid that keeps only decided cells.
+/// has no solution, it falls back to the grid that keeps only univalue positions.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct CandidateGridPairDto {
     pub(crate) with_user_notes: CandidateGridDto,

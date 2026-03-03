@@ -653,7 +653,7 @@ impl Game {
 mod tests {
     use numelace_core::{Digit, DigitGrid, DigitPositions, DigitSet, Position};
     use numelace_generator::PuzzleGenerator;
-    use numelace_solver::{BoxedTechniqueStep, ConditionDigitCells};
+    use numelace_solver::{BoxedTechniqueStep, ConditionDigitPositions};
 
     use super::*;
     use crate::NoteCleanupPolicy;
@@ -1002,11 +1002,11 @@ mod tests {
                 Box::new(Self)
             }
 
-            fn condition_cells(&self) -> DigitPositions {
+            fn condition_positions(&self) -> DigitPositions {
                 DigitPositions::EMPTY
             }
 
-            fn condition_digit_cells(&self) -> ConditionDigitCells {
+            fn condition_digit_positions(&self) -> ConditionDigitPositions {
                 Vec::new()
             }
 
@@ -1030,11 +1030,11 @@ mod tests {
                 Box::new(Self)
             }
 
-            fn condition_cells(&self) -> DigitPositions {
+            fn condition_positions(&self) -> DigitPositions {
                 DigitPositions::EMPTY
             }
 
-            fn condition_digit_cells(&self) -> ConditionDigitCells {
+            fn condition_digit_positions(&self) -> ConditionDigitPositions {
                 Vec::new()
             }
 
@@ -1073,11 +1073,11 @@ mod tests {
                 Box::new(Self)
             }
 
-            fn condition_cells(&self) -> DigitPositions {
+            fn condition_positions(&self) -> DigitPositions {
                 DigitPositions::EMPTY
             }
 
-            fn condition_digit_cells(&self) -> ConditionDigitCells {
+            fn condition_digit_positions(&self) -> ConditionDigitPositions {
                 Vec::new()
             }
 

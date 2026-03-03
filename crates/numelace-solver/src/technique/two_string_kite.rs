@@ -37,15 +37,15 @@ impl Condition {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let condition_cells = self.row.positions() | self.col.positions();
-        let condition_digit_cells = vec![(
+        let condition_positions = self.row.positions() | self.col.positions();
+        let condition_digit_positions = vec![(
             DigitPositions::from_iter(self.positions),
             DigitSet::from_elem(self.digit),
         )];
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )

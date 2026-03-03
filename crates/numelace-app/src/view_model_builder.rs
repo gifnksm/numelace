@@ -133,7 +133,7 @@ fn apply_hint_ghost(
         return;
     }
 
-    for pos in hint_state.step.condition_cells() {
+    for pos in hint_state.step.condition_positions() {
         if grid[pos].content.is_empty() {
             let notes = fill_notes_for_empty_cell(grid, pos);
             grid[pos].note_visual_state.ghost |= notes;
@@ -187,12 +187,12 @@ fn apply_hint_visuals(
         return;
     }
 
-    for pos in hint_state.step.condition_cells() {
+    for pos in hint_state.step.condition_positions() {
         grid[pos].visual_state |= GridVisualState::HINT_CONDITION_CELL;
     }
 
     if hint_state.stage >= HintStage::Stage2 {
-        for (positions, digits) in hint_state.step.condition_digit_cells() {
+        for (positions, digits) in hint_state.step.condition_digit_positions() {
             for pos in positions {
                 if let Some(cell_digit) = grid[pos].content.as_digit()
                     && digits.contains(cell_digit)
@@ -446,11 +446,11 @@ mod tests {
             Box::new(self.clone())
         }
 
-        fn condition_cells(&self) -> DigitPositions {
+        fn condition_positions(&self) -> DigitPositions {
             self.positions
         }
 
-        fn condition_digit_cells(&self) -> Vec<(DigitPositions, DigitSet)> {
+        fn condition_digit_positions(&self) -> Vec<(DigitPositions, DigitSet)> {
             Vec::new()
         }
 

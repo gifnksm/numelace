@@ -34,15 +34,15 @@ impl Condition {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let condition_cells = DigitPositions::from_elem(self.position);
-        let condition_digit_cells = vec![(
+        let condition_positions = DigitPositions::from_elem(self.position);
+        let condition_digit_positions = vec![(
             DigitPositions::from_elem(self.position),
             DigitSet::from_elem(self.digit),
         )];
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )
@@ -56,7 +56,7 @@ impl NakedSingle {
         Self {}
     }
 
-    /// Builds a naked single step for a decided position, without gating on eliminations.
+    /// Builds a naked single step for a univalue position, without gating on eliminations.
     ///
     /// This is useful for hint systems that need to recognize valid placements even
     /// when no candidate elimination would occur in peers.
@@ -89,16 +89,15 @@ impl NakedSingle {
     where
         F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
-        let decided_cells = grid.decided_cells();
+        let univalue_positions = grid.univalue_positions() & !grid.univalue_propagated();
         for digit in Digit::ALL {
-            let decided_digit_positions =
-                grid.digit_positions(digit) & decided_cells & !grid.decided_propagated();
-            for pos in decided_digit_positions {
+            let univalue_positions = grid.digit_positions(digit) & univalue_positions;
+            for pos in univalue_positions {
                 let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.y()]
                     | DigitPositions::COLUMN_POSITIONS[pos.x()]
                     | DigitPositions::BOX_POSITIONS[pos.box_index()];
                 affected_pos.remove(pos);
-                grid.insert_decided_propagated(pos);
+                grid.insert_univalue_propagated(pos);
                 if grid.remove_candidate_with_mask(affected_pos, digit)
                     && let ControlFlow::Break(value) = on_condition(
                         grid,

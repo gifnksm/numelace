@@ -30,12 +30,12 @@ impl Condition {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let condition_cells = self.house.positions();
-        let condition_digit_cells = vec![(self.positions, self.digits)];
+        let condition_positions = self.house.positions();
+        let condition_digit_positions = vec![(self.positions, self.digits)];
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )
@@ -56,14 +56,14 @@ impl NakedTriple {
     where
         F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
-        let classes = grid.classify_cells::<4>();
-        let triple_candidate_cells = classes[2] | classes[3];
-        if triple_candidate_cells.len() < 3 {
+        let classes = grid.classify_positions::<4>();
+        let trivalue_positions = classes[2] | classes[3];
+        if trivalue_positions.len() < 3 {
             return Ok(None);
         }
 
         for house in House::ALL {
-            let triple_in_house = triple_candidate_cells & house.positions();
+            let triple_in_house = trivalue_positions & house.positions();
             if triple_in_house.len() < 3 {
                 continue;
             }

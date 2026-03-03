@@ -31,35 +31,35 @@ impl Condition<'_> {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let pair_candidate_cells = before_grid.classify_cells::<3>()[2];
-        let digit_positions = pair_candidate_cells
+        let bivalue_positions = before_grid.classify_positions::<3>()[2];
+        let digit_positions = bivalue_positions
             & before_grid.digit_positions(self.digit1)
             & before_grid.digit_positions(self.digit2);
-        let mut condition_cells = DigitPositions::new();
-        let mut condition_digit_positions = DigitPositions::new();
+        let mut condition_positions = DigitPositions::new();
+        let mut condition_digit_position_mask = DigitPositions::new();
         for items in self.stack.windows(2) {
             let pos1 = items[0].position;
             let pos2 = items[1].position;
-            condition_digit_positions.insert(pos1);
-            condition_digit_positions.insert(pos2);
+            condition_digit_position_mask.insert(pos1);
+            condition_digit_position_mask.insert(pos2);
             if pos1.y() == pos2.y() && digit_positions.row_mask(pos1.y()).len() == 2 {
-                condition_cells |= DigitPositions::ROW_POSITIONS[pos1.y()];
+                condition_positions |= DigitPositions::ROW_POSITIONS[pos1.y()];
             } else if pos1.x() == pos2.x() && digit_positions.col_mask(pos1.x()).len() == 2 {
-                condition_cells |= DigitPositions::COLUMN_POSITIONS[pos1.x()];
+                condition_positions |= DigitPositions::COLUMN_POSITIONS[pos1.x()];
             } else {
                 debug_assert_eq!(pos1.box_index(), pos2.box_index());
                 debug_assert_eq!(digit_positions.box_mask(pos1.box_index()).len(), 2);
-                condition_cells |= DigitPositions::BOX_POSITIONS[pos1.box_index()];
+                condition_positions |= DigitPositions::BOX_POSITIONS[pos1.box_index()];
             }
         }
-        let condition_digit_cells = vec![(
-            condition_digit_positions,
+        let condition_digit_positions = vec![(
+            condition_digit_position_mask,
             DigitSet::from_iter([self.digit1, self.digit2]),
         )];
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )
@@ -118,14 +118,14 @@ impl RemotePair {
     where
         F: for<'a> FnMut(&'a TechniqueGrid, &'a Condition<'a>) -> ControlFlow<T>,
     {
-        let pair_candidate_cells = grid.classify_cells::<3>()[2];
-        if pair_candidate_cells.len() < 4 {
+        let bivalue_positions = grid.classify_positions::<3>()[2];
+        if bivalue_positions.len() < 4 {
             return None;
         }
 
         let mut digits = DigitSet::FULL.iter();
         while let Some(digit1) = digits.next() {
-            let digit_positions1 = pair_candidate_cells & grid.digit_positions(digit1);
+            let digit_positions1 = bivalue_positions & grid.digit_positions(digit1);
             if digit_positions1.len() < 4 {
                 continue;
             }

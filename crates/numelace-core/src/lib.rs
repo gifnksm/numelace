@@ -45,7 +45,7 @@
 //!
 //! **Conversion**:
 //! - `DigitGrid` → `CandidateGrid` via `From` trait (one-way, lossless)
-//! - `CandidateGrid` → `DigitGrid` via `to_digit_grid()` method (lossy: only decided cells)
+//! - `CandidateGrid` → `DigitGrid` via `to_digit_grid()` method (lossy: only univalue positions)
 //!
 //! ## Semantics Pattern: Type-Safe Indexing
 //!

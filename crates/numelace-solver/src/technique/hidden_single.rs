@@ -22,15 +22,15 @@ impl Condition {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let condition_cells = self.house.positions();
-        let condition_digit_cells = vec![(
+        let condition_positions = self.house.positions();
+        let condition_digit_positions = vec![(
             DigitPositions::from_elem(self.position),
             DigitSet::from_elem(self.digit),
         )];
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )
@@ -58,9 +58,9 @@ impl HiddenSingle {
     where
         F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
-        let decided_cells = grid.decided_cells();
+        let univalue_positions = grid.univalue_positions();
         for digit in Digit::ALL {
-            let undecided_digit_positions = grid.digit_positions(digit) & !decided_cells;
+            let undecided_digit_positions = grid.digit_positions(digit) & !univalue_positions;
             for house in House::ALL {
                 let house_mask = undecided_digit_positions.house_mask(house);
                 if let Some(x) = house_mask.as_single() {

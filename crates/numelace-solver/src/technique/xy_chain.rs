@@ -36,19 +36,19 @@ impl Condition<'_> {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let mut condition_cells = DigitPositions::new();
-        let mut condition_digit_cells = vec![];
+        let mut condition_positions = DigitPositions::new();
+        let mut condition_digit_positions = vec![];
         for item in self.stack {
-            condition_cells.insert(item.position);
-            condition_digit_cells.push((
+            condition_positions.insert(item.position);
+            condition_digit_positions.push((
                 DigitPositions::from_elem(item.position),
                 DigitSet::from_iter([item.incoming_digit, item.outgoing_digit]),
             ));
         }
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )
@@ -118,8 +118,8 @@ impl XyChain {
     where
         F: for<'a> FnMut(&'a TechniqueGrid, &'a Condition<'a>) -> ControlFlow<T>,
     {
-        let pair_candidate_cells = grid.classify_cells::<3>()[2];
-        if pair_candidate_cells.len() < 2 {
+        let bivalue_positions = grid.classify_positions::<3>()[2];
+        if bivalue_positions.len() < 2 {
             return None;
         }
         #[expect(clippy::large_stack_arrays)]
@@ -129,18 +129,18 @@ impl XyChain {
                     9],
             ),
         };
-        for position in pair_candidate_cells {
+        for position in bivalue_positions {
             let [d1, d2] = grid.candidates_at(position).as_double().unwrap();
             graph.link_map[d1][position].0 = d2;
-            let pair_candidates_in_house_peers = position.house_peers() & pair_candidate_cells;
-            for peer_pos in pair_candidates_in_house_peers
+            let bivalue_positions_in_house_peers = position.house_peers() & bivalue_positions;
+            for peer_pos in bivalue_positions_in_house_peers
                 & grid.digit_positions(d2)
                 & !grid.digit_positions(d1)
             {
                 graph.link_map[d1][position].1.push(peer_pos);
             }
             graph.link_map[d2][position].0 = d1;
-            for peer_pos in pair_candidates_in_house_peers
+            for peer_pos in bivalue_positions_in_house_peers
                 & grid.digit_positions(d1)
                 & !grid.digit_positions(d2)
             {
@@ -148,7 +148,7 @@ impl XyChain {
             }
         }
         for start_digit in Digit::ALL {
-            for start_pos in pair_candidate_cells & grid.digit_positions(start_digit) {
+            for start_pos in bivalue_positions & grid.digit_positions(start_digit) {
                 let mut stack = array_vec!([TraversalStackItem; 81]);
                 let Some(item) = TraversalStackItem::new(
                     start_pos,

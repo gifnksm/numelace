@@ -9,11 +9,11 @@ use numelace_core::{Digit, DigitPositions, DigitSet, Position};
 
 use crate::TechniqueGrid;
 
-/// Cells involved in a technique's applicability conditions.
-pub type ConditionCells = DigitPositions;
+/// Positions involved in a technique's applicability conditions.
+pub type ConditionPositions = DigitPositions;
 
-/// Pairs of (cells, digits) involved in a technique's applicability conditions.
-pub type ConditionDigitCells = Vec<(DigitPositions, DigitSet)>;
+/// Pairs of (positions, digits) involved in a technique's applicability conditions.
+pub type ConditionDigitPositions = Vec<(DigitPositions, DigitSet)>;
 
 /// A hint step produced by a technique.
 pub trait TechniqueStep: Debug + Send + Sync {
@@ -23,18 +23,18 @@ pub trait TechniqueStep: Debug + Send + Sync {
     /// Returns a boxed clone of the step.
     fn clone_box(&self) -> BoxedTechniqueStep;
 
-    /// Returns the cells involved in the applicability conditions.
+    /// Returns the positions involved in the applicability conditions.
     ///
-    /// These are the cells that justify applying the technique. Hint systems may
-    /// use this to highlight relevant cells before naming the technique.
-    fn condition_cells(&self) -> ConditionCells;
+    /// These are the positions that justify applying the technique. Hint systems may
+    /// use this to highlight relevant positions before naming the technique.
+    fn condition_positions(&self) -> ConditionPositions;
 
-    /// Returns condition pairs of (cells, digits) involved in applicability.
+    /// Returns condition pairs of (positions, digits) involved in applicability.
     ///
-    /// Each pair provides a set of cells and the digits that matter for the
+    /// Each pair provides a set of positions and the digits that matter for the
     /// technique's conditions. Hint systems may use this as a more detailed
     /// explanation of the underlying logic.
-    fn condition_digit_cells(&self) -> ConditionDigitCells;
+    fn condition_digit_positions(&self) -> ConditionDigitPositions;
 
     /// Returns the concrete changes produced by applying the technique.
     fn application(&self) -> Vec<TechniqueApplication>;
@@ -44,8 +44,8 @@ pub trait TechniqueStep: Debug + Send + Sync {
 #[derive(Debug, Clone)]
 pub struct TechniqueStepData {
     technique_name: &'static str,
-    condition_cells: ConditionCells,
-    condition_digit_cells: ConditionDigitCells,
+    condition_positions: ConditionPositions,
+    condition_digit_positions: ConditionDigitPositions,
     application: Vec<TechniqueApplication>,
 }
 
@@ -54,14 +54,14 @@ impl TechniqueStepData {
     #[must_use]
     pub fn new_boxed(
         technique_name: &'static str,
-        condition_cells: ConditionCells,
-        condition_digit_cells: ConditionDigitCells,
+        condition_positions: ConditionPositions,
+        condition_digit_positions: ConditionDigitPositions,
         application: Vec<TechniqueApplication>,
     ) -> BoxedTechniqueStep {
         Box::new(Self {
             technique_name,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             application,
         })
     }
@@ -70,16 +70,16 @@ impl TechniqueStepData {
     #[must_use]
     pub fn from_diff(
         technique_name: &'static str,
-        condition_cells: ConditionCells,
-        condition_digit_cells: ConditionDigitCells,
+        condition_positions: ConditionPositions,
+        condition_digit_positions: ConditionDigitPositions,
         before: &TechniqueGrid,
         after: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
         let application = collect_applications_from_diff(before, after);
         Self::new_boxed(
             technique_name,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             application,
         )
     }
@@ -94,12 +94,12 @@ impl TechniqueStep for TechniqueStepData {
         Box::new(self.clone())
     }
 
-    fn condition_cells(&self) -> ConditionCells {
-        self.condition_cells
+    fn condition_positions(&self) -> ConditionPositions {
+        self.condition_positions
     }
 
-    fn condition_digit_cells(&self) -> ConditionDigitCells {
-        self.condition_digit_cells.clone()
+    fn condition_digit_positions(&self) -> ConditionDigitPositions {
+        self.condition_digit_positions.clone()
     }
 
     fn application(&self) -> Vec<TechniqueApplication> {
@@ -140,15 +140,15 @@ fn collect_applications_from_diff(
     after: &TechniqueGrid,
 ) -> Vec<TechniqueApplication> {
     let mut app = vec![];
-    let decided_cells = after.decided_propagated();
-    let mut candidate_changed_cells = DigitPositions::EMPTY;
+    let univalue_positions = after.univalue_propagated();
+    let mut candidate_changed_positions = DigitPositions::EMPTY;
     for digit in DigitSet::FULL {
         let before_positions = before.digit_positions(digit);
         let after_positions = after.digit_positions(digit);
         debug_assert!(before_positions.is_superset(after_positions));
         let diff = before_positions.difference(after_positions);
-        candidate_changed_cells |= diff;
-        let elimination = diff & !decided_cells;
+        candidate_changed_positions |= diff;
+        let elimination = diff & !univalue_positions;
         if !elimination.is_empty() {
             app.push(TechniqueApplication::CandidateElimination {
                 positions: elimination,
@@ -156,7 +156,7 @@ fn collect_applications_from_diff(
             });
         }
     }
-    for position in decided_cells & candidate_changed_cells {
+    for position in univalue_positions & candidate_changed_positions {
         let digit = after.candidates_at(position).as_single().unwrap();
         app.push(TechniqueApplication::Placement { position, digit });
     }

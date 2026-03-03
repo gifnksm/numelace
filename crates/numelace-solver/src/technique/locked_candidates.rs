@@ -40,8 +40,8 @@ impl Condition {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let condition_cells = self.box_.positions() | self.line.positions();
-        let condition_digit_cells = vec![(
+        let condition_positions = self.box_.positions() | self.line.positions();
+        let condition_digit_positions = vec![(
             self.box_.positions() & self.line.positions(),
             DigitSet::from_elem(self.digit),
         )];
@@ -50,8 +50,8 @@ impl Condition {
                 LockedCandidatesKind::Pointing => NAME_POINTING,
                 LockedCandidatesKind::Claiming => NAME_CLAIMING,
             },
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )
@@ -70,7 +70,7 @@ impl LockedCandidates {
     where
         F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
-        let decided_cells = grid.decided_cells();
+        let univalue_positions = grid.univalue_positions();
         for box_index in 0..9 {
             let box_ = House::Box { index: box_index };
             let origin = Position::box_origin(box_index);
@@ -85,14 +85,14 @@ impl LockedCandidates {
 
             for line in lines {
                 let intersection = box_.positions() & line.positions();
-                if (intersection & !decided_cells).is_empty() {
+                if (intersection & !univalue_positions).is_empty() {
                     continue;
                 }
 
                 let rest_in_box = box_.positions() & !intersection;
                 let rest_in_line = line.positions() & !intersection;
                 for digit in Digit::ALL {
-                    let undecided_positions = grid.digit_positions(digit) & !decided_cells;
+                    let undecided_positions = grid.digit_positions(digit) & !univalue_positions;
                     if (undecided_positions & intersection).is_empty() {
                         continue;
                     }

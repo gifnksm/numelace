@@ -34,8 +34,8 @@ impl Condition {
         before_grid: &TechniqueGrid,
         after_grid: &TechniqueGrid,
     ) -> BoxedTechniqueStep {
-        let condition_cells = DigitPositions::from_iter([self.pivot, self.wing1, self.wing2]);
-        let condition_digit_cells = vec![
+        let condition_positions = DigitPositions::from_iter([self.pivot, self.wing1, self.wing2]);
+        let condition_digit_positions = vec![
             (
                 DigitPositions::from_elem(self.pivot),
                 DigitSet::from_iter([self.d1, self.d2]),
@@ -51,8 +51,8 @@ impl Condition {
         ];
         TechniqueStepData::from_diff(
             NAME,
-            condition_cells,
-            condition_digit_cells,
+            condition_positions,
+            condition_digit_positions,
             before_grid,
             after_grid,
         )
@@ -71,9 +71,9 @@ impl YWing {
     where
         F: for<'a> FnMut(&'a mut TechniqueGrid, &'a Condition) -> ControlFlow<T>,
     {
-        let pair_candidate_cells = grid.classify_cells::<3>()[2];
-        for pivot in pair_candidate_cells {
-            let pivot_peers = pivot.house_peers() & pair_candidate_cells;
+        let bivalue_positions = grid.classify_positions::<3>()[2];
+        for pivot in bivalue_positions {
+            let pivot_peers = pivot.house_peers() & bivalue_positions;
             let pivot_digits = grid.candidates_at(pivot);
             let Some([d1, d2]) = pivot_digits.as_double() else {
                 // `grid.remove_candidate_with_mask` may have changed the candidates at pivot, so we need to check again
