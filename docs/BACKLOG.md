@@ -45,7 +45,7 @@ This backlog is the single source of truth for tasks and ideas.
     - [X] Remote Pair
     - [X] X-Chain
     - [X] XY-Chain
-    - [ ] XYZ-Wing
+    - [X] XYZ-Wing
   - Tier 5 (expert):
     - [ ] WXYZ-Wing
     - [ ] BUG+1 (Bivalue Universal Grave +1)

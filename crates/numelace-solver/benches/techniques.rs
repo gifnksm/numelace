@@ -18,7 +18,7 @@ use numelace_solver::{
     technique::{
         HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, Jellyfish, LockedCandidates, NakedPair,
         NakedQuad, NakedSingle, NakedTriple, RemotePair, Skyscraper, Swordfish, TwoStringKite,
-        XChain, XWing, XyChain, YWing,
+        XChain, XWing, XyChain, XyzWing, YWing,
     },
 };
 
@@ -300,6 +300,33 @@ fn y_wing_grid() -> TechniqueGrid {
     TechniqueGrid::from(grid)
 }
 
+fn xyz_wing_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let pivot = Position::new(1, 1);
+    let wing1 = Position::new(1, 2);
+    let wing2 = Position::new(2, 1);
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {
+            grid.remove_candidate(pivot, digit);
+        }
+    }
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D2 {
+            grid.remove_candidate(wing1, digit);
+        }
+    }
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D3 {
+            grid.remove_candidate(wing2, digit);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
 fn remote_pair_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
     let digit1 = Digit::D1;
@@ -500,6 +527,15 @@ fn bench_y_wing_apply(c: &mut Criterion) {
     bench_apply_cases(c, "y_wing_apply", &technique, &puzzles);
 }
 
+fn bench_xyz_wing_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("xyz_wing", xyz_wing_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+    let technique = XyzWing::new();
+    bench_apply_cases(c, "xyz_wing_apply", &technique, &puzzles);
+}
+
 fn bench_remote_pair_apply(c: &mut Criterion) {
     let puzzles = [
         ("remote_pair", remote_pair_grid()),
@@ -660,6 +696,15 @@ criterion_group!(
 );
 
 criterion_group!(
+    name = benches_xyz_wing;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_xyz_wing_apply,
+);
+
+criterion_group!(
     name = benches_remote_pair;
     config =
         Criterion::default()
@@ -702,6 +747,7 @@ criterion_main!(
     benches_skyscraper,
     benches_two_string_kite,
     benches_y_wing,
+    benches_xyz_wing,
     benches_remote_pair,
     benches_x_chain,
     benches_xy_chain,

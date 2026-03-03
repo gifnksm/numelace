@@ -1,7 +1,7 @@
 //! Benchmarks for Sudoku puzzle generation.
 //!
 //! This benchmark suite measures the performance of puzzle generation using
-//! `PuzzleGenerator` with fundamental and basic techniques.
+//! `PuzzleGenerator` with fundamental through advanced techniques.
 //!
 //! # Benchmarks
 //!
@@ -10,6 +10,12 @@
 //!   including solution generation and cell removal.
 //! - **`generator_basic`**: Generates puzzles using basic techniques
 //!   (fundamental + `Locked Candidates`).
+//! - **`generator_intermediate`**: Generates puzzles using intermediate techniques
+//!   (basic + pairs/triples).
+//! - **`generator_upper_intermediate`**: Generates puzzles using upper-intermediate techniques
+//!   (intermediate + wings).
+//! - **`generator_advanced`**: Generates puzzles using advanced techniques
+//!   (including chain techniques).
 //!
 //! # Test Data
 //!
@@ -87,6 +93,12 @@ fn bench_generator_upper_intermediate(c: &mut Criterion) {
     bench_generator_cases(c, "generator_upper_intermediate", &generator);
 }
 
+fn bench_generator_advanced(c: &mut Criterion) {
+    let solver = TechniqueSolver::new(technique::advanced_techniques());
+    let generator = PuzzleGenerator::new(&solver);
+    bench_generator_cases(c, "generator_advanced", &generator);
+}
+
 criterion_group!(
     name = benches_fundamental;
     config =
@@ -124,9 +136,19 @@ criterion_group!(
         bench_generator_upper_intermediate,
 );
 
+criterion_group!(
+    name = benches_advanced;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_generator_advanced,
+);
+
 criterion_main!(
     benches_fundamental,
     benches_basic,
     benches_intermediate,
     benches_upper_intermediate,
+    benches_advanced,
 );
