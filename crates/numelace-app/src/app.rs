@@ -46,33 +46,23 @@ impl NumelaceApp {
         }
     }
 
-    fn poll_and_handle_actions(&mut self, ctx: &Context, action_queue: &mut ActionRequestQueue) {
-        let mut need_repaint = false;
+    fn poll_and_handle_actions(&mut self, action_queue: &mut ActionRequestQueue) {
         self.ui_state.executor.poll(action_queue);
         for _ in 0..MAX_ACTION_HANDLING_ITERATIONS {
             if action_queue.is_empty() {
                 break;
             }
             action::handler::handle_all(&mut self.app_state, &mut self.ui_state, action_queue);
-            need_repaint = true;
             self.ui_state.executor.poll(action_queue);
-        }
-        if need_repaint {
-            ctx.request_repaint();
         }
     }
 
-    fn handle_actions(&mut self, ctx: &Context, action_queue: &mut ActionRequestQueue) {
-        let mut need_repaint = false;
+    fn handle_actions(&mut self, action_queue: &mut ActionRequestQueue) {
         for _ in 0..MAX_ACTION_HANDLING_ITERATIONS {
             if action_queue.is_empty() {
                 break;
             }
             action::handler::handle_all(&mut self.app_state, &mut self.ui_state, action_queue);
-            need_repaint = true;
-        }
-        if need_repaint {
-            ctx.request_repaint();
         }
     }
 
@@ -103,7 +93,7 @@ impl App for NumelaceApp {
             self.ui_state.requested_initial_new_game = true;
         }
 
-        self.poll_and_handle_actions(ctx, &mut action_queue);
+        self.poll_and_handle_actions(&mut action_queue);
 
         let allow_input =
             self.ui_state.active_modal.is_none() && !self.ui_state.spinner_state.is_active();
@@ -111,7 +101,7 @@ impl App for NumelaceApp {
             let context = ui::input::build_input_context(i, allow_input);
             if allow_input {
                 ui::input::handle_input(i, &context, &mut action_queue);
-                self.handle_actions(ctx, &mut action_queue);
+                self.handle_actions(&mut action_queue);
             }
             context
         });
@@ -143,7 +133,7 @@ impl App for NumelaceApp {
             ui::spinner::show(ctx, spinner);
         }
 
-        self.poll_and_handle_actions(ctx, &mut action_queue);
+        self.poll_and_handle_actions(&mut action_queue);
         self.apply_persistence(frame);
     }
 }
