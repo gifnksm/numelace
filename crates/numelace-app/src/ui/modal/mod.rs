@@ -16,10 +16,10 @@ pub(crate) fn show(
 ) {
     match modal_request {
         ModalRequest::Confirm { kind, responder } => {
-            dialogs::show_confirm(ctx, action_queue, *kind, responder);
+            dialogs::show_confirm(ctx, *kind, responder);
         }
         ModalRequest::Alert { kind, responder } => {
-            dialogs::show_alert(ctx, action_queue, kind, responder);
+            dialogs::show_alert(ctx, kind, responder);
         }
         ModalRequest::NewGameOptions {
             can_cancel,

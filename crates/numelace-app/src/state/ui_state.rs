@@ -14,6 +14,7 @@ pub(crate) struct UiState {
     pub(crate) hint_state: Option<HintState>,
     pub(crate) executor: FlowExecutor,
     pub(crate) spinner_state: SpinnerState,
+    pub(crate) requested_initial_new_game: bool,
 }
 
 impl UiState {
@@ -25,6 +26,7 @@ impl UiState {
             hint_state: None,
             executor: FlowExecutor::new(),
             spinner_state: SpinnerState::default(),
+            requested_initial_new_game: false,
         }
     }
 }

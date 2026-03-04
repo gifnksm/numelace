@@ -4,7 +4,7 @@ use eframe::egui::{
 use numelace_solver::technique;
 
 use crate::{
-    action::{ActionRequestQueue, NewGameOptionsResponder, UiAction, UpdateStateAction},
+    action::{ActionRequestQueue, NewGameOptionsResponder, UpdateStateAction},
     state::{DifficultyPreset, NewGameOptions},
     ui::icon,
 };
@@ -94,13 +94,9 @@ pub(crate) fn show(
                     let mut response = draft.clone();
                     response.seed = response.seed.trim().to_string();
                     send_response(responder, Some(response));
-                    action_queue.request(UiAction::CloseModal.into());
-                    ui.close();
                 }
                 if can_cancel && ui.button(format!("{} Cancel", icon::CANCEL)).clicked() {
                     send_response(responder, None);
-                    action_queue.request(UiAction::CloseModal.into());
-                    ui.close();
                 }
             },
         );
@@ -110,7 +106,6 @@ pub(crate) fn show(
     });
     if can_cancel && modal.should_close() {
         send_response(responder, None);
-        action_queue.request(UiAction::CloseModal.into());
     }
 }
 

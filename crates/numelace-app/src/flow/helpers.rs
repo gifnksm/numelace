@@ -25,10 +25,12 @@ pub(super) async fn show_confirm_dialog(handle: &FlowHandle, kind: ConfirmKind) 
         })
         .into(),
     );
-    match receiver.await {
+    let result = match receiver.await {
         Ok(result) => result,
         Err(_) => ConfirmResult::Cancelled,
-    }
+    };
+    handle.request_action(UiAction::CloseModal.into());
+    result
 }
 
 pub(super) async fn show_alert_dialog(handle: &FlowHandle, kind: AlertKind) -> AlertResult {
@@ -40,10 +42,12 @@ pub(super) async fn show_alert_dialog(handle: &FlowHandle, kind: AlertKind) -> A
         })
         .into(),
     );
-    match receiver.await {
+    let result = match receiver.await {
         Ok(result) => result,
         Err(_) => AlertResult::Ok,
-    }
+    };
+    handle.request_action(UiAction::CloseModal.into());
+    result
 }
 
 pub(super) async fn request_undo_games(handle: &FlowHandle) -> Option<Vec<Game>> {

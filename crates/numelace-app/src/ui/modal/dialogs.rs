@@ -4,8 +4,8 @@ use eframe::egui::{CollapsingHeader, Context, Id, Modal, Response, RichText, Sid
 
 use crate::{
     action::{
-        ActionRequestQueue, AlertKind, AlertResponder, AlertResult, ConfirmKind, ConfirmResponder,
-        ConfirmResult, Responder, UiAction,
+        AlertKind, AlertResponder, AlertResult, ConfirmKind, ConfirmResponder, ConfirmResult,
+        Responder,
     },
     ui::icon,
     worker::tasks::SolvabilityStatsDto,
@@ -220,7 +220,6 @@ impl AlertKind {
 
 pub(crate) fn show_confirm(
     ctx: &Context,
-    action_queue: &mut ActionRequestQueue,
     kind: ConfirmKind,
     responder: &mut Option<ConfirmResponder>,
 ) {
@@ -253,16 +252,10 @@ pub(crate) fn show_confirm(
 
     if should_close {
         send_response(responder, ConfirmResult::Cancelled);
-        action_queue.request(UiAction::CloseModal.into());
     }
 }
 
-pub(crate) fn show_alert(
-    ctx: &Context,
-    action_queue: &mut ActionRequestQueue,
-    kind: &AlertKind,
-    responder: &mut Option<AlertResponder>,
-) {
+pub(crate) fn show_alert(ctx: &Context, kind: &AlertKind, responder: &mut Option<AlertResponder>) {
     let spec = kind.spec();
     let DialogResult { should_close } = show_dialog(
         ctx,
@@ -304,6 +297,5 @@ pub(crate) fn show_alert(
 
     if should_close {
         send_response(responder, AlertResult::Ok);
-        action_queue.request(UiAction::CloseModal.into());
     }
 }

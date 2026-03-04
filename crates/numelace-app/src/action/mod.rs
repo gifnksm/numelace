@@ -240,6 +240,10 @@ pub(crate) struct ActionRequestQueue {
 }
 
 impl ActionRequestQueue {
+    pub(crate) fn is_empty(&self) -> bool {
+        self.actions.is_empty()
+    }
+
     pub(crate) fn request(&mut self, action: Action) {
         self.actions.push(action);
     }

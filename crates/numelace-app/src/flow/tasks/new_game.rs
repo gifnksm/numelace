@@ -68,5 +68,7 @@ async fn show_new_game_options_modal(
         })
         .into(),
     );
-    receiver.await.unwrap_or_default()
+    let result = receiver.await.unwrap_or_default();
+    handle.request_action(UiAction::CloseModal.into());
+    result
 }
