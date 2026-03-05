@@ -52,7 +52,7 @@ mod tests {
     fn undo_redo_restores_game_and_selection() {
         let mut app_state = AppState::new(fixed_game());
 
-        app_state.selected_cell = Some(Position::new(0, 0));
+        app_state.set_selected_cell(Position::new(0, 0));
         app_state
             .game
             .set_digit(
@@ -63,7 +63,7 @@ mod tests {
             .unwrap();
         app_state.push_history();
 
-        app_state.selected_cell = Some(Position::new(2, 0));
+        app_state.set_selected_cell(Position::new(2, 0));
         app_state
             .game
             .set_digit(
@@ -84,7 +84,7 @@ mod tests {
             app_state.game.cell(Position::new(2, 0)),
             CellState::Empty
         ));
-        assert_eq!(app_state.selected_cell, Some(Position::new(2, 0)));
+        assert_eq!(app_state.selected_cell(), Some(Position::new(2, 0)));
 
         assert!(app_state.redo());
 
@@ -92,6 +92,6 @@ mod tests {
             app_state.game.cell(Position::new(2, 0)),
             CellState::Filled(Digit::D3)
         ));
-        assert_eq!(app_state.selected_cell, Some(Position::new(2, 0)));
+        assert_eq!(app_state.selected_cell(), Some(Position::new(2, 0)));
     }
 }

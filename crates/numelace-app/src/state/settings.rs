@@ -23,18 +23,18 @@ impl Default for AssistSettings {
 #[derive(Debug, Clone)]
 #[expect(clippy::struct_excessive_bools)]
 pub(crate) struct HighlightSettings {
-    pub(crate) same_digit: bool,
-    pub(crate) house_selected: bool,
-    pub(crate) house_same_digit: bool,
+    pub(crate) selected_digit: bool,
+    pub(crate) house_selected_cell: bool,
+    pub(crate) house_selected_digit: bool,
     pub(crate) conflict: bool,
 }
 
 impl Default for HighlightSettings {
     fn default() -> Self {
         Self {
-            same_digit: true,
-            house_selected: true,
-            house_same_digit: true,
+            selected_digit: true,
+            house_selected_cell: true,
+            house_selected_digit: true,
             conflict: true,
         }
     }

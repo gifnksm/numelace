@@ -86,3 +86,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-02-26: Use a dedicated New Game options dialog with conditional confirmation (skip when solved) and a non-cancelable first-run dialog — keeps options explicit while avoiding redundant prompts.
 - 2026-02-26: Difficulty uses radio presets with a Custom option; technique edits auto-select Custom and live under difficulty details — keeps presets simple while enabling fine-tuning.
 - 2026-02-26: Seed input is an optional field in the New Game dialog; blank seeds are random and specified seeds generate with the selected techniques — preserves reproducibility without adding extra modes.
+- 2026-03-05: Selecting a digit cell updates the selected digit; selecting an empty or notes-only cell preserves the current selected digit and same-digit highlight — keeps highlight stability while navigating.

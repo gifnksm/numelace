@@ -40,17 +40,19 @@ pub(crate) fn show(ctx: &Context, vm: &SettingsViewModel, action_queue: &mut Act
                     ui.label(format!("{} Highlight", icon::BRIGHTNESS));
                     ui.indent("highlight", |ui| {
                         let HighlightSettings {
-                            same_digit,
-                            house_selected,
-                            house_same_digit,
+                            selected_digit,
+                            house_selected_cell,
+                            house_selected_digit,
                             conflict,
                         } = highlight;
-                        changed |= ui.checkbox(same_digit, "Same digit cells/notes").changed();
                         changed |= ui
-                            .checkbox(house_selected, "Selected cell's row/col/box")
+                            .checkbox(selected_digit, "Same digit cells/notes")
                             .changed();
                         changed |= ui
-                            .checkbox(house_same_digit, "Same digit cells' row/col/box")
+                            .checkbox(house_selected_cell, "Selected cell's row/col/box")
+                            .changed();
+                        changed |= ui
+                            .checkbox(house_selected_digit, "Same digit cells' row/col/box")
                             .changed();
                         changed |= ui.checkbox(conflict, "Conflicting cells/notes").changed();
                     });

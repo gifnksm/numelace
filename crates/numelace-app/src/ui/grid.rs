@@ -18,10 +18,10 @@ use crate::{
 bitflags::bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub(crate) struct GridVisualState: u16 {
-        const SELECTED = 0x0001;
-        const SAME_DIGIT = 0x0002;
-        const HOUSE_SELECTED = 0x0004;
-        const HOUSE_SAME_DIGIT = 0x0008;
+        const SELECTED_CELL = 0x0001;
+        const SELECTED_DIGIT = 0x0002;
+        const HOUSE_SELECTED_CELL = 0x0004;
+        const HOUSE_SELECTED_DIGIT = 0x0008;
         const CONFLICT = 0x0010;
         const GHOST = 0x0020;
         const HINT_CONDITION_CELL = 0x0040;
@@ -42,7 +42,7 @@ pub(crate) struct GridCell {
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub(crate) struct NoteVisualState {
-    pub(crate) same_digit: DigitSet,
+    pub(crate) selected_digit: DigitSet,
     pub(crate) conflict: DigitSet,
     pub(crate) ghost: DigitSet,
     pub(crate) hint_condition_digit: DigitSet,
@@ -55,7 +55,7 @@ impl NoteVisualState {
     #[must_use]
     pub(crate) fn digit_highlight(&self, digit: Digit) -> GridVisualState {
         let Self {
-            same_digit,
+            selected_digit,
             conflict,
             ghost,
             hint_condition_digit,
@@ -64,8 +64,8 @@ impl NoteVisualState {
             hint_application_temporary,
         } = self;
         let mut vs = GridVisualState::empty();
-        if same_digit.contains(digit) {
-            vs |= GridVisualState::SAME_DIGIT;
+        if selected_digit.contains(digit) {
+            vs |= GridVisualState::SELECTED_DIGIT;
         }
         if conflict.contains(digit) {
             vs |= GridVisualState::CONFLICT;
@@ -101,7 +101,7 @@ impl GridViewModel {
         grid: PositionIndexedArray<GridCell>,
         highlight_settings: &HighlightSettings,
     ) -> Self {
-        let mut enabled_highlights = GridVisualState::SELECTED
+        let mut enabled_highlights = GridVisualState::SELECTED_CELL
             | GridVisualState::HINT_CONDITION_CELL
             | GridVisualState::HINT_CONDITION_DIGIT
             | GridVisualState::HINT_CONDITION_TEMPORARY
@@ -109,19 +109,19 @@ impl GridViewModel {
             | GridVisualState::HINT_APPLICATION_ELIMINATION
             | GridVisualState::HINT_APPLICATION_TEMPORARY;
         let HighlightSettings {
-            same_digit,
-            house_selected,
-            house_same_digit,
+            selected_digit,
+            house_selected_cell,
+            house_selected_digit,
             conflict,
         } = highlight_settings;
-        if *house_same_digit {
-            enabled_highlights |= GridVisualState::HOUSE_SAME_DIGIT;
+        if *house_selected_digit {
+            enabled_highlights |= GridVisualState::HOUSE_SELECTED_DIGIT;
         }
-        if *house_selected {
-            enabled_highlights |= GridVisualState::HOUSE_SELECTED;
+        if *house_selected_cell {
+            enabled_highlights |= GridVisualState::HOUSE_SELECTED_CELL;
         }
-        if *same_digit {
-            enabled_highlights |= GridVisualState::SAME_DIGIT;
+        if *selected_digit {
+            enabled_highlights |= GridVisualState::SELECTED_DIGIT;
         }
         if *conflict {
             enabled_highlights |= GridVisualState::CONFLICT;
@@ -187,27 +187,24 @@ impl EffectiveGridVisualState {
     }
 
     fn cell_fill_color(self, palette: &GridPalette) -> Color32 {
-        if self.0.intersects(GridVisualState::SELECTED) {
+        if self.0.intersects(GridVisualState::SELECTED_CELL) {
             return palette.cell_bg_selected;
         }
-        if self.0.intersects(GridVisualState::SAME_DIGIT) {
-            return palette.cell_bg_same_digit;
+        if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
+            return palette.cell_bg_selected_digit;
         }
-        if self.0.intersects(GridVisualState::HOUSE_SELECTED) {
-            return palette.cell_bg_house_selected;
+        if self.0.intersects(GridVisualState::HOUSE_SELECTED_CELL) {
+            return palette.cell_bg_house_selected_cell;
         }
-        if self.0.intersects(GridVisualState::HOUSE_SAME_DIGIT) {
-            return palette.cell_bg_house_same_digit;
+        if self.0.intersects(GridVisualState::HOUSE_SELECTED_DIGIT) {
+            return palette.cell_bg_house_selected_digit;
         }
         palette.cell_bg_default
     }
 
     fn note_fill_color(self, palette: &GridPalette) -> Option<Color32> {
-        if self.0.intersects(GridVisualState::SAME_DIGIT) {
-            return Some(palette.note_bg_same_digit);
-        }
-        if self.0.intersects(GridVisualState::HOUSE_SAME_DIGIT) {
-            return Some(palette.note_bg_house_same_digit);
+        if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
+            return Some(palette.note_bg_selected_digit);
         }
         None
     }
@@ -216,24 +213,23 @@ impl EffectiveGridVisualState {
         if self.0.intersects(GridVisualState::CONFLICT) {
             return palette.border_conflict;
         }
-        if self.0.intersects(GridVisualState::SELECTED) {
+        if self.0.intersects(GridVisualState::SELECTED_CELL) {
             return palette.border_selected;
         }
-        if self.0.intersects(GridVisualState::SAME_DIGIT) {
+        if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
             return palette.border_same_digit;
         }
         palette.border_inactive
     }
 
     fn cell_border_width_ratio(self) -> f32 {
-        if self.0.intersects(GridVisualState::SELECTED) {
+        if self.0.intersects(GridVisualState::SELECTED_CELL) {
             SELECTED_BORDER_WIDTH_RATIO
-        } else if self.0.intersects(GridVisualState::SAME_DIGIT) {
+        } else if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
             SAME_DIGIT_BORDER_WIDTH_RATIO
-        } else if self
-            .0
-            .intersects(GridVisualState::HOUSE_SELECTED | GridVisualState::HOUSE_SAME_DIGIT)
-        {
+        } else if self.0.intersects(
+            GridVisualState::HOUSE_SELECTED_CELL | GridVisualState::HOUSE_SELECTED_DIGIT,
+        ) {
             HOUSE_BORDER_WIDTH_RATIO
         } else {
             THIN_BORDER_WIDTH_RATIO

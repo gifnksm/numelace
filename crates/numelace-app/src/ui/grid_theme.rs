@@ -9,12 +9,11 @@ use eframe::egui::{Color32, Visuals};
 pub(crate) struct GridPalette {
     pub(crate) cell_bg_default: Color32,
     pub(crate) cell_bg_selected: Color32,
-    pub(crate) cell_bg_same_digit: Color32,
-    pub(crate) cell_bg_house_selected: Color32,
-    pub(crate) cell_bg_house_same_digit: Color32,
+    pub(crate) cell_bg_selected_digit: Color32,
+    pub(crate) cell_bg_house_selected_cell: Color32,
+    pub(crate) cell_bg_house_selected_digit: Color32,
 
-    pub(crate) note_bg_same_digit: Color32,
-    pub(crate) note_bg_house_same_digit: Color32,
+    pub(crate) note_bg_selected_digit: Color32,
 
     pub(crate) pill_hint: Color32,
 
@@ -46,21 +45,18 @@ impl GridPalette {
         // - Keep light/dark modes on the same semantic hue, adjust luminance only.
         // - Keep backgrounds subtle so digits/notes stay primary.
         // - For visuals-derived values, keep a single value comment at the source line.
-        let cell_bg_selected = visuals.selection.bg_fill; // dark=(0, 92, 128) light=(144, 209, 255)
-        let (cell_bg_house_selected, cell_bg_house_same_digit, note_bg_house_same_digit) =
-            if visuals.dark_mode {
-                (
-                    Color32::from_gray(80), // base: widgets.hovered.bg_fill = (70, 70, 70) (dark)
-                    Color32::from_gray(45), // tuned from widgets.hovered.bg_fill (dark), higher contrast
-                    Color32::from_gray(45), // tuned from widgets.hovered.bg_fill (dark), higher contrast
-                )
-            } else {
-                (
-                    Color32::from_gray(170), // tuned from widgets.hovered.bg_fill (light), higher contrast
-                    Color32::from_gray(210), // base: widgets.hovered.bg_fill = (220, 220, 220) (light)
-                    Color32::from_gray(210), // base: widgets.hovered.bg_fill = (220, 220, 220) (light)
-                )
-            };
+        let cell_bg_selected_cell = visuals.selection.bg_fill; // dark=(0, 92, 128) light=(144, 209, 255)
+        let (cell_bg_house_selected_cell, cell_bg_house_selected_digit) = if visuals.dark_mode {
+            (
+                Color32::from_gray(80), // base: widgets.hovered.bg_fill = (70, 70, 70) (dark)
+                Color32::from_gray(45), // tuned from widgets.hovered.bg_fill (dark), higher contrast
+            )
+        } else {
+            (
+                Color32::from_gray(170), // tuned from widgets.hovered.bg_fill (light), higher contrast
+                Color32::from_gray(210), // base: widgets.hovered.bg_fill = (220, 220, 220) (light)
+            )
+        };
         let hint_accent = if visuals.dark_mode {
             Color32::from_rgb(255, 165, 0)
         } else {
@@ -74,13 +70,12 @@ impl GridPalette {
 
         Self {
             cell_bg_default: visuals.text_edit_bg_color(), // dark=(10, 10, 10) light=(255, 255, 255)
-            cell_bg_selected,
-            cell_bg_same_digit: cell_bg_selected,
-            cell_bg_house_selected,
-            cell_bg_house_same_digit,
+            cell_bg_selected: cell_bg_selected_cell,
+            cell_bg_selected_digit: cell_bg_selected_cell,
+            cell_bg_house_selected_cell,
+            cell_bg_house_selected_digit,
 
-            note_bg_same_digit: cell_bg_selected,
-            note_bg_house_same_digit,
+            note_bg_selected_digit: cell_bg_selected_cell,
 
             pill_hint: hint_accent,
 

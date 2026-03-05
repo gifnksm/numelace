@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, fmt::Write, num::NonZero};
 
-use numelace_core::{DigitGrid, DigitGridParseError, Position, PositionNewError};
+use numelace_core::{Digit, DigitGrid, DigitGridParseError, Position, PositionNewError};
 use numelace_game::{CellState, Game, GameError};
 use numelace_solver::technique;
 use serde::{Deserialize, Serialize};
@@ -21,6 +21,8 @@ pub(crate) struct PersistedState {
     #[serde(default)]
     selected_cell: Option<PositionDto>,
     #[serde(default)]
+    selected_digit: Option<DigitDto>,
+    #[serde(default)]
     input_mode: InputModeDto,
     #[serde(default)]
     new_game_options: NewGameOptionsDto,
@@ -34,7 +36,8 @@ impl From<&AppState> for PersistedState {
     fn from(value: &AppState) -> Self {
         Self {
             game: GameDto::from(&value.game),
-            selected_cell: value.selected_cell.map(PositionDto::from),
+            selected_cell: value.selected_cell().map(PositionDto::from),
+            selected_digit: value.selected_digit().map(DigitDto::from),
             input_mode: value.input_mode.into(),
             new_game_options: NewGameOptionsDto::from(&value.new_game_options),
             settings: SettingsDto::from(&value.settings),
@@ -51,6 +54,8 @@ pub(crate) enum AppStateConversionError {
     GameRestore(GameError),
     #[display("failed to construct selected position: {_0}")]
     PositionNew(PositionNewError),
+    #[display("failed to parse selected digit: {_0}")]
+    DigitParse(DigitParseError),
 }
 
 impl TryFrom<PersistedState> for AppState {
@@ -60,6 +65,7 @@ impl TryFrom<PersistedState> for AppState {
         Ok(AppState::from_parts(
             value.game.try_into()?,
             value.selected_cell.map(Position::try_from).transpose()?,
+            value.selected_digit.map(Digit::try_from).transpose()?,
             value.input_mode.into(),
             value.new_game_options.into(),
             value.settings.into(),
@@ -238,6 +244,33 @@ impl TryFrom<PositionDto> for Position {
     }
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(transparent)]
+pub(crate) struct DigitDto(u8);
+
+impl From<Digit> for DigitDto {
+    fn from(value: Digit) -> Self {
+        Self(value.into())
+    }
+}
+
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_more::From)]
+pub(crate) enum DigitParseError {
+    #[display("digit value {_0} is out of range (must be 1-9)")]
+    InvalidDigit(#[error(not(source))] u8),
+}
+
+impl TryFrom<DigitDto> for Digit {
+    type Error = DigitParseError;
+
+    fn try_from(value: DigitDto) -> Result<Self, Self::Error> {
+        if !(1..=9).contains(&value.0) {
+            return Err(Self::Error::InvalidDigit(value.0));
+        }
+        Ok(Digit::from_value(value.0))
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 pub(crate) enum InputModeDto {
     #[default]
@@ -412,9 +445,9 @@ impl From<AssistSettingsDto> for AssistSettings {
 #[serde(default)]
 #[expect(clippy::struct_excessive_bools)]
 pub(crate) struct HighlightSettingsDto {
-    pub(crate) same_digit: bool,
-    pub(crate) house_selected: bool,
-    pub(crate) house_same_digit: bool,
+    pub(crate) selected_digit: bool,
+    pub(crate) house_selected_cell: bool,
+    pub(crate) house_selected_digit: bool,
     pub(crate) conflict: bool,
 }
 
@@ -427,9 +460,9 @@ impl Default for HighlightSettingsDto {
 impl From<&HighlightSettings> for HighlightSettingsDto {
     fn from(value: &HighlightSettings) -> Self {
         Self {
-            same_digit: value.same_digit,
-            house_selected: value.house_selected,
-            house_same_digit: value.house_same_digit,
+            selected_digit: value.selected_digit,
+            house_selected_cell: value.house_selected_cell,
+            house_selected_digit: value.house_selected_digit,
             conflict: value.conflict,
         }
     }
@@ -444,9 +477,9 @@ impl From<HighlightSettings> for HighlightSettingsDto {
 impl From<HighlightSettingsDto> for HighlightSettings {
     fn from(value: HighlightSettingsDto) -> Self {
         Self {
-            same_digit: value.same_digit,
-            house_selected: value.house_selected,
-            house_same_digit: value.house_same_digit,
+            selected_digit: value.selected_digit,
+            house_selected_cell: value.house_selected_cell,
+            house_selected_digit: value.house_selected_digit,
             conflict: value.conflict,
         }
     }

@@ -20,7 +20,7 @@ use crate::{
 #[must_use]
 pub(crate) fn build_toolbar_vm(app_state: &AppState, _ui_state: &UiState) -> ToolbarViewModel {
     let auto_fill_capability = app_state
-        .selected_cell
+        .selected_cell()
         .map(|pos| app_state.game.auto_fill_cell_notes_capability(pos));
     ToolbarViewModel::new(
         app_state.can_undo(),
@@ -236,9 +236,9 @@ fn apply_hint_visuals(
 }
 
 fn apply_selection_highlights(grid: &mut PositionIndexedArray<GridCell>, pos: Position) {
-    grid[pos].visual_state |= GridVisualState::SELECTED;
+    grid[pos].visual_state |= GridVisualState::SELECTED_CELL;
     for house_pos in pos.house_positions() {
-        grid[house_pos].visual_state |= GridVisualState::HOUSE_SELECTED;
+        grid[house_pos].visual_state |= GridVisualState::HOUSE_SELECTED_CELL;
     }
 }
 
@@ -271,9 +271,9 @@ fn apply_conflict_highlights(grid: &mut PositionIndexedArray<GridCell>) {
 fn apply_selected_digit_highlights(grid: &mut PositionIndexedArray<GridCell>, digit: Digit) {
     for pos in Position::ALL {
         if grid[pos].content.as_digit() == Some(digit) {
-            grid[pos].visual_state |= GridVisualState::SAME_DIGIT;
+            grid[pos].visual_state |= GridVisualState::SELECTED_DIGIT;
             for house_pos in pos.house_positions() {
-                grid[house_pos].visual_state |= GridVisualState::HOUSE_SAME_DIGIT;
+                grid[house_pos].visual_state |= GridVisualState::HOUSE_SELECTED_DIGIT;
             }
         }
 
@@ -282,7 +282,7 @@ fn apply_selected_digit_highlights(grid: &mut PositionIndexedArray<GridCell>, di
             .as_notes()
             .is_some_and(|notes| notes.contains(digit))
         {
-            grid[pos].note_visual_state.same_digit.insert(digit);
+            grid[pos].note_visual_state.selected_digit.insert(digit);
         }
     }
 }
@@ -305,11 +305,11 @@ fn build_grid(app_state: &AppState, ui_state: &UiState) -> PositionIndexedArray<
 
     apply_conflict_highlights(&mut grid);
 
-    if let Some(pos) = app_state.selected_cell {
+    if let Some(pos) = app_state.selected_cell() {
         apply_selection_highlights(&mut grid, pos);
-        if let Some(digit) = grid[pos].content.as_digit() {
-            apply_selected_digit_highlights(&mut grid, digit);
-        }
+    }
+    if let Some(digit) = app_state.selected_digit() {
+        apply_selected_digit_highlights(&mut grid, digit);
     }
 
     grid
@@ -322,7 +322,7 @@ pub(crate) fn build_game_screen_view_model<'a>(
     input_context: &InputContext,
 ) -> GameScreenViewModel<'a> {
     let game = &app_state.game;
-    let selected_cell = app_state.selected_cell;
+    let selected_cell = app_state.selected_cell();
     let settings = &app_state.settings;
     let base_notes_mode = app_state.input_mode.is_notes();
     let effective_notes_mode = base_notes_mode ^ input_context.swap_input_mode;
@@ -462,7 +462,7 @@ mod tests {
     #[test]
     fn build_grid_highlights_selected_conflict_and_same_digit() {
         let mut app_state = AppState::new(game_from_filled(&filled_with_conflict()));
-        app_state.selected_cell = Some(Position::new(0, 0));
+        app_state.set_selected_cell(Position::new(0, 0));
         let ui_state = UiState::new();
 
         let grid = build_grid(&app_state, &ui_state);
@@ -470,7 +470,7 @@ mod tests {
         assert!(
             grid[Position::new(0, 0)]
                 .visual_state
-                .contains(GridVisualState::SELECTED)
+                .contains(GridVisualState::SELECTED_CELL)
         );
         assert!(
             grid[Position::new(1, 0)]
@@ -480,17 +480,17 @@ mod tests {
         assert!(
             grid[Position::new(1, 0)]
                 .visual_state
-                .contains(GridVisualState::SAME_DIGIT)
+                .contains(GridVisualState::SELECTED_DIGIT)
         );
         assert!(
             grid[Position::new(1, 1)]
                 .visual_state
-                .contains(GridVisualState::HOUSE_SELECTED)
+                .contains(GridVisualState::HOUSE_SELECTED_CELL)
         );
         assert!(
             grid[Position::new(2, 2)]
                 .visual_state
-                .contains(GridVisualState::HOUSE_SAME_DIGIT)
+                .contains(GridVisualState::HOUSE_SELECTED_DIGIT)
         );
     }
 

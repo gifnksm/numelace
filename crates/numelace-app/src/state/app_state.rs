@@ -1,4 +1,4 @@
-use numelace_core::Position;
+use numelace_core::{Digit, Position};
 use numelace_game::{Game, InputDigitOptions, NoteCleanupPolicy, RuleCheckPolicy};
 
 use crate::state::{History, HistorySource, HistoryTarget, NewGameOptions, Settings};
@@ -7,7 +7,8 @@ use crate::state::{History, HistorySource, HistoryTarget, NewGameOptions, Settin
 #[derive(Debug)]
 pub(crate) struct AppState {
     pub(crate) game: Game,
-    pub(crate) selected_cell: Option<Position>,
+    selected_cell: Option<Position>,
+    selected_digit: Option<Digit>,
     pub(crate) input_mode: InputMode,
     pub(crate) new_game_options: NewGameOptions,
     pub(crate) settings: Settings,
@@ -21,6 +22,7 @@ impl AppState {
         let mut state = Self {
             game,
             selected_cell: None,
+            selected_digit: None,
             input_mode: InputMode::Fill,
             new_game_options: NewGameOptions::default(),
             settings: Settings::default(),
@@ -43,14 +45,21 @@ impl AppState {
     pub(crate) fn from_parts(
         game: Game,
         selected_cell: Option<Position>,
+        mut selected_digit: Option<Digit>,
         input_mode: InputMode,
         new_game_options: NewGameOptions,
         settings: Settings,
         history: History,
     ) -> AppState {
+        if selected_digit.is_none()
+            && let Some(pos) = selected_cell
+        {
+            selected_digit = game.cell(pos).as_digit();
+        }
         Self {
             game,
             selected_cell,
+            selected_digit,
             input_mode,
             new_game_options,
             settings,
@@ -104,6 +113,38 @@ impl AppState {
     }
 
     #[must_use]
+    pub(crate) fn selected_cell(&self) -> Option<Position> {
+        self.selected_cell
+    }
+
+    #[must_use]
+    pub(crate) fn selected_digit(&self) -> Option<Digit> {
+        self.selected_digit
+    }
+
+    pub(crate) fn set_selected_cell(&mut self, pos: Position) {
+        self.selected_cell = Some(pos);
+        self.update_selected_digit();
+    }
+
+    pub(crate) fn update_selected_digit(&mut self) {
+        if let Some(pos) = self.selected_cell
+            && let Some(digit) = self.game.cell(pos).as_digit()
+        {
+            self.selected_digit = Some(digit);
+        }
+    }
+
+    pub(crate) fn clear_selected_cell(&mut self) {
+        self.selected_cell = None;
+    }
+
+    pub(crate) fn clear_selected_cell_and_digit(&mut self) {
+        self.selected_cell = None;
+        self.selected_digit = None;
+    }
+
+    #[must_use]
     pub(crate) fn history(&self) -> &History {
         &self.history
     }
@@ -124,17 +165,35 @@ impl AppState {
     }
 
     pub(crate) fn undo(&mut self) -> bool {
-        self.history.undo(&mut HistoryTarget::new(
-            &mut self.game,
-            &mut self.selected_cell,
-        ))
+        let mut selected_cell = self.selected_cell;
+        if !self
+            .history
+            .undo(&mut HistoryTarget::new(&mut self.game, &mut selected_cell))
+        {
+            return false;
+        }
+        if let Some(pos) = selected_cell {
+            self.set_selected_cell(pos);
+        } else {
+            self.clear_selected_cell_and_digit();
+        }
+        true
     }
 
     pub(crate) fn undo_steps(&mut self, steps: usize) -> bool {
-        self.history.undo_steps(
+        let mut selected_cell = self.selected_cell;
+        if !self.history.undo_steps(
             steps,
-            &mut HistoryTarget::new(&mut self.game, &mut self.selected_cell),
-        )
+            &mut HistoryTarget::new(&mut self.game, &mut selected_cell),
+        ) {
+            return false;
+        }
+        if let Some(pos) = selected_cell {
+            self.set_selected_cell(pos);
+        } else {
+            self.clear_selected_cell_and_digit();
+        }
+        true
     }
 
     #[must_use]
@@ -143,10 +202,19 @@ impl AppState {
     }
 
     pub(crate) fn redo(&mut self) -> bool {
-        self.history.redo(&mut HistoryTarget::new(
-            &mut self.game,
-            &mut self.selected_cell,
-        ))
+        let mut selected_cell = self.selected_cell;
+        if !self
+            .history
+            .redo(&mut HistoryTarget::new(&mut self.game, &mut selected_cell))
+        {
+            return false;
+        }
+        if let Some(pos) = selected_cell {
+            self.set_selected_cell(pos);
+        } else {
+            self.clear_selected_cell_and_digit();
+        }
+        true
     }
 
     pub(crate) fn push_history(&mut self) {

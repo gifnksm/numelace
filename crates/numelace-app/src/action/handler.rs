@@ -70,8 +70,12 @@ fn execute_cancel_contextual(app_state: &mut AppState, ui_state: &mut UiState) {
         ui_state.hint_state = None;
         return;
     }
-    if app_state.selected_cell.is_some() {
-        app_state.selected_cell = None;
+    if app_state.selected_cell().is_some() {
+        app_state.clear_selected_cell();
+        return;
+    }
+    if app_state.selected_digit().is_some() {
+        app_state.clear_selected_cell_and_digit();
     }
 }
 
@@ -80,15 +84,22 @@ impl BoardMutationAction {
         let game_snapshot = app_state.game.clone();
         match self {
             BoardMutationAction::RequestDigit { digit, swap } => {
-                if let Some(pos) = app_state.selected_cell {
+                if let Some(pos) = app_state.selected_cell() {
                     match app_state.input_mode.swapped(swap) {
                         InputMode::Fill => {
                             let options = app_state.input_digit_options();
-                            if let Err(GameError::ConflictingDigit) =
-                                app_state.game.set_digit(pos, digit, &options)
-                            {
-                                assert_eq!(app_state.rule_check_policy(), RuleCheckPolicy::Strict);
-                                ui_state.conflict_ghost = Some((pos, GhostType::Digit(digit)));
+                            match app_state.game.set_digit(pos, digit, &options) {
+                                Ok(_) => {
+                                    app_state.update_selected_digit();
+                                }
+                                Err(GameError::ConflictingDigit) => {
+                                    assert_eq!(
+                                        app_state.rule_check_policy(),
+                                        RuleCheckPolicy::Strict
+                                    );
+                                    ui_state.conflict_ghost = Some((pos, GhostType::Digit(digit)));
+                                }
+                                Err(_) => {}
                             }
                         }
                         InputMode::Notes => {
@@ -104,7 +115,7 @@ impl BoardMutationAction {
                 }
             }
             BoardMutationAction::ClearCell => {
-                if let Some(pos) = app_state.selected_cell {
+                if let Some(pos) = app_state.selected_cell() {
                     let _ = app_state.game.clear_cell(pos);
                 }
             }
@@ -116,7 +127,7 @@ impl BoardMutationAction {
                     app_state.game.auto_fill_notes_empty_cells();
                 }
                 NotesFillScope::SelectedCell => {
-                    if let Some(pos) = app_state.selected_cell {
+                    if let Some(pos) = app_state.selected_cell() {
                         let _ = app_state.game.auto_fill_cell_notes(pos);
                     }
                 }
@@ -145,7 +156,7 @@ impl PuzzleLifecycleAction {
             PuzzleLifecycleAction::StartNewGame(puzzle) => {
                 let game = Game::new(puzzle);
                 app_state.game = game;
-                app_state.selected_cell = None;
+                app_state.clear_selected_cell_and_digit();
                 app_state.apply_new_game_settings();
                 app_state.reset_history();
                 ui_state.hint_state = None;
@@ -188,16 +199,16 @@ impl SelectionAction {
 
         match self {
             SelectionAction::SelectOrClearCell(pos) => {
-                if app_state.selected_cell == Some(pos) {
-                    app_state.selected_cell = None;
+                if app_state.selected_cell() == Some(pos) {
+                    app_state.clear_selected_cell_and_digit();
                 } else {
-                    app_state.selected_cell = Some(pos);
+                    app_state.set_selected_cell(pos);
                 }
             }
             SelectionAction::MoveSelection(move_direction) => {
-                let pos = app_state.selected_cell.get_or_insert(DEFAULT_POSITION);
-                if let Some(new_pos) = move_direction.apply_to(*pos) {
-                    *pos = new_pos;
+                let pos = app_state.selected_cell().unwrap_or(DEFAULT_POSITION);
+                if let Some(new_pos) = move_direction.apply_to(pos) {
+                    app_state.set_selected_cell(new_pos);
                 }
             }
         }
@@ -322,7 +333,7 @@ mod tests {
     #[test]
     fn conflicting_digit_sets_ghost_and_requests_save() {
         let mut app_state = AppState::new(fixed_game());
-        app_state.selected_cell = Some(Position::new(0, 0));
+        app_state.set_selected_cell(Position::new(0, 0));
         app_state.settings.assist.block_rule_violations = true;
 
         let mut ui_state = UiState::new();
@@ -389,7 +400,7 @@ mod tests {
     #[test]
     fn same_digit_request_does_not_add_history_entry() {
         let mut app_state = AppState::new(fixed_game());
-        app_state.selected_cell = Some(Position::new(0, 0));
+        app_state.set_selected_cell(Position::new(0, 0));
         let mut ui_state = UiState::new();
 
         handle(
