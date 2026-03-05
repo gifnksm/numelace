@@ -18,7 +18,7 @@ use numelace_solver::{
     technique::{
         HiddenPair, HiddenQuad, HiddenSingle, HiddenTriple, Jellyfish, LockedCandidates, NakedPair,
         NakedQuad, NakedSingle, NakedTriple, RemotePair, Skyscraper, Swordfish, TwoStringKite,
-        XChain, XWing, XyChain, XyzWing, YWing,
+        WxyzWing, XChain, XWing, XyChain, XyzWing, YWing,
     },
 };
 
@@ -398,6 +398,29 @@ fn xyz_wing_grid() -> TechniqueGrid {
     TechniqueGrid::from(grid)
 }
 
+fn wxyz_wing_grid() -> TechniqueGrid {
+    let mut grid = CandidateGrid::new();
+    let pos1 = Position::new(0, 0);
+    let pos2 = Position::new(1, 0);
+    let pos3 = Position::new(0, 1);
+    let pos4 = Position::new(1, 1);
+
+    for digit in Digit::ALL {
+        if digit != Digit::D1 && digit != Digit::D4 {
+            grid.remove_candidate(pos1, digit);
+        }
+        if digit != Digit::D2 && digit != Digit::D4 {
+            grid.remove_candidate(pos2, digit);
+        }
+        if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {
+            grid.remove_candidate(pos3, digit);
+            grid.remove_candidate(pos4, digit);
+        }
+    }
+
+    TechniqueGrid::from(grid)
+}
+
 fn bench_naked_single_apply(c: &mut Criterion) {
     let puzzles = [
         ("naked_single", naked_single_grid()),
@@ -558,6 +581,15 @@ fn bench_xyz_wing_apply(c: &mut Criterion) {
     ];
     let technique = XyzWing::new();
     bench_apply_cases(c, "xyz_wing_apply", &technique, &puzzles);
+}
+
+fn bench_wxyz_wing_apply(c: &mut Criterion) {
+    let puzzles = [
+        ("wxyz_wing", wxyz_wing_grid()),
+        ("empty", TechniqueGrid::new()),
+    ];
+    let technique = WxyzWing::new();
+    bench_apply_cases(c, "wxyz_wing_apply", &technique, &puzzles);
 }
 
 criterion_group!(
@@ -731,6 +763,15 @@ criterion_group!(
         bench_xyz_wing_apply,
 );
 
+criterion_group!(
+    name = benches_wxyz_wing;
+    config =
+        Criterion::default()
+            .plotting_backend(PlottingBackend::Plotters);
+    targets =
+        bench_wxyz_wing_apply,
+);
+
 criterion_main!(
     benches_naked_single,
     benches_hidden_single,
@@ -751,4 +792,5 @@ criterion_main!(
     benches_x_chain,
     benches_xy_chain,
     benches_xyz_wing,
+    benches_wxyz_wing,
 );

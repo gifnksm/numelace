@@ -47,7 +47,7 @@ This backlog is the single source of truth for tasks and ideas.
     - [X] XY-Chain
     - [X] XYZ-Wing
   - Tier 5 (expert):
-    - [ ] WXYZ-Wing
+    - [X] WXYZ-Wing
     - [ ] BUG+1 (Bivalue Universal Grave +1)
 
 ### Optional assist features

@@ -9,8 +9,8 @@
 pub use self::{
     hidden_pair::*, hidden_quad::*, hidden_single::*, hidden_triple::*, jellyfish::*,
     locked_candidates::*, naked_pair::*, naked_quad::*, naked_single::*, naked_triple::*,
-    remote_pair::*, skyscraper::*, swordfish::*, two_string_kite::*, x_chain::*, x_wing::*,
-    xy_chain::*, xyz_wing::*, y_wing::*,
+    remote_pair::*, skyscraper::*, swordfish::*, two_string_kite::*, wxyz_wing::*, x_chain::*,
+    x_wing::*, xy_chain::*, xyz_wing::*, y_wing::*,
 };
 use crate::{BoxedTechnique, TechniqueTier};
 
@@ -29,6 +29,7 @@ mod skyscraper;
 mod swordfish;
 pub(crate) mod traits;
 mod two_string_kite;
+mod wxyz_wing;
 mod x_chain;
 mod x_wing;
 mod xy_chain;
@@ -64,6 +65,7 @@ pub fn all_techniques() -> Vec<BoxedTechnique> {
         Box::new(XChain::new()),
         Box::new(XyChain::new()),
         Box::new(XyzWing::new()),
+        Box::new(WxyzWing::new()),
     ]
 }
 
