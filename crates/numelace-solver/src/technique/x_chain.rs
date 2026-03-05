@@ -47,13 +47,14 @@ impl Condition<'_> {
             condition_digit_position_mask.insert(pos1);
             condition_digit_position_mask.insert(pos2);
 
-            if pos1.y() == pos2.y() && digit_positions.row_mask(pos1.y()).len() == 2 {
+            if pos1.y() == pos2.y() && digit_positions.positions_in_row(pos1.y()).len() == 2 {
                 condition_positions |= DigitPositions::ROW_POSITIONS[pos1.y()];
-            } else if pos1.x() == pos2.x() && digit_positions.col_mask(pos1.x()).len() == 2 {
+            } else if pos1.x() == pos2.x() && digit_positions.positions_in_col(pos1.x()).len() == 2
+            {
                 condition_positions |= DigitPositions::COLUMN_POSITIONS[pos1.x()];
             } else {
                 debug_assert_eq!(pos1.box_index(), pos2.box_index());
-                debug_assert_eq!(digit_positions.box_mask(pos1.box_index()).len(), 2);
+                debug_assert_eq!(digit_positions.positions_in_box(pos1.box_index()).len(), 2);
                 condition_positions |= DigitPositions::BOX_POSITIONS[pos1.box_index()];
             }
         }

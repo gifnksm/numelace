@@ -27,7 +27,7 @@ impl AxisOps for RowAxis {
 
     #[inline]
     fn line_mask(grid: &TechniqueGrid, index: u8, digit: Digit) -> HouseMask {
-        grid.row_mask(index, digit)
+        grid.digit_positions(digit).positions_in_row(index)
     }
 
     #[inline]
@@ -49,7 +49,7 @@ impl AxisOps for ColumnAxis {
 
     #[inline]
     fn line_mask(grid: &TechniqueGrid, index: u8, digit: Digit) -> HouseMask {
-        grid.col_mask(index, digit)
+        grid.digit_positions(digit).positions_in_col(index)
     }
 
     #[inline]

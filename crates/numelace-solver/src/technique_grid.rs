@@ -1,6 +1,5 @@
 use numelace_core::{
-    CandidateGrid, ConsistencyError, Digit, DigitGrid, DigitPositions, DigitSet, House, HouseMask,
-    Position,
+    CandidateGrid, ConsistencyError, Digit, DigitGrid, DigitPositions, DigitSet, Position,
 };
 
 /// Solver state for technique-based solving.
@@ -156,42 +155,6 @@ impl TechniqueGrid {
     #[must_use]
     pub fn candidates_at(&self, pos: Position) -> DigitSet {
         self.candidates.candidates_at(pos)
-    }
-
-    /// Returns a bitmask of candidate positions in the specified house for the digit.
-    ///
-    /// This mirrors [`CandidateGrid::house_mask`].
-    #[inline]
-    #[must_use]
-    pub fn house_mask(&self, house: House, digit: Digit) -> HouseMask {
-        self.candidates.house_mask(house, digit)
-    }
-
-    /// Returns a bitmask of candidate positions in the specified row for the digit.
-    ///
-    /// This mirrors [`CandidateGrid::row_mask`].
-    #[inline]
-    #[must_use]
-    pub fn row_mask(&self, y: u8, digit: Digit) -> HouseMask {
-        self.candidates.row_mask(y, digit)
-    }
-
-    /// Returns a bitmask of candidate positions in the specified column for the digit.
-    ///
-    /// This mirrors [`CandidateGrid::col_mask`].
-    #[inline]
-    #[must_use]
-    pub fn col_mask(&self, x: u8, digit: Digit) -> HouseMask {
-        self.candidates.col_mask(x, digit)
-    }
-
-    /// Returns a bitmask of candidate positions in the specified box for the digit.
-    ///
-    /// This mirrors [`CandidateGrid::box_mask`].
-    #[inline]
-    #[must_use]
-    pub fn box_mask(&self, box_index: u8, digit: Digit) -> HouseMask {
-        self.candidates.box_mask(box_index, digit)
     }
 
     /// Checks whether the candidate grid is consistent.

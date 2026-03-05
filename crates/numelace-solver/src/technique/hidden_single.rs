@@ -62,8 +62,8 @@ impl HiddenSingle {
         for digit in Digit::ALL {
             let undecided_digit_positions = grid.digit_positions(digit) & !univalue_positions;
             for house in House::ALL {
-                let house_mask = undecided_digit_positions.house_mask(house);
-                if let Some(x) = house_mask.as_single() {
+                let positions_in_house = undecided_digit_positions.positions_in_house(house);
+                if let Some(x) = positions_in_house.as_single() {
                     let pos = house.position_from_cell_index(x);
                     if grid.place(pos, digit)
                         && let ControlFlow::Break(value) = on_condition(
