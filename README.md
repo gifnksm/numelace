@@ -49,6 +49,7 @@ Planned features are tracked in docs/BACKLOG.md.
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> (hold): temporarily swap Fill/Notes while held.
   - <kbd>A</kbd>: auto-fill notes for the selected cell.
   - <kbd>Shift</kbd>+<kbd>A</kbd>: auto-fill notes for all cells.
+  - <kbd>Space</kbd>: advance the selected cell (auto-fill notes if empty; if notes have a single candidate, fill it).
 - **Clearing**
   - <kbd>Delete</kbd>/<kbd>Backspace</kbd>: clear the selected cell (digit or notes).
 - **History & game actions**
@@ -64,6 +65,7 @@ Planned features are tracked in docs/BACKLOG.md.
 
 - **Selection**
   - Click the selected cell again to clear selection.
+  - Double-click / double-tap: advance the cell (auto-fill notes if empty; if notes have a single candidate, fill it).
 - **Keypad**
   - <kbd>1</kbd>–<kbd>9</kbd> + <kbd>Delete</kbd>: entry and clearing.
   - Notes toggle button (pencil): switch input mode.

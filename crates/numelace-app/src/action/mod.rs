@@ -35,6 +35,7 @@ pub(crate) enum AppAction {
 pub(crate) enum BoardMutationAction {
     RequestDigit { digit: Digit, swap: bool },
     ClearCell,
+    AdvanceCell { position: Option<Position> },
     AutoFillNotes { scope: NotesFillScope },
     ResetInputs,
     ApplyTechniqueStep(BoxedTechniqueStep),

@@ -7,7 +7,7 @@ use numelace_core::{Digit, DigitSet, Position, PositionIndexedArray};
 use numelace_game::CellState;
 
 use crate::{
-    action::{ActionRequestQueue, SelectionAction},
+    action::{ActionRequestQueue, BoardMutationAction, SelectionAction},
     state::HighlightSettings,
     ui::{
         grid_theme::{GridPalette, GridTheme},
@@ -375,7 +375,14 @@ pub(crate) fn show(
             }
 
             let response = ui.interact(cell_rect, ui.id().with((x, y)), Sense::click());
-            if response.clicked() {
+            if response.double_clicked() {
+                action_queue.request(
+                    BoardMutationAction::AdvanceCell {
+                        position: Some(pos),
+                    }
+                    .into(),
+                );
+            } else if response.clicked() {
                 action_queue.request(SelectionAction::SelectOrClearCell(pos).into());
             }
         }

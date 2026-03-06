@@ -1,4 +1,4 @@
-use numelace_core::Position;
+use numelace_core::{Digit, Position};
 use numelace_game::{Game, GameError, RuleCheckPolicy};
 
 use crate::{
@@ -79,6 +79,25 @@ fn execute_cancel_contextual(app_state: &mut AppState, ui_state: &mut UiState) {
     }
 }
 
+fn execute_fill_cell(
+    app_state: &mut AppState,
+    ui_state: &mut UiState,
+    pos: Position,
+    digit: Digit,
+) {
+    let options = app_state.input_digit_options();
+    match app_state.game.set_digit(pos, digit, &options) {
+        Ok(_) => {
+            app_state.update_selected_digit();
+        }
+        Err(GameError::ConflictingDigit) => {
+            assert_eq!(app_state.rule_check_policy(), RuleCheckPolicy::Strict);
+            ui_state.conflict_ghost = Some((pos, GhostType::Digit(digit)));
+        }
+        Err(_) => {}
+    }
+}
+
 impl BoardMutationAction {
     fn execute(self, app_state: &mut AppState, ui_state: &mut UiState) {
         let game_snapshot = app_state.game.clone();
@@ -86,22 +105,7 @@ impl BoardMutationAction {
             BoardMutationAction::RequestDigit { digit, swap } => {
                 if let Some(pos) = app_state.selected_cell() {
                     match app_state.input_mode.swapped(swap) {
-                        InputMode::Fill => {
-                            let options = app_state.input_digit_options();
-                            match app_state.game.set_digit(pos, digit, &options) {
-                                Ok(_) => {
-                                    app_state.update_selected_digit();
-                                }
-                                Err(GameError::ConflictingDigit) => {
-                                    assert_eq!(
-                                        app_state.rule_check_policy(),
-                                        RuleCheckPolicy::Strict
-                                    );
-                                    ui_state.conflict_ghost = Some((pos, GhostType::Digit(digit)));
-                                }
-                                Err(_) => {}
-                            }
-                        }
+                        InputMode::Fill => execute_fill_cell(app_state, ui_state, pos, digit),
                         InputMode::Notes => {
                             let policy = app_state.rule_check_policy();
                             if let Err(GameError::ConflictingDigit) =
@@ -117,6 +121,18 @@ impl BoardMutationAction {
             BoardMutationAction::ClearCell => {
                 if let Some(pos) = app_state.selected_cell() {
                     let _ = app_state.game.clear_cell(pos);
+                }
+            }
+            BoardMutationAction::AdvanceCell { position: pos } => {
+                if let Some(pos) = pos.or_else(|| app_state.selected_cell()) {
+                    let cell = app_state.game.cell(pos);
+                    if cell.is_empty() {
+                        let _ = app_state.game.auto_fill_cell_notes(pos);
+                    } else if let Some(notes) = cell.as_notes()
+                        && let Some(digit) = notes.as_single()
+                    {
+                        execute_fill_cell(app_state, ui_state, pos, digit);
+                    }
                 }
             }
             BoardMutationAction::AutoFillNotes { scope } => match scope {

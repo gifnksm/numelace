@@ -94,7 +94,7 @@ const fn input_mode_action(action: InputModeAction) -> Action {
     Action::App(AppAction::InputMode(action))
 }
 
-const SHORTCUTS: [Shortcut; 35] = [
+const SHORTCUTS: [Shortcut; 36] = [
     Shortcut::command(Key::N, Action::Flow(FlowAction::StartNewGame)),
     Shortcut::command(
         Key::Comma,
@@ -149,6 +149,10 @@ const SHORTCUTS: [Shortcut; 35] = [
     Shortcut::digit(Key::Num8, Digit::D8, false),
     Shortcut::digit(Key::Num9, Digit::D9, true),
     Shortcut::digit(Key::Num9, Digit::D9, false),
+    Shortcut::plain(
+        Key::Space,
+        board_mutation_action(BoardMutationAction::AdvanceCell { position: None }),
+    ),
 ];
 
 pub(crate) fn handle_input(
