@@ -8,7 +8,6 @@ use eframe::egui::{Color32, Visuals};
 #[derive(Debug, Clone)]
 pub(crate) struct GridPalette {
     pub(crate) cell_bg_default: Color32,
-    pub(crate) cell_bg_selected: Color32,
     pub(crate) cell_bg_selected_digit: Color32,
     pub(crate) cell_bg_house_selected_cell: Color32,
     pub(crate) cell_bg_house_selected_digit: Color32,
@@ -18,9 +17,8 @@ pub(crate) struct GridPalette {
     pub(crate) pill_hint: Color32,
 
     pub(crate) border_inactive: Color32,
-    pub(crate) border_selected: Color32,
-    pub(crate) border_same_digit: Color32,
-    pub(crate) border_conflict: Color32,
+    pub(crate) border_selected_cell: Color32,
+    pub(crate) border_selected_digit: Color32,
     pub(crate) border_hint_condition: Color32,
 
     pub(crate) underline_hint_condition: Color32,
@@ -45,16 +43,18 @@ impl GridPalette {
         // - Keep light/dark modes on the same semantic hue, adjust luminance only.
         // - Keep backgrounds subtle so digits/notes stay primary.
         // - For visuals-derived values, keep a single value comment at the source line.
-        let cell_bg_selected_cell = visuals.selection.bg_fill; // dark=(0, 92, 128) light=(144, 209, 255)
+        let cell_bg_selected_digit = visuals.selection.bg_fill; // dark=(0, 92, 128) light=(144, 209, 255)
         let (cell_bg_house_selected_cell, cell_bg_house_selected_digit) = if visuals.dark_mode {
             (
-                Color32::from_gray(80), // base: widgets.hovered.bg_fill = (70, 70, 70) (dark)
-                Color32::from_gray(45), // tuned from widgets.hovered.bg_fill (dark), higher contrast
+                //  widgets.hovered.bg_fill = (70, 70, 70) (dark)
+                Color32::from_gray(70),
+                Color32::from_gray(70),
             )
         } else {
             (
-                Color32::from_gray(170), // tuned from widgets.hovered.bg_fill (light), higher contrast
-                Color32::from_gray(210), // base: widgets.hovered.bg_fill = (220, 220, 220) (light)
+                // widgets.hovered.bg_fill = (220, 220, 220) (light)
+                Color32::from_gray(220),
+                Color32::from_gray(220),
             )
         };
         let hint_accent = if visuals.dark_mode {
@@ -70,19 +70,17 @@ impl GridPalette {
 
         Self {
             cell_bg_default: visuals.text_edit_bg_color(), // dark=(10, 10, 10) light=(255, 255, 255)
-            cell_bg_selected: cell_bg_selected_cell,
-            cell_bg_selected_digit: cell_bg_selected_cell,
+            cell_bg_selected_digit,
             cell_bg_house_selected_cell,
             cell_bg_house_selected_digit,
 
-            note_bg_selected_digit: cell_bg_selected_cell,
+            note_bg_selected_digit: cell_bg_selected_digit,
 
             pill_hint: hint_accent,
 
             border_inactive: visuals.widgets.inactive.fg_stroke.color, // dark=(180, 180, 180) light=(60, 60, 60)
-            border_selected: visuals.selection.stroke.color, // dark=(192, 222, 255) light=(0, 83, 125)
-            border_same_digit: visuals.selection.stroke.color,
-            border_conflict: visuals.error_fg_color, // dark/light=(255, 0, 0)
+            border_selected_cell: visuals.error_fg_color,              // dark/light=(255, 0, 0)
+            border_selected_digit: visuals.selection.stroke.color, // dark=(192, 222, 255) light=(0, 83, 125)
             border_hint_condition: hint_accent,
 
             underline_hint_condition: hint_accent_soft,

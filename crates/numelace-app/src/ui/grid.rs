@@ -167,9 +167,10 @@ fn thick_border_width(cell_size: f32) -> f32 {
 const CELL_BORDER_WIDTH_BASE_RATIO: f32 = 0.03;
 const THICK_BORDER_WIDTH_RATIO: f32 = 3.0;
 const THIN_BORDER_WIDTH_RATIO: f32 = 1.0;
-const SELECTED_BORDER_WIDTH_RATIO: f32 = 3.0;
+const SELECTED_BORDER_WIDTH_RATIO: f32 = 1.5;
 const SAME_DIGIT_BORDER_WIDTH_RATIO: f32 = 1.0;
 const HOUSE_BORDER_WIDTH_RATIO: f32 = 1.0;
+const HINT_CORNER_WIDTH_RATIO: f32 = 3.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct EffectiveGridVisualState(GridVisualState);
@@ -187,9 +188,6 @@ impl EffectiveGridVisualState {
     }
 
     fn cell_fill_color(self, palette: &GridPalette) -> Color32 {
-        if self.0.intersects(GridVisualState::SELECTED_CELL) {
-            return palette.cell_bg_selected;
-        }
         if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
             return palette.cell_bg_selected_digit;
         }
@@ -210,14 +208,11 @@ impl EffectiveGridVisualState {
     }
 
     fn cell_border_color(self, palette: &GridPalette) -> Color32 {
-        if self.0.intersects(GridVisualState::CONFLICT) {
-            return palette.border_conflict;
-        }
         if self.0.intersects(GridVisualState::SELECTED_CELL) {
-            return palette.border_selected;
+            return palette.border_selected_cell;
         }
         if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
-            return palette.border_same_digit;
+            return palette.border_selected_digit;
         }
         palette.border_inactive
     }
@@ -246,7 +241,7 @@ impl EffectiveGridVisualState {
     fn hint_corner_border(self, palette: &GridPalette, base_border: f32) -> Option<Stroke> {
         if self.0.intersects(GridVisualState::HINT_CONDITION_CELL) {
             return Some(Stroke::new(
-                base_border * 2.0,
+                base_border * HINT_CORNER_WIDTH_RATIO,
                 palette.border_hint_condition,
             ));
         }
@@ -349,7 +344,7 @@ pub(crate) fn show(
             }
 
             if let Some(digits) = cell.content.as_notes() {
-                let notes_rect = cell_rect.shrink(base_border);
+                let notes_rect = cell_rect.shrink(base_border * SELECTED_BORDER_WIDTH_RATIO);
                 draw_notes(
                     painter,
                     vm,
