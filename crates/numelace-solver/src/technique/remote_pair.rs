@@ -37,9 +37,9 @@ impl Condition<'_> {
             & before_grid.digit_positions(self.digit2);
         let mut condition_positions = DigitPositions::new();
         let mut condition_digit_position_mask = DigitPositions::new();
-        for items in self.stack.windows(2) {
-            let pos1 = items[0].position;
-            let pos2 = items[1].position;
+        for [item1, item2] in self.stack.array_windows() {
+            let pos1 = item1.position;
+            let pos2 = item2.position;
             condition_digit_position_mask.insert(pos1);
             condition_digit_position_mask.insert(pos2);
             if pos1.y() == pos2.y() && digit_positions.positions_in_row(pos1.y()).len() == 2 {

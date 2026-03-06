@@ -174,9 +174,9 @@ impl XChain {
         if chain_start.house_peers().contains(chain_end) {
             // X-Cycle (continuous): if endpoints are peers, the chain can be closed
             // by a weak link; add eliminations from each internal weak junction.
-            for items in stack.windows(2) {
-                elimination |= items[0].strong_link_end.house_peers()
-                    & items[1].strong_link_start.house_peers();
+            for [item1, item2] in stack.array_windows() {
+                elimination |=
+                    item1.strong_link_end.house_peers() & item2.strong_link_start.house_peers();
             }
         }
 

@@ -120,8 +120,8 @@ mod tests {
 
     #[test]
     fn test_technieues_sorted_by_tier() {
-        for techniques in all_techniques().windows(2) {
-            assert!(techniques[0].tier() <= techniques[1].tier());
+        for [tech1, tech2] in all_techniques().array_windows() {
+            assert!(tech1.tier() <= tech2.tier());
         }
     }
 }

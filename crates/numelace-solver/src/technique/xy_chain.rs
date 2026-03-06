@@ -169,10 +169,10 @@ impl XyChain {
                             let elimination = start_pos.house_peers() & end_pos.house_peers();
                             changed |= grid.remove_candidate_with_mask(elimination, start_digit);
                             if start_pos.house_peers().contains(end_pos) {
-                                for items in stack.windows(2) {
-                                    let digit = items[0].outgoing_digit;
-                                    let elimination = items[0].position.house_peers()
-                                        & items[1].position.house_peers();
+                                for [item1, item2] in stack.array_windows() {
+                                    let digit = item1.outgoing_digit;
+                                    let elimination =
+                                        item1.position.house_peers() & item2.position.house_peers();
                                     changed |= grid.remove_candidate_with_mask(elimination, digit);
                                 }
                             }
