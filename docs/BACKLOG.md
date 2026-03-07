@@ -78,7 +78,7 @@ This backlog is the single source of truth for tasks and ideas.
 - UI improvements (umbrella)
   - [ ] Input discoverability (make shortcuts/keybinds easier to find; format TBD)
   - [ ] Simpler digit input system (e.g., flick-style overlay input; needs idea exploration)
-  - [ ] Toolbar improvements (avoid overflow; theme toggle should scale with screen and be consistent/easy to tap)
+  - [X] Toolbar improvements (avoid overflow; theme toggle should scale with screen and be consistent/easy to tap)
   - [ ] UI clarity & visual polish (layout/spacing/contrast/icon consistency)
   - [X] Light/Dark mode toggle
   - [X] Mouse-only input (number pad/buttons)
