@@ -105,6 +105,16 @@ impl TechniqueGrid {
         self.candidates.place(pos, digit)
     }
 
+    /// Sets the candidate digits at a position to the provided set.
+    ///
+    /// This overwrites the candidate state at that position, leaving all other positions unchanged.
+    ///
+    /// This mirrors [`CandidateGrid::set_candidate_at`].
+    #[inline]
+    pub fn set_candidate_at(&mut self, pos: Position, digits: DigitSet) -> bool {
+        self.candidates.set_candidate_at(pos, digits)
+    }
+
     /// Removes a specific digit as a candidate at a position.
     ///
     /// Returns `true` if the candidate was removed.
@@ -123,6 +133,16 @@ impl TechniqueGrid {
     #[inline]
     pub fn remove_candidate_with_mask(&mut self, mask: DigitPositions, digit: Digit) -> bool {
         self.candidates.remove_candidate_with_mask(mask, digit)
+    }
+
+    /// Removes a set of candidate digits from a position.
+    ///
+    /// Returns `true` if any candidate was removed.
+    ///
+    /// This mirrors [`CandidateGrid::remove_candidate_set`].
+    #[inline]
+    pub fn remove_candidate_set(&mut self, pos: Position, digits: DigitSet) -> bool {
+        self.candidates.remove_candidate_set(pos, digits)
     }
 
     /// Removes a set of candidate digits from all positions specified by a mask.

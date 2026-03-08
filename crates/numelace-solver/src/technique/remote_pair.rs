@@ -234,7 +234,9 @@ mod tests {
     use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::testing::TechniqueTester;
+    use crate::testing;
+
+    const TECHNIQUE: RemotePair = RemotePair::new();
 
     #[test]
     fn test_eliminates_remote_pair_candidates() {
@@ -255,19 +257,15 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&RemotePair::new())
-            .assert_removed_includes(Position::new(0, 5), [digit1, digit2])
-            .assert_removed_includes(Position::new(1, 0), [digit1, digit2]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(Position::new(0, 5), [digit1, digit2])
+                .assert_removed_includes(Position::new(1, 0), [digit1, digit2]);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_remote_pair() {
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&RemotePair::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 }

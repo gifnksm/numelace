@@ -170,10 +170,12 @@ impl Technique for NakedTriple {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{CandidateGrid, ConsistencyError, Digit, Position};
+    use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::{SolverError, TechniqueGrid, testing::TechniqueTester};
+    use crate::testing;
+
+    const TECHNIQUE: NakedTriple = NakedTriple::new();
 
     #[test]
     fn test_eliminates_triple_candidates_in_row() {
@@ -191,39 +193,15 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&NakedTriple::new())
-            .assert_removed_includes(target, [Digit::D1, Digit::D2, Digit::D3]);
-    }
-
-    #[test]
-    fn test_find_step_returns_elimination() {
-        let mut grid = CandidateGrid::new();
-        let pos1 = Position::new(0, 0);
-        let pos2 = Position::new(3, 0);
-        let pos3 = Position::new(6, 0);
-
-        for digit in Digit::ALL {
-            if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {
-                grid.remove_candidate(pos1, digit);
-                grid.remove_candidate(pos2, digit);
-                grid.remove_candidate(pos3, digit);
-            }
-        }
-
-        let grid = TechniqueGrid::from(grid);
-        let step = NakedTriple::new().find_step(&grid).unwrap();
-        assert!(step.is_some());
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(target, [Digit::D1, Digit::D2, Digit::D3]);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_naked_triples() {
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&NakedTriple::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 
     #[test]
@@ -249,10 +227,7 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&NakedTriple::new())
-            .assert_no_change(Position::new(1, 0))
-            .assert_no_change(Position::new(0, 1));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 
     #[test]
@@ -272,13 +247,6 @@ mod tests {
             }
         }
 
-        let mut grid = TechniqueGrid::from(grid);
-        let result = NakedTriple::new().apply_pass(&mut grid);
-        assert!(matches!(
-            result,
-            Err(SolverError::Inconsistent(
-                ConsistencyError::CandidateConstraintViolation
-            ))
-        ));
+        testing::test_technique_apply_pass_fail_with_constraint_violation(grid, &TECHNIQUE);
     }
 }

@@ -1,14 +1,15 @@
 use std::str::FromStr as _;
 
-use numelace_core::{Digit, DigitGrid, DigitSet, Position};
+use numelace_core::{ConsistencyError, Digit, DigitGrid, DigitSet, Position};
 
-use crate::{BoxedTechniqueStep, Technique, TechniqueApplication, TechniqueGrid};
+use crate::{BoxedTechniqueStep, SolverError, Technique, TechniqueApplication, TechniqueGrid};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TechniqueTester {
     initial: TechniqueGrid,
     current: TechniqueGrid,
     check_find_step_consistency: bool,
+    context: Option<String>,
 }
 
 impl TechniqueTester {
@@ -22,6 +23,7 @@ impl TechniqueTester {
             initial,
             current,
             check_find_step_consistency: true,
+            context: None,
         }
     }
 
@@ -44,15 +46,44 @@ impl TechniqueTester {
         self
     }
 
+    #[must_use]
+    pub fn with_context(mut self, context: impl Into<String>) -> Self {
+        self.context = Some(context.into());
+        self
+    }
+
     #[track_caller]
     pub fn apply_pass<T>(mut self, technique: &T) -> Self
     where
         T: Technique,
     {
+        let context = self.context_suffix();
         let before = self.current.clone();
-        let changed = technique.apply_pass(&mut self.current).unwrap();
+        let changed = technique
+            .apply_pass(&mut self.current)
+            .unwrap_or_else(|err| {
+                panic!("apply_pass failed with an unexpected error: {err:?}{context}");
+            });
         if self.check_find_step_consistency {
-            Self::assert_find_step_consistent_once(technique, &before, &self.current, changed);
+            self.assert_find_step_consistent_once(technique, &before, changed);
+        }
+        self
+    }
+
+    #[track_caller]
+    pub fn apply_pass_fail_with_constraint_violation<T>(mut self, technique: &T) -> Self
+    where
+        T: Technique,
+    {
+        let context = self.context_suffix();
+        match technique.apply_pass(&mut self.current) {
+            Err(SolverError::Inconsistent(ConsistencyError::CandidateConstraintViolation)) => {}
+            Ok(result) => panic!(
+                "Expected apply_pass to fail, but it succeeded with result {result}{context}"
+            ),
+            Err(err) => panic!(
+                "Expected apply_pass to fail with CandidateConstraintViolation, but it failed with a different error: {err:?}{context}"
+            ),
         }
         self
     }
@@ -62,11 +93,16 @@ impl TechniqueTester {
     where
         T: Technique,
     {
+        let context = self.context_suffix();
         loop {
             let before = self.current.clone();
-            let changed = technique.apply_pass(&mut self.current).unwrap();
+            let changed = technique
+                .apply_pass(&mut self.current)
+                .unwrap_or_else(|err| {
+                    panic!("apply_pass failed with an unexpected error: {err:?}{context}");
+                });
             if self.check_find_step_consistency {
-                Self::assert_find_step_consistent_once(technique, &before, &self.current, changed);
+                self.assert_find_step_consistent_once(technique, &before, changed);
             }
             if changed == 0 {
                 break;
@@ -80,63 +116,78 @@ impl TechniqueTester {
     where
         T: Technique,
     {
+        let context = self.context_suffix();
         for _ in 0..times {
             let before = self.current.clone();
-            let changed = technique.apply_pass(&mut self.current).unwrap();
+            let changed = technique
+                .apply_pass(&mut self.current)
+                .unwrap_or_else(|err| {
+                    panic!("apply_pass failed with an unexpected error: {err:?}{context}")
+                });
             if self.check_find_step_consistency {
-                Self::assert_find_step_consistent_once(technique, &before, &self.current, changed);
+                self.assert_find_step_consistent_once(technique, &before, changed);
             }
         }
         self
     }
 
+    fn context_suffix(&self) -> String {
+        self.context
+            .as_ref()
+            .map(|context| format!(" ({context})"))
+            .unwrap_or_default()
+    }
+
     #[track_caller]
     fn assert_find_step_consistent_once<T>(
+        &self,
         technique: &T,
         before: &TechniqueGrid,
-        after: &TechniqueGrid,
         changed: usize,
     ) where
         T: Technique,
     {
         let name = technique.name();
-        let step = technique.find_step(before).unwrap();
+        let context = self.context_suffix();
+        let step = technique.find_step(before).unwrap_or_else(|err| {
+            panic!("find_step failed with an unexpected error: {err:?}{context}");
+        });
         match step {
             None => {
                 assert_eq!(
                     changed, 0,
-                    "Expected {name} to report no change when find_step returned None"
+                    "Expected {name} to report no change when find_step returned None{context}"
                 );
-                Self::assert_candidates_unchanged(before, after);
+                self.assert_candidates_unchanged(before);
             }
             Some(step) => {
                 assert_ne!(
                     changed, 0,
-                    "Expected {name} to report a change when find_step returned a step"
+                    "Expected {name} to report a change when find_step returned a step{context}"
                 );
-                Self::assert_step_application_applied(before, &step, after);
+                self.assert_step_application_applied(before, &step);
             }
         }
     }
 
     #[track_caller]
-    fn assert_candidates_unchanged(before: &TechniqueGrid, after: &TechniqueGrid) {
+    fn assert_candidates_unchanged(&self, before: &TechniqueGrid) {
+        let after = &self.current;
+        let context = self.context_suffix();
         for digit in Digit::ALL {
             let before_positions = before.digit_positions(digit);
             let after_positions = after.digit_positions(digit);
             assert_eq!(
                 before_positions, after_positions,
-                "Expected candidates to remain unchanged for {digit:?}"
+                "Expected candidates to remain unchanged for {digit:?}{context}"
             );
         }
     }
 
     #[track_caller]
-    fn assert_step_application_applied(
-        before: &TechniqueGrid,
-        step: &BoxedTechniqueStep,
-        after: &TechniqueGrid,
-    ) {
+    fn assert_step_application_applied(&self, before: &TechniqueGrid, step: &BoxedTechniqueStep) {
+        let after = &self.current;
+        let context = self.context_suffix();
         let name = step.technique_name();
         for application in step.application() {
             match application {
@@ -145,11 +196,11 @@ impl TechniqueTester {
                     assert_eq!(
                         candidates.len(),
                         1,
-                        "Expected {position:?} to be univalue after applying {name}, but candidates are {candidates:?}"
+                        "Expected {position:?} to be univalue after applying {name}, but candidates are {candidates:?}{context}"
                     );
                     assert!(
                         candidates.contains(digit),
-                        "Expected {position:?} to contain {digit:?} after applying {name}, but candidates are {candidates:?}"
+                        "Expected {position:?} to contain {digit:?} after applying {name}, but candidates are {candidates:?}{context}"
                     );
                 }
                 TechniqueApplication::CandidateElimination { positions, digits } => {
@@ -160,7 +211,7 @@ impl TechniqueTester {
                             if before_candidates.contains(digit) {
                                 assert!(
                                     !after_candidates.contains(digit),
-                                    "Expected {digit:?} to be removed from {pos:?} after applying {name}, but candidates are {after_candidates:?}"
+                                    "Expected {digit:?} to be removed from {pos:?} after applying {name}, but candidates are {after_candidates:?}{context}"
                                 );
                             }
                         }
@@ -174,21 +225,22 @@ impl TechniqueTester {
     pub fn assert_placed(self, pos: Position, digit: Digit) -> Self {
         let initial = self.initial.candidates_at(pos);
         let current = self.current.candidates_at(pos);
+        let context = self.context_suffix();
 
         assert!(
             initial.len() > 1,
-            "Expected initial position at {pos:?} to be non-univalue (>1 candidates), but had {} candidates: {initial:?}",
+            "Expected initial position at {pos:?} to be non-univalue (>1 candidates), but had {} candidates: {initial:?}{context}",
             initial.len()
         );
         assert_eq!(
             current.len(),
             1,
-            "Expected position at {pos:?} to be univalue (1 candidate), but has {} candidates: {current:?}",
+            "Expected position at {pos:?} to be univalue (1 candidate), but has {} candidates: {current:?}{context}",
             current.len()
         );
         assert!(
             current.contains(digit),
-            "Expected position at {pos:?} to contain {digit:?}, but candidates are: {current:?}"
+            "Expected position at {pos:?} to contain {digit:?}, but candidates are: {current:?}{context}"
         );
 
         self
@@ -202,14 +254,15 @@ impl TechniqueTester {
         let digits = DigitSet::from_iter(digits);
         let initial = self.initial.candidates_at(pos);
         let current = self.current.candidates_at(pos);
+        let context = self.context_suffix();
         assert_eq!(
             initial & digits,
             digits,
-            "Expected initial candidates at {pos:?} to include {digits:?}, but initial candidates are: {initial:?}"
+            "Expected initial candidates at {pos:?} to include {digits:?}, but initial candidates are: {initial:?}{context}"
         );
         assert!(
             (current & digits).is_empty(),
-            "Expected all of {digits:?} to be removed from {pos:?}, but {current:?} still contains some: {:?}",
+            "Expected all of {digits:?} to be removed from {pos:?}, but {current:?} still contains some: {:?}{context}",
             current & digits
         );
         self
@@ -224,9 +277,10 @@ impl TechniqueTester {
         let initial = self.initial.candidates_at(pos);
         let current = self.current.candidates_at(pos);
         let removed = initial.difference(current);
+        let context = self.context_suffix();
         assert_eq!(
             removed, digits,
-            "Expected exactly {digits:?} to be removed from {pos:?}, but removed candidates are: {removed:?} (initial: {initial:?}, current: {current:?})"
+            "Expected exactly {digits:?} to be removed from {pos:?}, but removed candidates are: {removed:?} (initial: {initial:?}, current: {current:?}){context}"
         );
         self
     }
@@ -235,12 +289,186 @@ impl TechniqueTester {
     pub fn assert_no_change(self, pos: Position) -> Self {
         let initial = self.initial.candidates_at(pos);
         let current = self.current.candidates_at(pos);
+        let context = self.context_suffix();
         assert_eq!(
             initial, current,
-            "Expected no change at {pos:?}, but candidates changed from {initial:?} to {current:?}"
+            "Expected no change at {pos:?}, but candidates changed from {initial:?} to {current:?}{context}"
         );
         self
     }
+
+    #[track_caller]
+    pub fn assert_no_change_all(mut self) -> Self {
+        for pos in Position::ALL {
+            self = self.assert_no_change(pos);
+        }
+        self
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GridSymmetry {
+    Identity,
+    Rotate90,
+    Rotate180,
+    Rotate270,
+    FlipH,
+    FlipV,
+    FlipDiag,
+    FlipAntiDiag,
+}
+
+impl GridSymmetry {
+    pub const ALL: [Self; 8] = [
+        Self::Identity,
+        Self::Rotate90,
+        Self::Rotate180,
+        Self::Rotate270,
+        Self::FlipH,
+        Self::FlipV,
+        Self::FlipDiag,
+        Self::FlipAntiDiag,
+    ];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Identity => "Identity",
+            Self::Rotate90 => "Rotate 90°",
+            Self::Rotate180 => "Rotate 180°",
+            Self::Rotate270 => "Rotate 270°",
+            Self::FlipH => "Flip Horizontal",
+            Self::FlipV => "Flip Vertical",
+            Self::FlipDiag => "Flip Diagonal (\\)",
+            Self::FlipAntiDiag => "Flip Anti-Diagonal (/)",
+        }
+    }
+
+    pub fn apply_position(self, pos: Position) -> Position {
+        match self {
+            GridSymmetry::Identity => pos,
+            GridSymmetry::Rotate90 => Position::new(pos.y(), 8 - pos.x()),
+            GridSymmetry::Rotate180 => Position::new(8 - pos.x(), 8 - pos.y()),
+            GridSymmetry::Rotate270 => Position::new(8 - pos.y(), pos.x()),
+            GridSymmetry::FlipH => Position::new(8 - pos.x(), pos.y()),
+            GridSymmetry::FlipV => Position::new(pos.x(), 8 - pos.y()),
+            GridSymmetry::FlipDiag => Position::new(pos.y(), pos.x()),
+            GridSymmetry::FlipAntiDiag => Position::new(8 - pos.y(), 8 - pos.x()),
+        }
+    }
+
+    pub fn apply_grid(self, grid: &TechniqueGrid) -> TechniqueGrid {
+        let mut transformed = TechniqueGrid::new();
+        for pos in Position::ALL {
+            let digits = grid.candidates_at(pos);
+            let transformed_pos = self.apply_position(pos);
+            transformed.set_candidate_at(transformed_pos, digits);
+        }
+        for pos in grid.univalue_propagated() {
+            let transformed_pos = self.apply_position(pos);
+            transformed.insert_univalue_propagated(transformed_pos);
+        }
+        transformed
+    }
+
+    pub fn invert(self) -> Self {
+        match self {
+            Self::Identity => Self::Identity,
+            Self::Rotate90 => Self::Rotate270,
+            Self::Rotate180 => Self::Rotate180,
+            Self::Rotate270 => Self::Rotate90,
+            Self::FlipH => Self::FlipH,
+            Self::FlipV => Self::FlipV,
+            Self::FlipDiag => Self::FlipDiag,
+            Self::FlipAntiDiag => Self::FlipAntiDiag,
+        }
+    }
+}
+
+impl TechniqueTester {
+    pub fn with_symmetry(self, symmetry: GridSymmetry) -> Self {
+        let initial = symmetry.apply_grid(&self.initial);
+        let current = symmetry.apply_grid(&self.current);
+        Self {
+            initial,
+            current,
+            check_find_step_consistency: self.check_find_step_consistency,
+            context: self.context,
+        }
+    }
+
+    pub fn with_symmetry_back(self, symmetry: GridSymmetry) -> Self {
+        let inverse = symmetry.invert();
+        let initial = inverse.apply_grid(&self.initial);
+        let current = inverse.apply_grid(&self.current);
+        Self {
+            initial,
+            current,
+            check_find_step_consistency: self.check_find_step_consistency,
+            context: self.context,
+        }
+    }
+}
+
+#[track_caller]
+pub fn run_with_symmetries<G, FApply, FAssert>(grid: G, mut apply: FApply, mut assert: FAssert)
+where
+    G: Into<TechniqueGrid>,
+    FApply: FnMut(TechniqueTester) -> TechniqueTester,
+    FAssert: FnMut(TechniqueTester),
+{
+    let tester = TechniqueTester::new(grid);
+    for symmetry in GridSymmetry::ALL {
+        let transformed_tester = tester
+            .clone()
+            .with_symmetry(symmetry)
+            .with_context(format!("Symmetry: {}", symmetry.name()));
+        let applied_tester = apply(transformed_tester).with_symmetry_back(symmetry);
+        assert(applied_tester);
+    }
+}
+
+pub fn test_technique_apply_until_stuck<G, T, FAssert>(grid: G, technique: &T, assert: FAssert)
+where
+    G: Into<TechniqueGrid>,
+    T: Technique,
+    FAssert: FnMut(TechniqueTester),
+{
+    run_with_symmetries(grid, |tester| tester.apply_until_stuck(technique), assert);
+}
+
+pub fn test_technique_apply_pass<G, T, FAssert>(grid: G, technique: &T, assert: FAssert)
+where
+    G: Into<TechniqueGrid>,
+    T: Technique,
+    FAssert: FnMut(TechniqueTester),
+{
+    run_with_symmetries(grid, |tester| tester.apply_pass(technique), assert);
+}
+
+pub fn test_technique_apply_pass_fail_with_constraint_violation<G, T>(grid: G, technique: &T)
+where
+    G: Into<TechniqueGrid>,
+    T: Technique,
+{
+    run_with_symmetries(
+        grid,
+        |t| t.apply_pass_fail_with_constraint_violation(technique),
+        |_| {},
+    );
+}
+
+pub fn test_technique_apply_pass_no_changes<G, T>(grid: G, technique: &T)
+where
+    G: Into<TechniqueGrid>,
+    T: Technique,
+{
+    run_with_symmetries(
+        grid,
+        |t| t.apply_pass(technique),
+        |t| {
+            t.assert_no_change_all();
+        },
+    );
 }
 
 #[cfg(test)]
@@ -252,6 +480,50 @@ mod tests {
         BoxedTechnique, BoxedTechniqueStep, ConditionDigitPositions, ConditionPositions,
         SolverError, TechniqueApplication, TechniqueStep, TechniqueTier,
     };
+
+    fn assert_same_candidates(left: &TechniqueGrid, right: &TechniqueGrid) {
+        for pos in Position::ALL {
+            assert_eq!(
+                left.candidates_at(pos),
+                right.candidates_at(pos),
+                "Candidates differ at {pos:?}"
+            );
+        }
+        assert_eq!(
+            left.univalue_propagated(),
+            right.univalue_propagated(),
+            "Univalue-propagated positions differ"
+        );
+    }
+
+    #[test]
+    fn test_grid_symmetry_round_trip() {
+        let mut grid = TechniqueGrid::new();
+        let pos = Position::new(2, 3);
+        grid.set_candidate_at(pos, DigitSet::from_iter([Digit::D1, Digit::D4]));
+        let single_pos = Position::new(8, 1);
+        grid.set_candidate_at(single_pos, DigitSet::from_iter([Digit::D9]));
+        grid.insert_univalue_propagated(single_pos);
+
+        for symmetry in GridSymmetry::ALL {
+            let transformed = symmetry.apply_grid(&grid);
+            let round_trip = symmetry.invert().apply_grid(&transformed);
+            assert_same_candidates(&grid, &round_trip);
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "Symmetry: Identity")]
+    fn test_run_with_symmetries_panics_with_name() {
+        let grid = TechniqueGrid::new();
+        run_with_symmetries(
+            grid,
+            |tester| tester.apply_pass(&PlaceD1At00),
+            |tester| {
+                tester.assert_no_change(Position::new(0, 0));
+            },
+        );
+    }
 
     // Mock technique for testing that always returns false (no change)
     #[derive(Debug)]

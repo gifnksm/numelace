@@ -179,7 +179,9 @@ mod tests {
     use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::testing::TechniqueTester;
+    use crate::testing;
+
+    const TECHNIQUE: TwoStringKite = TwoStringKite::new();
 
     #[test]
     fn test_eliminates_two_string_kite_candidates() {
@@ -203,9 +205,9 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&TwoStringKite::new())
-            .assert_removed_includes(Position::new(row_other_col, col_other_row), [digit]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(Position::new(row_other_col, col_other_row), [digit]);
+        });
     }
 
     #[test]
@@ -230,18 +232,12 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&TwoStringKite::new())
-            .assert_no_change(Position::new(row_other_col, col_other_row));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 
     #[test]
     fn test_no_change_when_no_two_string_kite() {
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&TwoStringKite::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 }

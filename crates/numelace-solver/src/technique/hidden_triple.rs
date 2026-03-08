@@ -171,10 +171,12 @@ impl Technique for HiddenTriple {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{CandidateGrid, ConsistencyError, Digit, Position};
+    use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::{SolverError, TechniqueGrid, testing::TechniqueTester};
+    use crate::testing;
+
+    const TECHNIQUE: HiddenTriple = HiddenTriple::new();
 
     #[test]
     fn test_eliminates_hidden_triple_candidates_in_row() {
@@ -191,41 +193,17 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&HiddenTriple::new())
-            .assert_removed_includes(pos1, [Digit::D4])
-            .assert_removed_includes(pos2, [Digit::D4])
-            .assert_removed_includes(pos3, [Digit::D4]);
-    }
-
-    #[test]
-    fn test_find_step_returns_elimination() {
-        let mut grid = CandidateGrid::new();
-        let pos1 = Position::new(0, 0);
-        let pos2 = Position::new(3, 0);
-        let pos3 = Position::new(6, 0);
-
-        for pos in Position::ROWS[0] {
-            if pos != pos1 && pos != pos2 && pos != pos3 {
-                grid.remove_candidate(pos, Digit::D1);
-                grid.remove_candidate(pos, Digit::D2);
-                grid.remove_candidate(pos, Digit::D3);
-            }
-        }
-
-        let grid = TechniqueGrid::from(grid);
-        let step = HiddenTriple::new().find_step(&grid).unwrap();
-        assert!(step.is_some());
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(pos1, [Digit::D4])
+                .assert_removed_includes(pos2, [Digit::D4])
+                .assert_removed_includes(pos3, [Digit::D4]);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_hidden_triples() {
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&HiddenTriple::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 
     #[test]
@@ -251,10 +229,7 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&HiddenTriple::new())
-            .assert_no_change(Position::new(1, 0))
-            .assert_no_change(Position::new(0, 1));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 
     #[test]
@@ -273,13 +248,6 @@ mod tests {
             }
         }
 
-        let mut grid = TechniqueGrid::from(grid);
-        let result = HiddenTriple::new().apply_pass(&mut grid);
-        assert!(matches!(
-            result,
-            Err(SolverError::Inconsistent(
-                ConsistencyError::CandidateConstraintViolation
-            ))
-        ));
+        testing::test_technique_apply_pass_fail_with_constraint_violation(grid, &TECHNIQUE);
     }
 }

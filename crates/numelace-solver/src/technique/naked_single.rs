@@ -157,10 +157,14 @@ impl Technique for NakedSingle {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{CandidateGrid, Digit, Position};
+    use std::str::FromStr as _;
+
+    use numelace_core::{CandidateGrid, Digit, DigitGrid, Position};
 
     use super::*;
-    use crate::testing::TechniqueTester;
+    use crate::testing;
+
+    const TECHNIQUE: NakedSingle = NakedSingle::new();
 
     #[test]
     fn test_places_naked_single() {
@@ -171,14 +175,15 @@ mod tests {
         // Make (0, 0) have only D5 as candidate
         grid.place(Position::new(0, 0), Digit::D5);
 
-        TechniqueTester::new(grid)
-            .apply_pass(&NakedSingle::new())
-            // D5 removed from same row
-            .assert_removed_exact(Position::new(1, 0), [Digit::D5])
-            // D5 removed from same column
-            .assert_removed_exact(Position::new(0, 1), [Digit::D5])
-            // D5 removed from same box
-            .assert_removed_exact(Position::new(1, 1), [Digit::D5]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t
+                // D5 removed from same row
+                .assert_removed_exact(Position::new(1, 0), [Digit::D5])
+                // D5 removed from same column
+                .assert_removed_exact(Position::new(0, 1), [Digit::D5])
+                // D5 removed from same box
+                .assert_removed_exact(Position::new(1, 1), [Digit::D5]);
+        });
     }
 
     #[test]
@@ -192,29 +197,26 @@ mod tests {
         // Create naked single at (5, 5) with D7
         grid.place(Position::new(5, 5), Digit::D7);
 
-        TechniqueTester::new(grid)
-            .apply_pass(&NakedSingle::new())
-            // D3 removed from a cell in same row as (0, 0)
-            .assert_removed_exact(Position::new(1, 0), [Digit::D3])
-            // D7 removed from a cell in same column as (5, 5)
-            .assert_removed_exact(Position::new(5, 4), [Digit::D7]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t
+                // D3 removed from a cell in same row as (0, 0)
+                .assert_removed_exact(Position::new(1, 0), [Digit::D3])
+                // D7 removed from a cell in same column as (5, 5)
+                .assert_removed_exact(Position::new(5, 4), [Digit::D7]);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_naked_singles() {
         // When no cells have a single candidate, nothing changes
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&NakedSingle::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 
     #[test]
     fn test_real_puzzle() {
         // Test with an actual puzzle
-        TechniqueTester::from_str(
+        let grid = DigitGrid::from_str(
             "
             53_ _7_ ___
             6__ 195 ___
@@ -225,11 +227,14 @@ mod tests {
             _6_ ___ 28_
             ___ 419 __5
             ___ _8_ _79
-        ",
+    ",
         )
-        .apply_until_stuck(&NakedSingle::new())
-        // Naked singles should be found and placed.
-        // Verify at least one placement occurred by checking candidate removal.
-        .assert_removed_includes(Position::new(1, 1), [Digit::D4]);
+        .unwrap();
+        testing::test_technique_apply_until_stuck(grid, &TECHNIQUE, |t| {
+            t
+                // Naked singles should be found and placed.
+                // Verify at least one placement occurred by checking candidate removal.
+                .assert_removed_includes(Position::new(1, 1), [Digit::D4]);
+        });
     }
 }

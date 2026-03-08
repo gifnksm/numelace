@@ -466,6 +466,34 @@ impl CandidateGrid {
         changed
     }
 
+    /// Sets the candidate digits at a position to the provided set.
+    ///
+    /// This overwrites the candidate state at that position, leaving all other positions unchanged.
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if any candidate changed at the position.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use numelace_core::{CandidateGrid, Digit, DigitSet, Position};
+    ///
+    /// let mut grid = CandidateGrid::new();
+    /// let pos = Position::new(1, 2);
+    /// let digits = DigitSet::from_iter([Digit::D2, Digit::D5]);
+    /// grid.set_candidate_at(pos, digits);
+    /// assert_eq!(grid.candidates_at(pos), digits);
+    /// ```
+    #[inline]
+    pub fn set_candidate_at(&mut self, pos: Position, digits: DigitSet) -> bool {
+        let mut changed = false;
+        for d in Digit::ALL {
+            changed |= self.digit_positions[d].set(pos, digits.contains(d));
+        }
+        changed
+    }
+
     /// Removes a specific digit as a candidate at a position.
     ///
     /// # Returns
@@ -521,6 +549,31 @@ impl CandidateGrid {
         before != self.digit_positions[digit]
     }
 
+    /// Removes a set of candidate digits from a position.
+    ///
+    /// Returns `true` if any candidate was removed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use numelace_core::{CandidateGrid, Digit, DigitSet, Position};
+    ///
+    /// let mut grid = CandidateGrid::new();
+    /// let pos = Position::new(2, 3);
+    /// let digits = DigitSet::from_iter([Digit::D1, Digit::D7]);
+    /// grid.remove_candidate_set(pos, digits);
+    /// assert!(!grid.candidates_at(pos).contains(Digit::D1));
+    /// assert!(!grid.candidates_at(pos).contains(Digit::D7));
+    /// ```
+    #[inline]
+    pub fn remove_candidate_set(&mut self, pos: Position, digits: DigitSet) -> bool {
+        let mut changed = false;
+        for digit in digits {
+            changed |= self.remove_candidate(pos, digit);
+        }
+        changed
+    }
+
     /// Removes a set of candidate digits from all positions specified by a mask.
     ///
     /// Returns `true` if any candidate was removed.
@@ -528,12 +581,11 @@ impl CandidateGrid {
     /// This is equivalent to calling
     /// [`remove_candidate_with_mask`](Self::remove_candidate_with_mask)
     /// for each digit in `digits`.
-    #[must_use]
     #[inline]
     pub fn remove_candidate_set_with_mask(
         &mut self,
-        mask: BitSet81<PositionSemantics>,
-        digits: BitSet9<DigitSemantics>,
+        mask: DigitPositions,
+        digits: DigitSet,
     ) -> bool {
         let mut changed = false;
         for digit in digits {
@@ -863,6 +915,38 @@ mod tests {
 
         // Empty mask is no-op
         assert!(!grid.remove_candidate_with_mask(DigitPositions::EMPTY, D1));
+    }
+
+    #[test]
+    fn test_set_candidate_at() {
+        let mut grid = CandidateGrid::new();
+        let pos = Position::new(1, 2);
+        let digits = DigitSet::from_iter([D2, D5, D9]);
+
+        assert!(grid.set_candidate_at(pos, digits));
+        assert_eq!(grid.candidates_at(pos), digits);
+        assert_eq!(grid.candidates_at(Position::new(0, 0)).len(), 9);
+
+        // Setting the same candidates again is a no-op
+        assert!(!grid.set_candidate_at(pos, digits));
+    }
+
+    #[test]
+    fn test_remove_candidate_set() {
+        let mut grid = CandidateGrid::new();
+        let pos = Position::new(2, 3);
+        let digits = DigitSet::from_iter([D1, D3, D7]);
+
+        assert!(grid.remove_candidate_set(pos, digits));
+
+        let candidates = grid.candidates_at(pos);
+        assert!(!candidates.contains(D1));
+        assert!(!candidates.contains(D3));
+        assert!(!candidates.contains(D7));
+        assert_eq!(candidates.len(), 6);
+
+        // Removing the same set again is a no-op
+        assert!(!grid.remove_candidate_set(pos, digits));
     }
 
     #[test]

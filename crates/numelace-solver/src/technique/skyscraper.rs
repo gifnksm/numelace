@@ -198,7 +198,9 @@ mod tests {
     use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::testing::TechniqueTester;
+    use crate::testing;
+
+    const TECHNIQUE: Skyscraper = Skyscraper::new();
 
     #[test]
     fn test_eliminates_skyscraper_candidates_in_columns() {
@@ -221,10 +223,10 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&Skyscraper::new())
-            .assert_removed_includes(Position::new(0, 4), [digit])
-            .assert_removed_includes(Position::new(8, 3), [digit]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(Position::new(0, 4), [digit])
+                .assert_removed_includes(Position::new(8, 3), [digit]);
+        });
     }
 
     #[test]
@@ -248,19 +250,15 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&Skyscraper::new())
-            .assert_removed_includes(Position::new(4, 1), [digit])
-            .assert_removed_includes(Position::new(3, 5), [digit]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(Position::new(4, 1), [digit])
+                .assert_removed_includes(Position::new(3, 5), [digit]);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_skyscraper() {
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&Skyscraper::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 }

@@ -238,7 +238,9 @@ mod tests {
     use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::testing::TechniqueTester;
+    use crate::testing;
+
+    const TECHNIQUE: XyChain = XyChain::new();
 
     fn set_bivalue(grid: &mut CandidateGrid, position: Position, d1: Digit, d2: Digit) {
         for digit in Digit::ALL {
@@ -260,9 +262,9 @@ mod tests {
         set_bivalue(&mut grid, mid, Digit::D2, Digit::D3);
         set_bivalue(&mut grid, end, Digit::D1, Digit::D3);
 
-        TechniqueTester::new(grid)
-            .apply_pass(&XyChain::new())
-            .assert_removed_includes(elimination, [Digit::D1]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(elimination, [Digit::D1]);
+        });
     }
 
     #[test]
@@ -280,20 +282,16 @@ mod tests {
         set_bivalue(&mut grid, mid, Digit::D2, Digit::D3);
         set_bivalue(&mut grid, end, Digit::D1, Digit::D3);
 
-        TechniqueTester::new(grid)
-            .apply_pass(&XyChain::new())
-            .assert_removed_includes(elimination_start_end, [Digit::D1])
-            .assert_removed_includes(elimination_start_mid, [Digit::D2])
-            .assert_removed_includes(elimination_mid_end, [Digit::D3]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(elimination_start_end, [Digit::D1])
+                .assert_removed_includes(elimination_start_mid, [Digit::D2])
+                .assert_removed_includes(elimination_mid_end, [Digit::D3]);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_xy_chain() {
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&XyChain::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 }

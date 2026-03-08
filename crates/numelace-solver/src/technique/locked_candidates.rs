@@ -181,7 +181,9 @@ mod tests {
     use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::testing::TechniqueTester;
+    use crate::testing;
+
+    const TECHNIQUE: LockedCandidates = LockedCandidates::new();
 
     #[test]
     fn test_pointing_eliminates_from_row() {
@@ -193,11 +195,12 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&LockedCandidates::new())
-            // D5 removed from the rest of row 0 outside the box.
-            .assert_removed_includes(Position::new(3, 0), [Digit::D5])
-            .assert_removed_includes(Position::new(8, 0), [Digit::D5]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t
+                // D5 removed from the rest of row 0 outside the box.
+                .assert_removed_includes(Position::new(3, 0), [Digit::D5])
+                .assert_removed_includes(Position::new(8, 0), [Digit::D5]);
+        });
     }
 
     #[test]
@@ -210,21 +213,18 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&LockedCandidates::new())
-            // D7 removed from the rest of box 0 outside row 0.
-            .assert_removed_includes(Position::new(0, 1), [Digit::D7])
-            .assert_removed_includes(Position::new(2, 2), [Digit::D7]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t
+                // D7 removed from the rest of box 0 outside row 0.
+                .assert_removed_includes(Position::new(0, 1), [Digit::D7])
+                .assert_removed_includes(Position::new(2, 2), [Digit::D7]);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_locked_candidates() {
         // A fresh grid has no locked candidate eliminations.
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&LockedCandidates::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 }

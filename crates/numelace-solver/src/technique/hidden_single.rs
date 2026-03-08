@@ -129,7 +129,9 @@ mod tests {
     use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::testing::TechniqueTester;
+    use crate::testing;
+
+    const TECHNIQUE: HiddenSingle = HiddenSingle::new();
 
     #[test]
     fn test_hidden_single_in_row() {
@@ -143,10 +145,11 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&HiddenSingle::new())
-            // D5 should be placed at (3, 0)
-            .assert_placed(Position::new(3, 0), Digit::D5);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t
+                // D5 should be placed at (3, 0)
+                .assert_placed(Position::new(3, 0), Digit::D5);
+        });
     }
 
     #[test]
@@ -161,10 +164,11 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&HiddenSingle::new())
-            // D7 should be placed at (5, 4)
-            .assert_placed(Position::new(5, 4), Digit::D7);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t
+                // D7 should be placed at (5, 4)
+                .assert_placed(Position::new(5, 4), Digit::D7);
+        });
     }
 
     #[test]
@@ -180,10 +184,11 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&HiddenSingle::new())
-            // D9 should be placed at (4, 4)
-            .assert_placed(Position::new(4, 4), Digit::D9);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t
+                // D9 should be placed at (4, 4)
+                .assert_placed(Position::new(4, 4), Digit::D9);
+        });
     }
 
     #[test]
@@ -205,22 +210,19 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&HiddenSingle::new())
-            // D3 placed at (2, 0)
-            .assert_placed(Position::new(2, 0), Digit::D3)
-            // D8 placed at (7, 6)
-            .assert_placed(Position::new(7, 6), Digit::D8);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t
+                // D3 placed at (2, 0)
+                .assert_placed(Position::new(2, 0), Digit::D3)
+                // D8 placed at (7, 6)
+                .assert_placed(Position::new(7, 6), Digit::D8);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_hidden_singles() {
         // When every digit has multiple candidates in each house, nothing changes
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&HiddenSingle::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 }

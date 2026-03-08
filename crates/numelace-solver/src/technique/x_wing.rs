@@ -177,10 +177,12 @@ impl Technique for XWing {
 
 #[cfg(test)]
 mod tests {
-    use numelace_core::{CandidateGrid, ConsistencyError, Digit, Position};
+    use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::{SolverError, TechniqueGrid, testing::TechniqueTester};
+    use crate::testing;
+
+    const TECHNIQUE: XWing = XWing::new();
 
     #[test]
     fn test_eliminates_x_wing_candidates_in_columns() {
@@ -197,20 +199,16 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&XWing::new())
-            .assert_removed_includes(Position::new(x1, 2), [Digit::D1])
-            .assert_removed_includes(Position::new(x2, 6), [Digit::D1]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(Position::new(x1, 2), [Digit::D1])
+                .assert_removed_includes(Position::new(x2, 6), [Digit::D1]);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_x_wing() {
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&XWing::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 
     #[test]
@@ -228,13 +226,6 @@ mod tests {
             }
         }
 
-        let mut grid = TechniqueGrid::from(grid);
-        let result = XWing::new().apply_pass(&mut grid);
-        assert!(matches!(
-            result,
-            Err(SolverError::Inconsistent(
-                ConsistencyError::CandidateConstraintViolation
-            ))
-        ));
+        testing::test_technique_apply_pass_fail_with_constraint_violation(grid, &TECHNIQUE);
     }
 }

@@ -175,7 +175,9 @@ mod tests {
     use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::testing::TechniqueTester;
+    use crate::testing;
+
+    const TECHNIQUE: XyzWing = XyzWing::new();
 
     #[test]
     fn test_eliminates_xyz_wing_candidates() {
@@ -206,19 +208,15 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&XyzWing::new())
-            .assert_removed_includes(elimination, [Digit::D1]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(elimination, [Digit::D1]);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_xyz_wing() {
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&XyzWing::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 
     #[test]
@@ -251,9 +249,9 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&XyzWing::new())
-            .assert_removed_includes(elimination, [Digit::D1])
-            .assert_no_change(non_elimination);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(elimination, [Digit::D1])
+                .assert_no_change(non_elimination);
+        });
     }
 }

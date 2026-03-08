@@ -297,7 +297,9 @@ mod tests {
     use numelace_core::{CandidateGrid, Digit, Position};
 
     use super::*;
-    use crate::testing::TechniqueTester;
+    use crate::testing;
+
+    const TECHNIQUE: XChain = XChain::new();
 
     #[test]
     fn test_eliminates_x_chain_candidates() {
@@ -320,9 +322,9 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&XChain::new())
-            .assert_removed_includes(Position::new(0, 7), [digit]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(Position::new(0, 7), [digit]);
+        });
     }
 
     #[test]
@@ -344,19 +346,15 @@ mod tests {
             }
         }
 
-        TechniqueTester::new(grid)
-            .apply_pass(&XChain::new())
-            .assert_placed(chain_start, digit);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_placed(chain_start, digit);
+        });
     }
 
     #[test]
     fn test_no_change_when_no_x_chain() {
         let grid = CandidateGrid::new();
-
-        TechniqueTester::new(grid)
-            .apply_pass(&XChain::new())
-            .assert_no_change(Position::new(0, 0))
-            .assert_no_change(Position::new(4, 4));
+        testing::test_technique_apply_pass_no_changes(grid, &TECHNIQUE);
     }
 
     #[test]
@@ -420,8 +418,8 @@ mod tests {
         // The main elimination is at cells that see both chain_start and chain_end.
         // (0,4) sees both (0,0) and (0,8), so it should be eliminated.
 
-        TechniqueTester::new(grid)
-            .apply_pass(&XChain::new())
-            .assert_removed_includes(Position::new(0, 4), [digit]);
+        testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
+            t.assert_removed_includes(Position::new(0, 4), [digit]);
+        });
     }
 }
