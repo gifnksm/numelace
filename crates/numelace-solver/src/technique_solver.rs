@@ -395,7 +395,7 @@ mod tests {
         // Create a naked single: only D5 at (4, 4)
         for digit in Digit::ALL {
             if digit != Digit::D5 {
-                grid.remove_candidate(Position::new(4, 4), digit);
+                grid.remove_candidate(Position::from_xy(4, 4), digit);
             }
         }
 
@@ -421,7 +421,7 @@ mod tests {
         // Create a naked single: only D5 at (4, 4)
         for digit in Digit::ALL {
             if digit != Digit::D5 {
-                grid.remove_candidate(Position::new(4, 4), digit);
+                grid.remove_candidate(Position::from_xy(4, 4), digit);
             }
         }
 
@@ -447,7 +447,7 @@ mod tests {
         // Create a naked single
         for digit in Digit::ALL {
             if digit != Digit::D5 {
-                grid.remove_candidate(Position::new(4, 4), digit);
+                grid.remove_candidate(Position::from_xy(4, 4), digit);
             }
         }
 
@@ -483,7 +483,7 @@ mod tests {
         // Create a naked single at (0, 0) - only D1 remains
         for digit in Digit::ALL {
             if digit != Digit::D1 {
-                grid.remove_candidate(Position::new(0, 0), digit);
+                grid.remove_candidate(Position::from_xy(0, 0), digit);
             }
         }
 
@@ -512,7 +512,7 @@ mod tests {
         // Create a naked single at (0, 0) - only D1 remains
         for digit in Digit::ALL {
             if digit != Digit::D1 {
-                grid.remove_candidate(Position::new(0, 0), digit);
+                grid.remove_candidate(Position::from_xy(0, 0), digit);
             }
         }
 
@@ -591,7 +591,7 @@ mod tests {
         // Create a naked single that hasn't been placed yet
         for digit in Digit::ALL {
             if digit != Digit::D5 {
-                grid.remove_candidate(Position::new(4, 4), digit);
+                grid.remove_candidate(Position::from_xy(4, 4), digit);
             }
         }
 
@@ -611,7 +611,7 @@ mod tests {
         // First solve - create naked single
         for digit in Digit::ALL {
             if digit != Digit::D1 {
-                grid1.remove_candidate(Position::new(0, 0), digit);
+                grid1.remove_candidate(Position::from_xy(0, 0), digit);
             }
         }
         let _ = solver.solve_with_pass_stats(&mut grid1, &mut stats);
@@ -620,7 +620,7 @@ mod tests {
         // Second solve accumulates - create another naked single
         for digit in Digit::ALL {
             if digit != Digit::D2 {
-                grid2.remove_candidate(Position::new(1, 1), digit);
+                grid2.remove_candidate(Position::from_xy(1, 1), digit);
             }
         }
         let _ = solver.solve_with_pass_stats(&mut grid2, &mut stats);

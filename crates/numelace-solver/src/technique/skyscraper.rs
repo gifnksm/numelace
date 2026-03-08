@@ -214,18 +214,18 @@ mod tests {
 
         for row in 0..9 {
             if row != base_row && row != col1_roof_row {
-                grid.remove_candidate(Position::new(col1, row), digit);
+                grid.remove_candidate(Position::from_xy(col1, row), digit);
             }
         }
         for row in 0..9 {
             if row != base_row && row != col2_roof_row {
-                grid.remove_candidate(Position::new(col2, row), digit);
+                grid.remove_candidate(Position::from_xy(col2, row), digit);
             }
         }
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
-            t.assert_removed_includes(Position::new(0, 4), [digit])
-                .assert_removed_includes(Position::new(8, 3), [digit]);
+            t.assert_removed_includes(Position::from_xy(0, 4), [digit])
+                .assert_removed_includes(Position::from_xy(8, 3), [digit]);
         });
     }
 
@@ -241,18 +241,18 @@ mod tests {
 
         for col in 0..9 {
             if col != base_col && col != row1_roof_col {
-                grid.remove_candidate(Position::new(col, row1), digit);
+                grid.remove_candidate(Position::from_xy(col, row1), digit);
             }
         }
         for col in 0..9 {
             if col != base_col && col != row2_roof_col {
-                grid.remove_candidate(Position::new(col, row2), digit);
+                grid.remove_candidate(Position::from_xy(col, row2), digit);
             }
         }
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
-            t.assert_removed_includes(Position::new(4, 1), [digit])
-                .assert_removed_includes(Position::new(3, 5), [digit]);
+            t.assert_removed_includes(Position::from_xy(4, 1), [digit])
+                .assert_removed_includes(Position::from_xy(3, 5), [digit]);
         });
     }
 

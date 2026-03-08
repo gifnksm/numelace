@@ -148,7 +148,7 @@ mod tests {
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
             t
                 // D5 should be placed at (3, 0)
-                .assert_placed(Position::new(3, 0), Digit::D5);
+                .assert_placed(Position::from_xy(3, 0), Digit::D5);
         });
     }
 
@@ -158,7 +158,7 @@ mod tests {
         let mut grid = CandidateGrid::new();
 
         // Remove D7 from all cells in column 5 except (5, 4)
-        for pos in Position::COLUMNS[5] {
+        for pos in Position::COLS[5] {
             if pos.y() != 4 {
                 grid.remove_candidate(pos, Digit::D7);
             }
@@ -167,7 +167,7 @@ mod tests {
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
             t
                 // D7 should be placed at (5, 4)
-                .assert_placed(Position::new(5, 4), Digit::D7);
+                .assert_placed(Position::from_xy(5, 4), Digit::D7);
         });
     }
 
@@ -187,7 +187,7 @@ mod tests {
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
             t
                 // D9 should be placed at (4, 4)
-                .assert_placed(Position::new(4, 4), Digit::D9);
+                .assert_placed(Position::from_xy(4, 4), Digit::D9);
         });
     }
 
@@ -204,7 +204,7 @@ mod tests {
         }
 
         // Create hidden single in column 7: D8 can only go at (7, 6)
-        for pos in Position::COLUMNS[7] {
+        for pos in Position::COLS[7] {
             if pos.y() != 6 {
                 grid.remove_candidate(pos, Digit::D8);
             }
@@ -213,9 +213,9 @@ mod tests {
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
             t
                 // D3 placed at (2, 0)
-                .assert_placed(Position::new(2, 0), Digit::D3)
+                .assert_placed(Position::from_xy(2, 0), Digit::D3)
                 // D8 placed at (7, 6)
-                .assert_placed(Position::new(7, 6), Digit::D8);
+                .assert_placed(Position::from_xy(7, 6), Digit::D8);
         });
     }
 

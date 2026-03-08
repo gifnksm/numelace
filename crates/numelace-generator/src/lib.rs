@@ -223,7 +223,7 @@ impl<'a> PuzzleGenerator<'a> {
         let mut top_row = Digit::ALL;
         top_row.shuffle(rng);
         for (x, digit) in (0..9).zip(top_row) {
-            let pos = Position::new(x, 0);
+            let pos = Position::from_xy(x, 0);
             grid.place(pos, digit);
         }
 
@@ -445,7 +445,7 @@ mod tests {
         // Check all columns have digits 1-9
         for col in 0..9 {
             let mut digits = DigitSet::EMPTY;
-            for pos in Position::COLUMNS[col] {
+            for pos in Position::COLS[col] {
                 if let Some(digit) = solution.get(pos) {
                     digits.insert(digit);
                 }

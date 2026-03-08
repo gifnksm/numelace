@@ -43,7 +43,7 @@ use crate::index::{Index81, Index81Semantics};
 /// let mut grid: Array81<i32, PositionSemantics> = Array81::from([0; 81]);
 ///
 /// // Use semantic indexing (Position)
-/// let pos = Position::new(0, 0);
+/// let pos = Position::from_xy(0, 0);
 /// grid[pos] = 42;
 ///
 /// assert_eq!(grid[pos], 42);
@@ -168,8 +168,8 @@ where
     /// use numelace_core::{Position, containers::Array81, index::PositionSemantics};
     ///
     /// let array = Array81::<u8, PositionSemantics>::from_fn(|pos| pos.x() + pos.y());
-    /// assert_eq!(array[Position::new(0, 0)], 0);
-    /// assert_eq!(array[Position::new(8, 8)], 16);
+    /// assert_eq!(array[Position::from_xy(0, 0)], 0);
+    /// assert_eq!(array[Position::from_xy(8, 8)], 16);
     /// ```
     #[inline]
     #[expect(clippy::missing_panics_doc)]
@@ -211,7 +211,7 @@ where
     /// for elem in array.iter_mut() {
     ///     *elem = 42;
     /// }
-    /// assert_eq!(array[Position::new(0, 0)], 42);
+    /// assert_eq!(array[Position::from_xy(0, 0)], 42);
     /// ```
     #[inline]
     pub fn iter_mut(&mut self) -> slice::IterMut<'_, T> {
@@ -293,27 +293,27 @@ mod tests {
         let array: Array81<i32, PositionSemantics> = Array81::from(values);
 
         // Position (x, y) maps to index (y * 9 + x)
-        assert_eq!(array[Position::new(0, 0)], 0);
-        assert_eq!(array[Position::new(4, 4)], 40);
-        assert_eq!(array[Position::new(8, 8)], 80);
+        assert_eq!(array[Position::from_xy(0, 0)], 0);
+        assert_eq!(array[Position::from_xy(4, 4)], 40);
+        assert_eq!(array[Position::from_xy(8, 8)], 80);
 
         let mut array: Array81<i32, PositionSemantics> = Array81::from([0; 81]);
-        array[Position::new(0, 0)] = 100;
-        array[Position::new(4, 4)] = 500;
-        array[Position::new(8, 8)] = 900;
+        array[Position::from_xy(0, 0)] = 100;
+        array[Position::from_xy(4, 4)] = 500;
+        array[Position::from_xy(8, 8)] = 900;
 
-        assert_eq!(array[Position::new(0, 0)], 100);
-        assert_eq!(array[Position::new(4, 4)], 500);
-        assert_eq!(array[Position::new(8, 8)], 900);
+        assert_eq!(array[Position::from_xy(0, 0)], 100);
+        assert_eq!(array[Position::from_xy(4, 4)], 500);
+        assert_eq!(array[Position::from_xy(8, 8)], 900);
     }
 
     #[test]
     fn test_from_fn() {
         let array: Array81<u8, PositionSemantics> =
             Array81::from_fn(|pos: Position| pos.x() + pos.y());
-        assert_eq!(array[Position::new(0, 0)], 0);
-        assert_eq!(array[Position::new(4, 4)], 8);
-        assert_eq!(array[Position::new(8, 8)], 16);
+        assert_eq!(array[Position::from_xy(0, 0)], 0);
+        assert_eq!(array[Position::from_xy(4, 4)], 8);
+        assert_eq!(array[Position::from_xy(8, 8)], 16);
     }
 
     #[test]
@@ -330,7 +330,7 @@ mod tests {
         for elem in &mut array {
             *elem = 42;
         }
-        assert_eq!(array[Position::new(0, 0)], 42);
+        assert_eq!(array[Position::from_xy(0, 0)], 42);
 
         // IntoIter
         let vec: Vec<i32> = array.into_iter().collect();
@@ -346,7 +346,7 @@ mod tests {
         #[expect(clippy::clone_on_copy)]
         let array2 = array1.clone();
         assert_eq!(array1, array2);
-        assert_eq!(array2[Position::new(5, 5)], 42);
+        assert_eq!(array2[Position::from_xy(5, 5)], 42);
     }
 
     #[test]
@@ -364,8 +364,8 @@ mod tests {
     fn test_default() {
         // Default properly initializes with PhantomData marker
         let array: Array81<i32, PositionSemantics> = Array81::default();
-        assert_eq!(array[Position::new(0, 0)], 0);
-        assert_eq!(array[Position::new(8, 8)], 0);
+        assert_eq!(array[Position::from_xy(0, 0)], 0);
+        assert_eq!(array[Position::from_xy(8, 8)], 0);
     }
 
     #[test]

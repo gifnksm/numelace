@@ -157,9 +157,9 @@ mod tests {
     #[test]
     fn test_eliminates_pair_candidates_in_row() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::new(0, 0);
-        let pos2 = Position::new(3, 0);
-        let target = Position::new(4, 0);
+        let pos1 = Position::from_xy(0, 0);
+        let pos2 = Position::from_xy(3, 0);
+        let target = Position::from_xy(4, 0);
 
         for digit in Digit::ALL {
             if digit != Digit::D1 && digit != Digit::D2 {
@@ -182,8 +182,8 @@ mod tests {
     #[test]
     fn test_no_change_when_pair_has_no_eliminations() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::new(0, 0);
-        let pos2 = Position::new(1, 0);
+        let pos1 = Position::from_xy(0, 0);
+        let pos2 = Position::from_xy(1, 0);
 
         for digit in Digit::ALL {
             if digit != Digit::D1 && digit != Digit::D2 {
@@ -212,9 +212,9 @@ mod tests {
     #[test]
     fn test_inconsistent_when_three_cells_share_pair_candidates() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::new(0, 0);
-        let pos2 = Position::new(3, 0);
-        let pos3 = Position::new(6, 0);
+        let pos1 = Position::from_xy(0, 0);
+        let pos2 = Position::from_xy(3, 0);
+        let pos3 = Position::from_xy(6, 0);
 
         for digit in Digit::ALL {
             if digit != Digit::D1 && digit != Digit::D2 {

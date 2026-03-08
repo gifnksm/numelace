@@ -132,7 +132,7 @@ impl Game {
 
         for (y, row) in (0..9).zip(notes) {
             for (x, bits) in (0..9).zip(row) {
-                let pos = Position::new(x, y);
+                let pos = Position::from_xy(x, y);
                 let digits =
                     DigitSet::try_from_bits(*bits).ok_or(GameError::InvalidNotes(*bits))?;
                 for d in digits {
@@ -159,7 +159,7 @@ impl Game {
     /// let puzzle = generator.generate();
     /// let game = Game::new(puzzle);
     ///
-    /// let pos = Position::new(0, 0);
+    /// let pos = Position::from_xy(0, 0);
     /// match game.cell(pos) {
     ///     CellState::Given(digit) => println!("Given cell: {}", digit),
     ///     CellState::Filled(digit) => println!("Player filled: {}", digit),
@@ -699,9 +699,12 @@ mod tests {
         let game = Game::from_problem_filled_notes(&problem, &solution, &filled, &[[0; 9]; 9])
             .expect("compatible grids");
 
-        assert_eq!(game.cell(Position::new(0, 0)), &CellState::Given(Digit::D1));
         assert_eq!(
-            game.cell(Position::new(1, 0)),
+            game.cell(Position::from_xy(0, 0)),
+            &CellState::Given(Digit::D1)
+        );
+        assert_eq!(
+            game.cell(Position::from_xy(1, 0)),
             &CellState::Filled(Digit::D2)
         );
 
@@ -929,7 +932,7 @@ mod tests {
         let solution = test_solution_grid();
         let mut game =
             Game::from_problem_filled_notes(&problem, &solution, &filled, &[[0; 9]; 9]).unwrap();
-        let pos = Position::new(0, 0);
+        let pos = Position::from_xy(0, 0);
 
         let result = game.auto_fill_cell_notes(pos).unwrap();
         assert_eq!(result, InputOperation::Set);
@@ -977,7 +980,7 @@ mod tests {
         let solution = test_solution_grid();
         let mut game =
             Game::from_problem_filled_notes(&problem, &solution, &filled, &[[0; 9]; 9]).unwrap();
-        let pos = Position::new(0, 0);
+        let pos = Position::from_xy(0, 0);
 
         game.toggle_note(pos, Digit::D1, RuleCheckPolicy::Permissive)
             .unwrap();
@@ -1012,7 +1015,7 @@ mod tests {
 
             fn application(&self) -> Vec<TechniqueApplication> {
                 vec![TechniqueApplication::Placement {
-                    position: Position::new(0, 0),
+                    position: Position::from_xy(0, 0),
                     digit: Digit::D1,
                 }]
             }
@@ -1040,7 +1043,7 @@ mod tests {
 
             fn application(&self) -> Vec<TechniqueApplication> {
                 vec![TechniqueApplication::Placement {
-                    position: Position::new(0, 0),
+                    position: Position::from_xy(0, 0),
                     digit: Digit::D2,
                 }]
             }
@@ -1048,7 +1051,7 @@ mod tests {
 
         let solution = test_solution_grid();
         let mut problem = DigitGrid::new();
-        problem.set(Position::new(0, 0), Some(Digit::D1));
+        problem.set(Position::from_xy(0, 0), Some(Digit::D1));
         let filled = DigitGrid::new();
 
         let game = Game::from_problem_filled_notes(&problem, &solution, &filled, &[[0; 9]; 9])
@@ -1083,8 +1086,8 @@ mod tests {
 
             fn application(&self) -> Vec<TechniqueApplication> {
                 let mut positions = DigitPositions::EMPTY;
-                positions.insert(Position::new(0, 0));
-                positions.insert(Position::new(1, 0));
+                positions.insert(Position::from_xy(0, 0));
+                positions.insert(Position::from_xy(1, 0));
                 let mut digits = DigitSet::EMPTY;
                 digits.insert(Digit::D5);
                 vec![TechniqueApplication::CandidateElimination { positions, digits }]
@@ -1097,20 +1100,28 @@ mod tests {
         let mut game =
             Game::from_problem_filled_notes(&problem, &solution, &filled, &[[0; 9]; 9]).unwrap();
 
-        game.toggle_note(Position::new(0, 0), Digit::D5, RuleCheckPolicy::Permissive)
-            .unwrap();
-        game.toggle_note(Position::new(1, 0), Digit::D5, RuleCheckPolicy::Permissive)
-            .unwrap();
+        game.toggle_note(
+            Position::from_xy(0, 0),
+            Digit::D5,
+            RuleCheckPolicy::Permissive,
+        )
+        .unwrap();
+        game.toggle_note(
+            Position::from_xy(1, 0),
+            Digit::D5,
+            RuleCheckPolicy::Permissive,
+        )
+        .unwrap();
         assert!(matches!(
-            game.cell(Position::new(0, 0)),
+            game.cell(Position::from_xy(0, 0)),
             CellState::Notes(notes) if notes.contains(Digit::D5)
         ));
 
         game.apply_technique_step(&TestStep, &InputDigitOptions::default())
             .unwrap();
 
-        assert_eq!(game.cell(Position::new(0, 0)), &CellState::Empty);
-        assert_eq!(game.cell(Position::new(1, 0)), &CellState::Empty);
+        assert_eq!(game.cell(Position::from_xy(0, 0)), &CellState::Empty);
+        assert_eq!(game.cell(Position::from_xy(1, 0)), &CellState::Empty);
     }
 
     #[test]

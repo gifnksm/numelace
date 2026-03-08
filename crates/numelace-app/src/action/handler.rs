@@ -211,7 +211,7 @@ impl StateQueryAction {
 
 impl SelectionAction {
     fn execute(self, app_state: &mut AppState) {
-        const DEFAULT_POSITION: Position = Position::new(0, 0);
+        const DEFAULT_POSITION: Position = Position::from_xy(0, 0);
 
         match self {
             SelectionAction::SelectOrClearCell(pos) => {
@@ -349,7 +349,7 @@ mod tests {
     #[test]
     fn conflicting_digit_sets_ghost_and_requests_save() {
         let mut app_state = AppState::new(fixed_game());
-        app_state.set_selected_cell(Position::new(0, 0));
+        app_state.set_selected_cell(Position::from_xy(0, 0));
         app_state.settings.assist.block_rule_violations = true;
 
         let mut ui_state = UiState::new();
@@ -365,10 +365,10 @@ mod tests {
         );
         assert_eq!(
             ui_state.conflict_ghost,
-            Some((Position::new(0, 0), GhostType::Digit(Digit::D1)))
+            Some((Position::from_xy(0, 0), GhostType::Digit(Digit::D1)))
         );
         assert!(matches!(
-            app_state.game.cell(Position::new(0, 0)),
+            app_state.game.cell(Position::from_xy(0, 0)),
             CellState::Empty
         ));
     }
@@ -416,7 +416,7 @@ mod tests {
     #[test]
     fn same_digit_request_does_not_add_history_entry() {
         let mut app_state = AppState::new(fixed_game());
-        app_state.set_selected_cell(Position::new(0, 0));
+        app_state.set_selected_cell(Position::from_xy(0, 0));
         let mut ui_state = UiState::new();
 
         handle(
@@ -443,7 +443,7 @@ mod tests {
         assert!(app_state.undo());
         assert!(!app_state.can_undo());
         assert!(matches!(
-            app_state.game.cell(Position::new(0, 0)),
+            app_state.game.cell(Position::from_xy(0, 0)),
             CellState::Empty
         ));
     }

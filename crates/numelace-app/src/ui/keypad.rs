@@ -117,14 +117,14 @@ const BUTTON_LAYOUT: [[Option<ButtonType>; 6]; 2] = {
 };
 
 #[expect(clippy::cast_precision_loss)]
-const KEYPAD_COLUMNS: f32 = BUTTON_LAYOUT[0].len() as f32;
+const KEYPAD_COLS: f32 = BUTTON_LAYOUT[0].len() as f32;
 #[expect(clippy::cast_precision_loss)]
 const KEYPAD_ROWS: f32 = BUTTON_LAYOUT.len() as f32;
 
 #[must_use]
 pub(crate) fn required_units() -> ComponentUnits {
     ComponentUnits::new(
-        KEYPAD_COLUMNS + (KEYPAD_COLUMNS - 1.0) * LayoutScale::SPACING_FACTOR.x,
+        KEYPAD_COLS + (KEYPAD_COLS - 1.0) * LayoutScale::SPACING_FACTOR.x,
         KEYPAD_ROWS
             + (KEYPAD_ROWS - 1.0) * LayoutScale::SPACING_FACTOR.y
             + LayoutScale::PADDING_FACTOR.y,

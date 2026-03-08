@@ -324,7 +324,7 @@ mod tests {
         let mut grid = TechniqueGrid::new();
 
         // Create a naked single
-        grid.place(Position::new(4, 4), Digit::D5);
+        grid.place(Position::from_xy(4, 4), Digit::D5);
 
         let result = solver.solve_with_pass(grid);
         assert!(result.is_ok());
@@ -336,7 +336,7 @@ mod tests {
         let mut grid = TechniqueGrid::new();
 
         // Simple setup
-        grid.place(Position::new(0, 0), Digit::D1);
+        grid.place(Position::from_xy(0, 0), Digit::D1);
 
         let solutions = solver.solve_with_pass(grid).unwrap();
 
@@ -382,7 +382,7 @@ mod tests {
 
         // Create a contradiction: remove all candidates from a cell
         for digit in Digit::ALL {
-            grid.remove_candidate(Position::new(0, 0), digit);
+            grid.remove_candidate(Position::from_xy(0, 0), digit);
         }
 
         let result = solver.solve_with_pass(grid);
@@ -411,9 +411,9 @@ mod tests {
         let mut grid = CandidateGrid::new();
 
         // Place a few digits to create a partial puzzle with multiple solutions
-        grid.place(Position::new(0, 0), Digit::D1);
-        grid.place(Position::new(1, 1), Digit::D2);
-        grid.place(Position::new(2, 2), Digit::D3);
+        grid.place(Position::from_xy(0, 0), Digit::D1);
+        grid.place(Position::from_xy(1, 1), Digit::D2);
+        grid.place(Position::from_xy(2, 2), Digit::D3);
 
         // Should still have multiple solutions
         let solutions: Vec<_> = solver
@@ -430,9 +430,9 @@ mod tests {
 
             // Check that the original placements are preserved
             let digit_grid_i = grid_i.to_digit_grid();
-            assert_eq!(digit_grid_i[Position::new(0, 0)], Some(Digit::D1));
-            assert_eq!(digit_grid_i[Position::new(1, 1)], Some(Digit::D2));
-            assert_eq!(digit_grid_i[Position::new(2, 2)], Some(Digit::D3));
+            assert_eq!(digit_grid_i[Position::from_xy(0, 0)], Some(Digit::D1));
+            assert_eq!(digit_grid_i[Position::from_xy(1, 1)], Some(Digit::D2));
+            assert_eq!(digit_grid_i[Position::from_xy(2, 2)], Some(Digit::D3));
 
             // Verify solutions are distinct
             for (grid_j, _) in &solutions[i + 1..] {
@@ -448,11 +448,11 @@ mod tests {
 
         // Create a scenario that requires backtracking
         // Place digits in a way that creates constraints
-        grid.place(Position::new(0, 0), Digit::D1);
-        grid.place(Position::new(0, 1), Digit::D2);
-        grid.place(Position::new(0, 2), Digit::D3);
-        grid.place(Position::new(1, 3), Digit::D4);
-        grid.place(Position::new(2, 6), Digit::D5);
+        grid.place(Position::from_xy(0, 0), Digit::D1);
+        grid.place(Position::from_xy(0, 1), Digit::D2);
+        grid.place(Position::from_xy(0, 2), Digit::D3);
+        grid.place(Position::from_xy(1, 3), Digit::D4);
+        grid.place(Position::from_xy(2, 6), Digit::D5);
 
         // Solve and check that some backtracking occurred
         // (We can't guarantee backtracking will happen, but it's likely with this setup)
@@ -469,11 +469,11 @@ mod tests {
         let mut grid = CandidateGrid::new();
 
         // Create a more constrained puzzle
-        grid.place(Position::new(0, 0), Digit::D1);
-        grid.place(Position::new(0, 1), Digit::D2);
-        grid.place(Position::new(0, 2), Digit::D3);
-        grid.place(Position::new(0, 3), Digit::D4);
-        grid.place(Position::new(0, 4), Digit::D5);
+        grid.place(Position::from_xy(0, 0), Digit::D1);
+        grid.place(Position::from_xy(0, 1), Digit::D2);
+        grid.place(Position::from_xy(0, 2), Digit::D3);
+        grid.place(Position::from_xy(0, 3), Digit::D4);
+        grid.place(Position::from_xy(0, 4), Digit::D5);
 
         // Get multiple solutions to increase chances of backtracking
         let solutions: Vec<_> = solver
@@ -501,7 +501,7 @@ mod tests {
         let mut grid = CandidateGrid::new();
 
         // Start with a partial grid
-        grid.place(Position::new(4, 4), Digit::D5);
+        grid.place(Position::from_xy(4, 4), Digit::D5);
 
         let (solution, _) = solver.solve_with_pass(grid.into()).unwrap().next().unwrap();
 

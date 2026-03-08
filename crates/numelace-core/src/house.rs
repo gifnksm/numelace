@@ -40,7 +40,7 @@ impl House {
     ]);
 
     /// Array containing all columns (0-8).
-    pub const COLUMNS: CellIndexIndexedArray<Self> = CellIndexIndexedArray::from_array([
+    pub const COLS: CellIndexIndexedArray<Self> = CellIndexIndexedArray::from_array([
         Self::Column { x: 0 },
         Self::Column { x: 1 },
         Self::Column { x: 2 },
@@ -89,8 +89,8 @@ impl House {
     pub fn position_from_cell_index(self, i: u8) -> Position {
         assert!(i < 9);
         match self {
-            House::Row { y } => Position::new(i, y),
-            House::Column { x } => Position::new(x, i),
+            House::Row { y } => Position::from_xy(i, y),
+            House::Column { x } => Position::from_xy(x, i),
             House::Box { index } => Position::from_box(index, i),
         }
     }
@@ -100,7 +100,7 @@ impl House {
     pub fn positions(self) -> DigitPositions {
         match self {
             House::Row { y } => DigitPositions::ROW_POSITIONS[y],
-            House::Column { x } => DigitPositions::COLUMN_POSITIONS[x],
+            House::Column { x } => DigitPositions::COL_POSITIONS[x],
             House::Box { index } => DigitPositions::BOX_POSITIONS[index],
         }
     }

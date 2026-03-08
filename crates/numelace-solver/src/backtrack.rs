@@ -69,8 +69,8 @@ use crate::TechniqueGrid;
 /// let mut grid = TechniqueGrid::new();
 ///
 /// // Place some digits to create a partially filled grid
-/// grid.place(Position::new(0, 0), Digit::D1);
-/// grid.place(Position::new(1, 0), Digit::D2);
+/// grid.place(Position::from_xy(0, 0), Digit::D1);
+/// grid.place(Position::from_xy(1, 0), Digit::D2);
 ///
 /// // Find the best position to try next
 /// let (pos, candidates) = backtrack::find_best_assumption(&grid);
@@ -107,20 +107,20 @@ mod tests {
 
         // Place digits to create positions with different candidate counts
         // Row 0: Place 7 digits, leaving 2 positions with different candidate counts
-        grid.place(Position::new(0, 0), Digit::D1);
-        grid.place(Position::new(1, 0), Digit::D2);
-        grid.place(Position::new(2, 0), Digit::D3);
-        grid.place(Position::new(3, 0), Digit::D4);
-        grid.place(Position::new(4, 0), Digit::D5);
-        grid.place(Position::new(5, 0), Digit::D6);
-        grid.place(Position::new(6, 0), Digit::D7);
+        grid.place(Position::from_xy(0, 0), Digit::D1);
+        grid.place(Position::from_xy(1, 0), Digit::D2);
+        grid.place(Position::from_xy(2, 0), Digit::D3);
+        grid.place(Position::from_xy(3, 0), Digit::D4);
+        grid.place(Position::from_xy(4, 0), Digit::D5);
+        grid.place(Position::from_xy(5, 0), Digit::D6);
+        grid.place(Position::from_xy(6, 0), Digit::D7);
         // Positions (7,0) and (8,0) remain with candidates {D8, D9}
 
         // Box 0 (top-left 3x3): Fill more positions to create varying candidate counts
-        grid.place(Position::new(0, 1), Digit::D4);
-        grid.place(Position::new(1, 1), Digit::D5);
-        grid.place(Position::new(2, 1), Digit::D6);
-        grid.place(Position::new(0, 2), Digit::D7);
+        grid.place(Position::from_xy(0, 1), Digit::D4);
+        grid.place(Position::from_xy(1, 1), Digit::D5);
+        grid.place(Position::from_xy(2, 1), Digit::D6);
+        grid.place(Position::from_xy(0, 2), Digit::D7);
         // Position (1,2) should have fewer candidates than (7,0) and (8,0)
 
         let (_pos, candidates) = find_best_assumption(&grid.into());
@@ -184,12 +184,12 @@ mod tests {
         let mut grid = CandidateGrid::new();
 
         // Create an inconsistent state by placing contradictory values
-        let pos = Position::new(0, 0);
+        let pos = Position::from_xy(0, 0);
         grid.place(pos, Digit::D1);
 
         // Try to remove all candidates from another cell in the same row
         // This creates an inconsistent state
-        let conflict_pos = Position::new(1, 0);
+        let conflict_pos = Position::from_xy(1, 0);
         for digit in Digit::ALL {
             if grid.candidates_at(conflict_pos).contains(digit) {
                 grid.remove_candidate(conflict_pos, digit);
@@ -205,9 +205,9 @@ mod tests {
         let mut grid = CandidateGrid::new();
 
         // Place a few digits
-        grid.place(Position::new(0, 0), Digit::D1);
-        grid.place(Position::new(1, 1), Digit::D2);
-        grid.place(Position::new(2, 2), Digit::D3);
+        grid.place(Position::from_xy(0, 0), Digit::D1);
+        grid.place(Position::from_xy(1, 1), Digit::D2);
+        grid.place(Position::from_xy(2, 2), Digit::D3);
 
         let grid = TechniqueGrid::from(grid);
         let (pos, candidates) = find_best_assumption(&grid);

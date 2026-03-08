@@ -26,8 +26,8 @@ use crate::{CandidateGrid, Digit, Position, PositionIndexedArray};
 /// use numelace_core::{Digit, DigitGrid, Position};
 ///
 /// let mut grid = DigitGrid::new();
-/// grid.set(Position::new(0, 0), Some(Digit::D5));
-/// assert_eq!(grid.get(Position::new(0, 0)), Some(Digit::D5));
+/// grid.set(Position::from_xy(0, 0), Some(Digit::D5));
+/// assert_eq!(grid.get(Position::from_xy(0, 0)), Some(Digit::D5));
 /// ```
 ///
 /// # String Parsing
@@ -229,10 +229,10 @@ mod tests {
         let s = format!("123456789{}", ".".repeat(72));
         let grid: DigitGrid = s.parse().unwrap();
 
-        assert_eq!(grid.get(Position::new(0, 0)), Some(Digit::D1));
-        assert_eq!(grid.get(Position::new(1, 0)), Some(Digit::D2));
-        assert_eq!(grid.get(Position::new(8, 0)), Some(Digit::D9));
-        assert_eq!(grid.get(Position::new(0, 1)), None);
+        assert_eq!(grid.get(Position::from_xy(0, 0)), Some(Digit::D1));
+        assert_eq!(grid.get(Position::from_xy(1, 0)), Some(Digit::D2));
+        assert_eq!(grid.get(Position::from_xy(8, 0)), Some(Digit::D9));
+        assert_eq!(grid.get(Position::from_xy(0, 1)), None);
 
         // Whitespace is ignored
         let s = "123456789\n\
@@ -245,8 +245,8 @@ mod tests {
                  .........\n\
                  .........";
         let grid: DigitGrid = s.parse().unwrap();
-        assert_eq!(grid.get(Position::new(0, 0)), Some(Digit::D1));
-        assert_eq!(grid.get(Position::new(8, 0)), Some(Digit::D9));
+        assert_eq!(grid.get(Position::from_xy(0, 0)), Some(Digit::D1));
+        assert_eq!(grid.get(Position::from_xy(8, 0)), Some(Digit::D9));
 
         // Empty cell representations: '.', '0', '_'
         for empty_char in ['.', '0', '_'] {

@@ -194,14 +194,14 @@ mod tests {
 
         for x in 0..9 {
             if x != x1 && x != x2 {
-                grid.remove_candidate(Position::new(x, y1), Digit::D1);
-                grid.remove_candidate(Position::new(x, y2), Digit::D1);
+                grid.remove_candidate(Position::from_xy(x, y1), Digit::D1);
+                grid.remove_candidate(Position::from_xy(x, y2), Digit::D1);
             }
         }
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
-            t.assert_removed_includes(Position::new(x1, 2), [Digit::D1])
-                .assert_removed_includes(Position::new(x2, 6), [Digit::D1]);
+            t.assert_removed_includes(Position::from_xy(x1, 2), [Digit::D1])
+                .assert_removed_includes(Position::from_xy(x2, 6), [Digit::D1]);
         });
     }
 
@@ -221,8 +221,8 @@ mod tests {
 
         for x in 0..9 {
             if x != x1 && x != x2 {
-                grid.remove_candidate(Position::new(x, y1), Digit::D1);
-                grid.remove_candidate(Position::new(x, y2), Digit::D1);
+                grid.remove_candidate(Position::from_xy(x, y1), Digit::D1);
+                grid.remove_candidate(Position::from_xy(x, y2), Digit::D1);
             }
         }
 

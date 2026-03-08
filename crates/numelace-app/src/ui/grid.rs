@@ -322,7 +322,7 @@ pub(crate) fn show(
 
     for y in 0..9 {
         for x in 0..9 {
-            let pos = Position::new(x, y);
+            let pos = Position::from_xy(x, y);
             let cell = &vm.grid[pos];
             let vs = vm.effective_visual_state(cell.visual_state);
 

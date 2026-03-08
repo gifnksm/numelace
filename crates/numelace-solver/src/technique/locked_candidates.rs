@@ -198,8 +198,8 @@ mod tests {
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
             t
                 // D5 removed from the rest of row 0 outside the box.
-                .assert_removed_includes(Position::new(3, 0), [Digit::D5])
-                .assert_removed_includes(Position::new(8, 0), [Digit::D5]);
+                .assert_removed_includes(Position::from_xy(3, 0), [Digit::D5])
+                .assert_removed_includes(Position::from_xy(8, 0), [Digit::D5]);
         });
     }
 
@@ -216,8 +216,8 @@ mod tests {
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
             t
                 // D7 removed from the rest of box 0 outside row 0.
-                .assert_removed_includes(Position::new(0, 1), [Digit::D7])
-                .assert_removed_includes(Position::new(2, 2), [Digit::D7]);
+                .assert_removed_includes(Position::from_xy(0, 1), [Digit::D7])
+                .assert_removed_includes(Position::from_xy(2, 2), [Digit::D7]);
         });
     }
 

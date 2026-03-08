@@ -21,9 +21,9 @@ pub(crate) struct ColumnAxis;
 
 impl AxisOps for RowAxis {
     const LINE_POSITIONS: CellIndexIndexedArray<DigitPositions> = DigitPositions::ROW_POSITIONS;
-    const CROSS_POSITIONS: CellIndexIndexedArray<DigitPositions> = DigitPositions::COLUMN_POSITIONS;
+    const CROSS_POSITIONS: CellIndexIndexedArray<DigitPositions> = DigitPositions::COL_POSITIONS;
     const LINE_HOUSES: CellIndexIndexedArray<House> = House::ROWS;
-    const CROSS_HOUSES: CellIndexIndexedArray<House> = House::COLUMNS;
+    const CROSS_HOUSES: CellIndexIndexedArray<House> = House::COLS;
 
     #[inline]
     fn line_mask(grid: &TechniqueGrid, index: u8, digit: Digit) -> HouseMask {
@@ -37,14 +37,14 @@ impl AxisOps for RowAxis {
 
     #[inline]
     fn make_pos(line: u8, cross: u8) -> Position {
-        Position::new(cross, line)
+        Position::from_xy(cross, line)
     }
 }
 
 impl AxisOps for ColumnAxis {
-    const LINE_POSITIONS: CellIndexIndexedArray<DigitPositions> = DigitPositions::COLUMN_POSITIONS;
+    const LINE_POSITIONS: CellIndexIndexedArray<DigitPositions> = DigitPositions::COL_POSITIONS;
     const CROSS_POSITIONS: CellIndexIndexedArray<DigitPositions> = DigitPositions::ROW_POSITIONS;
-    const LINE_HOUSES: CellIndexIndexedArray<House> = House::COLUMNS;
+    const LINE_HOUSES: CellIndexIndexedArray<House> = House::COLS;
     const CROSS_HOUSES: CellIndexIndexedArray<House> = House::ROWS;
 
     #[inline]
@@ -59,6 +59,6 @@ impl AxisOps for ColumnAxis {
 
     #[inline]
     fn make_pos(line: u8, cross: u8) -> Position {
-        Position::new(line, cross)
+        Position::from_xy(line, cross)
     }
 }

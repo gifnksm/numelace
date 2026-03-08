@@ -225,14 +225,14 @@ mod tests {
         for &row in &rows {
             for x in 0..9u8 {
                 if !cols.contains(&x) {
-                    grid.remove_candidate(Position::new(x, row), digit);
+                    grid.remove_candidate(Position::from_xy(x, row), digit);
                 }
             }
         }
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
-            t.assert_removed_includes(Position::new(cols[0], 2), [digit])
-                .assert_removed_includes(Position::new(cols[2], 6), [digit]);
+            t.assert_removed_includes(Position::from_xy(cols[0], 2), [digit])
+                .assert_removed_includes(Position::from_xy(cols[2], 6), [digit]);
         });
     }
 
@@ -252,7 +252,7 @@ mod tests {
         for &row in &rows {
             for x in 0..9u8 {
                 if !cols.contains(&x) {
-                    grid.remove_candidate(Position::new(x, row), digit);
+                    grid.remove_candidate(Position::from_xy(x, row), digit);
                 }
             }
         }

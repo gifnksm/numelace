@@ -43,7 +43,7 @@ fn bench_apply_cases<T>(
 
 fn naked_single_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let target = Position::new(0, 0);
+    let target = Position::from_xy(0, 0);
     for digit in Digit::ALL {
         if digit != Digit::D1 {
             grid.remove_candidate(target, digit);
@@ -54,7 +54,7 @@ fn naked_single_grid() -> TechniqueGrid {
 
 fn hidden_single_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let target = Position::new(1, 0);
+    let target = Position::from_xy(1, 0);
     for pos in Position::ROWS[0] {
         if pos != target {
             grid.remove_candidate(pos, Digit::D2);
@@ -75,8 +75,8 @@ fn locked_candidates_grid() -> TechniqueGrid {
 
 fn naked_pair_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let pos1 = Position::new(0, 0);
-    let pos2 = Position::new(1, 0);
+    let pos1 = Position::from_xy(0, 0);
+    let pos2 = Position::from_xy(1, 0);
 
     for digit in Digit::ALL {
         if digit != Digit::D1 && digit != Digit::D2 {
@@ -90,8 +90,8 @@ fn naked_pair_grid() -> TechniqueGrid {
 
 fn hidden_pair_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let pos1 = Position::new(0, 0);
-    let pos2 = Position::new(3, 0);
+    let pos1 = Position::from_xy(0, 0);
+    let pos2 = Position::from_xy(3, 0);
 
     for pos in Position::ROWS[0] {
         if pos != pos1 && pos != pos2 {
@@ -105,9 +105,9 @@ fn hidden_pair_grid() -> TechniqueGrid {
 
 fn naked_triple_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let pos1 = Position::new(0, 0);
-    let pos2 = Position::new(3, 0);
-    let pos3 = Position::new(6, 0);
+    let pos1 = Position::from_xy(0, 0);
+    let pos2 = Position::from_xy(3, 0);
+    let pos3 = Position::from_xy(6, 0);
 
     for digit in Digit::ALL {
         if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {
@@ -122,9 +122,9 @@ fn naked_triple_grid() -> TechniqueGrid {
 
 fn hidden_triple_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let pos1 = Position::new(0, 0);
-    let pos2 = Position::new(3, 0);
-    let pos3 = Position::new(6, 0);
+    let pos1 = Position::from_xy(0, 0);
+    let pos2 = Position::from_xy(3, 0);
+    let pos3 = Position::from_xy(6, 0);
 
     for pos in Position::ROWS[0] {
         if pos != pos1 && pos != pos2 && pos != pos3 {
@@ -139,10 +139,10 @@ fn hidden_triple_grid() -> TechniqueGrid {
 
 fn naked_quad_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let pos1 = Position::new(0, 0);
-    let pos2 = Position::new(2, 0);
-    let pos3 = Position::new(4, 0);
-    let pos4 = Position::new(6, 0);
+    let pos1 = Position::from_xy(0, 0);
+    let pos2 = Position::from_xy(2, 0);
+    let pos3 = Position::from_xy(4, 0);
+    let pos4 = Position::from_xy(6, 0);
 
     for digit in Digit::ALL {
         if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 && digit != Digit::D4 {
@@ -158,10 +158,10 @@ fn naked_quad_grid() -> TechniqueGrid {
 
 fn hidden_quad_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let pos1 = Position::new(0, 0);
-    let pos2 = Position::new(2, 0);
-    let pos3 = Position::new(4, 0);
-    let pos4 = Position::new(6, 0);
+    let pos1 = Position::from_xy(0, 0);
+    let pos2 = Position::from_xy(2, 0);
+    let pos3 = Position::from_xy(4, 0);
+    let pos4 = Position::from_xy(6, 0);
 
     for pos in Position::ROWS[0] {
         if pos != pos1 && pos != pos2 && pos != pos3 && pos != pos4 {
@@ -184,8 +184,8 @@ fn x_wing_grid() -> TechniqueGrid {
 
     for x in 0..9 {
         if x != x1 && x != x2 {
-            grid.remove_candidate(Position::new(x, y1), Digit::D1);
-            grid.remove_candidate(Position::new(x, y2), Digit::D1);
+            grid.remove_candidate(Position::from_xy(x, y1), Digit::D1);
+            grid.remove_candidate(Position::from_xy(x, y2), Digit::D1);
         }
     }
 
@@ -203,12 +203,12 @@ fn skyscraper_grid() -> TechniqueGrid {
 
     for row in 0..9u8 {
         if row != base_row && row != col1_roof_row {
-            grid.remove_candidate(Position::new(col1, row), digit);
+            grid.remove_candidate(Position::from_xy(col1, row), digit);
         }
     }
     for row in 0..9u8 {
         if row != base_row && row != col2_roof_row {
-            grid.remove_candidate(Position::new(col2, row), digit);
+            grid.remove_candidate(Position::from_xy(col2, row), digit);
         }
     }
 
@@ -227,12 +227,12 @@ fn two_string_kite_grid() -> TechniqueGrid {
 
     for x in 0..9u8 {
         if x != row_box_col && x != row_other_col {
-            grid.remove_candidate(Position::new(x, row), digit);
+            grid.remove_candidate(Position::from_xy(x, row), digit);
         }
     }
     for y in 0..9u8 {
         if y != col_box_row && y != col_other_row {
-            grid.remove_candidate(Position::new(col, y), digit);
+            grid.remove_candidate(Position::from_xy(col, y), digit);
         }
     }
 
@@ -241,9 +241,9 @@ fn two_string_kite_grid() -> TechniqueGrid {
 
 fn y_wing_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let pivot = Position::new(1, 1);
-    let wing1 = Position::new(1, 5);
-    let wing2 = Position::new(5, 1);
+    let pivot = Position::from_xy(1, 1);
+    let wing1 = Position::from_xy(1, 5);
+    let wing2 = Position::from_xy(5, 1);
 
     for digit in Digit::ALL {
         if digit != Digit::D1 && digit != Digit::D2 {
@@ -275,7 +275,7 @@ fn swordfish_grid() -> TechniqueGrid {
     for &row in &rows {
         for x in 0..9u8 {
             if !cols.contains(&x) {
-                grid.remove_candidate(Position::new(x, row), digit);
+                grid.remove_candidate(Position::from_xy(x, row), digit);
             }
         }
     }
@@ -292,7 +292,7 @@ fn jellyfish_grid() -> TechniqueGrid {
     for &row in &rows {
         for x in 0..9u8 {
             if !cols.contains(&x) {
-                grid.remove_candidate(Position::new(x, row), digit);
+                grid.remove_candidate(Position::from_xy(x, row), digit);
             }
         }
     }
@@ -305,10 +305,10 @@ fn remote_pair_grid() -> TechniqueGrid {
     let digit1 = Digit::D1;
     let digit2 = Digit::D2;
 
-    let chain_start = Position::new(0, 0);
-    let chain_mid1 = Position::new(4, 0);
-    let chain_mid2 = Position::new(4, 5);
-    let chain_end = Position::new(1, 5);
+    let chain_start = Position::from_xy(0, 0);
+    let chain_mid1 = Position::from_xy(4, 0);
+    let chain_mid2 = Position::from_xy(4, 5);
+    let chain_end = Position::from_xy(1, 5);
 
     for pos in [chain_start, chain_mid1, chain_mid2, chain_end] {
         for digit in Digit::ALL {
@@ -324,8 +324,8 @@ fn remote_pair_grid() -> TechniqueGrid {
 fn x_chain_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
     let digit = Digit::D1;
-    let chain_start = Position::new(0, 0);
-    let strong_link_partner = Position::new(4, 0);
+    let chain_start = Position::from_xy(0, 0);
+    let strong_link_partner = Position::from_xy(4, 0);
 
     for pos in Position::ROWS[0] {
         if pos != chain_start && pos != strong_link_partner {
@@ -333,9 +333,9 @@ fn x_chain_grid() -> TechniqueGrid {
         }
     }
 
-    let weak_link_node = Position::new(3, 1);
-    let chain_end = Position::new(3, 7);
-    for pos in Position::COLUMNS[3] {
+    let weak_link_node = Position::from_xy(3, 1);
+    let chain_end = Position::from_xy(3, 7);
+    for pos in Position::COLS[3] {
         if pos != weak_link_node && pos != chain_end {
             grid.remove_candidate(pos, digit);
         }
@@ -346,9 +346,9 @@ fn x_chain_grid() -> TechniqueGrid {
 
 fn xy_chain_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let start = Position::new(1, 1);
-    let mid = Position::new(1, 5);
-    let end = Position::new(5, 5);
+    let start = Position::from_xy(1, 1);
+    let mid = Position::from_xy(1, 5);
+    let end = Position::from_xy(5, 5);
 
     for digit in Digit::ALL {
         if digit != Digit::D1 && digit != Digit::D2 {
@@ -373,9 +373,9 @@ fn xy_chain_grid() -> TechniqueGrid {
 
 fn xyz_wing_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let pivot = Position::new(1, 1);
-    let wing1 = Position::new(1, 2);
-    let wing2 = Position::new(2, 1);
+    let pivot = Position::from_xy(1, 1);
+    let wing1 = Position::from_xy(1, 2);
+    let wing2 = Position::from_xy(2, 1);
 
     for digit in Digit::ALL {
         if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {
@@ -400,10 +400,10 @@ fn xyz_wing_grid() -> TechniqueGrid {
 
 fn wxyz_wing_grid() -> TechniqueGrid {
     let mut grid = CandidateGrid::new();
-    let pos1 = Position::new(0, 0);
-    let pos2 = Position::new(1, 0);
-    let pos3 = Position::new(0, 1);
-    let pos4 = Position::new(1, 1);
+    let pos1 = Position::from_xy(0, 0);
+    let pos2 = Position::from_xy(1, 0);
+    let pos3 = Position::from_xy(0, 1);
+    let pos4 = Position::from_xy(1, 1);
 
     for digit in Digit::ALL {
         if digit != Digit::D1 && digit != Digit::D4 {

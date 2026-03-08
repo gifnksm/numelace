@@ -49,8 +49,8 @@ impl DigitPositions {
 
     /// Precomputed positions for each column.
     ///
-    /// `COLUMN_POSITIONS[x]` contains all 9 positions in column `x`.
-    pub const COLUMN_POSITIONS: CellIndexIndexedArray<DigitPositions> = {
+    /// `COL_POSITIONS[x]` contains all 9 positions in column `x`.
+    pub const COL_POSITIONS: CellIndexIndexedArray<DigitPositions> = {
         let mut masks = [DigitPositions::EMPTY; 9];
         let mut x = 0u8;
         while x < 9 {
@@ -125,9 +125,9 @@ impl DigitPositions {
     /// use numelace_core::{DigitPositions, Position};
     ///
     /// let mut positions = DigitPositions::new();
-    /// positions.insert(Position::new(2, 0)); // Column 2, Row 0
-    /// positions.insert(Position::new(5, 0)); // Column 5, Row 0
-    /// positions.insert(Position::new(3, 1)); // Column 3, Row 1
+    /// positions.insert(Position::from_xy(2, 0)); // Column 2, Row 0
+    /// positions.insert(Position::from_xy(5, 0)); // Column 5, Row 0
+    /// positions.insert(Position::from_xy(3, 1)); // Column 3, Row 1
     ///
     /// let positions_in_row = positions.positions_in_row(0);
     /// assert_eq!(positions_in_row.len(), 2); // Two positions in row 0
@@ -155,9 +155,9 @@ impl DigitPositions {
     /// use numelace_core::{DigitPositions, Position};
     ///
     /// let mut positions = DigitPositions::new();
-    /// positions.insert(Position::new(0, 1)); // Column 0, Row 1
-    /// positions.insert(Position::new(0, 4)); // Column 0, Row 4
-    /// positions.insert(Position::new(1, 2)); // Column 1, Row 2
+    /// positions.insert(Position::from_xy(0, 1)); // Column 0, Row 1
+    /// positions.insert(Position::from_xy(0, 4)); // Column 0, Row 4
+    /// positions.insert(Position::from_xy(1, 2)); // Column 1, Row 2
     ///
     /// let positions_in_col = positions.positions_in_col(0);
     /// assert_eq!(positions_in_col.len(), 2); // Two positions in column 0
@@ -168,7 +168,7 @@ impl DigitPositions {
     #[inline]
     pub fn positions_in_col(&self, x: u8) -> HouseMask {
         let mut mask = HouseMask::new();
-        for pos in *self & Self::COLUMN_POSITIONS[x] {
+        for pos in *self & Self::COL_POSITIONS[x] {
             mask.insert(pos.y());
         }
         mask
@@ -185,9 +185,9 @@ impl DigitPositions {
     /// use numelace_core::{DigitPositions, Position};
     ///
     /// let mut positions = DigitPositions::new();
-    /// positions.insert(Position::new(0, 0)); // Top-left corner of box 0
-    /// positions.insert(Position::new(1, 1)); // Center area of box 0
-    /// positions.insert(Position::new(3, 0)); // Box 1
+    /// positions.insert(Position::from_xy(0, 0)); // Top-left corner of box 0
+    /// positions.insert(Position::from_xy(1, 1)); // Center area of box 0
+    /// positions.insert(Position::from_xy(3, 0)); // Box 1
     ///
     /// let positions_in_box = positions.positions_in_box(0);
     /// assert_eq!(positions_in_box.len(), 2); // Two positions in box 0
@@ -223,7 +223,7 @@ impl DigitPositions {
     pub fn cols_set(&self) -> HouseMask {
         let mut cols = HouseMask::new();
         for x in 0..9 {
-            cols.set(x, !(*self & Self::COLUMN_POSITIONS[x]).is_empty());
+            cols.set(x, !(*self & Self::COL_POSITIONS[x]).is_empty());
         }
         cols
     }
@@ -269,7 +269,7 @@ pub type HouseMask = BitSet9<CellIndexSemantics>;
 /// let mut grid = CandidateGrid::new();
 ///
 /// // Initially all positions have all candidates
-/// let pos = Position::new(0, 0);
+/// let pos = Position::from_xy(0, 0);
 /// assert_eq!(grid.candidates_at(pos).len(), 9);
 ///
 /// // Place digit 1 at (0, 0)
@@ -306,12 +306,12 @@ impl CandidateGrid {
     /// let grid = CandidateGrid::from_digit_grid(&digit_grid);
     ///
     /// // D5 is placed at (0, 0)
-    /// let candidates = grid.candidates_at(Position::new(0, 0));
+    /// let candidates = grid.candidates_at(Position::from_xy(0, 0));
     /// assert_eq!(candidates.len(), 1);
     /// assert!(candidates.contains(Digit::D5));
     ///
     /// // D5 is still a candidate in the same row
-    /// let candidates = grid.candidates_at(Position::new(1, 0));
+    /// let candidates = grid.candidates_at(Position::from_xy(1, 0));
     /// assert!(candidates.contains(Digit::D5));
     /// ```
     #[must_use]
@@ -359,7 +359,7 @@ impl Default for CandidateGrid {
 /// let mut grid = CandidateGrid::new();
 ///
 /// // Create a contradiction by removing all candidates from a position
-/// let pos = Position::new(0, 0);
+/// let pos = Position::from_xy(0, 0);
 /// for digit in Digit::ALL {
 ///     grid.remove_candidate(pos, digit);
 /// }
@@ -413,13 +413,13 @@ impl CandidateGrid {
     /// use numelace_core::{CandidateGrid, Digit, Position};
     ///
     /// let mut grid = CandidateGrid::new();
-    /// grid.place(Position::new(0, 0), Digit::D1);
-    /// grid.place(Position::new(1, 0), Digit::D2);
+    /// grid.place(Position::from_xy(0, 0), Digit::D1);
+    /// grid.place(Position::from_xy(1, 0), Digit::D2);
     ///
     /// let digit_grid = grid.to_digit_grid();
-    /// assert_eq!(digit_grid.get(Position::new(0, 0)), Some(Digit::D1));
-    /// assert_eq!(digit_grid.get(Position::new(1, 0)), Some(Digit::D2));
-    /// assert_eq!(digit_grid.get(Position::new(2, 0)), None); // Not univalue yet
+    /// assert_eq!(digit_grid.get(Position::from_xy(0, 0)), Some(Digit::D1));
+    /// assert_eq!(digit_grid.get(Position::from_xy(1, 0)), Some(Digit::D2));
+    /// assert_eq!(digit_grid.get(Position::from_xy(2, 0)), None); // Not univalue yet
     /// ```
     #[must_use]
     pub fn to_digit_grid(&self) -> DigitGrid {
@@ -451,10 +451,10 @@ impl CandidateGrid {
     /// use numelace_core::{CandidateGrid, Digit, Position};
     ///
     /// let mut grid = CandidateGrid::new();
-    /// let changed = grid.place(Position::new(0, 0), Digit::D5);
+    /// let changed = grid.place(Position::from_xy(0, 0), Digit::D5);
     /// assert!(changed); // First placement changes the grid
     ///
-    /// let changed = grid.place(Position::new(0, 0), Digit::D5);
+    /// let changed = grid.place(Position::from_xy(0, 0), Digit::D5);
     /// assert!(!changed); // Placing again has no effect
     /// ```
     #[inline]
@@ -480,7 +480,7 @@ impl CandidateGrid {
     /// use numelace_core::{CandidateGrid, Digit, DigitSet, Position};
     ///
     /// let mut grid = CandidateGrid::new();
-    /// let pos = Position::new(1, 2);
+    /// let pos = Position::from_xy(1, 2);
     /// let digits = DigitSet::from_iter([Digit::D2, Digit::D5]);
     /// grid.set_candidate_at(pos, digits);
     /// assert_eq!(grid.candidates_at(pos), digits);
@@ -507,10 +507,10 @@ impl CandidateGrid {
     /// use numelace_core::{CandidateGrid, Digit, Position};
     ///
     /// let mut grid = CandidateGrid::new();
-    /// let changed = grid.remove_candidate(Position::new(0, 0), Digit::D1);
+    /// let changed = grid.remove_candidate(Position::from_xy(0, 0), Digit::D1);
     /// assert!(changed); // D1 was a candidate
     ///
-    /// let changed = grid.remove_candidate(Position::new(0, 0), Digit::D1);
+    /// let changed = grid.remove_candidate(Position::from_xy(0, 0), Digit::D1);
     /// assert!(!changed); // D1 is already removed
     /// ```
     #[inline]
@@ -559,7 +559,7 @@ impl CandidateGrid {
     /// use numelace_core::{CandidateGrid, Digit, DigitSet, Position};
     ///
     /// let mut grid = CandidateGrid::new();
-    /// let pos = Position::new(2, 3);
+    /// let pos = Position::from_xy(2, 3);
     /// let digits = DigitSet::from_iter([Digit::D1, Digit::D7]);
     /// grid.remove_candidate_set(pos, digits);
     /// assert!(!grid.candidates_at(pos).contains(Digit::D1));
@@ -635,11 +635,11 @@ impl CandidateGrid {
     /// let mut grid = CandidateGrid::new();
     /// assert!(grid.check_consistency().is_ok());
     ///
-    /// grid.place(Position::new(0, 0), Digit::D5);
+    /// grid.place(Position::from_xy(0, 0), Digit::D5);
     /// assert!(grid.check_consistency().is_ok()); // Still consistent after placing
     ///
     /// // Create a contradiction
-    /// let pos = Position::new(1, 1);
+    /// let pos = Position::from_xy(1, 1);
     /// for digit in Digit::ALL {
     ///     grid.remove_candidate(pos, digit);
     /// }
@@ -708,7 +708,7 @@ impl CandidateGrid {
     /// assert_eq!(grid.univalue_positions().len(), 0);
     ///
     /// // Place a digit
-    /// grid.place(Position::new(0, 0), Digit::D5);
+    /// grid.place(Position::from_xy(0, 0), Digit::D5);
     /// assert_eq!(grid.univalue_positions().len(), 1);
     /// ```
     #[must_use]
@@ -765,7 +765,7 @@ impl CandidateGrid {
     /// use numelace_core::{CandidateGrid, Digit, Position};
     ///
     /// let mut grid = CandidateGrid::new();
-    /// grid.place(Position::new(0, 0), Digit::D1);
+    /// grid.place(Position::from_xy(0, 0), Digit::D1);
     ///
     /// // Get empty and univalue positions only
     /// let [empty_positions, univalue_positions] = grid.classify_positions();
@@ -846,10 +846,10 @@ mod tests {
         let mut grid = CandidateGrid::new();
 
         // Initial state: all candidates available everywhere
-        assert_eq!(grid.candidates_at(Position::new(0, 0)).len(), 9);
+        assert_eq!(grid.candidates_at(Position::from_xy(0, 0)).len(), 9);
         assert_eq!(grid.digit_positions(D1).len(), 81);
 
-        let pos = Position::new(4, 4);
+        let pos = Position::from_xy(4, 4);
         assert!(grid.place(pos, D5));
 
         // Place is idempotent
@@ -865,7 +865,7 @@ mod tests {
     #[test]
     fn test_remove_candidate() {
         let mut grid = CandidateGrid::new();
-        let pos = Position::new(3, 3);
+        let pos = Position::from_xy(3, 3);
 
         assert!(grid.remove_candidate(pos, D5));
 
@@ -886,19 +886,19 @@ mod tests {
                 "row",
                 DigitPositions::ROW_POSITIONS[0],
                 D5,
-                Position::new(3, 0),
+                Position::from_xy(3, 0),
             ),
             (
                 "column",
-                DigitPositions::COLUMN_POSITIONS[5],
+                DigitPositions::COL_POSITIONS[5],
                 D7,
-                Position::new(5, 4),
+                Position::from_xy(5, 4),
             ),
             (
                 "box",
                 DigitPositions::BOX_POSITIONS[4],
                 D9,
-                Position::new(4, 4),
+                Position::from_xy(4, 4),
             ),
         ];
 
@@ -920,12 +920,12 @@ mod tests {
     #[test]
     fn test_set_candidate_at() {
         let mut grid = CandidateGrid::new();
-        let pos = Position::new(1, 2);
+        let pos = Position::from_xy(1, 2);
         let digits = DigitSet::from_iter([D2, D5, D9]);
 
         assert!(grid.set_candidate_at(pos, digits));
         assert_eq!(grid.candidates_at(pos), digits);
-        assert_eq!(grid.candidates_at(Position::new(0, 0)).len(), 9);
+        assert_eq!(grid.candidates_at(Position::from_xy(0, 0)).len(), 9);
 
         // Setting the same candidates again is a no-op
         assert!(!grid.set_candidate_at(pos, digits));
@@ -934,7 +934,7 @@ mod tests {
     #[test]
     fn test_remove_candidate_set() {
         let mut grid = CandidateGrid::new();
-        let pos = Position::new(2, 3);
+        let pos = Position::from_xy(2, 3);
         let digits = DigitSet::from_iter([D1, D3, D7]);
 
         assert!(grid.remove_candidate_set(pos, digits));
@@ -955,29 +955,29 @@ mod tests {
 
         assert_eq!(grid.univalue_positions().len(), 0);
 
-        grid.place(Position::new(0, 0), D1);
-        grid.place(Position::new(5, 5), D5);
+        grid.place(Position::from_xy(0, 0), D1);
+        grid.place(Position::from_xy(5, 5), D5);
 
         // Placed positions are detected as univalue
         let univalue_positions = grid.univalue_positions();
         assert_eq!(univalue_positions.len(), 2);
-        assert!(univalue_positions.contains(Position::new(0, 0)));
-        assert!(univalue_positions.contains(Position::new(5, 5)));
+        assert!(univalue_positions.contains(Position::from_xy(0, 0)));
+        assert!(univalue_positions.contains(Position::from_xy(5, 5)));
     }
 
     #[test]
     fn test_digit_positions_after_placement() {
         let mut grid = CandidateGrid::new();
-        let pos = Position::new(4, 4);
+        let pos = Position::from_xy(4, 4);
         grid.place(pos, D5);
 
         let positions = grid.digit_positions(D5);
 
         // Placed digit remains candidate in same row/col/box (not eliminated globally)
         assert!(positions.contains(pos));
-        assert!(positions.contains(Position::new(0, 4)));
-        assert!(positions.contains(Position::new(4, 0)));
-        assert!(positions.contains(Position::new(3, 3)));
+        assert!(positions.contains(Position::from_xy(0, 4)));
+        assert!(positions.contains(Position::from_xy(4, 0)));
+        assert!(positions.contains(Position::from_xy(3, 3)));
 
         // Other digits eliminated from placed position
         assert!(!grid.digit_positions(D1).contains(pos));
@@ -1004,10 +1004,10 @@ mod tests {
     #[test]
     fn test_house_sets() {
         let mut positions = DigitPositions::new();
-        positions.insert(Position::new(0, 0));
-        positions.insert(Position::new(3, 0));
-        positions.insert(Position::new(4, 2));
-        positions.insert(Position::new(8, 8));
+        positions.insert(Position::from_xy(0, 0));
+        positions.insert(Position::from_xy(3, 0));
+        positions.insert(Position::from_xy(4, 2));
+        positions.insert(Position::from_xy(8, 8));
 
         let rows = positions.rows_set();
         assert_eq!(rows.len(), 3);
@@ -1041,7 +1041,7 @@ mod tests {
         assert_eq!(grid.digit_positions(D5).positions_in_row(0).len(), 1);
 
         let mut grid = CandidateGrid::new();
-        for pos in Position::COLUMNS[5] {
+        for pos in Position::COLS[5] {
             if pos.y() != 4 {
                 grid.remove_candidate(pos, D7);
             }
@@ -1062,12 +1062,12 @@ mod tests {
         let mut grid = CandidateGrid::new();
         assert!(grid.check_consistency().is_ok());
 
-        grid.place(Position::new(0, 0), D5);
+        grid.place(Position::from_xy(0, 0), D5);
         assert!(grid.check_consistency().is_ok());
 
         // Detects contradiction: position with no candidates
         let mut grid = CandidateGrid::new();
-        let pos = Position::new(4, 4);
+        let pos = Position::from_xy(4, 4);
         for digit in Digit::ALL {
             grid.remove_candidate(pos, digit);
         }
@@ -1075,8 +1075,8 @@ mod tests {
 
         // Detects violation: duplicate digits in same house
         let mut grid = CandidateGrid::new();
-        grid.place(Position::new(0, 0), D5);
-        grid.place(Position::new(0, 1), D5);
+        grid.place(Position::from_xy(0, 0), D5);
+        grid.place(Position::from_xy(0, 1), D5);
         assert!(grid.check_consistency().is_err());
     }
 
@@ -1086,13 +1086,13 @@ mod tests {
         assert!(!grid.is_solved().unwrap());
 
         let mut grid = CandidateGrid::new();
-        grid.place(Position::new(0, 0), D1);
+        grid.place(Position::from_xy(0, 0), D1);
         assert!(!grid.is_solved().unwrap());
 
         // Returns error when grid is inconsistent
         let mut grid = CandidateGrid::new();
         for digit in Digit::ALL {
-            grid.remove_candidate(Position::new(0, 0), digit);
+            grid.remove_candidate(Position::from_xy(0, 0), digit);
         }
         assert!(grid.is_solved().is_err());
     }
@@ -1105,15 +1105,15 @@ mod tests {
         assert_eq!(univalue_positions.len(), 0);
 
         let mut grid = CandidateGrid::new();
-        grid.place(Position::new(0, 0), D5);
+        grid.place(Position::from_xy(0, 0), D5);
         let [empty, univalue_positions] = grid.classify_positions();
         assert_eq!(empty.len(), 0);
         assert_eq!(univalue_positions.len(), 1);
-        assert!(univalue_positions.contains(Position::new(0, 0)));
+        assert!(univalue_positions.contains(Position::from_xy(0, 0)));
 
         // Detects positions with zero candidates
         let mut grid = CandidateGrid::new();
-        let pos = Position::new(4, 4);
+        let pos = Position::from_xy(4, 4);
         for digit in Digit::ALL {
             grid.remove_candidate(pos, digit);
         }
@@ -1126,17 +1126,17 @@ mod tests {
     fn test_classify_positions_multiple_n() {
         let mut grid = CandidateGrid::new();
 
-        let pos_one = Position::new(0, 0);
+        let pos_one = Position::from_xy(0, 0);
         for digit in [D2, D3, D4, D5, D6, D7, D8, D9] {
             grid.remove_candidate(pos_one, digit);
         }
 
-        let pos_two = Position::new(1, 1);
+        let pos_two = Position::from_xy(1, 1);
         for digit in [D3, D4, D5, D6, D7, D8, D9] {
             grid.remove_candidate(pos_two, digit);
         }
 
-        let pos_three = Position::new(2, 2);
+        let pos_three = Position::from_xy(2, 2);
         for digit in [D4, D5, D6, D7, D8, D9] {
             grid.remove_candidate(pos_three, digit);
         }
@@ -1159,10 +1159,10 @@ mod tests {
     #[test]
     fn test_digit_positions_mask_methods() {
         let mut positions = DigitPositions::new();
-        positions.insert(Position::new(0, 0));
-        positions.insert(Position::new(2, 0));
-        positions.insert(Position::new(5, 0));
-        positions.insert(Position::new(1, 1));
+        positions.insert(Position::from_xy(0, 0));
+        positions.insert(Position::from_xy(2, 0));
+        positions.insert(Position::from_xy(5, 0));
+        positions.insert(Position::from_xy(1, 1));
 
         let mask = positions.positions_in_row(0);
         assert_eq!(mask.len(), 3);
@@ -1189,14 +1189,14 @@ mod tests {
         let grid = CandidateGrid::from_digit_grid(&digit_grid);
 
         // Placed digits become single candidates
-        let candidates = grid.candidates_at(Position::new(0, 0));
+        let candidates = grid.candidates_at(Position::from_xy(0, 0));
         assert_eq!(candidates.len(), 1);
         assert!(candidates.contains(D5));
 
         // Placed digits not eliminated from same house (solver's responsibility)
-        assert!(grid.candidates_at(Position::new(1, 0)).contains(D5));
-        assert!(grid.candidates_at(Position::new(0, 1)).contains(D5));
-        assert!(grid.candidates_at(Position::new(1, 1)).contains(D5));
+        assert!(grid.candidates_at(Position::from_xy(1, 0)).contains(D5));
+        assert!(grid.candidates_at(Position::from_xy(0, 1)).contains(D5));
+        assert!(grid.candidates_at(Position::from_xy(1, 1)).contains(D5));
     }
 
     #[test]
@@ -1209,21 +1209,21 @@ mod tests {
 
         // Only univalue positions (single candidate) appear in digit grid
         let mut grid = CandidateGrid::new();
-        grid.place(Position::new(0, 0), D1);
-        grid.place(Position::new(4, 4), D5);
+        grid.place(Position::from_xy(0, 0), D1);
+        grid.place(Position::from_xy(4, 4), D5);
         let digit_grid = grid.to_digit_grid();
-        assert_eq!(digit_grid.get(Position::new(0, 0)), Some(D1));
-        assert_eq!(digit_grid.get(Position::new(4, 4)), Some(D5));
-        assert_eq!(digit_grid.get(Position::new(1, 1)), None);
+        assert_eq!(digit_grid.get(Position::from_xy(0, 0)), Some(D1));
+        assert_eq!(digit_grid.get(Position::from_xy(4, 4)), Some(D5));
+        assert_eq!(digit_grid.get(Position::from_xy(1, 1)), None);
 
         // Positions with multiple candidates are omitted
         let mut grid = CandidateGrid::new();
-        grid.place(Position::new(0, 0), D1);
-        grid.remove_candidate(Position::new(1, 1), D1);
-        grid.remove_candidate(Position::new(1, 1), D2);
+        grid.place(Position::from_xy(0, 0), D1);
+        grid.remove_candidate(Position::from_xy(1, 1), D1);
+        grid.remove_candidate(Position::from_xy(1, 1), D2);
         let digit_grid = grid.to_digit_grid();
-        assert_eq!(digit_grid.get(Position::new(0, 0)), Some(D1));
-        assert_eq!(digit_grid.get(Position::new(1, 1)), None);
+        assert_eq!(digit_grid.get(Position::from_xy(0, 0)), Some(D1));
+        assert_eq!(digit_grid.get(Position::from_xy(1, 1)), None);
     }
 
     #[test]
@@ -1245,10 +1245,10 @@ mod tests {
         let result = candidate_grid.to_digit_grid();
 
         // DigitGrid → CandidateGrid → DigitGrid preserves placed digits
-        assert_eq!(result.get(Position::new(0, 0)), Some(D1));
-        assert_eq!(result.get(Position::new(1, 1)), Some(D2));
-        assert_eq!(result.get(Position::new(2, 2)), Some(D3));
-        assert_eq!(result.get(Position::new(8, 8)), Some(D9));
+        assert_eq!(result.get(Position::from_xy(0, 0)), Some(D1));
+        assert_eq!(result.get(Position::from_xy(1, 1)), Some(D2));
+        assert_eq!(result.get(Position::from_xy(2, 2)), Some(D3));
+        assert_eq!(result.get(Position::from_xy(8, 8)), Some(D9));
     }
 
     #[test]
@@ -1279,14 +1279,14 @@ mod tests {
     fn test_column_positions_constants() {
         // Each column contains exactly 9 positions
         for x in 0..9 {
-            assert_eq!(DigitPositions::COLUMN_POSITIONS[x].len(), 9);
+            assert_eq!(DigitPositions::COL_POSITIONS[x].len(), 9);
         }
 
         // Column masks are disjoint
         for x1 in 0..9 {
             for x2 in (x1 + 1)..9 {
                 let intersection =
-                    DigitPositions::COLUMN_POSITIONS[x1] & DigitPositions::COLUMN_POSITIONS[x2];
+                    DigitPositions::COL_POSITIONS[x1] & DigitPositions::COL_POSITIONS[x2];
                 assert_eq!(intersection.len(), 0);
             }
         }
@@ -1294,7 +1294,7 @@ mod tests {
         // Union of all columns covers all 81 positions
         let mut all = DigitPositions::EMPTY;
         for x in 0..9 {
-            all |= DigitPositions::COLUMN_POSITIONS[x];
+            all |= DigitPositions::COL_POSITIONS[x];
         }
         assert_eq!(all.len(), 81);
     }

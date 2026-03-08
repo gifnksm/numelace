@@ -83,7 +83,7 @@
 //! digit_set.insert(Digit::D5); // ✓ Compiles - Digit is the correct type
 //!
 //! // Position cannot be used as an element for a digit set
-//! // digit_set.insert(Position::new(0, 0));  // ✗ Compile error!
+//! // digit_set.insert(Position::from_xy(0, 0));  // ✗ Compile error!
 //! ```
 //!
 //! ## Benefits
@@ -168,7 +168,7 @@
 //! use numelace_core::{Digit, DigitSet, Position};
 //!
 //! // Create a position and digit
-//! let pos = Position::new(4, 4);
+//! let pos = Position::from_xy(4, 4);
 //! let digit = Digit::D5;
 //!
 //! // Work with candidate sets
@@ -187,15 +187,15 @@
 //! let mut grid = CandidateGrid::new();
 //!
 //! // Place a digit at a position
-//! grid.place(Position::new(0, 0), Digit::D5);
+//! grid.place(Position::from_xy(0, 0), Digit::D5);
 //!
 //! // Query: where can D5 go? (digit-centric)
 //! let positions = grid.digit_positions(Digit::D5);
-//! assert!(positions.contains(Position::new(0, 0)));
-//! assert!(positions.contains(Position::new(1, 1))); // Still available elsewhere
+//! assert!(positions.contains(Position::from_xy(0, 0)));
+//! assert!(positions.contains(Position::from_xy(1, 1))); // Still available elsewhere
 //!
 //! // Query: what can go here? (cell-centric)
-//! let candidates = grid.candidates_at(Position::new(0, 0));
+//! let candidates = grid.candidates_at(Position::from_xy(0, 0));
 //! assert_eq!(candidates.len(), 1); // Only D5 at placed cell
 //! ```
 //!
@@ -211,8 +211,8 @@
 //!         .unwrap();
 //!
 //! // Access cells directly
-//! assert_eq!(grid[Position::new(0, 0)], Some(Digit::D5));
-//! assert_eq!(grid[Position::new(2, 0)], None);
+//! assert_eq!(grid[Position::from_xy(0, 0)], Some(Digit::D5));
+//! assert_eq!(grid[Position::from_xy(2, 0)], None);
 //!
 //! // Display the grid (compact or pretty format)
 //! println!("{}", grid); // 81 characters, no newlines

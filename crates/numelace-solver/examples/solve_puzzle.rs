@@ -421,7 +421,7 @@ fn format_grid(grid: &TechniqueGrid, diffs: Option<&PositionIndexedArray<CellDif
 
         let mut cell_lines = Vec::with_capacity(9);
         for x in 0..9 {
-            let pos = Position::new(x, y);
+            let pos = Position::from_xy(x, y);
             let candidates = grid.candidates_at(pos);
             let diff = diffs.map(|map| map[pos]).unwrap_or_default();
             cell_lines.push(build_cell_lines(candidates, diff));

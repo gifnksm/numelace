@@ -240,7 +240,7 @@ impl TryFrom<PositionDto> for Position {
     type Error = PositionNewError;
 
     fn try_from(value: PositionDto) -> Result<Self, Self::Error> {
-        Position::try_new(value.x, value.y)
+        Position::try_from_xy(value.x, value.y)
     }
 }
 

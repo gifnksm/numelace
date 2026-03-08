@@ -107,7 +107,7 @@ impl TwoStringKite {
                         if row == col_box_row && row_box_col == col {
                             continue;
                         }
-                        let eliminate_pos = Position::new(row_other_col, col_other_row);
+                        let eliminate_pos = Position::from_xy(row_other_col, col_other_row);
                         if grid.remove_candidate(eliminate_pos, digit)
                             && let ControlFlow::Break(step) = on_condition(
                                 grid,
@@ -116,10 +116,10 @@ impl TwoStringKite {
                                     row: House::Row { y: row },
                                     col: House::Column { x: col },
                                     positions: [
-                                        Position::new(row_box_col, row),
-                                        Position::new(row_other_col, row),
-                                        Position::new(col, col_box_row),
-                                        Position::new(col, col_other_row),
+                                        Position::from_xy(row_box_col, row),
+                                        Position::from_xy(row_other_col, row),
+                                        Position::from_xy(col, col_box_row),
+                                        Position::from_xy(col, col_other_row),
                                     ],
                                 },
                             )
@@ -196,17 +196,17 @@ mod tests {
 
         for x in 0..9u8 {
             if x != row_box_col && x != row_other_col {
-                grid.remove_candidate(Position::new(x, row), digit);
+                grid.remove_candidate(Position::from_xy(x, row), digit);
             }
         }
         for y in 0..9u8 {
             if y != col_box_row && y != col_other_row {
-                grid.remove_candidate(Position::new(col, y), digit);
+                grid.remove_candidate(Position::from_xy(col, y), digit);
             }
         }
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
-            t.assert_removed_includes(Position::new(row_other_col, col_other_row), [digit]);
+            t.assert_removed_includes(Position::from_xy(row_other_col, col_other_row), [digit]);
         });
     }
 
@@ -223,12 +223,12 @@ mod tests {
 
         for x in 0..9u8 {
             if x != row_box_col && x != row_other_col {
-                grid.remove_candidate(Position::new(x, row), digit);
+                grid.remove_candidate(Position::from_xy(x, row), digit);
             }
         }
         for y in 0..9u8 {
             if y != col_box_row && y != col_other_row {
-                grid.remove_candidate(Position::new(col, y), digit);
+                grid.remove_candidate(Position::from_xy(col, y), digit);
             }
         }
 
