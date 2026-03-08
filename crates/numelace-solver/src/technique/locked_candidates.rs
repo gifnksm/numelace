@@ -75,12 +75,20 @@ impl LockedCandidates {
             let box_ = House::Box { index: box_index };
             let origin = Position::box_origin(box_index);
             let lines = [
-                House::Row { y: origin.y() },
-                House::Row { y: origin.y() + 1 },
-                House::Row { y: origin.y() + 2 },
-                House::Column { x: origin.x() },
-                House::Column { x: origin.x() + 1 },
-                House::Column { x: origin.x() + 2 },
+                House::Row { row: origin.row() },
+                House::Row {
+                    row: origin.row() + 1,
+                },
+                House::Row {
+                    row: origin.row() + 2,
+                },
+                House::Column { col: origin.col() },
+                House::Column {
+                    col: origin.col() + 1,
+                },
+                House::Column {
+                    col: origin.col() + 2,
+                },
             ];
 
             for line in lines {
@@ -190,7 +198,7 @@ mod tests {
         // Box 0 (rows 0-2, cols 0-2): limit D5 candidates to row 0 inside the box.
         let mut grid = CandidateGrid::new();
         for pos in Position::BOXES[0] {
-            if pos.y() != 0 {
+            if pos.row() != 0 {
                 grid.remove_candidate(pos, Digit::D5);
             }
         }
@@ -198,8 +206,8 @@ mod tests {
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
             t
                 // D5 removed from the rest of row 0 outside the box.
-                .assert_removed_includes(Position::from_xy(3, 0), [Digit::D5])
-                .assert_removed_includes(Position::from_xy(8, 0), [Digit::D5]);
+                .assert_removed_includes(Position::new(0, 3), [Digit::D5])
+                .assert_removed_includes(Position::new(0, 8), [Digit::D5]);
         });
     }
 
@@ -208,7 +216,7 @@ mod tests {
         // Row 0: limit D7 candidates to box 0 cells in row 0.
         let mut grid = CandidateGrid::new();
         for pos in Position::ROWS[0] {
-            if pos.x() > 2 {
+            if pos.col() > 2 {
                 grid.remove_candidate(pos, Digit::D7);
             }
         }
@@ -216,8 +224,8 @@ mod tests {
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
             t
                 // D7 removed from the rest of box 0 outside row 0.
-                .assert_removed_includes(Position::from_xy(0, 1), [Digit::D7])
-                .assert_removed_includes(Position::from_xy(2, 2), [Digit::D7]);
+                .assert_removed_includes(Position::new(1, 0), [Digit::D7])
+                .assert_removed_includes(Position::new(2, 2), [Digit::D7]);
         });
     }
 

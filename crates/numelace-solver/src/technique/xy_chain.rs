@@ -253,10 +253,10 @@ mod tests {
     #[test]
     fn test_eliminates_xy_chain_candidates() {
         let mut grid = CandidateGrid::new();
-        let start = Position::from_xy(1, 1);
-        let mid = Position::from_xy(1, 5);
-        let end = Position::from_xy(5, 5);
-        let elimination = Position::from_xy(5, 1);
+        let start = Position::new(1, 1);
+        let mid = Position::new(5, 1);
+        let end = Position::new(5, 5);
+        let elimination = Position::new(1, 5);
 
         set_bivalue(&mut grid, start, Digit::D1, Digit::D2);
         set_bivalue(&mut grid, mid, Digit::D2, Digit::D3);
@@ -270,13 +270,13 @@ mod tests {
     #[test]
     fn test_eliminates_xy_chain_loop_candidates() {
         let mut grid = CandidateGrid::new();
-        let start = Position::from_xy(1, 1);
-        let mid = Position::from_xy(1, 5);
-        let end = Position::from_xy(1, 8);
+        let start = Position::new(1, 1);
+        let mid = Position::new(5, 1);
+        let end = Position::new(8, 1);
 
-        let elimination_start_end = Position::from_xy(1, 3);
-        let elimination_start_mid = Position::from_xy(1, 2);
-        let elimination_mid_end = Position::from_xy(1, 7);
+        let elimination_start_end = Position::new(3, 1);
+        let elimination_start_mid = Position::new(2, 1);
+        let elimination_mid_end = Position::new(7, 1);
 
         set_bivalue(&mut grid, start, Digit::D1, Digit::D2);
         set_bivalue(&mut grid, mid, Digit::D2, Digit::D3);

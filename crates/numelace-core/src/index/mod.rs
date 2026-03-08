@@ -47,7 +47,7 @@
 //! };
 //!
 //! // Convert a position to an index
-//! let pos = Position::from_xy(4, 4);
+//! let pos = Position::new(4, 4);
 //! let idx = PositionSemantics::to_index(pos);
 //! assert_eq!(idx.index(), 40); // row 4, column 4 -> 4*9 + 4
 //!

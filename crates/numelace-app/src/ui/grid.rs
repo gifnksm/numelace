@@ -320,18 +320,18 @@ pub(crate) fn show(
     let painter = ui.painter();
     draw_outer_border(painter, rect, thick_border);
 
-    for y in 0..9 {
-        for x in 0..9 {
-            let pos = Position::from_xy(x, y);
+    for row in 0..9 {
+        for col in 0..9 {
+            let pos = Position::new(row, col);
             let cell = &vm.grid[pos];
             let vs = vm.effective_visual_state(cell.visual_state);
 
-            let xf = f32::from(x);
-            let yf = f32::from(y);
+            let col_f = f32::from(col);
+            let row_f = f32::from(row);
             let cell_min = inner_rect.min
                 + Vec2::new(
-                    cell_size * xf + (xf / 3.0).floor() * thick_border.width,
-                    cell_size * yf + (yf / 3.0).floor() * thick_border.width,
+                    cell_size * col_f + (col_f / 3.0).floor() * thick_border.width,
+                    cell_size * row_f + (row_f / 3.0).floor() * thick_border.width,
                 );
             let cell_max = cell_min + Vec2::splat(cell_size);
             let cell_rect = Rect::from_min_max(cell_min, cell_max);
@@ -374,7 +374,7 @@ pub(crate) fn show(
                 }
             }
 
-            let response = ui.interact(cell_rect, ui.id().with((x, y)), Sense::click());
+            let response = ui.interact(cell_rect, ui.id().with((col, row)), Sense::click());
             if response.double_clicked() {
                 action_queue.request(
                     BoardMutationAction::AdvanceCell {

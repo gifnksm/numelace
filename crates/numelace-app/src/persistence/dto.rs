@@ -103,7 +103,7 @@ impl From<&Game> for GameDto {
                     let _ = write!(filled, "{digit}");
                 }
                 CellState::Notes(digits) => {
-                    notes[usize::from(pos.y())][usize::from(pos.x())] = digits.bits();
+                    notes[usize::from(pos.row())][usize::from(pos.col())] = digits.bits();
                     problem.push('.');
                     filled.push('.');
                 }
@@ -223,15 +223,15 @@ impl TryFrom<HistoryDto> for History {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub(crate) struct PositionDto {
-    x: u8,
-    y: u8,
+    row: u8,
+    col: u8,
 }
 
 impl From<Position> for PositionDto {
     fn from(value: Position) -> Self {
         Self {
-            x: value.x(),
-            y: value.y(),
+            row: value.row(),
+            col: value.col(),
         }
     }
 }
@@ -240,7 +240,7 @@ impl TryFrom<PositionDto> for Position {
     type Error = PositionNewError;
 
     fn try_from(value: PositionDto) -> Result<Self, Self::Error> {
-        Position::try_from_xy(value.x, value.y)
+        Position::try_new(value.row, value.col)
     }
 }
 

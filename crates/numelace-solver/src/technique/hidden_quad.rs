@@ -196,10 +196,10 @@ mod tests {
     #[test]
     fn test_eliminates_hidden_quad_candidates_in_row() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(2, 0);
-        let pos3 = Position::from_xy(4, 0);
-        let pos4 = Position::from_xy(6, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 2);
+        let pos3 = Position::new(0, 4);
+        let pos4 = Position::new(0, 6);
 
         for pos in Position::ROWS[0] {
             if pos != pos1 && pos != pos2 && pos != pos3 && pos != pos4 {
@@ -227,10 +227,10 @@ mod tests {
     #[test]
     fn test_no_change_when_hidden_quad_has_no_eliminations() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(2, 0);
-        let pos3 = Position::from_xy(4, 0);
-        let pos4 = Position::from_xy(6, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 2);
+        let pos3 = Position::new(0, 4);
+        let pos4 = Position::new(0, 6);
 
         for pos in Position::ROWS[0] {
             if pos != pos1 && pos != pos2 && pos != pos3 && pos != pos4 {
@@ -257,10 +257,10 @@ mod tests {
     #[test]
     fn test_inconsistent_when_five_digits_share_four_positions() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(2, 0);
-        let pos3 = Position::from_xy(4, 0);
-        let pos4 = Position::from_xy(6, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 2);
+        let pos3 = Position::new(0, 4);
+        let pos4 = Position::new(0, 6);
 
         for pos in Position::ROWS[0] {
             if pos != pos1 && pos != pos2 && pos != pos3 && pos != pos4 {

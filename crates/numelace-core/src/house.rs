@@ -11,12 +11,12 @@ pub enum House {
     /// A row identified by its y coordinate (0-8).
     Row {
         /// Row index (0-8).
-        y: u8,
+        row: u8,
     },
     /// A column identified by its x coordinate (0-8).
     Column {
         /// Column index (0-8).
-        x: u8,
+        col: u8,
     },
     /// A 3×3 box identified by its index (0-8, left to right, top to bottom).
     Box {
@@ -28,28 +28,28 @@ pub enum House {
 impl House {
     /// Array containing all rows (0-8).
     pub const ROWS: CellIndexIndexedArray<Self> = CellIndexIndexedArray::from_array([
-        Self::Row { y: 0 },
-        Self::Row { y: 1 },
-        Self::Row { y: 2 },
-        Self::Row { y: 3 },
-        Self::Row { y: 4 },
-        Self::Row { y: 5 },
-        Self::Row { y: 6 },
-        Self::Row { y: 7 },
-        Self::Row { y: 8 },
+        Self::Row { row: 0 },
+        Self::Row { row: 1 },
+        Self::Row { row: 2 },
+        Self::Row { row: 3 },
+        Self::Row { row: 4 },
+        Self::Row { row: 5 },
+        Self::Row { row: 6 },
+        Self::Row { row: 7 },
+        Self::Row { row: 8 },
     ]);
 
     /// Array containing all columns (0-8).
     pub const COLS: CellIndexIndexedArray<Self> = CellIndexIndexedArray::from_array([
-        Self::Column { x: 0 },
-        Self::Column { x: 1 },
-        Self::Column { x: 2 },
-        Self::Column { x: 3 },
-        Self::Column { x: 4 },
-        Self::Column { x: 5 },
-        Self::Column { x: 6 },
-        Self::Column { x: 7 },
-        Self::Column { x: 8 },
+        Self::Column { col: 0 },
+        Self::Column { col: 1 },
+        Self::Column { col: 2 },
+        Self::Column { col: 3 },
+        Self::Column { col: 4 },
+        Self::Column { col: 5 },
+        Self::Column { col: 6 },
+        Self::Column { col: 7 },
+        Self::Column { col: 8 },
     ]);
 
     /// Array containing all boxes (0-8).
@@ -67,12 +67,12 @@ impl House {
 
     /// Array containing all houses in row, column, box order.
     pub const ALL: [Self; 27] = {
-        let mut all = [Self::Row { y: 0 }; 27];
+        let mut all = [Self::Row { row: 0 }; 27];
         let mut i = 0;
         #[expect(clippy::cast_possible_truncation)]
         while i < 9 {
-            all[i] = Self::Row { y: i as u8 };
-            all[i + 9] = Self::Column { x: i as u8 };
+            all[i] = Self::Row { row: i as u8 };
+            all[i + 9] = Self::Column { col: i as u8 };
             all[i + 18] = Self::Box { index: i as u8 };
             i += 1;
         }
@@ -89,8 +89,8 @@ impl House {
     pub fn position_from_cell_index(self, i: u8) -> Position {
         assert!(i < 9);
         match self {
-            House::Row { y } => Position::from_xy(i, y),
-            House::Column { x } => Position::from_xy(x, i),
+            House::Row { row } => Position::new(row, i),
+            House::Column { col } => Position::new(i, col),
             House::Box { index } => Position::from_box(index, i),
         }
     }
@@ -99,8 +99,8 @@ impl House {
     #[must_use]
     pub fn positions(self) -> DigitPositions {
         match self {
-            House::Row { y } => DigitPositions::ROW_POSITIONS[y],
-            House::Column { x } => DigitPositions::COL_POSITIONS[x],
+            House::Row { row } => DigitPositions::ROW_POSITIONS[row],
+            House::Column { col } => DigitPositions::COL_POSITIONS[col],
             House::Box { index } => DigitPositions::BOX_POSITIONS[index],
         }
     }
@@ -139,8 +139,8 @@ impl AllDigitHouses {
         debug_assert!(index < 9);
         let digit = DigitSemantics::from_index(Index9::new(digit));
         let house = match house {
-            0 => House::Row { y: index },
-            1 => House::Column { x: index },
+            0 => House::Row { row: index },
+            1 => House::Column { col: index },
             2 => House::Box { index },
             _ => unreachable!(),
         };
@@ -211,7 +211,7 @@ mod tests {
     #[test]
     fn test_all_digit_houses_iterator_order() {
         let mut iter = all_digit_houses();
-        assert_eq!(iter.next(), Some((Digit::D1, House::Row { y: 0 })));
+        assert_eq!(iter.next(), Some((Digit::D1, House::Row { row: 0 })));
         assert_eq!(iter.next_back(), Some((Digit::D9, House::Box { index: 8 })));
         assert_eq!(iter.len(), 9 * 27 - 2);
     }

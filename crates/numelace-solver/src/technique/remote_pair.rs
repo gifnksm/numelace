@@ -42,11 +42,12 @@ impl Condition<'_> {
             let pos2 = item2.position;
             condition_digit_position_mask.insert(pos1);
             condition_digit_position_mask.insert(pos2);
-            if pos1.y() == pos2.y() && digit_positions.positions_in_row(pos1.y()).len() == 2 {
-                condition_positions |= DigitPositions::ROW_POSITIONS[pos1.y()];
-            } else if pos1.x() == pos2.x() && digit_positions.positions_in_col(pos1.x()).len() == 2
+            if pos1.row() == pos2.row() && digit_positions.positions_in_row(pos1.row()).len() == 2 {
+                condition_positions |= DigitPositions::ROW_POSITIONS[pos1.row()];
+            } else if pos1.col() == pos2.col()
+                && digit_positions.positions_in_col(pos1.col()).len() == 2
             {
-                condition_positions |= DigitPositions::COL_POSITIONS[pos1.x()];
+                condition_positions |= DigitPositions::COL_POSITIONS[pos1.col()];
             } else {
                 debug_assert_eq!(pos1.box_index(), pos2.box_index());
                 debug_assert_eq!(digit_positions.positions_in_box(pos1.box_index()).len(), 2);
@@ -244,10 +245,10 @@ mod tests {
         let digit1 = Digit::D1;
         let digit2 = Digit::D2;
 
-        let chain_start = Position::from_xy(0, 0);
-        let chain_mid1 = Position::from_xy(4, 0);
-        let chain_mid2 = Position::from_xy(4, 5);
-        let chain_end = Position::from_xy(1, 5);
+        let chain_start = Position::new(0, 0);
+        let chain_mid1 = Position::new(0, 4);
+        let chain_mid2 = Position::new(5, 4);
+        let chain_end = Position::new(5, 1);
 
         for pos in [chain_start, chain_mid1, chain_mid2, chain_end] {
             for digit in Digit::ALL {
@@ -258,8 +259,8 @@ mod tests {
         }
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
-            t.assert_removed_includes(Position::from_xy(0, 5), [digit1, digit2])
-                .assert_removed_includes(Position::from_xy(1, 0), [digit1, digit2]);
+            t.assert_removed_includes(Position::new(5, 0), [digit1, digit2])
+                .assert_removed_includes(Position::new(0, 1), [digit1, digit2]);
         });
     }
 

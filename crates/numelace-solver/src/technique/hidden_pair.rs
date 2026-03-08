@@ -147,8 +147,8 @@ mod tests {
     #[test]
     fn test_eliminates_hidden_pair_candidates_in_row() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(3, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 3);
 
         for pos in Position::ROWS[0] {
             if pos != pos1 && pos != pos2 {
@@ -172,8 +172,8 @@ mod tests {
     #[test]
     fn test_inconsistent_when_three_digits_share_two_positions() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(3, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 3);
 
         for pos in Position::ROWS[0] {
             if pos != pos1 && pos != pos2 {

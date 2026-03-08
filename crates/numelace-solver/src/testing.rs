@@ -346,13 +346,13 @@ impl GridSymmetry {
     pub fn apply_position(self, pos: Position) -> Position {
         match self {
             GridSymmetry::Identity => pos,
-            GridSymmetry::Rotate90 => Position::from_xy(pos.y(), 8 - pos.x()),
-            GridSymmetry::Rotate180 => Position::from_xy(8 - pos.x(), 8 - pos.y()),
-            GridSymmetry::Rotate270 => Position::from_xy(8 - pos.y(), pos.x()),
-            GridSymmetry::FlipH => Position::from_xy(8 - pos.x(), pos.y()),
-            GridSymmetry::FlipV => Position::from_xy(pos.x(), 8 - pos.y()),
-            GridSymmetry::FlipDiag => Position::from_xy(pos.y(), pos.x()),
-            GridSymmetry::FlipAntiDiag => Position::from_xy(8 - pos.y(), 8 - pos.x()),
+            GridSymmetry::Rotate90 => Position::new(8 - pos.col(), pos.row()),
+            GridSymmetry::Rotate180 => Position::new(8 - pos.row(), 8 - pos.col()),
+            GridSymmetry::Rotate270 => Position::new(pos.col(), 8 - pos.row()),
+            GridSymmetry::FlipH => Position::new(pos.row(), 8 - pos.col()),
+            GridSymmetry::FlipV => Position::new(8 - pos.row(), pos.col()),
+            GridSymmetry::FlipDiag => Position::new(pos.col(), pos.row()),
+            GridSymmetry::FlipAntiDiag => Position::new(8 - pos.col(), 8 - pos.row()),
         }
     }
 
@@ -499,9 +499,9 @@ mod tests {
     #[test]
     fn test_grid_symmetry_round_trip() {
         let mut grid = TechniqueGrid::new();
-        let pos = Position::from_xy(2, 3);
+        let pos = Position::new(3, 2);
         grid.set_candidate_at(pos, DigitSet::from_iter([Digit::D1, Digit::D4]));
-        let single_pos = Position::from_xy(8, 1);
+        let single_pos = Position::new(1, 8);
         grid.set_candidate_at(single_pos, DigitSet::from_iter([Digit::D9]));
         grid.insert_univalue_propagated(single_pos);
 
@@ -520,7 +520,7 @@ mod tests {
             grid,
             |tester| tester.apply_pass(&PlaceD1At00),
             |tester| {
-                tester.assert_no_change(Position::from_xy(0, 0));
+                tester.assert_no_change(Position::new(0, 0));
             },
         );
     }
@@ -575,19 +575,19 @@ mod tests {
         }
 
         fn condition_positions(&self) -> ConditionPositions {
-            DigitPositions::from_elem(Position::from_xy(0, 0))
+            DigitPositions::from_elem(Position::new(0, 0))
         }
 
         fn condition_digit_positions(&self) -> ConditionDigitPositions {
             vec![(
-                DigitPositions::from_elem(Position::from_xy(0, 0)),
+                DigitPositions::from_elem(Position::new(0, 0)),
                 DigitSet::from_elem(Digit::D1),
             )]
         }
 
         fn application(&self) -> Vec<TechniqueApplication> {
             vec![TechniqueApplication::Placement {
-                position: Position::from_xy(0, 0),
+                position: Position::new(0, 0),
                 digit: Digit::D1,
             }]
         }
@@ -618,7 +618,7 @@ mod tests {
             &self,
             grid: &TechniqueGrid,
         ) -> Result<Option<BoxedTechniqueStep>, SolverError> {
-            let pos = Position::from_xy(0, 0);
+            let pos = Position::new(0, 0);
             let candidates = grid.candidates_at(pos);
             if candidates.len() == 1 {
                 Ok(None)
@@ -628,7 +628,7 @@ mod tests {
         }
 
         fn apply_step(&self, grid: &mut TechniqueGrid) -> Result<bool, SolverError> {
-            let pos = Position::from_xy(0, 0);
+            let pos = Position::new(0, 0);
             let candidates = grid.candidates_at(pos);
             if candidates.len() == 1 {
                 Ok(false)
@@ -639,7 +639,7 @@ mod tests {
         }
 
         fn apply_pass(&self, grid: &mut TechniqueGrid) -> Result<usize, SolverError> {
-            let pos = Position::from_xy(0, 0);
+            let pos = Position::new(0, 0);
             let candidates = grid.candidates_at(pos);
             if candidates.len() == 1 {
                 Ok(0)
@@ -824,7 +824,7 @@ mod tests {
 
         tester
             .apply_pass(&PlaceD1At00)
-            .assert_placed(Position::from_xy(0, 0), Digit::D1);
+            .assert_placed(Position::new(0, 0), Digit::D1);
     }
 
     #[test]
@@ -846,7 +846,7 @@ mod tests {
 
         tester
             .apply_pass(&NoOpTechnique)
-            .assert_placed(Position::from_xy(0, 0), Digit::D1);
+            .assert_placed(Position::new(0, 0), Digit::D1);
     }
 
     #[test]
@@ -867,7 +867,7 @@ mod tests {
 
         tester
             .apply_pass(&NoOpTechnique)
-            .assert_no_change(Position::from_xy(0, 0));
+            .assert_no_change(Position::new(0, 0));
     }
 
     #[test]
@@ -889,7 +889,7 @@ mod tests {
 
         tester
             .apply_pass(&PlaceD1At00)
-            .assert_no_change(Position::from_xy(0, 0));
+            .assert_no_change(Position::new(0, 0));
     }
 
     #[test]
@@ -910,8 +910,8 @@ mod tests {
 
         tester
             .apply_pass(&PlaceD1At00)
-            .assert_placed(Position::from_xy(0, 0), Digit::D1)
+            .assert_placed(Position::new(0, 0), Digit::D1)
             .apply_pass(&NoOpTechnique)
-            .assert_no_change(Position::from_xy(5, 5));
+            .assert_no_change(Position::new(5, 5));
     }
 }

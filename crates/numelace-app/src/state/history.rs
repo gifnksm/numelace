@@ -188,7 +188,7 @@ impl HistorySnapshot {
                     filled.set(pos, Some(*digit));
                 }
                 CellState::Notes(digits) => {
-                    notes[usize::from(pos.y())][usize::from(pos.x())] = digits.bits();
+                    notes[usize::from(pos.row())][usize::from(pos.col())] = digits.bits();
                 }
                 CellState::Given(_) | CellState::Empty => {}
             }

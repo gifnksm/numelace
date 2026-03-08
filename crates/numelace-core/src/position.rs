@@ -4,7 +4,7 @@ use std::fmt;
 
 use crate::{CellIndexIndexedArray, DigitPositions};
 
-/// Board position (x, y) where x is column and y is row.
+/// Board position (row, col) on the grid.
 ///
 /// Both coordinates are in the range 0-8.
 #[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
@@ -16,15 +16,15 @@ impl fmt::Debug for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Position")
             .field("index", &self.index)
-            .field("x", &self.x())
-            .field("y", &self.y())
+            .field("row", &self.row())
+            .field("col", &self.col())
             .finish()
     }
 }
 
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "r{}c{}", self.y() + 1, self.x() + 1)
+        write!(f, "r{}c{}", self.row() + 1, self.col() + 1)
     }
 }
 
@@ -36,7 +36,7 @@ impl PartialOrd for Position {
 
 impl Ord for Position {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // Compare by index order: y * 9 + x
+        // Compare by index order: row * 9 + col
         // This ensures ordering matches PositionSemantics::to_index
         (self.index).cmp(&(other.index))
     }
@@ -59,7 +59,7 @@ pub enum PositionNewError {
 impl Position {
     /// All 81 positions on the Sudoku board, in index order.
     ///
-    /// The positions are ordered by row-major order (y * 9 + x):
+    /// The positions are ordered by row-major order (row * 9 + col):
     /// - Index 0: (0, 0) - top-left
     /// - Index 1: (1, 0)
     /// - ...
@@ -70,10 +70,10 @@ impl Position {
     ///
     /// This order matches `PositionSemantics::to_index` and `Position::Ord`.
     pub const ALL: [Position; 81] = {
-        let mut arr = [Position::from_xy(0, 0); 81];
+        let mut arr = [Position::new(0, 0); 81];
         let mut i = 0;
         while i < 81 {
-            arr[i as usize] = Position::from_xy(i % 9, i / 9);
+            arr[i as usize] = Position::new(i / 9, i % 9);
             i += 1;
         }
         arr
@@ -81,7 +81,7 @@ impl Position {
 
     /// All positions in each row, indexed by row number (0-8).
     ///
-    /// `ROWS[y]` contains all 9 positions in row `y`, ordered by column (x = 0..9).
+    /// `ROWS[row]` contains all 9 positions in row `row`, ordered by column (col = 0..9).
     ///
     /// # Example
     ///
@@ -89,26 +89,26 @@ impl Position {
     /// # use numelace_core::Position;
     /// // Process all positions in row 3
     /// for pos in Position::ROWS[3] {
-    ///     assert_eq!(pos.y(), 3);
+    ///     assert_eq!(pos.row(), 3);
     /// }
     /// ```
     pub const ROWS: CellIndexIndexedArray<[Position; 9]> = {
-        let mut rows = [[Position::from_xy(0, 0); 9]; 9];
-        let mut y = 0;
-        while y < 9 {
-            let mut x = 0;
-            while x < 9 {
-                rows[y as usize][x as usize] = Position::from_xy(x, y);
-                x += 1;
+        let mut rows = [[Position::new(0, 0); 9]; 9];
+        let mut row = 0;
+        while row < 9 {
+            let mut col = 0;
+            while col < 9 {
+                rows[row as usize][col as usize] = Position::new(row, col);
+                col += 1;
             }
-            y += 1;
+            row += 1;
         }
         CellIndexIndexedArray::from_array(rows)
     };
 
     /// All positions in each column, indexed by column number (0-8).
     ///
-    /// `COLS[x]` contains all 9 positions in column `x`, ordered by row (y = 0..9).
+    /// `COLS[col]` contains all 9 positions in column `col`, ordered by row (row = 0..9).
     ///
     /// # Example
     ///
@@ -116,19 +116,19 @@ impl Position {
     /// # use numelace_core::Position;
     /// // Process all positions in column 5
     /// for pos in Position::COLS[5] {
-    ///     assert_eq!(pos.x(), 5);
+    ///     assert_eq!(pos.col(), 5);
     /// }
     /// ```
     pub const COLS: CellIndexIndexedArray<[Position; 9]> = {
-        let mut columns = [[Position::from_xy(0, 0); 9]; 9];
-        let mut x = 0;
-        while x < 9 {
-            let mut y = 0;
-            while y < 9 {
-                columns[x as usize][y as usize] = Position::from_xy(x, y);
-                y += 1;
+        let mut columns = [[Position::new(0, 0); 9]; 9];
+        let mut col = 0;
+        while col < 9 {
+            let mut row = 0;
+            while row < 9 {
+                columns[col as usize][row as usize] = Position::new(row, col);
+                row += 1;
             }
-            x += 1;
+            col += 1;
         }
         CellIndexIndexedArray::from_array(columns)
     };
@@ -155,7 +155,7 @@ impl Position {
     /// }
     /// ```
     pub const BOXES: CellIndexIndexedArray<[Position; 9]> = {
-        let mut boxes = [[Position::from_xy(0, 0); 9]; 9];
+        let mut boxes = [[Position::new(0, 0); 9]; 9];
         let mut box_index = 0;
         while box_index < 9 {
             let mut cell_index = 0;
@@ -169,28 +169,6 @@ impl Position {
         CellIndexIndexedArray::from_array(boxes)
     };
 
-    /// Creates a new position from column and row coordinates.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `x` or `y` is greater than or equal to 9.
-    #[must_use]
-    #[inline]
-    pub const fn from_xy(x: u8, y: u8) -> Self {
-        Self::new(y, x)
-    }
-
-    /// Attempts to create a new position from column and row coordinates.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`PositionNewError::InvalidColValue`] if `x` is greater than or equal to 9,
-    /// and [`PositionNewError::InvalidRowValue`] if `y` is greater than or equal to 9.
-    #[inline]
-    pub const fn try_from_xy(x: u8, y: u8) -> Result<Self, PositionNewError> {
-        Self::try_new(y, x)
-    }
-
     /// Creates a new position from row and column coordinates.
     ///
     /// # Panics
@@ -201,7 +179,7 @@ impl Position {
     pub const fn new(row: u8, col: u8) -> Self {
         assert!(row < 9 && col < 9);
         Self {
-            index: col + row * 9,
+            index: row * 9 + col,
         }
     }
 
@@ -220,7 +198,7 @@ impl Position {
             return Err(PositionNewError::InvalidColValue(col));
         }
         Ok(Self {
-            index: col + row * 9,
+            index: row * 9 + col,
         })
     }
 
@@ -256,8 +234,8 @@ impl Position {
     /// ```
     /// use numelace_core::Position;
     ///
-    /// assert_eq!(Position::from_xy(3, 5).up(), Some(Position::from_xy(3, 4)));
-    /// assert_eq!(Position::from_xy(3, 0).up(), None);
+    /// assert_eq!(Position::new(5, 3).up(), Some(Position::new(4, 3)));
+    /// assert_eq!(Position::new(0, 3).up(), None);
     /// ```
     #[must_use]
     #[inline]
@@ -276,8 +254,8 @@ impl Position {
     /// ```
     /// use numelace_core::Position;
     ///
-    /// assert_eq!(Position::from_xy(3, 5).down(), Some(Position::from_xy(3, 6)));
-    /// assert_eq!(Position::from_xy(3, 8).down(), None);
+    /// assert_eq!(Position::new(5, 3).down(), Some(Position::new(6, 3)));
+    /// assert_eq!(Position::new(8, 3).down(), None);
     /// ```
     #[must_use]
     #[inline]
@@ -296,8 +274,8 @@ impl Position {
     /// ```
     /// use numelace_core::Position;
     ///
-    /// assert_eq!(Position::from_xy(3, 5).left(), Some(Position::from_xy(2, 5)));
-    /// assert_eq!(Position::from_xy(0, 5).left(), None);
+    /// assert_eq!(Position::new(5, 3).left(), Some(Position::new(5, 2)));
+    /// assert_eq!(Position::new(5, 0).left(), None);
     /// ```
     #[must_use]
     pub const fn left(self) -> Option<Self> {
@@ -315,8 +293,8 @@ impl Position {
     /// ```
     /// use numelace_core::Position;
     ///
-    /// assert_eq!(Position::from_xy(3, 5).right(), Some(Position::from_xy(4, 5)));
-    /// assert_eq!(Position::from_xy(8, 5).right(), None);
+    /// assert_eq!(Position::new(5, 3).right(), Some(Position::new(5, 4)));
+    /// assert_eq!(Position::new(5, 8).right(), None);
     /// ```
     #[must_use]
     pub const fn right(self) -> Option<Self> {
@@ -337,28 +315,14 @@ impl Position {
     pub const fn from_box(box_index: u8, cell_index: u8) -> Self {
         assert!(box_index < 9 && cell_index < 9);
         let origin = Self::box_origin(box_index);
-        Self::from_xy(origin.x() + cell_index % 3, origin.y() + cell_index / 3)
+        Self::new(origin.row() + cell_index / 3, origin.col() + cell_index % 3)
     }
 
-    /// Returns the index (0-80) of this position, where index = y * 9 + x.
+    /// Returns the index (0-80) of this position, where index = row * 9 + col.
     #[must_use]
     #[inline]
     pub const fn index(self) -> u8 {
         self.index
-    }
-
-    /// Returns the column (x coordinate) of this position.
-    #[must_use]
-    #[inline]
-    pub const fn x(self) -> u8 {
-        self.col()
-    }
-
-    /// Returns the row (y coordinate) of this position.
-    #[must_use]
-    #[inline]
-    pub const fn y(self) -> u8 {
-        self.row()
     }
 
     /// Returns the row (y coordinate) of this position.
@@ -379,14 +343,14 @@ impl Position {
     #[must_use]
     #[inline]
     pub const fn box_index(&self) -> u8 {
-        (self.y() / 3) * 3 + (self.x() / 3)
+        (self.row() / 3) * 3 + (self.col() / 3)
     }
 
     /// Returns the relative position (0-8) within the box.
     #[must_use]
     #[inline]
     pub const fn box_cell_index(&self) -> u8 {
-        (self.y() % 3) * 3 + (self.x() % 3)
+        (self.row() % 3) * 3 + (self.col() % 3)
     }
 
     /// Returns the top-left position (origin) of the specified box.
@@ -398,7 +362,7 @@ impl Position {
     #[inline]
     pub const fn box_origin(box_index: u8) -> Self {
         assert!(box_index < 9);
-        Self::from_xy((box_index % 3) * 3, (box_index / 3) * 3)
+        Self::new((box_index / 3) * 3, (box_index % 3) * 3)
     }
 
     /// Returns the union of row, column, and box positions for this cell.
@@ -410,17 +374,17 @@ impl Position {
     /// ```
     /// use numelace_core::Position;
     ///
-    /// let pos = Position::from_xy(4, 4);
+    /// let pos = Position::new(4, 4);
     /// let house = pos.house_positions();
     /// assert!(house.contains(pos));
-    /// assert!(house.contains(Position::from_xy(4, 0)));
-    /// assert!(house.contains(Position::from_xy(0, 4)));
+    /// assert!(house.contains(Position::new(0, 4)));
+    /// assert!(house.contains(Position::new(4, 0)));
     /// ```
     #[inline]
     #[must_use]
     pub fn house_positions(self) -> DigitPositions {
-        DigitPositions::ROW_POSITIONS[self.y()]
-            | DigitPositions::COL_POSITIONS[self.x()]
+        DigitPositions::ROW_POSITIONS[self.row()]
+            | DigitPositions::COL_POSITIONS[self.col()]
             | DigitPositions::BOX_POSITIONS[self.box_index()]
     }
 
@@ -433,11 +397,11 @@ impl Position {
     /// ```
     /// use numelace_core::Position;
     ///
-    /// let pos = Position::from_xy(4, 4);
+    /// let pos = Position::new(4, 4);
     /// let peers = pos.house_peers();
     /// assert!(!peers.contains(pos));
-    /// assert!(peers.contains(Position::from_xy(4, 0)));
-    /// assert!(peers.contains(Position::from_xy(0, 4)));
+    /// assert!(peers.contains(Position::new(0, 4)));
+    /// assert!(peers.contains(Position::new(4, 0)));
     /// ```
     #[inline]
     #[must_use]
@@ -455,8 +419,8 @@ mod tests {
     #[test]
     fn test_basic_operations() {
         let pos = Position::new(5, 3);
-        assert_eq!(pos.x(), 3);
-        assert_eq!(pos.y(), 5);
+        assert_eq!(pos.row(), 5);
+        assert_eq!(pos.col(), 3);
         assert_eq!(pos.up(), Some(Position::new(4, 3)));
         assert_eq!(pos.down(), Some(Position::new(6, 3)));
         assert_eq!(pos.left(), Some(Position::new(5, 2)));
@@ -473,77 +437,46 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "assertion failed")]
-    fn test_new_position_x_too_large() {
-        let _ = Position::from_xy(9, 0);
+    fn test_new_position_row_too_large() {
+        let _ = Position::new(9, 0);
     }
 
     #[test]
     #[should_panic(expected = "assertion failed")]
-    fn test_new_position_y_too_large() {
-        let _ = Position::from_xy(0, 9);
+    fn test_new_position_col_too_large() {
+        let _ = Position::new(0, 9);
     }
 
     #[test]
     fn test_try_new() {
-        assert_eq!(
-            Position::try_from_xy(0, 0).unwrap(),
-            Position::from_xy(0, 0)
-        );
-        assert_eq!(
-            Position::try_from_xy(8, 8).unwrap(),
-            Position::from_xy(8, 8)
-        );
-        assert!(matches!(
-            Position::try_from_xy(9, 0).unwrap_err(),
-            PositionNewError::InvalidColValue(9)
-        ));
-        assert!(matches!(
-            Position::try_from_xy(0, 9).unwrap_err(),
-            PositionNewError::InvalidRowValue(9)
-        ));
-    }
-
-    #[test]
-    fn test_from_row_col() {
-        assert_eq!(Position::new(4, 2), Position::from_xy(2, 4));
-        assert_eq!(Position::new(0, 0), Position::from_xy(0, 0));
-    }
-
-    #[test]
-    fn test_try_from_row_col() {
         assert_eq!(Position::try_new(0, 0).unwrap(), Position::new(0, 0));
-        assert!(matches!(
-            Position::try_new(9, 0).unwrap_err(),
-            PositionNewError::InvalidRowValue(9)
-        ));
+        assert_eq!(Position::try_new(8, 8).unwrap(), Position::new(8, 8));
         assert!(matches!(
             Position::try_new(0, 9).unwrap_err(),
             PositionNewError::InvalidColValue(9)
+        ));
+        assert!(matches!(
+            Position::try_new(9, 0).unwrap_err(),
+            PositionNewError::InvalidRowValue(9)
         ));
     }
 
     #[test]
     fn test_from_index_roundtrip() {
-        assert_eq!(Position::from_index(0), Position::from_xy(0, 0));
-        assert_eq!(Position::from_index(40), Position::from_xy(4, 4));
-        assert_eq!(Position::from_index(80), Position::from_xy(8, 8));
+        assert_eq!(Position::from_index(0), Position::new(0, 0));
+        assert_eq!(Position::from_index(40), Position::new(4, 4));
+        assert_eq!(Position::from_index(80), Position::new(8, 8));
 
         for pos in Position::ALL {
             assert_eq!(Position::from_index(pos.index()), pos);
-            assert_eq!(pos.index(), pos.y() * 9 + pos.x());
+            assert_eq!(pos.index(), pos.row() * 9 + pos.col());
         }
     }
 
     #[test]
     fn test_try_from_index() {
-        assert_eq!(
-            Position::try_from_index(0).unwrap(),
-            Position::from_xy(0, 0)
-        );
-        assert_eq!(
-            Position::try_from_index(80).unwrap(),
-            Position::from_xy(8, 8)
-        );
+        assert_eq!(Position::try_from_index(0).unwrap(), Position::new(0, 0));
+        assert_eq!(Position::try_from_index(80).unwrap(), Position::new(8, 8));
         assert!(matches!(
             Position::try_from_index(81).unwrap_err(),
             PositionNewError::InvalidIndex(81)
@@ -558,14 +491,14 @@ mod tests {
 
     #[test]
     fn test_from_box() {
-        assert_eq!(Position::from_box(0, 0), Position::from_xy(0, 0));
-        assert_eq!(Position::from_box(0, 8), Position::from_xy(2, 2));
-        assert_eq!(Position::from_box(4, 4), Position::from_xy(4, 4));
-        assert_eq!(Position::from_box(8, 8), Position::from_xy(8, 8));
+        assert_eq!(Position::from_box(0, 0), Position::new(0, 0));
+        assert_eq!(Position::from_box(0, 8), Position::new(2, 2));
+        assert_eq!(Position::from_box(4, 4), Position::new(4, 4));
+        assert_eq!(Position::from_box(8, 8), Position::new(8, 8));
 
-        assert_eq!(Position::box_origin(0), Position::from_xy(0, 0));
-        assert_eq!(Position::box_origin(4), Position::from_xy(3, 3));
-        assert_eq!(Position::box_origin(8), Position::from_xy(6, 6));
+        assert_eq!(Position::box_origin(0), Position::new(0, 0));
+        assert_eq!(Position::box_origin(4), Position::new(3, 3));
+        assert_eq!(Position::box_origin(8), Position::new(6, 6));
     }
 
     #[test]
@@ -600,53 +533,50 @@ mod tests {
 
     #[test]
     fn test_house_positions() {
-        let pos = Position::from_xy(4, 4);
+        let pos = Position::new(4, 4);
         let house = pos.house_positions();
 
         assert!(house.contains(pos));
         assert_eq!(house.len(), 21);
-        assert!(house.contains(Position::from_xy(4, 0)));
-        assert!(house.contains(Position::from_xy(0, 4)));
-        assert!(house.contains(Position::from_xy(3, 3)));
-        assert!(!house.contains(Position::from_xy(0, 0)));
+        assert!(house.contains(Position::new(0, 4)));
+        assert!(house.contains(Position::new(4, 0)));
+        assert!(house.contains(Position::new(3, 3)));
+        assert!(!house.contains(Position::new(0, 0)));
     }
 
     #[test]
     fn test_house_peers() {
-        let pos = Position::from_xy(4, 4);
+        let pos = Position::new(4, 4);
         let peers = pos.house_peers();
 
         assert!(!peers.contains(pos));
         assert_eq!(peers.len(), 20);
-        assert!(peers.contains(Position::from_xy(4, 0)));
-        assert!(peers.contains(Position::from_xy(0, 4)));
-        assert!(peers.contains(Position::from_xy(3, 3)));
-        assert!(!peers.contains(Position::from_xy(0, 0)));
+        assert!(peers.contains(Position::new(0, 4)));
+        assert!(peers.contains(Position::new(4, 0)));
+        assert!(peers.contains(Position::new(3, 3)));
+        assert!(!peers.contains(Position::new(0, 0)));
     }
 
     #[test]
     fn test_ord_matches_index_order() {
         use crate::index::{Index81Semantics, PositionSemantics};
 
-        // Position ordering matches index order (y * 9 + x)
-        let pos_1_0 = Position::from_xy(1, 0);
-        let pos_0_1 = Position::from_xy(0, 1);
-        assert!(pos_1_0 < pos_0_1);
-        assert_eq!(PositionSemantics::to_index(pos_1_0).index(), 1);
-        assert_eq!(PositionSemantics::to_index(pos_0_1).index(), 9);
+        // Position ordering matches index order (row * 9 + col)
+        let pos_r0c1 = Position::new(0, 1);
+        let pos_r1c0 = Position::new(1, 0);
+        assert!(pos_r0c1 < pos_r1c0);
+        assert_eq!(PositionSemantics::to_index(pos_r0c1).index(), 1);
+        assert_eq!(PositionSemantics::to_index(pos_r1c0).index(), 9);
 
-        assert!(Position::from_xy(8, 0) < Position::from_xy(0, 1));
-        assert!(Position::from_xy(8, 8) > Position::from_xy(0, 0));
-        assert_eq!(
-            PositionSemantics::to_index(Position::from_xy(8, 8)).index(),
-            80
-        );
+        assert!(Position::new(0, 8) < Position::new(1, 0));
+        assert!(Position::new(8, 8) > Position::new(0, 0));
+        assert_eq!(PositionSemantics::to_index(Position::new(8, 8)).index(), 80);
 
         // Position::ALL ordering matches PositionSemantics
         for (expected_index, &pos) in (0u8..).zip(Position::ALL.iter()) {
             assert_eq!(PositionSemantics::to_index(pos).index(), expected_index);
-            assert_eq!(pos.x(), expected_index % 9);
-            assert_eq!(pos.y(), expected_index / 9);
+            assert_eq!(pos.col(), expected_index % 9);
+            assert_eq!(pos.row(), expected_index / 9);
         }
     }
 
@@ -655,17 +585,17 @@ mod tests {
         use std::collections::HashSet;
 
         // Each row/column/box contains exactly 9 unique positions
-        for y in 0..9 {
-            assert_eq!(Position::ROWS[y].iter().collect::<HashSet<_>>().len(), 9);
-            for (x, &pos) in (0u8..).zip(Position::ROWS[y].iter()) {
-                assert_eq!(pos, Position::from_xy(x, y));
+        for row in 0..9 {
+            assert_eq!(Position::ROWS[row].iter().collect::<HashSet<_>>().len(), 9);
+            for (col, &pos) in (0u8..).zip(Position::ROWS[row].iter()) {
+                assert_eq!(pos, Position::new(row, col));
             }
         }
 
-        for x in 0..9 {
-            assert_eq!(Position::COLS[x].iter().collect::<HashSet<_>>().len(), 9);
-            for (y, &pos) in (0u8..).zip(Position::COLS[x].iter()) {
-                assert_eq!(pos, Position::from_xy(x, y));
+        for col in 0..9 {
+            assert_eq!(Position::COLS[col].iter().collect::<HashSet<_>>().len(), 9);
+            for (row, &pos) in (0u8..).zip(Position::COLS[col].iter()) {
+                assert_eq!(pos, Position::new(row, col));
             }
         }
 

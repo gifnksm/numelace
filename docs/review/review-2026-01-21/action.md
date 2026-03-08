@@ -73,7 +73,7 @@
      2. 手動で row/col/box から `digit` を除外
 
      ```rust
-        for row_pos in Position::ROWS[pos.y()] {
+        for row_pos in Position::ROWS[pos.row()] {
             if row_pos != pos {
                 grid.remove_candidate(row_pos, digit);
             }

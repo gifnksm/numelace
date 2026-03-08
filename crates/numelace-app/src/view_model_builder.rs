@@ -462,33 +462,33 @@ mod tests {
     #[test]
     fn build_grid_highlights_selected_conflict_and_same_digit() {
         let mut app_state = AppState::new(game_from_filled(&filled_with_conflict()));
-        app_state.set_selected_cell(Position::from_xy(0, 0));
+        app_state.set_selected_cell(Position::new(0, 0));
         let ui_state = UiState::new();
 
         let grid = build_grid(&app_state, &ui_state);
 
         assert!(
-            grid[Position::from_xy(0, 0)]
+            grid[Position::new(0, 0)]
                 .visual_state
                 .contains(GridVisualState::SELECTED_CELL)
         );
         assert!(
-            grid[Position::from_xy(1, 0)]
+            grid[Position::new(0, 1)]
                 .visual_state
                 .contains(GridVisualState::CONFLICT)
         );
         assert!(
-            grid[Position::from_xy(1, 0)]
+            grid[Position::new(0, 1)]
                 .visual_state
                 .contains(GridVisualState::SELECTED_DIGIT)
         );
         assert!(
-            grid[Position::from_xy(1, 1)]
+            grid[Position::new(1, 1)]
                 .visual_state
                 .contains(GridVisualState::HOUSE_SELECTED_CELL)
         );
         assert!(
-            grid[Position::from_xy(2, 2)]
+            grid[Position::new(2, 2)]
                 .visual_state
                 .contains(GridVisualState::HOUSE_SELECTED_DIGIT)
         );
@@ -498,16 +498,16 @@ mod tests {
     fn build_grid_applies_digit_ghost() {
         let app_state = AppState::new(game_from_filled(&blank_grid()));
         let mut ui_state = UiState::new();
-        ui_state.conflict_ghost = Some((Position::from_xy(3, 3), GhostType::Digit(Digit::D2)));
+        ui_state.conflict_ghost = Some((Position::new(3, 3), GhostType::Digit(Digit::D2)));
 
         let grid = build_grid(&app_state, &ui_state);
 
         assert!(matches!(
-            grid[Position::from_xy(3, 3)].content,
+            grid[Position::new(3, 3)].content,
             CellState::Filled(Digit::D2)
         ));
         assert!(
-            grid[Position::from_xy(3, 3)]
+            grid[Position::new(3, 3)]
                 .visual_state
                 .contains(GridVisualState::GHOST)
         );
@@ -517,7 +517,7 @@ mod tests {
     fn build_grid_highlights_hint_cells() {
         let app_state = AppState::new(game_from_filled(&blank_grid()));
         let mut ui_state = UiState::new();
-        let positions = DigitPositions::from_elem(Position::from_xy(2, 2));
+        let positions = DigitPositions::from_elem(Position::new(2, 2));
         let step: BoxedTechniqueStep = Box::new(HintTestStep { positions });
         ui_state.hint_state = Some(HintState {
             stage: HintStage::Stage1,
@@ -527,12 +527,12 @@ mod tests {
         let grid = build_grid(&app_state, &ui_state);
 
         assert!(
-            grid[Position::from_xy(2, 2)]
+            grid[Position::new(2, 2)]
                 .visual_state
                 .contains(GridVisualState::HINT_CONDITION_CELL)
         );
         assert!(
-            !grid[Position::from_xy(3, 3)]
+            !grid[Position::new(3, 3)]
                 .visual_state
                 .contains(GridVisualState::HINT_CONDITION_CELL)
         );

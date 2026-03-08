@@ -214,12 +214,12 @@ mod tests {
     #[test]
     fn test_eliminates_wxyz_wing_candidates() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(1, 0);
-        let pos3 = Position::from_xy(0, 1);
-        let pos4 = Position::from_xy(1, 1);
-        let elimination = Position::from_xy(2, 0);
-        let non_elimination = Position::from_xy(0, 3);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 1);
+        let pos3 = Position::new(1, 0);
+        let pos4 = Position::new(1, 1);
+        let elimination = Position::new(0, 2);
+        let non_elimination = Position::new(3, 0);
 
         for digit in Digit::ALL {
             if digit != Digit::D1 && digit != Digit::D4 {

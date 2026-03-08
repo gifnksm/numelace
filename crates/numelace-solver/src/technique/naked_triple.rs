@@ -180,10 +180,10 @@ mod tests {
     #[test]
     fn test_eliminates_triple_candidates_in_row() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(3, 0);
-        let pos3 = Position::from_xy(6, 0);
-        let target = Position::from_xy(4, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 3);
+        let pos3 = Position::new(0, 6);
+        let target = Position::new(0, 4);
 
         for digit in Digit::ALL {
             if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {
@@ -207,9 +207,9 @@ mod tests {
     #[test]
     fn test_no_change_when_triple_has_no_eliminations() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(3, 0);
-        let pos3 = Position::from_xy(6, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 3);
+        let pos3 = Position::new(0, 6);
 
         for digit in Digit::ALL {
             if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {
@@ -233,10 +233,10 @@ mod tests {
     #[test]
     fn test_inconsistent_when_four_cells_share_triple_candidates() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(3, 0);
-        let pos3 = Position::from_xy(6, 0);
-        let pos4 = Position::from_xy(8, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 3);
+        let pos3 = Position::new(0, 6);
+        let pos4 = Position::new(0, 8);
 
         for digit in Digit::ALL {
             if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 {

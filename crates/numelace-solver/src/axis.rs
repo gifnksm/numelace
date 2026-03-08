@@ -32,12 +32,12 @@ impl AxisOps for RowAxis {
 
     #[inline]
     fn cross_index(pos: Position) -> u8 {
-        pos.x()
+        pos.col()
     }
 
     #[inline]
     fn make_pos(line: u8, cross: u8) -> Position {
-        Position::from_xy(cross, line)
+        Position::new(line, cross)
     }
 }
 
@@ -54,11 +54,11 @@ impl AxisOps for ColumnAxis {
 
     #[inline]
     fn cross_index(pos: Position) -> u8 {
-        pos.y()
+        pos.row()
     }
 
     #[inline]
     fn make_pos(line: u8, cross: u8) -> Position {
-        Position::from_xy(line, cross)
+        Position::new(cross, line)
     }
 }

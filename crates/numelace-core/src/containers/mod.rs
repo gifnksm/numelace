@@ -60,13 +60,13 @@
 //! use numelace_core::{DigitPositions, Position};
 //!
 //! let mut positions = DigitPositions::new();
-//! positions.insert(Position::from_xy(0, 0));
-//! positions.insert(Position::from_xy(4, 4));
-//! positions.insert(Position::from_xy(8, 8));
+//! positions.insert(Position::new(0, 0));
+//! positions.insert(Position::new(4, 4));
+//! positions.insert(Position::new(8, 8));
 //!
 //! assert_eq!(positions.len(), 3);
-//! assert!(positions.contains(Position::from_xy(4, 4)));
-//! assert!(!positions.contains(Position::from_xy(3, 3)));
+//! assert!(positions.contains(Position::new(4, 4)));
+//! assert!(!positions.contains(Position::new(3, 3)));
 //! ```
 //!
 //! ## Using [`DigitIndexedArray`]
@@ -96,12 +96,12 @@
 //! let mut grid: PositionIndexedArray<Option<Digit>> = PositionIndexedArray::from([None; 81]);
 //!
 //! // Set a value at a specific position
-//! let center = Position::from_xy(4, 4);
+//! let center = Position::new(4, 4);
 //! grid[center] = Some(Digit::D5);
 //!
 //! // Access by position
 //! assert_eq!(grid[center], Some(Digit::D5));
-//! assert_eq!(grid[Position::from_xy(0, 0)], None);
+//! assert_eq!(grid[Position::new(0, 0)], None);
 //! ```
 
 pub use self::{array_9::*, array_81::*, bit_set_9::*, bit_set_81::*};

@@ -222,8 +222,8 @@ impl<'a> PuzzleGenerator<'a> {
         // Step 1: Fill the entire first row with shuffled digits 1-9
         let mut top_row = Digit::ALL;
         top_row.shuffle(rng);
-        for (x, digit) in (0..9).zip(top_row) {
-            let pos = Position::from_xy(x, 0);
+        for (col, digit) in (0..9).zip(top_row) {
+            let pos = Position::new(0, col);
             grid.place(pos, digit);
         }
 

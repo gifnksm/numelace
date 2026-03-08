@@ -140,20 +140,20 @@ pub trait Index81Semantics {
 /// };
 ///
 /// // Position (0, 0) maps to index 0
-/// let index = PositionSemantics::to_index(Position::from_xy(0, 0));
+/// let index = PositionSemantics::to_index(Position::new(0, 0));
 /// assert_eq!(index.index(), 0);
 ///
 /// // Position (8, 8) maps to index 80
-/// let index = PositionSemantics::to_index(Position::from_xy(8, 8));
+/// let index = PositionSemantics::to_index(Position::new(8, 8));
 /// assert_eq!(index.index(), 80);
 ///
 /// // Position (4, 4) maps to index 40 (center of board)
-/// let index = PositionSemantics::to_index(Position::from_xy(4, 4));
+/// let index = PositionSemantics::to_index(Position::new(4, 4));
 /// assert_eq!(index.index(), 40);
 ///
 /// // Round-trip
 /// let pos = PositionSemantics::from_index(Index81::new(40));
-/// assert_eq!(pos, Position::from_xy(4, 4));
+/// assert_eq!(pos, Position::new(4, 4));
 /// ```
 #[derive(Debug)]
 pub struct PositionSemantics;
@@ -181,49 +181,34 @@ mod tests {
     #[test]
     fn test_position_semantics() {
         // Boundary values: corners and center
-        assert_eq!(
-            PositionSemantics::to_index(Position::from_xy(0, 0)).index(),
-            0
-        );
-        assert_eq!(
-            PositionSemantics::to_index(Position::from_xy(8, 0)).index(),
-            8
-        );
-        assert_eq!(
-            PositionSemantics::to_index(Position::from_xy(0, 8)).index(),
-            72
-        );
-        assert_eq!(
-            PositionSemantics::to_index(Position::from_xy(8, 8)).index(),
-            80
-        );
-        assert_eq!(
-            PositionSemantics::to_index(Position::from_xy(4, 4)).index(),
-            40
-        );
+        assert_eq!(PositionSemantics::to_index(Position::new(0, 0)).index(), 0);
+        assert_eq!(PositionSemantics::to_index(Position::new(0, 8)).index(), 8);
+        assert_eq!(PositionSemantics::to_index(Position::new(8, 0)).index(), 72);
+        assert_eq!(PositionSemantics::to_index(Position::new(8, 8)).index(), 80);
+        assert_eq!(PositionSemantics::to_index(Position::new(4, 4)).index(), 40);
 
         assert_eq!(
             PositionSemantics::from_index(Index81::new(0)),
-            Position::from_xy(0, 0)
+            Position::new(0, 0)
         );
         assert_eq!(
             PositionSemantics::from_index(Index81::new(80)),
-            Position::from_xy(8, 8)
+            Position::new(8, 8)
         );
         assert_eq!(
             PositionSemantics::from_index(Index81::new(40)),
-            Position::from_xy(4, 4)
+            Position::new(4, 4)
         );
 
-        // Row-major order: y * 9 + x
-        for x in 0..9 {
+        // Row-major order: row * 9 + col
+        for col in 0..9 {
             assert_eq!(
-                PositionSemantics::to_index(Position::from_xy(x, 0)).index(),
-                x
+                PositionSemantics::to_index(Position::new(0, col)).index(),
+                col
             );
             assert_eq!(
-                PositionSemantics::to_index(Position::from_xy(x, 1)).index(),
-                9 + x
+                PositionSemantics::to_index(Position::new(1, col)).index(),
+                9 + col
             );
         }
 

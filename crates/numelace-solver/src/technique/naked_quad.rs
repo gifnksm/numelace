@@ -189,11 +189,11 @@ mod tests {
     #[test]
     fn test_eliminates_quad_candidates_in_row() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(2, 0);
-        let pos3 = Position::from_xy(4, 0);
-        let pos4 = Position::from_xy(6, 0);
-        let target = Position::from_xy(8, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 2);
+        let pos3 = Position::new(0, 4);
+        let pos4 = Position::new(0, 6);
+        let target = Position::new(0, 8);
 
         for digit in Digit::ALL {
             if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 && digit != Digit::D4
@@ -219,10 +219,10 @@ mod tests {
     #[test]
     fn test_no_change_when_quad_has_no_eliminations() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(2, 0);
-        let pos3 = Position::from_xy(4, 0);
-        let pos4 = Position::from_xy(6, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 2);
+        let pos3 = Position::new(0, 4);
+        let pos4 = Position::new(0, 6);
 
         for digit in Digit::ALL {
             if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 && digit != Digit::D4
@@ -249,11 +249,11 @@ mod tests {
     #[test]
     fn test_inconsistent_when_five_cells_share_quad_candidates() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(2, 0);
-        let pos3 = Position::from_xy(4, 0);
-        let pos4 = Position::from_xy(6, 0);
-        let pos5 = Position::from_xy(8, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 2);
+        let pos3 = Position::new(0, 4);
+        let pos4 = Position::new(0, 6);
+        let pos5 = Position::new(0, 8);
 
         for digit in Digit::ALL {
             if digit != Digit::D1 && digit != Digit::D2 && digit != Digit::D3 && digit != Digit::D4

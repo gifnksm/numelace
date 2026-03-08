@@ -181,9 +181,9 @@ mod tests {
     #[test]
     fn test_eliminates_hidden_triple_candidates_in_row() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(3, 0);
-        let pos3 = Position::from_xy(6, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 3);
+        let pos3 = Position::new(0, 6);
 
         for pos in Position::ROWS[0] {
             if pos != pos1 && pos != pos2 && pos != pos3 {
@@ -209,9 +209,9 @@ mod tests {
     #[test]
     fn test_no_change_when_hidden_triple_has_no_eliminations() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(3, 0);
-        let pos3 = Position::from_xy(6, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 3);
+        let pos3 = Position::new(0, 6);
 
         for pos in Position::ROWS[0] {
             if pos != pos1 && pos != pos2 && pos != pos3 {
@@ -235,9 +235,9 @@ mod tests {
     #[test]
     fn test_inconsistent_when_four_digits_share_three_positions() {
         let mut grid = CandidateGrid::new();
-        let pos1 = Position::from_xy(0, 0);
-        let pos2 = Position::from_xy(3, 0);
-        let pos3 = Position::from_xy(6, 0);
+        let pos1 = Position::new(0, 0);
+        let pos2 = Position::new(0, 3);
+        let pos3 = Position::new(0, 6);
 
         for pos in Position::ROWS[0] {
             if pos != pos1 && pos != pos2 && pos != pos3 {

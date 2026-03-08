@@ -47,11 +47,12 @@ impl Condition<'_> {
             condition_digit_position_mask.insert(pos1);
             condition_digit_position_mask.insert(pos2);
 
-            if pos1.y() == pos2.y() && digit_positions.positions_in_row(pos1.y()).len() == 2 {
-                condition_positions |= DigitPositions::ROW_POSITIONS[pos1.y()];
-            } else if pos1.x() == pos2.x() && digit_positions.positions_in_col(pos1.x()).len() == 2
+            if pos1.row() == pos2.row() && digit_positions.positions_in_row(pos1.row()).len() == 2 {
+                condition_positions |= DigitPositions::ROW_POSITIONS[pos1.row()];
+            } else if pos1.col() == pos2.col()
+                && digit_positions.positions_in_col(pos1.col()).len() == 2
             {
-                condition_positions |= DigitPositions::COL_POSITIONS[pos1.x()];
+                condition_positions |= DigitPositions::COL_POSITIONS[pos1.col()];
             } else {
                 debug_assert_eq!(pos1.box_index(), pos2.box_index());
                 debug_assert_eq!(digit_positions.positions_in_box(pos1.box_index()).len(), 2);
@@ -305,8 +306,8 @@ mod tests {
     fn test_eliminates_x_chain_candidates() {
         let mut grid = CandidateGrid::new();
         let digit = Digit::D1;
-        let chain_start = Position::from_xy(0, 0);
-        let strong_link_partner = Position::from_xy(4, 0);
+        let chain_start = Position::new(0, 0);
+        let strong_link_partner = Position::new(0, 4);
 
         for pos in Position::ROWS[0] {
             if pos != chain_start && pos != strong_link_partner {
@@ -314,8 +315,8 @@ mod tests {
             }
         }
 
-        let weak_link_node = Position::from_xy(3, 1);
-        let chain_end = Position::from_xy(3, 7);
+        let weak_link_node = Position::new(1, 3);
+        let chain_end = Position::new(7, 3);
         for pos in Position::COLS[3] {
             if pos != weak_link_node && pos != chain_end {
                 grid.remove_candidate(pos, digit);
@@ -323,7 +324,7 @@ mod tests {
         }
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
-            t.assert_removed_includes(Position::from_xy(0, 7), [digit]);
+            t.assert_removed_includes(Position::new(7, 0), [digit]);
         });
     }
 
@@ -331,9 +332,9 @@ mod tests {
     fn test_places_x_chain_when_endpoints_match() {
         let mut grid = CandidateGrid::new();
         let digit = Digit::D1;
-        let chain_start = Position::from_xy(4, 4);
-        let strong_row_partner = Position::from_xy(3, 4);
-        let strong_col_partner = Position::from_xy(4, 3);
+        let chain_start = Position::new(4, 4);
+        let strong_row_partner = Position::new(4, 3);
+        let strong_col_partner = Position::new(3, 4);
 
         for pos in Position::ROWS[4] {
             if pos != chain_start && pos != strong_row_partner {
@@ -362,7 +363,7 @@ mod tests {
         // Continuous X-Cycle: chain_start and chain_end are house peers.
         // This enables elimination at weak-link junctions along the chain.
         //
-        // Position::from_xy(x, y) where x=column, y=row
+        // Position::new(y, x) where x=column, y=row
         // Position::ROWS[y] = all positions in row y
         // Position::COLS[x] = all positions in column x
         //
@@ -381,21 +382,21 @@ mod tests {
 
         // Set up strong link in row 0: only (0,0) and (8,0) have digit
         for pos in Position::ROWS[0] {
-            if pos != Position::from_xy(0, 0) && pos != Position::from_xy(8, 0) {
+            if pos != Position::new(0, 0) && pos != Position::new(0, 8) {
                 grid.remove_candidate(pos, digit);
             }
         }
 
         // Set up strong link in row 8: only (0,8) and (8,8) have digit
         for pos in Position::ROWS[8] {
-            if pos != Position::from_xy(0, 8) && pos != Position::from_xy(8, 8) {
+            if pos != Position::new(8, 0) && pos != Position::new(8, 8) {
                 grid.remove_candidate(pos, digit);
             }
         }
 
         // Set up strong link in col 8: only (8,0) and (8,8) have digit
         for pos in Position::COLS[8] {
-            if pos != Position::from_xy(8, 0) && pos != Position::from_xy(8, 8) {
+            if pos != Position::new(0, 8) && pos != Position::new(8, 8) {
                 grid.remove_candidate(pos, digit);
             }
         }
@@ -403,9 +404,9 @@ mod tests {
         // col 0 should NOT be a strong link (more than 2 candidates)
         // so keep (0,4) with the candidate as well
         for pos in Position::COLS[0] {
-            if pos != Position::from_xy(0, 0)
-                && pos != Position::from_xy(0, 8)
-                && pos != Position::from_xy(0, 4)
+            if pos != Position::new(0, 0)
+                && pos != Position::new(8, 0)
+                && pos != Position::new(4, 0)
             {
                 grid.remove_candidate(pos, digit);
             }
@@ -419,7 +420,7 @@ mod tests {
         // (0,4) sees both (0,0) and (0,8), so it should be eliminated.
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
-            t.assert_removed_includes(Position::from_xy(0, 4), [digit]);
+            t.assert_removed_includes(Position::new(4, 0), [digit]);
         });
     }
 }

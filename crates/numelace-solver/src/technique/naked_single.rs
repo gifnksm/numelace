@@ -63,8 +63,8 @@ impl NakedSingle {
     #[must_use]
     pub fn build_step(grid: &TechniqueGrid, pos: Position) -> Option<BoxedTechniqueStep> {
         let digit = grid.candidates_at(pos).as_single()?;
-        let mut affected_pos = (DigitPositions::ROW_POSITIONS[pos.y()]
-            | DigitPositions::COL_POSITIONS[pos.x()]
+        let mut affected_pos = (DigitPositions::ROW_POSITIONS[pos.row()]
+            | DigitPositions::COL_POSITIONS[pos.col()]
             | DigitPositions::BOX_POSITIONS[pos.box_index()])
             & grid.digit_positions(digit);
         affected_pos.remove(pos);
@@ -93,8 +93,8 @@ impl NakedSingle {
         for digit in Digit::ALL {
             let univalue_positions = grid.digit_positions(digit) & univalue_positions;
             for pos in univalue_positions {
-                let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.y()]
-                    | DigitPositions::COL_POSITIONS[pos.x()]
+                let mut affected_pos = DigitPositions::ROW_POSITIONS[pos.row()]
+                    | DigitPositions::COL_POSITIONS[pos.col()]
                     | DigitPositions::BOX_POSITIONS[pos.box_index()];
                 affected_pos.remove(pos);
                 grid.insert_univalue_propagated(pos);
@@ -173,16 +173,16 @@ mod tests {
         let mut grid = CandidateGrid::new();
 
         // Make (0, 0) have only D5 as candidate
-        grid.place(Position::from_xy(0, 0), Digit::D5);
+        grid.place(Position::new(0, 0), Digit::D5);
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
             t
                 // D5 removed from same row
-                .assert_removed_exact(Position::from_xy(1, 0), [Digit::D5])
+                .assert_removed_exact(Position::new(0, 1), [Digit::D5])
                 // D5 removed from same column
-                .assert_removed_exact(Position::from_xy(0, 1), [Digit::D5])
+                .assert_removed_exact(Position::new(1, 0), [Digit::D5])
                 // D5 removed from same box
-                .assert_removed_exact(Position::from_xy(1, 1), [Digit::D5]);
+                .assert_removed_exact(Position::new(1, 1), [Digit::D5]);
         });
     }
 
@@ -192,17 +192,17 @@ mod tests {
         let mut grid = CandidateGrid::new();
 
         // Create naked single at (0, 0) with D3
-        grid.place(Position::from_xy(0, 0), Digit::D3);
+        grid.place(Position::new(0, 0), Digit::D3);
 
         // Create naked single at (5, 5) with D7
-        grid.place(Position::from_xy(5, 5), Digit::D7);
+        grid.place(Position::new(5, 5), Digit::D7);
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
             t
                 // D3 removed from a cell in same row as (0, 0)
-                .assert_removed_exact(Position::from_xy(1, 0), [Digit::D3])
+                .assert_removed_exact(Position::new(0, 1), [Digit::D3])
                 // D7 removed from a cell in same column as (5, 5)
-                .assert_removed_exact(Position::from_xy(5, 4), [Digit::D7]);
+                .assert_removed_exact(Position::new(4, 5), [Digit::D7]);
         });
     }
 
@@ -234,7 +234,7 @@ mod tests {
             t
                 // Naked singles should be found and placed.
                 // Verify at least one placement occurred by checking candidate removal.
-                .assert_removed_includes(Position::from_xy(1, 1), [Digit::D4]);
+                .assert_removed_includes(Position::new(1, 1), [Digit::D4]);
         });
     }
 }

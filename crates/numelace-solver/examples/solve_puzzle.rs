@@ -414,14 +414,14 @@ fn build_diffs(before: &TechniqueGrid, after: &TechniqueGrid) -> PositionIndexed
 fn format_grid(grid: &TechniqueGrid, diffs: Option<&PositionIndexedArray<CellDiff>>) -> String {
     let mut output = String::new();
     let horizontal = "+---------+---------+---------+\n";
-    for y in 0..9 {
-        if y % 3 == 0 {
+    for row in 0..9 {
+        if row % 3 == 0 {
             output.push_str(horizontal);
         }
 
         let mut cell_lines = Vec::with_capacity(9);
-        for x in 0..9 {
-            let pos = Position::from_xy(x, y);
+        for col in 0..9 {
+            let pos = Position::new(row, col);
             let candidates = grid.candidates_at(pos);
             let diff = diffs.map(|map| map[pos]).unwrap_or_default();
             cell_lines.push(build_cell_lines(candidates, diff));
@@ -430,9 +430,9 @@ fn format_grid(grid: &TechniqueGrid, diffs: Option<&PositionIndexedArray<CellDif
         #[expect(clippy::needless_range_loop)]
         for sub_row in 0..3 {
             output.push('|');
-            for block_x in 0..3 {
-                for cell_x in 0..3 {
-                    let cell_index = block_x * 3 + cell_x;
+            for block_col in 0..3 {
+                for cell_col in 0..3 {
+                    let cell_index = block_col * 3 + cell_col;
                     output.push_str(&cell_lines[cell_index][sub_row]);
                 }
                 output.push('|');

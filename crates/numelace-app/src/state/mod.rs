@@ -52,22 +52,22 @@ mod tests {
     fn undo_redo_restores_game_and_selection() {
         let mut app_state = AppState::new(fixed_game());
 
-        app_state.set_selected_cell(Position::from_xy(0, 0));
+        app_state.set_selected_cell(Position::new(0, 0));
         app_state
             .game
             .set_digit(
-                Position::from_xy(0, 0),
+                Position::new(0, 0),
                 Digit::D2,
                 &InputDigitOptions::default(),
             )
             .unwrap();
         app_state.push_history();
 
-        app_state.set_selected_cell(Position::from_xy(2, 0));
+        app_state.set_selected_cell(Position::new(0, 2));
         app_state
             .game
             .set_digit(
-                Position::from_xy(2, 0),
+                Position::new(0, 2),
                 Digit::D3,
                 &InputDigitOptions::default(),
             )
@@ -77,21 +77,21 @@ mod tests {
         assert!(app_state.undo());
 
         assert!(matches!(
-            app_state.game.cell(Position::from_xy(0, 0)),
+            app_state.game.cell(Position::new(0, 0)),
             CellState::Filled(Digit::D2)
         ));
         assert!(matches!(
-            app_state.game.cell(Position::from_xy(2, 0)),
+            app_state.game.cell(Position::new(0, 2)),
             CellState::Empty
         ));
-        assert_eq!(app_state.selected_cell(), Some(Position::from_xy(2, 0)));
+        assert_eq!(app_state.selected_cell(), Some(Position::new(0, 2)));
 
         assert!(app_state.redo());
 
         assert!(matches!(
-            app_state.game.cell(Position::from_xy(2, 0)),
+            app_state.game.cell(Position::new(0, 2)),
             CellState::Filled(Digit::D3)
         ));
-        assert_eq!(app_state.selected_cell(), Some(Position::from_xy(2, 0)));
+        assert_eq!(app_state.selected_cell(), Some(Position::new(0, 2)));
     }
 }

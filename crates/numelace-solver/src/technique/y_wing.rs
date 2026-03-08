@@ -161,10 +161,10 @@ mod tests {
     #[test]
     fn test_eliminates_y_wing_candidates() {
         let mut grid = CandidateGrid::new();
-        let pivot = Position::from_xy(1, 1);
-        let wing1 = Position::from_xy(1, 5);
-        let wing2 = Position::from_xy(5, 1);
-        let elimination = Position::from_xy(5, 5);
+        let pivot = Position::new(1, 1);
+        let wing1 = Position::new(5, 1);
+        let wing2 = Position::new(1, 5);
+        let elimination = Position::new(5, 5);
 
         // Pivot: {1,2}
         for digit in Digit::ALL {
@@ -201,11 +201,11 @@ mod tests {
     #[test]
     fn test_only_common_peers_are_eliminated() {
         let mut grid = CandidateGrid::new();
-        let pivot = Position::from_xy(1, 1);
-        let wing1 = Position::from_xy(1, 5);
-        let wing2 = Position::from_xy(5, 1);
-        let elimination = Position::from_xy(5, 5);
-        let non_elimination = Position::from_xy(7, 1);
+        let pivot = Position::new(1, 1);
+        let wing1 = Position::new(5, 1);
+        let wing2 = Position::new(1, 5);
+        let elimination = Position::new(5, 5);
+        let non_elimination = Position::new(1, 7);
 
         // Pivot: {1,2}
         for digit in Digit::ALL {

@@ -187,21 +187,21 @@ mod tests {
     #[test]
     fn test_eliminates_x_wing_candidates_in_columns() {
         let mut grid = CandidateGrid::new();
-        let x1 = 1;
-        let x2 = 7;
-        let y1 = 0;
-        let y2 = 4;
+        let col1 = 1;
+        let col2 = 7;
+        let row1 = 0;
+        let row2 = 4;
 
-        for x in 0..9 {
-            if x != x1 && x != x2 {
-                grid.remove_candidate(Position::from_xy(x, y1), Digit::D1);
-                grid.remove_candidate(Position::from_xy(x, y2), Digit::D1);
+        for col in 0..9 {
+            if col != col1 && col != col2 {
+                grid.remove_candidate(Position::new(row1, col), Digit::D1);
+                grid.remove_candidate(Position::new(row2, col), Digit::D1);
             }
         }
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
-            t.assert_removed_includes(Position::from_xy(x1, 2), [Digit::D1])
-                .assert_removed_includes(Position::from_xy(x2, 6), [Digit::D1]);
+            t.assert_removed_includes(Position::new(2, col1), [Digit::D1])
+                .assert_removed_includes(Position::new(6, col2), [Digit::D1]);
         });
     }
 
@@ -214,15 +214,15 @@ mod tests {
     #[test]
     fn test_inconsistent_when_x_wing_in_same_box() {
         let mut grid = CandidateGrid::new();
-        let x1 = 0;
-        let x2 = 1;
-        let y1 = 0;
-        let y2 = 1;
+        let col1 = 0;
+        let col2 = 1;
+        let row1 = 0;
+        let row2 = 1;
 
-        for x in 0..9 {
-            if x != x1 && x != x2 {
-                grid.remove_candidate(Position::from_xy(x, y1), Digit::D1);
-                grid.remove_candidate(Position::from_xy(x, y2), Digit::D1);
+        for col in 0..9 {
+            if col != col1 && col != col2 {
+                grid.remove_candidate(Position::new(row1, col), Digit::D1);
+                grid.remove_candidate(Position::new(row2, col), Digit::D1);
             }
         }
 

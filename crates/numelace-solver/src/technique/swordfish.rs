@@ -223,16 +223,16 @@ mod tests {
         let cols = [1u8, 4, 7];
 
         for &row in &rows {
-            for x in 0..9u8 {
-                if !cols.contains(&x) {
-                    grid.remove_candidate(Position::from_xy(x, row), digit);
+            for col in 0..9u8 {
+                if !cols.contains(&col) {
+                    grid.remove_candidate(Position::new(row, col), digit);
                 }
             }
         }
 
         testing::test_technique_apply_pass(grid, &TECHNIQUE, |t| {
-            t.assert_removed_includes(Position::from_xy(cols[0], 2), [digit])
-                .assert_removed_includes(Position::from_xy(cols[2], 6), [digit]);
+            t.assert_removed_includes(Position::new(2, cols[0]), [digit])
+                .assert_removed_includes(Position::new(6, cols[2]), [digit]);
         });
     }
 
@@ -250,9 +250,9 @@ mod tests {
         let cols = [1u8, 5];
 
         for &row in &rows {
-            for x in 0..9u8 {
-                if !cols.contains(&x) {
-                    grid.remove_candidate(Position::from_xy(x, row), digit);
+            for col in 0..9u8 {
+                if !cols.contains(&col) {
+                    grid.remove_candidate(Position::new(row, col), digit);
                 }
             }
         }
