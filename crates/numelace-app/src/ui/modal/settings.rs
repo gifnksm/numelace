@@ -46,13 +46,13 @@ pub(crate) fn show(ctx: &Context, vm: &SettingsViewModel, action_queue: &mut Act
                             conflict,
                         } = highlight;
                         changed |= ui
-                            .checkbox(selected_digit, "Same digit cells/notes")
+                            .checkbox(selected_digit, "Selected digit cells/notes")
                             .changed();
                         changed |= ui
                             .checkbox(selected_cell_peer, "Selected cell's row/col/box")
                             .changed();
                         changed |= ui
-                            .checkbox(selected_digit_peer, "Same digit cells' row/col/box")
+                            .checkbox(selected_digit_peer, "Selected digit cells' row/col/box")
                             .changed();
                         changed |= ui.checkbox(conflict, "Conflicting cells/notes").changed();
                     });

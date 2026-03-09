@@ -9,7 +9,6 @@ use eframe::egui::{Color32, Visuals};
 pub(crate) struct GridPalette {
     pub(crate) cell_bg_default: Color32,
     pub(crate) cell_bg_selected_digit: Color32,
-    pub(crate) cell_bg_selected_cell_peer: Color32,
     pub(crate) cell_bg_selected_digit_peer: Color32,
 
     pub(crate) note_bg_selected_digit: Color32,
@@ -18,6 +17,7 @@ pub(crate) struct GridPalette {
 
     pub(crate) border_inactive: Color32,
     pub(crate) border_selected_cell: Color32,
+    pub(crate) border_selected_cell_peer: Color32,
     pub(crate) border_selected_digit: Color32,
     pub(crate) border_hint_condition: Color32,
 
@@ -44,18 +44,12 @@ impl GridPalette {
         // - Keep backgrounds subtle so digits/notes stay primary.
         // - For visuals-derived values, keep a single value comment at the source line.
         let cell_bg_selected_digit = visuals.selection.bg_fill; // dark=(0, 92, 128) light=(144, 209, 255)
-        let (cell_bg_selected_cell_peer, cell_bg_selected_digit_peer) = if visuals.dark_mode {
-            (
-                //  widgets.hovered.bg_fill = (70, 70, 70) (dark)
-                Color32::from_gray(70),
-                Color32::from_gray(70),
-            )
+        let cell_bg_selected_digit_peer = if visuals.dark_mode {
+            //  widgets.hovered.bg_fill = (70, 70, 70) (dark)
+            Color32::from_gray(70)
         } else {
-            (
-                // widgets.hovered.bg_fill = (220, 220, 220) (light)
-                Color32::from_gray(220),
-                Color32::from_gray(220),
-            )
+            // widgets.hovered.bg_fill = (220, 220, 220) (light)
+            Color32::from_gray(220)
         };
         let hint_accent = if visuals.dark_mode {
             Color32::from_rgb(255, 165, 0)
@@ -68,19 +62,24 @@ impl GridPalette {
             Color32::from_rgb(255, 190, 120)
         };
 
+        let border_inactive = visuals.widgets.inactive.fg_stroke.color; // dark=(180, 180, 180) light=(60, 60, 60)
+        let border_selected_cell = visuals.error_fg_color; // dark/light=(255, 0, 0)
+        let border_selected_cell_peer = border_selected_cell;
+        let border_selected_digit = visuals.selection.stroke.color; // dark=(192, 222, 255) light=(0, 83, 125)
+
         Self {
             cell_bg_default: visuals.text_edit_bg_color(), // dark=(10, 10, 10) light=(255, 255, 255)
             cell_bg_selected_digit,
-            cell_bg_selected_cell_peer,
             cell_bg_selected_digit_peer,
 
             note_bg_selected_digit: cell_bg_selected_digit,
 
             pill_hint: hint_accent,
 
-            border_inactive: visuals.widgets.inactive.fg_stroke.color, // dark=(180, 180, 180) light=(60, 60, 60)
-            border_selected_cell: visuals.error_fg_color,              // dark/light=(255, 0, 0)
-            border_selected_digit: visuals.selection.stroke.color, // dark=(192, 222, 255) light=(0, 83, 125)
+            border_inactive,
+            border_selected_cell,
+            border_selected_cell_peer,
+            border_selected_digit,
             border_hint_condition: hint_accent,
 
             underline_hint_condition: hint_accent_soft,

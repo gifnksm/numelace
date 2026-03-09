@@ -167,10 +167,9 @@ fn thick_border_width(cell_size: f32) -> f32 {
 const CELL_BORDER_WIDTH_BASE_RATIO: f32 = 0.03;
 const THICK_BORDER_WIDTH_RATIO: f32 = 3.0;
 const THIN_BORDER_WIDTH_RATIO: f32 = 1.0;
-const SELECTED_CELL_BORDER_WIDTH_RATIO: f32 = 1.5;
+const SELECTED_CELL_BORDER_WIDTH_RATIO: f32 = 3.0;
 const SELECTED_DIGIT_BORDER_WIDTH_RATIO: f32 = 1.0;
-const SELECTED_CELL_PEER_BORDER_WIDTH_RATIO: f32 = 1.0;
-const SELECTED_DIGIT_PEER_BORDER_WIDTH_RATIO: f32 = 1.0;
+const SELECTED_CELL_PEER_BORDER_WIDTH_RATIO: f32 = 0.5;
 const HINT_CORNER_WIDTH_RATIO: f32 = 3.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -192,9 +191,6 @@ impl EffectiveGridVisualState {
         if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
             return palette.cell_bg_selected_digit;
         }
-        if self.0.intersects(GridVisualState::SELECTED_CELL_PEER) {
-            return palette.cell_bg_selected_cell_peer;
-        }
         if self.0.intersects(GridVisualState::SELECTED_DIGIT_PEER) {
             return palette.cell_bg_selected_digit_peer;
         }
@@ -208,35 +204,54 @@ impl EffectiveGridVisualState {
         None
     }
 
-    fn cell_border_color(self, palette: &GridPalette) -> Color32 {
-        if self.0.intersects(GridVisualState::SELECTED_CELL) {
-            return palette.border_selected_cell;
-        }
-        if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
-            return palette.border_selected_digit;
-        }
+    #[expect(clippy::unused_self)]
+    fn cell_base_border_color(self, palette: &GridPalette) -> Color32 {
         palette.border_inactive
     }
 
-    fn cell_border_width_ratio(self) -> f32 {
+    fn cell_overlay_border_color(self, palette: &GridPalette) -> Option<Color32> {
         if self.0.intersects(GridVisualState::SELECTED_CELL) {
-            SELECTED_CELL_BORDER_WIDTH_RATIO
-        } else if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
-            SELECTED_DIGIT_BORDER_WIDTH_RATIO
-        } else if self.0.intersects(GridVisualState::SELECTED_CELL_PEER) {
-            SELECTED_CELL_PEER_BORDER_WIDTH_RATIO
-        } else if self.0.intersects(GridVisualState::SELECTED_DIGIT_PEER) {
-            SELECTED_DIGIT_PEER_BORDER_WIDTH_RATIO
-        } else {
-            THIN_BORDER_WIDTH_RATIO
+            return Some(palette.border_selected_cell);
         }
+        if self.0.intersects(GridVisualState::SELECTED_CELL_PEER) {
+            return Some(palette.border_selected_cell_peer);
+        }
+        if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
+            return Some(palette.border_selected_digit);
+        }
+        None
     }
 
-    fn cell_border(self, palette: &GridPalette, cell_size: f32) -> Stroke {
-        let color = self.cell_border_color(palette);
-        let ratio = self.cell_border_width_ratio();
+    #[expect(clippy::unused_self)]
+    fn cell_base_border_width_ratio(self) -> f32 {
+        THIN_BORDER_WIDTH_RATIO
+    }
+
+    fn cell_overlay_border_width_ratio(self) -> Option<f32> {
+        if self.0.intersects(GridVisualState::SELECTED_CELL) {
+            return Some(SELECTED_CELL_BORDER_WIDTH_RATIO);
+        }
+        if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
+            return Some(SELECTED_DIGIT_BORDER_WIDTH_RATIO);
+        }
+        if self.0.intersects(GridVisualState::SELECTED_CELL_PEER) {
+            return Some(SELECTED_CELL_PEER_BORDER_WIDTH_RATIO);
+        }
+        None
+    }
+
+    fn cell_base_border(self, palette: &GridPalette, cell_size: f32) -> Stroke {
+        let color = self.cell_base_border_color(palette);
+        let ratio = self.cell_base_border_width_ratio();
         let base_width = f32::max(cell_size * CELL_BORDER_WIDTH_BASE_RATIO, 1.0);
         Stroke::new(base_width * ratio, color)
+    }
+
+    fn cell_overlay_border(self, palette: &GridPalette, cell_size: f32) -> Option<Stroke> {
+        let color = self.cell_overlay_border_color(palette)?;
+        let ratio = self.cell_overlay_border_width_ratio()?;
+        let base_width = f32::max(cell_size * CELL_BORDER_WIDTH_BASE_RATIO, 1.0);
+        Some(Stroke::new(base_width * ratio, color))
     }
 
     fn hint_corner_border(self, palette: &GridPalette, base_border: f32) -> Option<Stroke> {
@@ -338,7 +353,10 @@ pub(crate) fn show(
             let cell_rect = Rect::from_min_max(cell_min, cell_max);
 
             draw_cell_fill(painter, cell_rect, vs.cell_fill_color(palette));
-            draw_cell_border(painter, cell_rect, vs.cell_border(palette, cell_size));
+            draw_cell_border(painter, cell_rect, vs.cell_base_border(palette, cell_size));
+            if let Some(stroke) = vs.cell_overlay_border(palette, cell_size) {
+                draw_cell_border(painter, cell_rect, stroke);
+            }
 
             if let Some(stroke) = vs.hint_corner_border(palette, base_border) {
                 draw_corners(painter, cell_rect, stroke);
