@@ -216,7 +216,11 @@ impl SelectionAction {
         match self {
             SelectionAction::SelectOrClearCell(pos) => {
                 if app_state.selected_cell() == Some(pos) {
-                    app_state.clear_selected_cell_and_digit();
+                    if app_state.game.cell(pos).as_digit() == app_state.selected_digit() {
+                        app_state.clear_selected_cell_and_digit();
+                    } else {
+                        app_state.clear_selected_cell();
+                    }
                 } else {
                     app_state.set_selected_cell(pos);
                 }
