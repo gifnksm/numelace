@@ -20,8 +20,8 @@ bitflags::bitflags! {
     pub(crate) struct GridVisualState: u16 {
         const SELECTED_CELL = 0x0001;
         const SELECTED_DIGIT = 0x0002;
-        const HOUSE_SELECTED_CELL = 0x0004;
-        const HOUSE_SELECTED_DIGIT = 0x0008;
+        const SELECTED_CELL_PEER = 0x0004;
+        const SELECTED_DIGIT_PEER = 0x0008;
         const CONFLICT = 0x0010;
         const GHOST = 0x0020;
         const HINT_CONDITION_CELL = 0x0040;
@@ -110,15 +110,15 @@ impl GridViewModel {
             | GridVisualState::HINT_APPLICATION_TEMPORARY;
         let HighlightSettings {
             selected_digit,
-            house_selected_cell,
-            house_selected_digit,
+            selected_cell_peer,
+            selected_digit_peer,
             conflict,
         } = highlight_settings;
-        if *house_selected_digit {
-            enabled_highlights |= GridVisualState::HOUSE_SELECTED_DIGIT;
+        if *selected_digit_peer {
+            enabled_highlights |= GridVisualState::SELECTED_DIGIT_PEER;
         }
-        if *house_selected_cell {
-            enabled_highlights |= GridVisualState::HOUSE_SELECTED_CELL;
+        if *selected_cell_peer {
+            enabled_highlights |= GridVisualState::SELECTED_CELL_PEER;
         }
         if *selected_digit {
             enabled_highlights |= GridVisualState::SELECTED_DIGIT;
@@ -167,9 +167,10 @@ fn thick_border_width(cell_size: f32) -> f32 {
 const CELL_BORDER_WIDTH_BASE_RATIO: f32 = 0.03;
 const THICK_BORDER_WIDTH_RATIO: f32 = 3.0;
 const THIN_BORDER_WIDTH_RATIO: f32 = 1.0;
-const SELECTED_BORDER_WIDTH_RATIO: f32 = 1.5;
-const SAME_DIGIT_BORDER_WIDTH_RATIO: f32 = 1.0;
-const HOUSE_BORDER_WIDTH_RATIO: f32 = 1.0;
+const SELECTED_CELL_BORDER_WIDTH_RATIO: f32 = 1.5;
+const SELECTED_DIGIT_BORDER_WIDTH_RATIO: f32 = 1.0;
+const SELECTED_CELL_PEER_BORDER_WIDTH_RATIO: f32 = 1.0;
+const SELECTED_DIGIT_PEER_BORDER_WIDTH_RATIO: f32 = 1.0;
 const HINT_CORNER_WIDTH_RATIO: f32 = 3.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -191,11 +192,11 @@ impl EffectiveGridVisualState {
         if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
             return palette.cell_bg_selected_digit;
         }
-        if self.0.intersects(GridVisualState::HOUSE_SELECTED_CELL) {
-            return palette.cell_bg_house_selected_cell;
+        if self.0.intersects(GridVisualState::SELECTED_CELL_PEER) {
+            return palette.cell_bg_selected_cell_peer;
         }
-        if self.0.intersects(GridVisualState::HOUSE_SELECTED_DIGIT) {
-            return palette.cell_bg_house_selected_digit;
+        if self.0.intersects(GridVisualState::SELECTED_DIGIT_PEER) {
+            return palette.cell_bg_selected_digit_peer;
         }
         palette.cell_bg_default
     }
@@ -219,13 +220,13 @@ impl EffectiveGridVisualState {
 
     fn cell_border_width_ratio(self) -> f32 {
         if self.0.intersects(GridVisualState::SELECTED_CELL) {
-            SELECTED_BORDER_WIDTH_RATIO
+            SELECTED_CELL_BORDER_WIDTH_RATIO
         } else if self.0.intersects(GridVisualState::SELECTED_DIGIT) {
-            SAME_DIGIT_BORDER_WIDTH_RATIO
-        } else if self.0.intersects(
-            GridVisualState::HOUSE_SELECTED_CELL | GridVisualState::HOUSE_SELECTED_DIGIT,
-        ) {
-            HOUSE_BORDER_WIDTH_RATIO
+            SELECTED_DIGIT_BORDER_WIDTH_RATIO
+        } else if self.0.intersects(GridVisualState::SELECTED_CELL_PEER) {
+            SELECTED_CELL_PEER_BORDER_WIDTH_RATIO
+        } else if self.0.intersects(GridVisualState::SELECTED_DIGIT_PEER) {
+            SELECTED_DIGIT_PEER_BORDER_WIDTH_RATIO
         } else {
             THIN_BORDER_WIDTH_RATIO
         }
@@ -344,7 +345,7 @@ pub(crate) fn show(
             }
 
             if let Some(digits) = cell.content.as_notes() {
-                let notes_rect = cell_rect.shrink(base_border * SELECTED_BORDER_WIDTH_RATIO);
+                let notes_rect = cell_rect.shrink(base_border * SELECTED_CELL_BORDER_WIDTH_RATIO);
                 draw_notes(
                     painter,
                     vm,

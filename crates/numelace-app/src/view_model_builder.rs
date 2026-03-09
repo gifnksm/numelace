@@ -238,7 +238,7 @@ fn apply_hint_visuals(
 fn apply_selection_highlights(grid: &mut PositionIndexedArray<GridCell>, pos: Position) {
     grid[pos].visual_state |= GridVisualState::SELECTED_CELL;
     for house_pos in pos.house_positions() {
-        grid[house_pos].visual_state |= GridVisualState::HOUSE_SELECTED_CELL;
+        grid[house_pos].visual_state |= GridVisualState::SELECTED_CELL_PEER;
     }
 }
 
@@ -273,7 +273,7 @@ fn apply_selected_digit_highlights(grid: &mut PositionIndexedArray<GridCell>, di
         if grid[pos].content.as_digit() == Some(digit) {
             grid[pos].visual_state |= GridVisualState::SELECTED_DIGIT;
             for house_pos in pos.house_positions() {
-                grid[house_pos].visual_state |= GridVisualState::HOUSE_SELECTED_DIGIT;
+                grid[house_pos].visual_state |= GridVisualState::SELECTED_DIGIT_PEER;
             }
         }
 
@@ -485,12 +485,12 @@ mod tests {
         assert!(
             grid[Position::new(1, 1)]
                 .visual_state
-                .contains(GridVisualState::HOUSE_SELECTED_CELL)
+                .contains(GridVisualState::SELECTED_CELL_PEER)
         );
         assert!(
             grid[Position::new(2, 2)]
                 .visual_state
-                .contains(GridVisualState::HOUSE_SELECTED_DIGIT)
+                .contains(GridVisualState::SELECTED_DIGIT_PEER)
         );
     }
 

@@ -24,8 +24,8 @@ impl Default for AssistSettings {
 #[expect(clippy::struct_excessive_bools)]
 pub(crate) struct HighlightSettings {
     pub(crate) selected_digit: bool,
-    pub(crate) house_selected_cell: bool,
-    pub(crate) house_selected_digit: bool,
+    pub(crate) selected_cell_peer: bool,
+    pub(crate) selected_digit_peer: bool,
     pub(crate) conflict: bool,
 }
 
@@ -33,8 +33,8 @@ impl Default for HighlightSettings {
     fn default() -> Self {
         Self {
             selected_digit: true,
-            house_selected_cell: true,
-            house_selected_digit: true,
+            selected_cell_peer: true,
+            selected_digit_peer: true,
             conflict: true,
         }
     }

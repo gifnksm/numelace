@@ -446,8 +446,8 @@ impl From<AssistSettingsDto> for AssistSettings {
 #[expect(clippy::struct_excessive_bools)]
 pub(crate) struct HighlightSettingsDto {
     pub(crate) selected_digit: bool,
-    pub(crate) house_selected_cell: bool,
-    pub(crate) house_selected_digit: bool,
+    pub(crate) selected_cell_peer: bool,
+    pub(crate) selected_digit_peer: bool,
     pub(crate) conflict: bool,
 }
 
@@ -461,8 +461,8 @@ impl From<&HighlightSettings> for HighlightSettingsDto {
     fn from(value: &HighlightSettings) -> Self {
         Self {
             selected_digit: value.selected_digit,
-            house_selected_cell: value.house_selected_cell,
-            house_selected_digit: value.house_selected_digit,
+            selected_cell_peer: value.selected_cell_peer,
+            selected_digit_peer: value.selected_digit_peer,
             conflict: value.conflict,
         }
     }
@@ -478,8 +478,8 @@ impl From<HighlightSettingsDto> for HighlightSettings {
     fn from(value: HighlightSettingsDto) -> Self {
         Self {
             selected_digit: value.selected_digit,
-            house_selected_cell: value.house_selected_cell,
-            house_selected_digit: value.house_selected_digit,
+            selected_cell_peer: value.selected_cell_peer,
+            selected_digit_peer: value.selected_digit_peer,
             conflict: value.conflict,
         }
     }

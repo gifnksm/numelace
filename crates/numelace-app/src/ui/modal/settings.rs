@@ -41,18 +41,18 @@ pub(crate) fn show(ctx: &Context, vm: &SettingsViewModel, action_queue: &mut Act
                     ui.indent("highlight", |ui| {
                         let HighlightSettings {
                             selected_digit,
-                            house_selected_cell,
-                            house_selected_digit,
+                            selected_cell_peer,
+                            selected_digit_peer,
                             conflict,
                         } = highlight;
                         changed |= ui
                             .checkbox(selected_digit, "Same digit cells/notes")
                             .changed();
                         changed |= ui
-                            .checkbox(house_selected_cell, "Selected cell's row/col/box")
+                            .checkbox(selected_cell_peer, "Selected cell's row/col/box")
                             .changed();
                         changed |= ui
-                            .checkbox(house_selected_digit, "Same digit cells' row/col/box")
+                            .checkbox(selected_digit_peer, "Same digit cells' row/col/box")
                             .changed();
                         changed |= ui.checkbox(conflict, "Conflicting cells/notes").changed();
                     });

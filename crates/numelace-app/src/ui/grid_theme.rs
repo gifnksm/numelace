@@ -9,8 +9,8 @@ use eframe::egui::{Color32, Visuals};
 pub(crate) struct GridPalette {
     pub(crate) cell_bg_default: Color32,
     pub(crate) cell_bg_selected_digit: Color32,
-    pub(crate) cell_bg_house_selected_cell: Color32,
-    pub(crate) cell_bg_house_selected_digit: Color32,
+    pub(crate) cell_bg_selected_cell_peer: Color32,
+    pub(crate) cell_bg_selected_digit_peer: Color32,
 
     pub(crate) note_bg_selected_digit: Color32,
 
@@ -44,7 +44,7 @@ impl GridPalette {
         // - Keep backgrounds subtle so digits/notes stay primary.
         // - For visuals-derived values, keep a single value comment at the source line.
         let cell_bg_selected_digit = visuals.selection.bg_fill; // dark=(0, 92, 128) light=(144, 209, 255)
-        let (cell_bg_house_selected_cell, cell_bg_house_selected_digit) = if visuals.dark_mode {
+        let (cell_bg_selected_cell_peer, cell_bg_selected_digit_peer) = if visuals.dark_mode {
             (
                 //  widgets.hovered.bg_fill = (70, 70, 70) (dark)
                 Color32::from_gray(70),
@@ -71,8 +71,8 @@ impl GridPalette {
         Self {
             cell_bg_default: visuals.text_edit_bg_color(), // dark=(10, 10, 10) light=(255, 255, 255)
             cell_bg_selected_digit,
-            cell_bg_house_selected_cell,
-            cell_bg_house_selected_digit,
+            cell_bg_selected_cell_peer,
+            cell_bg_selected_digit_peer,
 
             note_bg_selected_digit: cell_bg_selected_digit,
 
