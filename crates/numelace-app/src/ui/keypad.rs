@@ -8,39 +8,19 @@ use numelace_game::{InputBlockReason, InputOperation};
 
 use crate::{
     action::{ActionRequestQueue, BoardMutationAction, InputModeAction, NotesFillScope},
+    state::InputMode,
     ui::{
         icon,
+        input::InputContext,
         layout::{ComponentUnits, LayoutScale},
     },
 };
 
 #[derive(Debug, Clone)]
-pub(crate) struct KeypadInputModeState {
-    base_notes_mode: bool,
-    swap_input_mode: bool,
-    effective_notes_mode: bool,
-}
-
-impl KeypadInputModeState {
-    #[must_use]
-    pub(crate) fn new(
-        base_notes_mode: bool,
-        swap_input_mode: bool,
-        effective_notes_mode: bool,
-    ) -> Self {
-        Self {
-            base_notes_mode,
-            swap_input_mode,
-            effective_notes_mode,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct KeypadViewModel {
+pub(crate) struct KeypadViewModel<'a> {
     digit_states: DigitIndexedArray<DigitKeyState>,
     has_removable_input: bool,
-    input_mode: KeypadInputModeState,
+    input_context: &'a InputContext,
     auto_fill_capability: Option<Result<InputOperation, InputBlockReason>>,
 }
 
@@ -66,18 +46,18 @@ impl DigitKeyState {
     }
 }
 
-impl KeypadViewModel {
+impl<'a> KeypadViewModel<'a> {
     #[must_use]
     pub(crate) fn new(
         digit_states: DigitIndexedArray<DigitKeyState>,
         has_removable_input: bool,
-        input_mode: KeypadInputModeState,
+        input_context: &'a InputContext,
         auto_fill_capability: Option<Result<InputOperation, InputBlockReason>>,
     ) -> Self {
         Self {
             digit_states,
             has_removable_input,
-            input_mode,
+            input_context,
             auto_fill_capability,
         }
     }
@@ -159,8 +139,8 @@ pub(crate) fn show(
     let rect = ui.available_rect_before_wrap();
     let rect = egui::Rect::from_min_max(rect.min + padding, rect.max);
 
-    let swap_input_mode = vm.input_mode.swap_input_mode;
-    let effective_notes_mode = vm.input_mode.effective_notes_mode;
+    let swap_input_mode = vm.input_context.swap_input_mode;
+    let effective_input_mode = vm.input_context.effective_input_mode;
     ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
         ui.spacing_mut().item_spacing = Vec2::ZERO;
         Grid::new(ui.id().with("keypad_grid"))
@@ -177,7 +157,7 @@ pub(crate) fn show(
                                     ui,
                                     digit,
                                     button_size,
-                                    effective_notes_mode,
+                                    effective_input_mode,
                                     &vm.digit_states[digit],
                                     visuals,
                                 ) {
@@ -209,7 +189,7 @@ pub(crate) fn show(
                                 if show_toggle_input_mode_button(
                                     ui,
                                     button_size,
-                                    vm.input_mode.base_notes_mode,
+                                    vm.input_context.base_input_mode,
                                 ) {
                                     action_queue.request(InputModeAction::ToggleInputMode.into());
                                 }
@@ -226,20 +206,19 @@ pub(crate) fn show(
 }
 
 struct DigitButtonProps {
-    effective_notes_mode: bool,
+    effective_input_mode: InputMode,
     capability: Option<Result<InputOperation, InputBlockReason>>,
     digit: Digit,
 }
 
 impl DigitButtonProps {
-    fn new(state: &DigitKeyState, digit: Digit, effective_notes_mode: bool) -> Self {
-        let capability = if effective_notes_mode {
-            state.toggle_note
-        } else {
-            state.set_digit
+    fn new(state: &DigitKeyState, digit: Digit, effective_input_mode: InputMode) -> Self {
+        let capability = match effective_input_mode {
+            InputMode::Fill => state.set_digit,
+            InputMode::Notes => state.toggle_note,
         };
         Self {
-            effective_notes_mode,
+            effective_input_mode,
             capability,
             digit,
         }
@@ -247,25 +226,8 @@ impl DigitButtonProps {
 
     fn tooltip(&self) -> String {
         let d = self.digit;
-        if self.effective_notes_mode {
-            match self.capability {
-                Some(Ok(InputOperation::Set)) => format!("Add note {d}"),
-                Some(Ok(InputOperation::Removed)) => format!("Remove note {d}"),
-                Some(Ok(InputOperation::NoOp)) => {
-                    format!("Toggle note {d} (blocked by unexpected state)")
-                }
-                Some(Err(InputBlockReason::Conflict)) => {
-                    format!("Add note {d} (blocked by rule violation)")
-                }
-                Some(Err(InputBlockReason::GivenCell | InputBlockReason::FilledCell)) => {
-                    format!("Add note {d} (blocked by filled cell)")
-                }
-                None => {
-                    format!("Toggle note {d} (blocked by no cell selected)")
-                }
-            }
-        } else {
-            match self.capability {
+        match self.effective_input_mode {
+            InputMode::Fill => match self.capability {
                 Some(Ok(InputOperation::Set)) => format!("Set digit {d}"),
                 Some(Ok(InputOperation::Removed)) => {
                     format!("Set digit {d} (unexpected state)")
@@ -283,7 +245,23 @@ impl DigitButtonProps {
                     format!("Set digit {d} (blocked by unexpected state)")
                 }
                 None => format!("Set digit {d} (blocked by no cell selected)"),
-            }
+            },
+            InputMode::Notes => match self.capability {
+                Some(Ok(InputOperation::Set)) => format!("Add note {d}"),
+                Some(Ok(InputOperation::Removed)) => format!("Remove note {d}"),
+                Some(Ok(InputOperation::NoOp)) => {
+                    format!("Toggle note {d} (blocked by unexpected state)")
+                }
+                Some(Err(InputBlockReason::Conflict)) => {
+                    format!("Add note {d} (blocked by rule violation)")
+                }
+                Some(Err(InputBlockReason::GivenCell | InputBlockReason::FilledCell)) => {
+                    format!("Add note {d} (blocked by filled cell)")
+                }
+                None => {
+                    format!("Toggle note {d} (blocked by no cell selected)")
+                }
+            },
         }
     }
 
@@ -309,7 +287,7 @@ impl DigitButtonProps {
     }
 
     fn op_icon(&self) -> Option<&'static str> {
-        if !self.effective_notes_mode {
+        if !self.effective_input_mode.is_notes() {
             return None;
         }
 
@@ -333,14 +311,14 @@ fn show_digit_button(
     ui: &mut Ui,
     digit: Digit,
     button_size: f32,
-    effective_notes_mode: bool,
+    effective_input_mode: InputMode,
     state: &DigitKeyState,
     visuals: &Visuals,
 ) -> bool {
     let digit_count_color = visuals.text_color();
     let op_icon_color = visuals.text_color();
 
-    let props = DigitButtonProps::new(state, digit, effective_notes_mode);
+    let props = DigitButtonProps::new(state, digit, effective_input_mode);
 
     let tooltip = props.tooltip();
     let text = RichText::new(digit.as_str())
@@ -397,10 +375,10 @@ fn show_auto_fill_button(
     button.clicked()
 }
 
-fn show_toggle_input_mode_button(ui: &mut Ui, button_size: f32, notes_mode: bool) -> bool {
+fn show_toggle_input_mode_button(ui: &mut Ui, button_size: f32, input_mode: InputMode) -> bool {
     let text = RichText::new(icon::PENCIL).size(button_size * 0.8);
     let button = Button::new(text)
-        .selected(notes_mode)
+        .selected(input_mode.is_notes())
         .min_size(Vec2::splat(button_size));
     let button = ui.add(button).on_hover_text("Toggle Fill/Notes mode");
     button.clicked()

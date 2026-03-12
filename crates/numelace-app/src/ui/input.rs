@@ -1,21 +1,34 @@
 use eframe::egui::{InputState, Key};
 use numelace_core::Digit;
 
-use crate::action::{
-    Action, ActionRequestQueue, AppAction, BoardMutationAction, FlowAction, HistoryAction,
-    InputModeAction, ModalRequest, MoveDirection, NotesFillScope, SelectionAction, UiAction,
+use crate::{
+    action::{
+        Action, ActionRequestQueue, AppAction, BoardMutationAction, FlowAction, HistoryAction,
+        InputModeAction, ModalRequest, MoveDirection, NotesFillScope, SelectionAction, UiAction,
+    },
+    state::InputMode,
 };
 
+#[derive(Debug, Clone)]
 pub(crate) struct InputContext {
     pub(crate) allow_input: bool,
     pub(crate) swap_input_mode: bool,
+    pub(crate) base_input_mode: InputMode,
+    pub(crate) effective_input_mode: InputMode,
 }
 
-pub(crate) fn build_input_context(i: &InputState, allow_input: bool) -> InputContext {
+pub(crate) fn build_input_context(
+    i: &InputState,
+    allow_input: bool,
+    base_input_mode: InputMode,
+) -> InputContext {
     let swap_input_mode = allow_input && i.modifiers.command;
+    let effective_input_mode = base_input_mode.swapped(swap_input_mode);
     InputContext {
         allow_input,
         swap_input_mode,
+        base_input_mode,
+        effective_input_mode,
     }
 }
 

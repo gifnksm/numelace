@@ -97,8 +97,9 @@ impl App for NumelaceApp {
 
         let allow_input =
             self.ui_state.active_modal.is_none() && !self.ui_state.spinner_state.is_active();
+        let base_input_mode = self.app_state.input_mode;
         let input_context = ctx.input(|i| {
-            let context = ui::input::build_input_context(i, allow_input);
+            let context = ui::input::build_input_context(i, allow_input, base_input_mode);
             if allow_input {
                 ui::input::handle_input(i, &context, &mut action_queue);
                 self.handle_actions(&mut action_queue);

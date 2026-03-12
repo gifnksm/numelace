@@ -10,7 +10,7 @@ use crate::{
         game_screen::GameScreenViewModel,
         grid::{GridCell, GridViewModel, GridVisualState, NoteVisualState},
         input::InputContext,
-        keypad::{DigitKeyState, KeypadInputModeState, KeypadViewModel},
+        keypad::{DigitKeyState, KeypadViewModel},
         modal::{NewGameOptionsViewModel, SettingsViewModel},
         status_line::{GameStatus, StatusLineViewModel},
         toolbar::ToolbarViewModel,
@@ -319,13 +319,11 @@ fn build_grid(app_state: &AppState, ui_state: &UiState) -> PositionIndexedArray<
 pub(crate) fn build_game_screen_view_model<'a>(
     app_state: &AppState,
     ui_state: &'a UiState,
-    input_context: &InputContext,
+    input_context: &'a InputContext,
 ) -> GameScreenViewModel<'a> {
     let game = &app_state.game;
     let selected_cell = app_state.selected_cell();
     let settings = &app_state.settings;
-    let base_notes_mode = app_state.input_mode.is_notes();
-    let effective_notes_mode = base_notes_mode ^ input_context.swap_input_mode;
 
     let status = if app_state.game.is_solved() {
         GameStatus::Solved
@@ -349,15 +347,10 @@ pub(crate) fn build_game_screen_view_model<'a>(
     });
     let has_removable_input = selected_cell.is_some_and(|pos| game.has_removable_input(pos));
     let auto_fill_capability = selected_cell.map(|pos| game.auto_fill_cell_notes_capability(pos));
-    let input_mode = KeypadInputModeState::new(
-        base_notes_mode,
-        input_context.swap_input_mode,
-        effective_notes_mode,
-    );
     let keypad_vm = KeypadViewModel::new(
         digit_capabilities,
         has_removable_input,
-        input_mode,
+        input_context,
         auto_fill_capability,
     );
 

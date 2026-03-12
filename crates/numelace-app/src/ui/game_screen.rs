@@ -21,7 +21,7 @@ pub(crate) struct GameScreenViewModel<'a> {
     pub(crate) toolbar: ToolbarViewModel,
     pub(crate) status_line: StatusLineViewModel<'a>,
     pub(crate) grid: GridViewModel,
-    pub(crate) keypad: KeypadViewModel,
+    pub(crate) keypad: KeypadViewModel<'a>,
 }
 
 impl<'a> GameScreenViewModel<'a> {
@@ -30,7 +30,7 @@ impl<'a> GameScreenViewModel<'a> {
         toolbar: ToolbarViewModel,
         status_line: StatusLineViewModel<'a>,
         grid: GridViewModel,
-        keypad: KeypadViewModel,
+        keypad: KeypadViewModel<'a>,
     ) -> Self {
         Self {
             toolbar,
