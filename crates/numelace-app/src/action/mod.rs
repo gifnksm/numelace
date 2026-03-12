@@ -33,10 +33,18 @@ pub(crate) enum AppAction {
 
 #[derive(Debug)]
 pub(crate) enum BoardMutationAction {
-    RequestDigit { digit: Digit, swap: bool },
+    RequestDigit {
+        digit: Option<Digit>,
+        swap_input_mode: bool,
+        position: Option<Position>,
+    },
     ClearCell,
-    AdvanceCell { position: Option<Position> },
-    AutoFillNotes { scope: NotesFillScope },
+    AdvanceCell {
+        position: Option<Position>,
+    },
+    AutoFillNotes {
+        scope: NotesFillScope,
+    },
     ResetInputs,
     ApplyTechniqueStep(BoxedTechniqueStep),
 }

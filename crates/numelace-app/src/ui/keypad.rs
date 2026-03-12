@@ -163,8 +163,9 @@ pub(crate) fn show(
                                 ) {
                                     action_queue.request(
                                         BoardMutationAction::RequestDigit {
-                                            digit,
-                                            swap: swap_input_mode,
+                                            digit: Some(digit),
+                                            swap_input_mode,
+                                            position: None,
                                         }
                                         .into(),
                                     );

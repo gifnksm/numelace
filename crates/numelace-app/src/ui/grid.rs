@@ -11,6 +11,7 @@ use crate::{
     state::HighlightSettings,
     ui::{
         grid_theme::{GridPalette, GridTheme},
+        input::InputContext,
         layout::{ComponentUnits, LayoutScale},
     },
 };
@@ -90,16 +91,18 @@ impl NoteVisualState {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct GridViewModel {
+pub(crate) struct GridViewModel<'a> {
     grid: PositionIndexedArray<GridCell>,
     enabled_highlights: GridVisualState,
+    input_context: &'a InputContext,
 }
 
-impl GridViewModel {
+impl<'a> GridViewModel<'a> {
     #[must_use]
     pub(crate) fn new(
         grid: PositionIndexedArray<GridCell>,
         highlight_settings: &HighlightSettings,
+        input_context: &'a InputContext,
     ) -> Self {
         let mut enabled_highlights = GridVisualState::SELECTED_CELL
             | GridVisualState::HINT_CONDITION_CELL
@@ -129,6 +132,7 @@ impl GridViewModel {
         Self {
             grid,
             enabled_highlights,
+            input_context,
         }
     }
 
@@ -394,7 +398,16 @@ pub(crate) fn show(
             }
 
             let response = ui.interact(cell_rect, ui.id().with((col, row)), Sense::click());
-            if response.double_clicked() {
+            if response.secondary_clicked() {
+                action_queue.request(
+                    BoardMutationAction::RequestDigit {
+                        digit: None,
+                        swap_input_mode: vm.input_context.swap_input_mode,
+                        position: Some(pos),
+                    }
+                    .into(),
+                );
+            } else if response.double_clicked() {
                 action_queue.request(
                     BoardMutationAction::AdvanceCell {
                         position: Some(pos),

@@ -20,7 +20,7 @@ use crate::{
 pub(crate) struct GameScreenViewModel<'a> {
     pub(crate) toolbar: ToolbarViewModel,
     pub(crate) status_line: StatusLineViewModel<'a>,
-    pub(crate) grid: GridViewModel,
+    pub(crate) grid: GridViewModel<'a>,
     pub(crate) keypad: KeypadViewModel<'a>,
 }
 
@@ -29,7 +29,7 @@ impl<'a> GameScreenViewModel<'a> {
     pub(crate) fn new(
         toolbar: ToolbarViewModel,
         status_line: StatusLineViewModel<'a>,
-        grid: GridViewModel,
+        grid: GridViewModel<'a>,
         keypad: KeypadViewModel<'a>,
     ) -> Self {
         Self {

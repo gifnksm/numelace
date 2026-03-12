@@ -102,19 +102,28 @@ impl BoardMutationAction {
     fn execute(self, app_state: &mut AppState, ui_state: &mut UiState) {
         let game_snapshot = app_state.game.clone();
         match self {
-            BoardMutationAction::RequestDigit { digit, swap } => {
-                if let Some(pos) = app_state.selected_cell() {
-                    match app_state.input_mode.swapped(swap) {
-                        InputMode::Fill => execute_fill_cell(app_state, ui_state, pos, digit),
-                        InputMode::Notes => {
-                            let policy = app_state.rule_check_policy();
-                            if let Err(GameError::ConflictingDigit) =
-                                app_state.game.toggle_note(pos, digit, policy)
-                            {
-                                assert_eq!(policy, RuleCheckPolicy::Strict);
-                                ui_state.conflict_ghost = Some((pos, GhostType::Note(digit)));
+            BoardMutationAction::RequestDigit {
+                digit,
+                swap_input_mode: swap,
+                position,
+            } => {
+                if let Some(pos) = position.or_else(|| app_state.selected_cell()) {
+                    if let Some(digit) = digit.or_else(|| app_state.selected_digit()) {
+                        match app_state.input_mode.swapped(swap) {
+                            InputMode::Fill => execute_fill_cell(app_state, ui_state, pos, digit),
+                            InputMode::Notes => {
+                                let policy = app_state.rule_check_policy();
+                                if let Err(GameError::ConflictingDigit) =
+                                    app_state.game.toggle_note(pos, digit, policy)
+                                {
+                                    assert_eq!(policy, RuleCheckPolicy::Strict);
+                                    ui_state.conflict_ghost = Some((pos, GhostType::Note(digit)));
+                                }
                             }
                         }
+                    }
+                    if app_state.selected_cell() != Some(pos) {
+                        app_state.set_selected_cell(pos);
                     }
                 }
             }
@@ -132,6 +141,9 @@ impl BoardMutationAction {
                         && let Some(digit) = notes.as_single()
                     {
                         execute_fill_cell(app_state, ui_state, pos, digit);
+                    }
+                    if app_state.selected_cell() != Some(pos) {
+                        app_state.set_selected_cell(pos);
                     }
                 }
             }
@@ -362,8 +374,9 @@ mod tests {
             &mut app_state,
             &mut ui_state,
             BoardMutationAction::RequestDigit {
-                digit: Digit::D1,
-                swap: false,
+                digit: Some(Digit::D1),
+                swap_input_mode: false,
+                position: None,
             }
             .into(),
         );
@@ -427,8 +440,9 @@ mod tests {
             &mut app_state,
             &mut ui_state,
             BoardMutationAction::RequestDigit {
-                digit: Digit::D2,
-                swap: false,
+                digit: Some(Digit::D2),
+                swap_input_mode: false,
+                position: None,
             }
             .into(),
         );
@@ -437,8 +451,9 @@ mod tests {
             &mut app_state,
             &mut ui_state,
             BoardMutationAction::RequestDigit {
-                digit: Digit::D2,
-                swap: false,
+                digit: Some(Digit::D2),
+                swap_input_mode: false,
+                position: None,
             }
             .into(),
         );

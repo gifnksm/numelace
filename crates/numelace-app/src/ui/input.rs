@@ -79,8 +79,9 @@ impl Shortcut {
             Trigger::new(key, command, false),
             Action::App(AppAction::BoardMutation(
                 BoardMutationAction::RequestDigit {
-                    digit,
-                    swap: command,
+                    digit: Some(digit),
+                    swap_input_mode: command,
+                    position: None,
                 },
             )),
         )
@@ -107,7 +108,7 @@ const fn input_mode_action(action: InputModeAction) -> Action {
     Action::App(AppAction::InputMode(action))
 }
 
-const SHORTCUTS: [Shortcut; 36] = [
+const SHORTCUTS: [Shortcut; 38] = [
     Shortcut::command(Key::N, Action::Flow(FlowAction::StartNewGame)),
     Shortcut::command(
         Key::Comma,
@@ -165,6 +166,22 @@ const SHORTCUTS: [Shortcut; 36] = [
     Shortcut::plain(
         Key::Space,
         board_mutation_action(BoardMutationAction::AdvanceCell { position: None }),
+    ),
+    Shortcut::plain(
+        Key::Enter,
+        board_mutation_action(BoardMutationAction::RequestDigit {
+            digit: None,
+            swap_input_mode: false,
+            position: None,
+        }),
+    ),
+    Shortcut::command(
+        Key::Enter,
+        board_mutation_action(BoardMutationAction::RequestDigit {
+            digit: None,
+            swap_input_mode: true,
+            position: None,
+        }),
     ),
 ];
 

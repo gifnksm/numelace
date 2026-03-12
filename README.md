@@ -45,6 +45,7 @@ Planned features are tracked in docs/BACKLOG.md.
   - <kbd>Esc</kbd>: cancel hint during hint sequence; otherwise clear selection.
 - **Digit entry & notes**
   - <kbd>1</kbd>–<kbd>9</kbd>: enter a digit for the selected cell.
+  - <kbd>Enter</kbd>: enter the selected digit for the selected cell.
   - <kbd>S</kbd>: toggle between Fill and Notes modes.
   - <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> (hold): temporarily swap Fill/Notes while held.
   - <kbd>A</kbd>: auto-fill notes for the selected cell.
@@ -65,6 +66,7 @@ Planned features are tracked in docs/BACKLOG.md.
 
 - **Selection**
   - Click the selected cell again to clear selection.
+  - Right-click / long-press: enter the selected digit for that cell (if no selected digit, just select the cell).
   - Double-click / double-tap: advance the cell (auto-fill notes if empty; if notes have a single candidate, fill it).
 - **Keypad**
   - <kbd>1</kbd>–<kbd>9</kbd> + <kbd>Delete</kbd>: entry and clearing.

@@ -336,7 +336,7 @@ pub(crate) fn build_game_screen_view_model<'a>(
     let toolbar_vm = build_toolbar_vm(app_state, ui_state);
 
     let grid = build_grid(app_state, ui_state);
-    let grid_vm = GridViewModel::new(grid, &settings.assist.highlight);
+    let grid_vm = GridViewModel::new(grid, &settings.assist.highlight, input_context);
 
     let policy = app_state.rule_check_policy();
     let decided_digit_count = game.decided_digit_count();
