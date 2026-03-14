@@ -33,7 +33,7 @@ impl Default for HighlightSettings {
     fn default() -> Self {
         Self {
             selected_digit: true,
-            selected_cell_peer: true,
+            selected_cell_peer: false,
             selected_digit_peer: true,
             conflict: true,
         }
