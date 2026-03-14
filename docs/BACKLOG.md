@@ -19,6 +19,7 @@ This backlog is the single source of truth for tasks and ideas.
 - [X] Seeded generation and regenerate by seed
   - [X] Reproducible generation requires seed + enabled techniques (or tier)
 - [ ] Technique explanations for hints (may overlap with hint system)
+- [ ] Refine difficulty evaluation to better match play experience (generation + UI difficulty labeling)
 - [X] Add `solve_puzzle` CLI example in numelace-solver (step output, backtracking trace, grid rendering)
 - Generator-aligned technique expansion (solver + generator)
   - Tier 0 (fundamental):
@@ -54,6 +55,8 @@ This backlog is the single source of truth for tasks and ideas.
 
 - [X] Selection row/column/box highlight
 - [X] Same digit highlight
+- [ ] Strong link visualization toggle (lines between linked candidates)
+- [ ] Freehand drawing memo overlay
 - [X] Highlight peers of same-digit cells (row/column/box)
 - [X] Mistake highlighting (row/col/box conflicts)
 - [X] Block rule-violating input (optional)
@@ -70,6 +73,7 @@ This backlog is the single source of truth for tasks and ideas.
   - [X] Check Solvability UI + dialog + shortcut (Ctrl+K)
   - [X] Hint stage 1 highlight (condition cells)
   - [X] Hint stage 2 technique + condition pairs
+  - [ ] Hint stage 2: show strong links explicitly (lines between linked candidates)
   - [X] Hint stage 3 apply step + ghost eliminations
   - [X] Rollback flow for inconsistent boards
 
