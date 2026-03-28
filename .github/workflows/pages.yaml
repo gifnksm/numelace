@@ -34,7 +34,7 @@ jobs:
       - name: Build
         run: trunk build --release --public-url "${{ steps.pages.outputs.base_path }}"
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 
