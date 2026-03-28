@@ -9,3 +9,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npx markdownlint-cli .
+
+  markdownlint-complete:
+    name: Markdownlint Complete
+    if: ${{ always() }}
+    needs: [markdownlint]
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}; then
+            echo "One or more jobs failed or were cancelled"
+            exit 1
+          fi
+          echo "All jobs succeeded"

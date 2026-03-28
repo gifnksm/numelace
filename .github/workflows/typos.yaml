@@ -20,3 +20,18 @@ jobs:
           tool: typos
       - name: Check spelling of entire workspace
         run: typos
+
+  typos-complete:
+    name: Typos Complete
+    if: ${{ always() }}
+    needs: [run]
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}; then
+            echo "One or more jobs failed or were cancelled"
+            exit 1
+          fi
+          echo "All jobs succeeded"
