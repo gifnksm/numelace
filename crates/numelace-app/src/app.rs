@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use eframe::{
     App, CreationContext, Frame, Storage,
-    egui::{CentralPanel, Context},
+    egui::{CentralPanel, Ui},
 };
 use numelace_game::Game;
 
@@ -85,7 +85,8 @@ impl App for NumelaceApp {
         Duration::from_secs(30)
     }
 
-    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+    fn ui(&mut self, ui: &mut Ui, frame: &mut Frame) {
+        let ctx = ui.ctx().clone();
         let mut action_queue = ActionRequestQueue::default();
 
         if !self.app_state.game.is_initialized() && !self.ui_state.requested_initial_new_game {
@@ -113,7 +114,7 @@ impl App for NumelaceApp {
             &input_context,
         );
 
-        CentralPanel::default().show(ctx, |ui| {
+        CentralPanel::default().show_inside(ui, |ui| {
             ui::game_screen::show(ui, &game_screen_vm, &mut action_queue);
         });
 
@@ -122,7 +123,7 @@ impl App for NumelaceApp {
                 view_model_builder::build_new_game_options_view_model(&self.app_state);
             let settings_vm = view_model_builder::build_settings_view_model(&self.app_state);
             ui::modal::show(
-                ctx,
+                &ctx,
                 &mut action_queue,
                 modal_request,
                 &new_game_options_vm,
@@ -131,7 +132,7 @@ impl App for NumelaceApp {
         }
 
         if let Some(spinner) = self.ui_state.spinner_state.active_kind() {
-            ui::spinner::show(ctx, spinner);
+            ui::spinner::show(&ctx, spinner);
         }
 
         self.poll_and_handle_actions(&mut action_queue);
