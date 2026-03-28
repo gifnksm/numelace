@@ -11,6 +11,10 @@ updates:
     schedule:
       interval: "weekly"
     groups:
+      egui:
+        patterns:
+          - "eframe"
+          - "egui_extras"
       cargo-patch:
         update-types:
           - "patch"
