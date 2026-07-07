@@ -114,7 +114,7 @@ impl App for NumelaceApp {
             &input_context,
         );
 
-        CentralPanel::default().show_inside(ui, |ui| {
+        CentralPanel::default().show(ui, |ui| {
             ui::game_screen::show(ui, &game_screen_vm, &mut action_queue);
         });
 
