@@ -362,7 +362,7 @@ mod tests {
         assert_eq!(stats.assumptions().len(), 0);
         assert_eq!(stats.backtrack_count(), 0);
         assert!(stats.solved_without_assumptions());
-        assert!(stats.technique().total_steps() == 0);
+        assert_eq!(stats.technique().total_steps(), 0);
     }
 
     #[test]
