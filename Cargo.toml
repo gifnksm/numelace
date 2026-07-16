@@ -12,8 +12,8 @@ license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
 better-panic = "0.3.0"
-bitflags = "2.13.0"
-clap = "4.6.1"
+bitflags = "2.13.1"
+clap = "4.6.2"
 criterion = "0.8.2"
 derive_more = "2.1.1"
 eframe = "0.35.0"
@@ -34,7 +34,7 @@ wasm-bindgen-futures = "0.4.76"
 futures-channel = "0.3.32"
 portable-atomic = "1.13.1"
 sha2 = "0.11.0"
-tinyvec = "1.11.0"
+tinyvec = "1.12.0"
 web-sys = "0.3.103"
 
 numelace-core = { path = "crates/numelace-core" }
