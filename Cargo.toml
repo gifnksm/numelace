@@ -13,7 +13,7 @@ license = "MIT OR Apache-2.0"
 [workspace.dependencies]
 better-panic = "0.3.0"
 bitflags = "2.13.1"
-clap = "4.6.4"
+clap = "4.6.5"
 criterion = "0.8.2"
 derive_more = "2.1.1"
 eframe = "0.35.0"
