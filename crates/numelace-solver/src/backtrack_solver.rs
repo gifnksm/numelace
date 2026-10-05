@@ -460,7 +460,7 @@ mod tests {
         let (_, stats) = solutions.next().unwrap();
 
         // Should have made assumptions
-        assert!(!stats.assumptions().is_empty());
+        assert_ne!(stats.assumptions(), []);
     }
 
     #[test]
