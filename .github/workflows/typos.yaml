@@ -19,9 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Actions Repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
-      - uses: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@v2.87.22
         with:
           tool: typos
       - name: Check spelling of entire workspace
