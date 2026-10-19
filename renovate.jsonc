@@ -27,6 +27,12 @@
 
   "packageRules": [
     {
+      "description": "Update eframe and egui_extras together to keep egui versions aligned",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["eframe", "egui_extras"],
+      "groupName": "egui crates"
+    },
+    {
       "description": "Disable mise lock file maintenance",
       "matchManagers": ["mise"],
       "matchUpdateTypes": ["lockFileMaintenance"],
