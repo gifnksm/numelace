@@ -19,7 +19,7 @@ impl<'a> SettingsViewModel<'a> {
 }
 
 pub(crate) fn show(ctx: &Context, vm: &SettingsViewModel, action_queue: &mut ActionRequestQueue) {
-    let modal = Modal::new(Id::new("settings_modal")).show(ctx, |ui| {
+    let modal = Modal::new(Id::unique("settings_modal")).show(ctx, |ui| {
         ui.heading("Settings");
         let mut changed = false;
         let mut settings = vm.settings.clone();

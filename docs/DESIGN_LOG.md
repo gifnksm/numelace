@@ -89,3 +89,4 @@ Short, timestamped notes capturing decisions and rationale.
 - 2026-03-05: Selecting a digit cell updates the selected digit; selecting an empty or notes-only cell preserves the current selected digit and same-digit highlight — keeps highlight stability while navigating.
 - 2026-10-06: Pin GitHub Actions workflows to full semver tags with a 3-day minimum release age; keep `dtolnay/rust-toolchain` on `@v1` with `toolchain: stable` — reduces drift while preserving the action's stable toolchain behavior.
 - 2026-10-19: Group Cargo updates for `eframe` and `egui_extras` in one Renovate PR — keeps their shared egui types compatible when upgrading.
+- 2026-10-19: Enable egui's `monochrome_emoji_fonts` feature and include the direct `egui` dependency in Renovate's egui group — preserves the existing icon appearance on desktop and web after egui 0.37 changed font defaults. Use `Id::unique` for global widget IDs and local salts for nested widgets.

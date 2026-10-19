@@ -2657,6 +2657,7 @@ dependencies = [
  "bitflags 2.13.2",
  "derive_more",
  "eframe",
+ "egui",
  "egui_extras",
  "env_logger",
  "futures-channel",

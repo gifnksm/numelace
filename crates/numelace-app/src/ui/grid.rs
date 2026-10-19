@@ -397,7 +397,7 @@ pub(crate) fn show(
                 }
             }
 
-            let response = ui.interact(cell_rect, ui.id().with((col, row)), Sense::click());
+            let response = ui.interact(cell_rect, ui.scope_id().with((col, row)), Sense::click());
             if response.secondary_clicked() {
                 action_queue.request(
                     BoardMutationAction::RequestDigit {

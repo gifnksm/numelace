@@ -6,14 +6,14 @@ pub(crate) fn show(ctx: &Context, spinner: SpinnerKind) {
     ctx.request_repaint();
     match spinner {
         SpinnerKind::NewGame => {
-            Modal::new(Id::new("generating_new_game")).show(ctx, |ui| {
+            Modal::new(Id::unique("generating_new_game")).show(ctx, |ui| {
                 ui.heading("Generating...");
                 ui.add(Spinner::new());
                 ui.label("Generating new game...");
             });
         }
         SpinnerKind::CheckSolvability => {
-            Modal::new(Id::new("checking_solvability")).show(ctx, |ui| {
+            Modal::new(Id::unique("checking_solvability")).show(ctx, |ui| {
                 ui.heading("Checking Solvability...");
                 ui.add(Spinner::new());
                 ui.label("Please wait while we analyze the current board.");

@@ -31,7 +31,7 @@ pub(crate) fn show(
     responder: &mut Option<NewGameOptionsResponder>,
 ) {
     let mut draft = vm.new_game_options.clone();
-    let modal = Modal::new(Id::new("new_game_options_modal")).show(ctx, |ui| {
+    let modal = Modal::new(Id::unique("new_game_options_modal")).show(ctx, |ui| {
         ui.heading("New Game");
         ui.label("Choose difficulty and techniques to generate a new puzzle.");
 
