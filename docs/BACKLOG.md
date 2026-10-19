@@ -105,6 +105,7 @@ This backlog is the single source of truth for tasks and ideas.
 
 ## Bugs / Fixes
 
+- [X] Migrate deprecated egui 0.37 APIs and restore bundled monochrome emoji icons after the dependency update.
 - [X] Debug: debug builds hit a `debug_assert` with the message `add_space makes no sense in a grid layout`
 - [X] Group Renovate updates for `eframe` and `egui_extras` in one PR to keep egui versions aligned.
 

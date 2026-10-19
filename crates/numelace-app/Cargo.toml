@@ -24,6 +24,8 @@ vergen-gitcl.workspace = true
 bitflags.workspace = true
 derive_more = { workspace = true, features = ["error", "display", "from"] }
 eframe = { workspace = true, features = ["persistence"] }
+# Keep the bundled monochrome icons used before egui 0.37.
+egui = { workspace = true, features = ["monochrome_emoji_fonts"] }
 egui_extras.workspace = true
 futures-channel.workspace = true
 portable-atomic.workspace = true

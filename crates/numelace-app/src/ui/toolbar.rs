@@ -98,7 +98,7 @@ pub(crate) fn show(
 
         let response = button(ui, icon::MENU, "More", true, cell_size);
         Popup::menu(&response)
-            .id(Id::new("toolbar_more_menu"))
+            .id(Id::unique("toolbar_more_menu"))
             .show(|ui| show_menu(ui, vm, cell_size, action_queue));
     });
 }

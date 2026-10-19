@@ -74,49 +74,49 @@ impl ConfirmKind {
     fn spec(self) -> ConfirmDialogSpec {
         match self {
             ConfirmKind::NewGame => ConfirmDialogSpec {
-                id: Id::new("new_game_confirm"),
+                id: Id::unique("new_game_confirm"),
                 heading: "New Game?",
                 label: "Start a new game? Current progress will be lost.",
                 confirm_label: "New Game",
                 confirm_icon: icon::CHECK,
             },
             ConfirmKind::ResetInputs => ConfirmDialogSpec {
-                id: Id::new("reset_inputs_confirm"),
+                id: Id::unique("reset_inputs_confirm"),
                 heading: "Reset Inputs?",
                 label: "Clear all your inputs and return to the initial puzzle state?",
                 confirm_label: "Reset Inputs",
                 confirm_icon: icon::CHECK,
             },
             ConfirmKind::SolvabilityInconsistent => ConfirmDialogSpec {
-                id: Id::new("solvability_result"),
+                id: Id::unique("solvability_result"),
                 heading: "Board Inconsistent",
                 label: "A conflict or a no-candidate cell was detected. We recommend undoing to the last consistent state.",
                 confirm_label: "Undo",
                 confirm_icon: icon::ARROW_UNDO,
             },
             ConfirmKind::SolvabilityNoSolution => ConfirmDialogSpec {
-                id: Id::new("solvability_result"),
+                id: Id::unique("solvability_result"),
                 heading: "No Solution Found",
                 label: "No solution exists from the current state. We recommend undoing to the last solvable state.",
                 confirm_label: "Undo",
                 confirm_icon: icon::ARROW_UNDO,
             },
             ConfirmKind::SolvabilityNotesMaybeIncorrect => ConfirmDialogSpec {
-                id: Id::new("solvability_result"),
+                id: Id::unique("solvability_result"),
                 heading: "Notes May Be Incorrect",
                 label: "A solution exists when ignoring notes. Rebuild candidates now?",
                 confirm_label: "Rebuild",
                 confirm_icon: icon::CHECK,
             },
             ConfirmKind::HintInconsistent => ConfirmDialogSpec {
-                id: Id::new("hint_inconsistent"),
+                id: Id::unique("hint_inconsistent"),
                 heading: "Board Inconsistent",
                 label: "A conflict or a no-candidate cell was detected. We recommend undoing to the last consistent state.",
                 confirm_label: "Undo",
                 confirm_icon: icon::ARROW_UNDO,
             },
             ConfirmKind::HintNotesMaybeIncorrect => ConfirmDialogSpec {
-                id: Id::new("hint_notes_maybe_incorrect"),
+                id: Id::unique("hint_notes_maybe_incorrect"),
                 heading: "Notes May Be Incorrect",
                 label: "A hint exists when ignoring notes. Rebuild candidates now?",
                 confirm_label: "Rebuild",
@@ -146,7 +146,7 @@ impl AlertKind {
     fn spec(&self) -> AlertDialogSpec<'_> {
         match self {
             AlertKind::SolvabilitySolvable { stats } => AlertDialogSpec {
-                id: Id::new("solvability_result"),
+                id: Id::unique("solvability_result"),
                 heading: "Solvable",
                 body: AlertBody::SolvabilityStats {
                     summary: Cow::Borrowed("A solution is still possible from the current state."),
@@ -155,7 +155,7 @@ impl AlertKind {
                 ok_label: "OK",
             },
             AlertKind::SolvabilityUndoNotice { steps } => AlertDialogSpec {
-                id: Id::new("solvability_undo_notice"),
+                id: Id::unique("solvability_undo_notice"),
                 heading: "Undo Complete",
                 body: AlertBody::Text(Cow::Owned(format!(
                     "Undid {steps} step(s) to return to a solvable state."
@@ -163,13 +163,13 @@ impl AlertKind {
                 ok_label: "OK",
             },
             AlertKind::SolvabilityUndoNotFound => AlertDialogSpec {
-                id: Id::new("solvability_undo_not_found"),
+                id: Id::unique("solvability_undo_not_found"),
                 heading: "No Solution Found",
                 body: AlertBody::Text(Cow::Borrowed("Undo did not find a solvable state.")),
                 ok_label: "OK",
             },
             AlertKind::SolvabilityAlreadySolved => AlertDialogSpec {
-                id: Id::new("solvability_already_solved"),
+                id: Id::unique("solvability_already_solved"),
                 heading: "Already Solved",
                 body: AlertBody::Text(Cow::Borrowed(
                     "The puzzle is already solved, so no solvability check is needed.",
@@ -177,7 +177,7 @@ impl AlertKind {
                 ok_label: "OK",
             },
             AlertKind::HintUndoNotice { steps } => AlertDialogSpec {
-                id: Id::new("hint_undo_notice"),
+                id: Id::unique("hint_undo_notice"),
                 heading: "Undo Complete",
                 body: AlertBody::Text(Cow::Owned(format!(
                     "Undid {steps} step(s) to return to a consistent state."
@@ -185,7 +185,7 @@ impl AlertKind {
                 ok_label: "OK",
             },
             AlertKind::HintStuckNoStep => AlertDialogSpec {
-                id: Id::new("hint_stuck_no_step"),
+                id: Id::unique("hint_stuck_no_step"),
                 heading: "No Hint Found",
                 body: AlertBody::Text(Cow::Borrowed(
                     "No applicable techniques found from the current state.",
@@ -193,7 +193,7 @@ impl AlertKind {
                 ok_label: "OK",
             },
             AlertKind::HintStuckAfterRollback => AlertDialogSpec {
-                id: Id::new("hint_stuck_after_rollback"),
+                id: Id::unique("hint_stuck_after_rollback"),
                 heading: "No Hint Found",
                 body: AlertBody::Text(Cow::Borrowed(
                     "The conflict was resolved, but no next step is available.",
@@ -201,13 +201,13 @@ impl AlertKind {
                 ok_label: "OK",
             },
             AlertKind::HintInconsistentAfterRollback => AlertDialogSpec {
-                id: Id::new("hint_inconsistent_after_rollback"),
+                id: Id::unique("hint_inconsistent_after_rollback"),
                 heading: "No Hint Found",
                 body: AlertBody::Text(Cow::Borrowed("Undo did not find a consistent state.")),
                 ok_label: "OK",
             },
             AlertKind::HintAlreadySolved => AlertDialogSpec {
-                id: Id::new("hint_already_solved"),
+                id: Id::unique("hint_already_solved"),
                 heading: "Already Solved",
                 body: AlertBody::Text(Cow::Borrowed(
                     "The puzzle is already solved, so no hint is available.",

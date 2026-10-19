@@ -27,9 +27,9 @@
 
   "packageRules": [
     {
-      "description": "Update eframe and egui_extras together to keep egui versions aligned",
+      "description": "Update eframe, egui, and egui_extras together to keep egui versions aligned",
       "matchManagers": ["cargo"],
-      "matchPackageNames": ["eframe", "egui_extras"],
+      "matchPackageNames": ["eframe", "egui", "egui_extras"],
       "groupName": "egui crates"
     },
     {

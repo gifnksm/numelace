@@ -143,7 +143,7 @@ pub(crate) fn show(
     let effective_input_mode = vm.input_context.effective_input_mode;
     ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
         ui.spacing_mut().item_spacing = Vec2::ZERO;
-        Grid::new(ui.id().with("keypad_grid"))
+        Grid::new("keypad_grid")
             .spacing((x_spacing, y_spacing))
             .min_col_width(button_size)
             .min_row_height(button_size)
