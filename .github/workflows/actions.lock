@@ -11,15 +11,15 @@ workflows:
         - 'actions/deploy-pages@v5.0.1'
         - 'actions/upload-pages-artifact@v5.0.0'
         - 'dtolnay/rust-toolchain@v1'
-        - 'taiki-e/install-action@v2.87.32'
+        - 'taiki-e/install-action@v2.87.33'
     '.github/workflows/rust.yaml':
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
         - 'dtolnay/rust-toolchain@v1'
-        - 'taiki-e/install-action@v2.87.32'
+        - 'taiki-e/install-action@v2.87.33'
     '.github/workflows/typos.yaml':
         - 'actions/checkout@v7.0.1'
-        - 'taiki-e/install-action@v2.87.32'
+        - 'taiki-e/install-action@v2.87.33'
 dependencies:
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'
@@ -58,8 +58,8 @@ dependencies:
         commit: 'sha1-683b588c487a69d01f6c6ddf40f036ff682cc2c8'
         owner_id: 1940490
         repo_id: 260749683
-    'taiki-e/install-action@v2.87.32':
-        ref: 'v2.87.32'
-        commit: 'sha1-5488ac5a951645ce95062214902ac4b6bc1a1037'
+    'taiki-e/install-action@v2.87.33':
+        ref: 'v2.87.33'
+        commit: 'sha1-645d1ab48b3cb8591684a8b730b2ccf4cb3f9568'
         owner_id: 43724913
         repo_id: 442947557

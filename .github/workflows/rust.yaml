@@ -100,7 +100,7 @@ jobs:
         with:
           toolchain: stable
           targets: wasm32-unknown-unknown
-      - uses: taiki-e/install-action@v2.87.32
+      - uses: taiki-e/install-action@v2.87.33
         with:
           tool: trunk
       - name: Build
