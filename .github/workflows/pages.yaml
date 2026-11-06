@@ -28,7 +28,7 @@ jobs:
           toolchain: stable
           targets: wasm32-unknown-unknown
 
-      - uses: taiki-e/install-action@v2.89.1
+      - uses: taiki-e/install-action@v2.90.0
         with:
           tool: trunk
 
