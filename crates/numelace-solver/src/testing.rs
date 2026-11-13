@@ -134,8 +134,7 @@ impl TechniqueTester {
     fn context_suffix(&self) -> String {
         self.context
             .as_ref()
-            .map(|context| format!(" ({context})"))
-            .unwrap_or_default()
+            .map_or_default(|context| format!(" ({context})"))
     }
 
     #[track_caller]
