@@ -423,7 +423,7 @@ fn format_grid(grid: &TechniqueGrid, diffs: Option<&PositionIndexedArray<CellDif
         for col in 0..9 {
             let pos = Position::new(row, col);
             let candidates = grid.candidates_at(pos);
-            let diff = diffs.map(|map| map[pos]).unwrap_or_default();
+            let diff = diffs.map_or_default(|map| map[pos]);
             cell_lines.push(build_cell_lines(candidates, diff));
         }
 
